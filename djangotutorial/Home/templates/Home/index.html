@@ -1,0 +1,76 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- 设置页面字符编码 -->
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <!-- 适配不同设备屏幕 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- 自定义元数据，不过这里name属性可能有误，推测应该是拼写错误，也许是想设置页面描述等信息 -->
+    <meta name="description" content="Home"> 
+    <!-- 使用 Django 变量设置页面标题 -->
+    <title style="text-shadow: rgb(0, 0, 0) 0px 0px 0px !important;">CottonOGD</title>
+    <!-- 使用 Django 变量设置页面图标链接 -->
+    <link rel="icon" type="image/png" href="{% static 'img/favicon.png' %}">
+    <!-- 移除所有CSS相关的引入和预加载 -->
+    <!-- 移除内联样式 -->
+    <title>CottonOGD</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link type="text/css" rel="stylesheet" href="https://www.cottongen.org/sites/default/files/css/css_lQaZfjVpwP_oGNqdtWCSpJT1EMqXdMiU84ekLLxQnc4.css" media="all" />
+    <link type="text/css" rel="stylesheet" href="https://www.cottongen.org/sites/default/files/css/css_oen01LI5H_cnRs2MgKA5lN9S3iz4tVcfADqkNMoEsqA.css" media="all" />
+    <link type="text/css" rel="stylesheet" href="https://www.cottongen.org/sites/default/files/css/css_HW2ZDt5epl41vmfyVQlVqHbn-6XM0zaAqyWeKqeCPZI.css" media="all" />
+    <link type="text/css" rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css" media="all" />
+    <link type="text/css" rel="stylesheet" href="https://www.cottongen.org/sites/default/files/css/css_ICxIihEke7nFgnqdxoKvcQiQXZW8wmC0U7JMK0vtAxg.css" media="all" />
+</head>
+<body>
+    <!-- 使用 Django 变量设置页面主体内容 -->
+    <header>
+        
+        <img src="{% static 'img/favicon.png' %}" alt="CottonOGD" style="height: 40px;">
+        <h1 style="display: block;">CottonOGD</h1>
+        <nav>
+            <ul style="display: flex; list-style-type: none; padding: 0; margin: 0;">
+                <li style="margin-right: 15px;"><a href="/">Home</a></li>
+                <li style="margin-right: 15px;"><a href="/Browerse/">Browerse</a></li>
+                <li style="margin-right: 15px;"><a href="/Blast/">Blast</a></li>
+                <li style="margin-right: 15px;"><a href="/Download">Download</a></li>
+                <li style="margin-right: 15px;"><a href="/About/">About</a></li>
+                <li style="margin-right: 15px;"><a href="/Help/">Help</a></li>
+                <li><a href="/Contact/">Contact us</a></li>
+            </ul>
+        </nav>
+    </header>  <!-- 补全header闭合标签 -->
+    <hr>
+    <div class="body">
+    <div class="main">
+        <h1>Welcome to CottonOGD</h1>
+        <p>CottonOGD is a website for browsing and downloading the latest version of the Cotton genome database.</p>
+        <p>You can browse the database by clicking the "Browerse" button in the navigation bar.</p>
+    </div>
+    <div class="Cotton_img">
+        <img src="{% static 'img/Cotton.jpg' %}" alt="Cotton">
+        <p>Image of Cotton</p>
+        <p>Cotton is a <em>species</em> that is native to the Americas and Europe. It is a popular crop for both domestic and commercial purposes.</p>
+        <p>Orthogroups</p>
+    </div>
+    <div>
+    <h1>{{ page_title|default:"默认标题" }}</h1>
+    {{ page_content|default:"暂无内容" }}
+    </div>
+    </div>
+</body>
+<footer>
+    <div class="site">
+        <h6>Site</h6>
+        <ul>
+        <li><a href="/About/">About</a></li>
+        </ul>
+    </div>
+    <div>
+        <ul>
+        <li><a href="/About/">About</a></li>
+        </ul>
+    </div>
+    <p style="display: flex;">Copyright © 2024 CottonOGD</p>     
+</footer>
+</html>

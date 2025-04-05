@@ -31,6 +31,8 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    "Home.apps.HomeConfig",
+    "Browse.apps.BrowseConfig",
     "polls.apps.PollsConfig",
     "debug_toolbar",
     "django.contrib.admin",
@@ -79,13 +81,25 @@ INTERNAL_IPS = [
 ]
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": "CottonOGD-ortho",
+        "USER": "root",
+        "PASSWORD": "1111",
+        "HOST": "localhost",
+        "PORT": "3306"
+        "OPTIONS": {
+            "read_default_file": "/path/to/my.cnf",
+        },
     }
 }
+#DATABASES = {
+ #   "default": {
+  #      "ENGINE": "django.db.backends.sqlite3",
+   #     "NAME": BASE_DIR / "db.sqlite3",
+    #}
+#}
 
 
 # Password validation

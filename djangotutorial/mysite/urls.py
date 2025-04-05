@@ -21,6 +21,8 @@ from django.urls import include, path
 
 urlpatterns = [
    # path('', index, name='index'),  # Map the root URL to the view function
+    path('Home', include('Home.urls')),
+    path('Browse', include('Browse.urls')),
     path('admin/', admin.site.urls),
     path('polls/', include('polls.urls')),
 ]

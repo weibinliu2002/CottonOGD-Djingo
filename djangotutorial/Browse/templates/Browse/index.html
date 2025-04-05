@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- 设置页面字符编码 -->
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <!-- 适配不同设备屏幕 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- 自定义元数据，不过这里name属性可能有误，推测应该是拼写错误，也许是想设置页面描述等信息 -->
+    <meta name="description" content="Browerse"> 
+    <!-- 使用 Django 变量设置页面标题 -->
+    <title style="text-shadow: rgb(0, 0, 0) 0px 0px 0px !important;">Browerse</title>
+    <!-- 使用 Django 变量设置页面图标链接 -->
+    <link rel="icon" type="image/png" href="{{ favicon_url }}">
+    <!-- 移除所有CSS相关的引入和预加载 -->
+    <!-- 移除内联样式 -->
+</head>
+<body>
+    <!-- 使用 Django 变量设置页面主体内容 -->
+    <h1>{{ page_title|default:"默认标题" }}</h1>
+    {{ page_content|default:"暂无内容" }}
+</body>
+</html>
