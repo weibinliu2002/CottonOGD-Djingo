@@ -1,0 +1,50 @@
+{% extends "home/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>GO Annotation Search</h2>
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="gene_id">Enter Gene IDs (one per line or space/comma separated):</label>
+            <textarea id="gene_id" 
+                     name="gene_id" 
+                     class="form-control" 
+                     rows="5" 
+                     ></textarea>
+            <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="fillExample">
+                        load example
+                    </button>
+        </div>
+        <button type="submit" class="btn btn-primary">Search</button>
+    </form>
+</div>
+<script>
+    document.getElementById('fillExample').addEventListener('click', function() {
+        const exampleIDs = `Kirkii_Juiced.00g000010
+Kirkii_Juiced.00g000020
+Kirkii_Juiced.00g000030
+Kirkii_Juiced.00g000040
+Kirkii_Juiced.00g000050
+Kirkii_Juiced.00g000060
+Kirkii_Juiced.00g000070
+Kirkii_Juiced.00g000080
+Kirkii_Juiced.00g000090
+Kirkii_Juiced.00g000100
+Kirkii_Juiced.00g000110
+Kirkii_Juiced.00g000120
+Kirkii_Juiced.00g000130
+Kirkii_Juiced.00g000140
+Kirkii_Juiced.00g000150
+Kirkii_Juiced.00g000160
+Kirkii_Juiced.00g000170
+Kirkii_Juiced.00g000180
+Kirkii_Juiced.00g000190
+Kirkii_Juiced.00g000200
+Kirkii_Juiced.00g000210
+Kirkii_Juiced.00g000220
+Kirkii_Juiced.00g000230`;
+        document.getElementById('gene_id').value = exampleIDs;
+    });
+</script>
+{% endblock %}

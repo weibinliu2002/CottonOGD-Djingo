@@ -1,0 +1,322 @@
+{% extends "home/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>基因表达热图</h1>
+    
+    <div class="heatmap-container" id="heatmapContainer">
+        <div class="controls">
+            <button id="downloadBtn" class="btn btn-sm btn-success">
+                <i class="fas fa-download"></i> 下载图片
+            </button>
+        </div>
+        <div id="heatmap-plot"></div>
+    </div>
+    
+    <div class="mt-3">
+        <a href="{% url 'tools_gene_expression:gene_expression' %}" class="btn btn-secondary">返回</a>
+    </div>
+</div>
+
+<!-- 数据容器 -->
+<div id="heatmap-data" 
+     data-heatmap='{{ heatmap_data|safe }}' 
+     data-genes='{{ gene_ids|safe }}' 
+     data-columns='{{ columns|safe }}'
+     style="display: none;">
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.heatmap-container {
+    position: relative;
+    width: 100%;
+    height: 70vh;
+    border: 1px solid #ddd;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    margin: 20px 0;
+    overflow: hidden;
+}
+
+#heatmap-plot {
+    width: 100%;
+    height: 100%;
+}
+
+.tooltip {
+    position: absolute;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.85);
+    color: white;
+    border-radius: 4px;
+    pointer-events: none;
+    font-size: 12px;
+    max-width: 200px;
+    z-index: 1000;
+}
+
+.heatmap-cell {
+    transition: opacity 0.2s;
+}
+
+.na-cell {
+    fill: #f8f9fa !important;
+    stroke: #dee2e6 !important;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/save-svg-as-png/1.4.17/saveSvgAsPng.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 从数据属性获取数据
+    const heatmapContainer = document.getElementById('heatmap-data');
+    const heatmapData = JSON.parse(heatmapContainer.dataset.heatmap);
+    const geneIds = JSON.parse(heatmapContainer.dataset.genes);
+    const columns = JSON.parse(heatmapContainer.dataset.columns);
+    
+    // 创建工具提示
+    const tooltip = d3.select("body")
+        .append("div")
+        .attr("class", "tooltip")
+        .style("opacity", 0);
+    
+    // 渲染热图
+    renderHeatmap(heatmapData, geneIds, columns);
+    // 设置下载按钮
+    function setupDownloadButton() {
+        document.getElementById('downloadBtn').addEventListener('click', function() {
+            const svgElement = document.querySelector('#heatmap-plot svg');
+            
+            if (svgElement) {
+                saveSvgAsPng(svgElement, 'gene_expression_heatmap.png', {
+                    scale: 2,
+                    backgroundColor: '#ffffff'
+                });
+            } else {
+                alert('热图尚未加载完成，请稍后再试');
+            }
+        });
+    }
+    
+    setupDownloadButton();
+    
+    function renderHeatmap(data, genes, columns) {
+        const container = document.getElementById('heatmap-plot');
+        const width = container.clientWidth;
+        const height = container.clientHeight;
+        
+        // 清除之前的图表
+        d3.select("#heatmap-plot").selectAll("*").remove();
+        
+        // 计算有效数值的范围（排除null值）
+        const validValues = data.flat().filter(value => value !== null);
+        const maxValue = validValues.length > 0 ? d3.max(validValues) : 1;
+        const minValue = validValues.length > 0 ? d3.min(validValues) : 0;
+        
+        const margin = { top: 60, right: 120, bottom: 120, left: 120 };
+        const chartWidth = width - margin.left - margin.right;
+        const chartHeight = height - margin.top - margin.bottom;
+        
+        const svg = d3.select("#heatmap-plot")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height)
+            .append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+        
+        // 创建颜色比例尺 - 使用更合适的颜色映射
+        const colorScale = d3.scaleSequential(d3.interpolateYlOrRd)
+            .domain([minValue, maxValue]);
+        
+        // 创建x和y比例尺 - 去掉间隔
+        const xScale = d3.scaleBand()
+            .domain(columns)
+            .range([0, chartWidth])
+            .padding(0);  // 去掉间隔
+        
+        const yScale = d3.scaleBand()
+            .domain(genes)
+            .range([0, chartHeight])
+            .padding(0);  // 去掉间隔
+        
+        // 添加单元格
+        const cells = svg.selectAll(".heatmap-cell")
+            .data(data.flatMap((row, i) => 
+                row.map((value, j) => ({ value, gene: genes[i], column: columns[j], row: i, col: j }))
+            ))
+            .enter()
+            .append("rect")
+            .attr("class", d => d.value === null ? "heatmap-cell na-cell" : "heatmap-cell")
+            .attr("x", d => xScale(d.column))
+            .attr("y", d => yScale(d.gene))
+            .attr("width", xScale.bandwidth())
+            .attr("height", yScale.bandwidth())
+            .attr("fill", d => d.value === null ? "#f8f9fa" : colorScale(d.value))
+            .attr("stroke", "none")  // 去掉边框
+            .style("opacity", 1)
+            .on("mouseover", function(event, d) {
+                // 所有其他单元格透明度为50%
+                d3.selectAll(".heatmap-cell")
+                    .style("opacity", 0.5);
+                
+                // 当前单元格保持不透明
+                d3.select(this)
+                    .style("opacity", 1);
+                
+                // 显示工具提示
+                tooltip.transition()
+                    .duration(200)
+                    .style("opacity", 0.9);
+                
+                let tooltipContent = `
+                    <div><strong>基因:</strong> ${d.gene}</div>
+                    <div><strong>组织/阶段:</strong> ${d.column}</div>
+                `;
+                
+                if (d.value === null) {
+                    tooltipContent += `<div><strong>表达值:</strong> 无数据 (NA)</div>`;
+                } else {
+                    tooltipContent += `<div><strong>表达值:</strong> ${d.value.toFixed(2)} (log2(FPKM+1))</div>`;
+                }
+                
+                tooltip.html(tooltipContent)
+                    .style("left", (event.pageX + 15) + "px")
+                    .style("top", (event.pageY - 28) + "px");
+            })
+            .on("mouseout", function() {
+                // 恢复所有单元格的不透明度
+                d3.selectAll(".heatmap-cell")
+                    .style("opacity", 1);
+                
+                // 隐藏工具提示
+                tooltip.style("opacity", 0);
+            })
+            .on("mousemove", function(event) {
+                tooltip
+                    .style("left", (event.pageX + 15) + "px")
+                    .style("top", (event.pageY - 28) + "px");
+            });
+        
+        // 添加x轴
+        svg.append("g")
+            .attr("transform", `translate(0,${chartHeight})`)
+            .call(d3.axisBottom(xScale))
+            .selectAll("text")
+            .style("text-anchor", "end")
+            .attr("dx", "-.8em")
+            .attr("dy", ".15em")
+            .attr("transform", "rotate(-45)")
+            .style("font-size", "10px");
+        
+        // 添加y轴
+        svg.append("g")
+            .call(d3.axisLeft(yScale))
+            .selectAll("text")
+            .style("font-size", "10px");
+        
+        // 添加颜色图例（只针对有效数值）
+    if (validValues.length > 0) {
+        const legendWidth = 25;
+        const legendHeight = 150;
+        
+        const legend = svg.append("g")
+            .attr("transform", `translate(${chartWidth + 50}, 0)`);
+        
+        const legendScale = d3.scaleLinear()
+            .domain([minValue, maxValue])
+            .range([legendHeight, 0]);
+        
+        const legendAxis = d3.axisLeft(legendScale)
+            .ticks(5)
+            .tickFormat(d => d.toFixed(1));
+        
+        // 先添加坐标轴（在左侧）
+        legend.append("g")
+            .attr("transform", "translate(0, 0)")
+            .call(legendAxis)
+            .selectAll("text")
+            .style("font-size", "10px")
+            .style("fill", "#333");
+        
+        // 然后添加颜色条（在坐标轴右侧）
+        const defs = svg.append("defs");
+        const gradient = defs.append("linearGradient")
+            .attr("id", "heatmap-gradient")
+            .attr("x1", "0%")
+            .attr("y1", "100%")
+            .attr("x2", "0%")
+            .attr("y2", "0%");
+        
+        gradient.selectAll("stop")
+            .data(d3.range(0, 1.01, 0.1))
+            .enter().append("stop")
+            .attr("offset", d => `${d * 100}%`)
+            .attr("stop-color", d => colorScale(minValue + d * (maxValue - minValue)));
+        
+        legend.append("rect")
+            .attr("width", legendWidth)
+            .attr("height", legendHeight)
+            .attr("x", 10) // 在坐标轴右侧
+            .attr("y", 0)
+            .style("fill", "url(#heatmap-gradient)");
+        
+        // 添加颜色条标题
+        legend.append("text")
+            .attr("x", 30 + legendWidth / 2)
+            .attr("y", -15)
+            .attr("text-anchor", "middle")
+            .style("font-size", "11px")
+            .style("font-weight", "bold")
+            .style("fill", "#333")
+            .text("Expression Level");
+        
+        // 添加单位说明
+        legend.append("text")
+            .attr("x", 30 + legendWidth / 2)
+            .attr("y", legendHeight + 20)
+            .attr("text-anchor", "middle")
+            .style("font-size", "10px")
+            .style("fill", "#666")
+            .text("log₂(FPKM+1)");
+    }
+        
+        
+        // 添加标题
+        svg.append("text")
+            .attr("x", chartWidth / 2)
+            .attr("y", -30)
+            .attr("text-anchor", "middle")
+            .style("font-size", "16px")
+            .style("font-weight", "bold")
+            .text("Gene Expression Heatmap");
+        
+        // 添加x轴标签
+        svg.append("text")
+            .attr("x", chartWidth / 2)
+            .attr("y", chartHeight + 50)
+            .attr("text-anchor", "middle")
+            .style("font-size", "12px")
+           
+        
+        // 添加y轴标签
+        svg.append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", -60)
+            .attr("x", -chartHeight / 2)
+            .attr("text-anchor", "middle")
+            .style("font-size", "12px")
+           
+    }
+    
+    // 窗口调整大小时重绘
+    window.addEventListener('resize', function() {
+        renderHeatmap(heatmapData, geneIds, columns);
+    });
+});
+</script>
+{% endblock %}

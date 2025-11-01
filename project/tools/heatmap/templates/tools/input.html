@@ -1,0 +1,40 @@
+{% extends "home/base.html" %}
+
+{% block content %}
+<h2>基因表达热图生成器</h2>
+{% if error %}
+<div class="alert alert-danger">
+    {{ error }}
+</div>
+{% endif %}
+
+<form method="post">
+    {% csrf_token %}
+    <div class="form-group">
+        <label for="table_data">输入表格数据（制表符分隔）：</label>
+        <textarea class="form-control" id="table_data" name="table_data" rows="10" 
+                  style="font-family: monospace;"></textarea>
+        <small class="form-text text-muted">请确保第一行是表头，数据用制表符分隔</small>
+    </div>
+    <button type="submit" class="btn btn-primary">生成热图</button>
+</form>
+<style>
+    /* 调整文本区域样式 */
+    #table_data {
+        font-family: monospace;
+        font-size: 12px;  /* 减小字体大小 */
+        tab-size: 2;      /* 减小制表符宽度 */
+        white-space: pre; /* 保留所有空白 */
+    }
+    
+    /* 调整表格显示样式 */
+    table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+    td {
+        padding: 2px;
+        font-size: 12px;
+    }
+</style>
+{% endblock %}

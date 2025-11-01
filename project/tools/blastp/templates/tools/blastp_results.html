@@ -1,0 +1,433 @@
+{% extends "home/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>BLASTP Results</h2>
+        <span class="badge bg-info">Executed in {{ execution_time }} seconds</span>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Query Sequence</h5>
+        </div>
+        <div class="card-body">
+            <div class="sequence-box">
+                <pre class="mb-0">{{ query_sequence|truncatechars:200 }}</pre>
+                {% if query_sequence|length > 200 %}
+                <small class="text-muted">(truncated - full sequence used for search)</small>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Chord Diagram</h5>
+        </div>
+        <div class="card-body">
+            <div id="chord-chart"></div>
+        </div>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">BLASTP Hits (E-value ≤ {{ evalue }})</h5>
+            <span class="badge badge-primary">{{ hits|length }} results</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Protein ID</th>
+                            <th class="text-right">E-value</th>
+                            <th class="text-right">Score</th>
+                            <th class="text-right">Identity (%)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for hit in hits %}
+                        <tr data-protein-id="{{ hit.protein_id }}" class="protein-row">
+                            <td><code>{{ hit.protein_id|truncatechars:15 }}</code></td>
+                            <td class="text-right">{{ hit.evalue|floatformat:"2e" }}</td>
+                            <td class="text-right">{{ hit.score|floatformat:0 }}</td>
+                            <td class="text-right">{{ hit.identity }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted">No significant hits found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    {% if local_matches %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Local Database Matches</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Protein ID</th>
+                            <th>Gene ID</th>
+                            <th>Description</th>
+                            <th>Source</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for match in local_matches %}
+                        <tr>
+                            <td><code>{{ match.protein_id }}</code></td>
+                            <td>{{ match.gene_id }}</td>
+                            <td>{{ match.description|truncatechars:50 }}</td>
+                            <td>{{ match.file_source|truncatechars:20 }}</td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'tools_blastp:protein_detail' match.protein_id %}" 
+                                       class="btn btn-outline-info" title="View details">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'tools_blastp:download_sequence' match.protein_id %}" 
+                                       class="btn btn-outline-secondary" title="Download sequence">
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.sequence-box {
+    background: #f8f9fa;
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #eee;
+}
+
+#chord-chart {
+    width: 100%;
+    height: 800px;
+    margin: 0 auto;
+}
+
+#chord-chart svg {
+    display: block !important;
+    overflow: visible !important;
+}
+
+.chord-path {
+    opacity: 0.8;
+    stroke: #000;
+    stroke-width: 0.5px;
+    transition: opacity 0.3s;
+}
+
+.protein-label {
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.tooltip {
+    position: absolute;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.85);
+    color: white;
+    border-radius: 4px;
+    pointer-events: none;
+    font-size: 12px;
+    max-width: 300px;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://d3js.org/d3.v7.min.js"></script>
+
+<script>
+function renderChordDiagram(data) {
+    function createMatrix(data) {
+        const proteins = [data.query, ...data.proteins.map(p => p.id)];
+        const lengths = [data.queryLength, ...data.proteins.map(p => p.length)];
+        const totalLength = lengths.reduce((a, b) => a + b, 0);
+        
+        const matrix = Array(proteins.length).fill()
+            .map(() => Array(proteins.length).fill(0));
+        
+        data.hits.forEach(hit => {
+            const i = proteins.indexOf(hit.query);
+            const j = proteins.indexOf(hit.target);
+            if (i >= 0 && j >= 0) {
+                matrix[i][j] = hit.score;
+                matrix[j][i] = hit.score;
+            }
+        });
+        
+        return { matrix, proteins, lengths, totalLength, hits: data.hits };
+    }
+
+    const processedData = createMatrix(data);
+    const proteinIdentityMap = {};
+    processedData.proteins.forEach(protein => {
+        proteinIdentityMap[protein] = 0;
+    });
+    processedData.hits.forEach(hit => {
+        if (hit.query !== data.query) {
+            proteinIdentityMap[hit.query] += hit.identity;
+        }
+        if (hit.target !== data.query) {
+            proteinIdentityMap[hit.target] += hit.identity;
+        }
+    });
+
+    const proteinCounts = {};
+    processedData.hits.forEach(hit => {
+        if (hit.query !== data.query) {
+            proteinCounts[hit.query] = (proteinCounts[hit.query] || 0) + 1;
+        }
+        if (hit.target !== data.query) {
+            proteinCounts[hit.target] = (proteinCounts[hit.target] || 0) + 1;
+        }
+    });
+    
+    Object.keys(proteinIdentityMap).forEach(protein => {
+        if (protein !== data.query) {
+            const count = proteinCounts[protein] || 1;
+            proteinIdentityMap[protein] = proteinIdentityMap[protein] / count;
+        }
+    });
+    
+    const queryProtein = data.query;
+    const otherProteins = processedData.proteins.filter(p => p !== queryProtein);
+    const sortedOtherProteins = [...otherProteins].sort((a, b) => {
+        return proteinIdentityMap[b] - proteinIdentityMap[a];
+    });
+    const newProteinOrder = [queryProtein, ...sortedOtherProteins];
+    const newOrder = newProteinOrder.map(protein => processedData.proteins.indexOf(protein));
+    
+    const sortedMatrix = newOrder.map(i => 
+        newOrder.map(j => processedData.matrix[i][j])
+    );
+    
+    const sortedLengths = newOrder.map(i => processedData.lengths[i]);
+    const sortedProteinsList = newOrder.map(i => processedData.proteins[i]);
+    
+    processedData.matrix = sortedMatrix;
+    processedData.lengths = sortedLengths;
+    processedData.proteins = sortedProteinsList;
+    
+    const filteredChords = processedData.hits
+        .filter(hit => hit.query === queryProtein)
+        .sort((a, b) => {
+            return sortedProteinsList.indexOf(a.target) - sortedProteinsList.indexOf(b.target);
+        });
+
+    const container = document.getElementById('chord-chart');
+    const width = container.clientWidth;
+    const height = 800;
+    const outerRadius = Math.min(width, height) * 0.5 - 40;
+    const innerRadius = outerRadius - 30;
+
+    const svg = d3.select("#chord-chart")
+        .append("svg")
+        .attr("width", width)
+        .attr("height", height)
+        .append("g")
+        .attr("transform", `translate(${width/2},${height/2})`);
+
+    const chord = d3.chord()
+        .padAngle(0.1)
+        .sortSubgroups(d3.descending);
+
+    const chords = chord(processedData.matrix);
+    const cumulativeAngles = [0];
+    let cumulativeSum = 0;
+    
+    cumulativeSum += processedData.lengths[0];
+    cumulativeAngles.push(cumulativeSum / processedData.totalLength * 2 * Math.PI);
+
+    for (let i = 1; i < processedData.lengths.length; i++) {
+        cumulativeSum += processedData.lengths[i];
+        cumulativeAngles.push(cumulativeSum / processedData.totalLength * 2 * Math.PI);
+    }
+
+    const arc = d3.arc()
+        .innerRadius(innerRadius)
+        .outerRadius(outerRadius)
+        .startAngle(d => cumulativeAngles[d.index]+0.02)
+        .endAngle(d => cumulativeAngles[d.index + 1]-0.02);
+
+    const group = svg.append("g")
+        .selectAll("g")
+        .data(chords.groups)
+        .enter().append("g");
+
+    group.append("path")
+        .attr("class", "chord-path")
+        .style("fill", "#49B7CF")
+        .style("stroke", "#49B7CF")
+        .attr("d", arc)
+        .append("title")
+        .text(d => `${processedData.proteins[d.index]} (Length: ${processedData.lengths[d.index]})`);
+
+    group.append("text")
+            .each(d => {
+                d.angle = (cumulativeAngles[d.index] + cumulativeAngles[d.index + 1]) / 2;
+            })
+            .attr("class", "protein-label")
+            .attr("dy", ".35em")
+            .attr("transform", d => `
+                rotate(${d.angle * 180 / Math.PI - 90})
+                translate(${innerRadius - 5})
+                ${d.angle > Math.PI ? "rotate(180)" : ""}
+            `)
+            .style("text-anchor", d => d.angle > Math.PI ? "end" : null)
+            .text(d => {
+                const maxLength = 4;
+                const proteinName = processedData.proteins[d.index];
+                return proteinName.length > maxLength ? 
+                    proteinName.substring(0, maxLength) + "..." : 
+                    proteinName;
+            });
+
+    const ribbon = d3.ribbon()
+        .radius(innerRadius)
+        .source(d => {
+            if (d.source.index === 0) {
+                return {
+                    ...d.source,
+                    startAngle: cumulativeAngles[d.source.index] + 0.02,
+                    endAngle: cumulativeAngles[d.source.index + 1] - 0.02
+                };
+            } else {
+                const hit = processedData.hits.find(h => 
+                    processedData.proteins[d.source.index] === h.query &&
+                    processedData.proteins[d.target.index] === h.target);
+                
+                if (!hit) return d.source;
+                
+                const length = processedData.lengths[d.source.index];
+                const startRatio = Math.max(0, (hit.qStart - 1) / length);
+                const endRatio = Math.min(1, hit.qEnd / length);
+                const angleRange = cumulativeAngles[d.source.index + 1] - cumulativeAngles[d.source.index] - 0.04;
+                
+                return {
+                    ...d.source,
+                    startAngle: cumulativeAngles[d.source.index] + 0.02 + startRatio * angleRange,
+                    endAngle: cumulativeAngles[d.source.index] + 0.02 + endRatio * angleRange
+                };
+            }
+        })
+        .target(d => {
+            if (d.target.index === 0) {
+                return {
+                    ...d.target,
+                    startAngle: cumulativeAngles[d.target.index] + 0.02,
+                    endAngle: cumulativeAngles[d.target.index + 1] - 0.02
+                };
+            } else {
+                const hit = processedData.hits.find(h => 
+                    processedData.proteins[d.source.index] === h.query &&
+                    processedData.proteins[d.target.index] === h.target);
+                
+                if (!hit) return d.target;
+                
+                const length = processedData.lengths[d.target.index];
+                const startRatio = Math.max(0, (hit.qStart - 1) / length);
+                const endRatio = Math.min(1, hit.qEnd / length);
+                const angleRange = cumulativeAngles[d.target.index + 1] - cumulativeAngles[d.target.index] - 0.04;
+                
+                return {
+                    ...d.target,
+                    startAngle: cumulativeAngles[d.target.index] + 0.02 + startRatio * angleRange,
+                    endAngle: cumulativeAngles[d.target.index] + 0.02 + endRatio * angleRange
+                };
+            }
+        });
+    const colorScale = d3.scaleSequential(d3.interpolateRainbow)
+        .domain([0, filteredChords.length]);
+
+    const tooltip = d3.select("body")
+        .append("div")
+        .attr("class", "tooltip")
+        .style("opacity", 0);
+
+    const ribbonsGroup = svg.append("g")
+        .attr("class", "ribbons");
+
+    filteredChords.forEach((hit, i) => {
+        const sourceIndex = processedData.proteins.indexOf(hit.query);
+        const targetIndex = processedData.proteins.indexOf(hit.target);
+        
+        if (sourceIndex >= 0 && targetIndex >= 0) {
+            const chordData = {
+                source: { index: sourceIndex },
+                target: { index: targetIndex }
+            };
+            
+            ribbonsGroup.append("path")
+                .attr("class", "chord-path")
+                .attr("d", ribbon(chordData))
+                .style("fill", colorScale(i))
+                .style("opacity", 0.8)
+                .on("mouseover", function(event) {
+                    d3.selectAll(".ribbons path")
+                        .style("opacity", 0.1);
+                    d3.select(this)
+                        .style("opacity", 1)
+                        .style("stroke", "#000")
+                        .style("stroke-width", "1px");
+                    
+                    tooltip.transition()
+                        .duration(200)
+                        .style("opacity", 0.9);
+                    
+                    tooltip.html(`
+                        <strong>${hit.query} → ${hit.target}</strong><br>
+                        E-value: ${hit.evalue}<br>
+                        Identity: ${hit.identity}%<br>
+                        Alignment region: ${hit.qStart}-${hit.qEnd}
+                    `)
+                    .style("left", (event.pageX + 15) + "px")
+                    .style("top", (event.pageY - 28) + "px");
+                })
+                .on("mouseout", function() {
+                    d3.selectAll(".ribbons path")
+                        .style("opacity", 0.8)
+                        .style("stroke", "none");
+                    tooltip.style("opacity", 0);
+                })
+                .on("mousemove", function(event) {
+                    tooltip
+                        .style("left", (event.pageX + 15) + "px")
+                        .style("top", (event.pageY - 28) + "px");
+                });
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const chartContainer = document.getElementById('chord-chart');
+    const jsonElement = document.getElementById('json-data');
+    const chordData = JSON.parse(jsonElement.textContent);
+    renderChordDiagram(chordData);
+});
+</script>
+{{ chord_data_json|json_script:"json-data" }}
+{% endblock %}

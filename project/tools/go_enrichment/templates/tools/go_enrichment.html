@@ -1,0 +1,83 @@
+{% extends "home/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">GO富集分析</h2>
+    
+    <form method="post" action="{% url 'tools_go_enrichment:go_enrichment' %}">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="gene_list">输入基因列表 (每行一个基因或空格分隔):</label>
+            <textarea class="form-control" id="gene_list" name="gene_list" rows="10" 
+                      ></textarea>
+            <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="fillExample">
+                        load example
+                    </button>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="p_value">P值阈值:</label>
+                    <input type="number" class="form-control" id="p_value" name="p_value" 
+                           min="0.0001" max="1" step="0.0001" value="0.05" required>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="q_value">Q值阈值:</label>
+                    <input type="number" class="form-control" id="q_value" name="q_value" 
+                           min="0.0001" max="1" step="0.0001" value="0.05" required>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="per_page">每页显示结果数:</label>
+            <select class="form-control" id="per_page" name="per_page">
+                <option value="5">5</option>
+                <option value="10" selected>10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+            </select>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">提交分析</button>
+        
+        {% if error %}
+        <div class="alert alert-danger mt-3">{{ error }}</div>
+        {% endif %}
+    </form>
+    
+    
+</div>
+<script>
+    document.getElementById('fillExample').addEventListener('click', function() {
+        const exampleIDs = `Kirkii_Juiced.00g000010
+Kirkii_Juiced.00g000020
+Kirkii_Juiced.00g000030
+Kirkii_Juiced.00g000040
+Kirkii_Juiced.00g000050
+Kirkii_Juiced.00g000060
+Kirkii_Juiced.00g000070
+Kirkii_Juiced.00g000080
+Kirkii_Juiced.00g000090
+Kirkii_Juiced.00g000100
+Kirkii_Juiced.00g000110
+Kirkii_Juiced.00g000120
+Kirkii_Juiced.00g000130
+Kirkii_Juiced.00g000140
+Kirkii_Juiced.00g000150
+Kirkii_Juiced.00g000160
+Kirkii_Juiced.00g000170
+Kirkii_Juiced.00g000180
+Kirkii_Juiced.00g000190
+Kirkii_Juiced.00g000200
+Kirkii_Juiced.00g000210
+Kirkii_Juiced.00g000220
+Kirkii_Juiced.00g000230`;
+        document.getElementById('gene_list').value = exampleIDs;
+    });
+</script>
+{% endblock %}

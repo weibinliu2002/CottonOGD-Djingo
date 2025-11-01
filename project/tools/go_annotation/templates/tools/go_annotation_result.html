@@ -1,0 +1,114 @@
+{% extends "home/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>GO Annotation Results</h2>
+    
+    {% if chart %}
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">GO Enrichment </h5>
+            <img src="data:image/png;base64,{{ chart }}" alt="GO Enrichment Chart" class="img-fluid">
+        </div>
+    </div>
+    {% endif %}
+
+    
+
+    <form method="post" action="?page=1" class="mb-3">
+        {% csrf_token %}
+        <input type="hidden" name="gene_id" value="{{ searched_ids }}">
+        <div class="form-group row">
+            <label for="per_page" class="col-sm-2 col-form-label">Rows per page:</label>
+            <div class="col-sm-2">
+                <select name="per_page" id="per_page" class="form-control" onchange="this.form.submit()">
+                    <option value="5" {% if per_page == 5 %}selected{% endif %}>5</option>
+                    <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
+                    <option value="20" {% if per_page == 20 %}selected{% endif %}>20</option>
+                    <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+                </select>
+            </div>
+            <div class="col-sm-8 text-right">
+                <span class="text-muted">
+                    Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ page_obj.paginator.count }} results
+                </span>
+            </div>
+        </div>
+    </form>
+
+    {% if page_obj %}
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Chr</th>
+                    <th>Start</th>
+                    <th>End</th>
+                    <th>ID</th>
+                    <th>GO ID</th>
+                    <th>Description</th>
+                    <th>Gene Ontology</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for result in page_obj %}
+                <tr>
+                    <td>{{ result.Chr }}</td>
+                    <td>{{ result.Start }}</td>
+                    <td>{{ result.End }}</td>
+                    <td>{{ result.ID }}</td>
+                    <td>{{ result.GO_ID }}</td>
+                    <td>{{ result.Description }}</td>
+                    <td>{{ result.Gene_Ontology }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1&per_page={{ per_page }}" aria-label="First">
+                        <span aria-hidden="true">&laquo;&laquo;</span>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}&per_page={{ per_page }}" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <li class="page-item active"><a class="page-link" href="?page={{ num }}&per_page={{ per_page }}">{{ num }}</a></li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item"><a class="page-link" href="?page={{ num }}&per_page={{ per_page }}">{{ num }}</a></li>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}&per_page={{ per_page }}" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&per_page={{ per_page }}" aria-label="Last">
+                        <span aria-hidden="true">&raquo;&raquo;</span>
+                    </a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% else %}
+    <div class="alert alert-warning">
+        No results found for the provided gene IDs.
+    </div>
+    {% endif %}
+    
+    <a href="{% url 'tools_go_annotation:go_annotation' %}" class="btn btn-secondary">New Search</a>
+</div>
+{% endblock %}

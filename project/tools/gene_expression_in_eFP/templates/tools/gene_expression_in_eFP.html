@@ -1,0 +1,417 @@
+{% extends "home/base.html" %}
+{% load static %}
+{% block content %}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>gene_expression_in_eFP</title>
+   <style>
+   
+    h1 {
+        color: #2c3e50;
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    .input-group {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 30px;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+    .color-picker-group {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 20px;
+        gap: 20px;
+        flex-wrap: wrap;
+    }
+    .color-picker {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .color-picker label {
+        font-weight: bold;
+        min-width: 60px;
+    }
+    .color-box {
+        width: 30px;
+        height: 30px;
+        border: 2px solid #ddd;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    #gene_id {
+        padding: 12px;
+        border: 2px solid #ddd;
+        border-radius: 5px;
+        font-size: 16px;
+        width: 300px;
+    }
+    #gene_id:focus {
+        border-color: #3498db;
+        outline: none;
+    }
+    button {
+        padding: 12px 24px;
+        background-color: #3498db;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.3s;
+    }
+    button:hover {
+        background-color: #2980b9;
+    }
+    button:disabled {
+        background-color: #bdc3c7;
+        cursor: not-allowed;
+    }
+    .loading {
+        color: #3498db;
+        font-weight: bold;
+        margin-left: 15px;
+    }
+    #result {
+        text-align: center;
+        margin-top: 20px;
+    }
+    /* 修改图片相关样式 */
+    .image-container {
+        position: relative;
+        display: block;
+        text-align: center;
+        width: 100%;
+    }
+    #result-image, #initial-image {
+        max-width: 90%;
+        border: 2px solid #ddd;
+        border-radius: 5px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        display: block;
+        margin: 0 auto;
+    }
+    #initial-image {
+        margin: 0 auto 20px;
+    }
+    #result-image {
+        display: none;
+    }
+    .error {
+        color: #e74c3c;
+        text-align: center;
+        margin-top: 20px;
+        padding: 15px;
+        background-color: #fadbd8;
+        border-radius: 5px;
+        border: 1px solid #e74c3c;
+    }
+    .success {
+        color: #27ae60;
+        text-align: center;
+        margin-top: 20px;
+    }
+    .info-box {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        border-left: 4px solid #3498db;
+        margin-bottom: 20px;
+    }
+    /* 添加提示框样式 */
+    .tooltip {
+        position: absolute;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 8px 12px;
+        border-radius: 4px;
+        font-size: 14px;
+        pointer-events: none;
+        z-index: 1000;
+        max-width: 200px;
+        text-align: center;
+        display: none;
+    }
+    .tooltip strong {
+        color: #ffeb3b;
+    }
+    /* 区域悬停效果 */
+    area:hover {
+        cursor: pointer;
+    }
+    /* 确保地图元素居中 */
+    map {
+        display: block;
+        margin: 0 auto;
+    }
+</style>
+</head>
+<body>
+    <div class="container">
+        <h1>gene_expression_in_eFP</h1>
+
+        <div class="input-group">
+            <input type="text" id="gene_id" placeholder="请输入基因ID，例如: Gh_A01G0001" autocomplete="off">
+            <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="fillExample">
+                        load example
+                    </button>
+            <button onclick="generateImage()" id="generate-btn">生成热图</button>
+            <span class="loading" id="loading" style="display: none;">正在生成热图...</span>
+        </div>
+     
+        <!-- 颜色选择器 -->
+        <div class="color-picker-group">
+            <div class="color-picker">
+                <label for="low-color">低值:</label>
+                <input type="color" id="low-color" value="#0000FF" class="color-input">
+                <div class="color-box" style="background-color: #0000FF;" onclick="document.getElementById('low-color').click()"></div>
+            </div>
+            <div class="color-picker">
+                <label for="mid-color">中值:</label>
+                <input type="color" id="mid-color" value="#00FF00" class="color-input">
+                <div class="color-box" style="background-color: #00FF00;" onclick="document.getElementById('mid-color').click()"></div>
+            </div>
+            <div class="color-picker">
+                <label for="high-color">高值:</label>
+                <input type="color" id="high-color" value="#FF0000" class="color-input">
+                <div class="color-box" style="background-color: #FF0000;" onclick="document.getElementById('high-color').click()"></div>
+            </div>
+        </div>
+        
+        
+         <!-- 初始图片 -->
+        <img id="initial-image" src="{% static 'images/egg.jpg' %}" alt="初始热图模板" onerror="this.style.display='none'">
+        <div id="message" style="display: none;"></div>
+        
+        <div id="result">
+            <div class="image-container">
+                <img id="result-image" src="" alt="热图结果" usemap="#regionMap">
+                <map name="regionMap" id="regionMap"></map>
+                <div id="tooltip" class="tooltip"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    let currentRegionsInfo = [];
+    let currentImageSize = { width: 0, height: 0 };
+    
+    // 初始化颜色选择器事件
+    document.querySelectorAll('.color-input').forEach(input => {
+        input.addEventListener('input', function() {
+            const colorBox = this.nextElementSibling;
+            colorBox.style.backgroundColor = this.value;
+        });
+    });
+    
+    function generateImage() {
+        const geneId = document.getElementById('gene_id').value.trim();
+        if (!geneId) {
+            showMessage('请输入基因ID', 'error');
+            return;
+        }
+        
+        // 获取颜色值
+        const lowColor = document.getElementById('low-color').value;
+        const midColor = document.getElementById('mid-color').value;
+        const highColor = document.getElementById('high-color').value;
+        
+        const btn = document.getElementById('generate-btn');
+        btn.disabled = true;
+        document.getElementById('loading').style.display = 'inline';
+        document.getElementById('result-image').style.display = 'none';
+        hideMessage();
+        
+        const data = {
+            'gene_id': geneId,
+            'low_color': lowColor,
+            'mid_color': midColor,
+            'high_color': highColor
+        };
+        
+        fetch('{% url "tools.gene_expression_in_eFP:generate_thermal_image" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(text => {
+                    throw new Error(`HTTP错误 ${response.status}`);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                currentRegionsInfo = data.regions_info || [];
+                currentImageSize = {
+                    width: data.image_width || 0,
+                    height: data.image_height || 0
+                };
+                
+                document.getElementById('result-image').src = data.image;
+                document.getElementById('result-image').style.display = 'block';
+                document.getElementById('initial-image').style.display = 'none';
+                
+                // 等待图像加载完成后再创建映射
+                document.getElementById('result-image').onload = function() {
+                    createImageMap(currentRegionsInfo, currentImageSize);
+                };
+                
+                
+            } else {
+                showMessage('错误: ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            showMessage('请求失败: ' + error.message, 'error');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            document.getElementById('loading').style.display = 'none';
+        });
+    }
+    
+    function createImageMap(regionsInfo, originalSize) {
+        const mapElement = document.getElementById('regionMap');
+        mapElement.innerHTML = '';
+        
+        const imgElement = document.getElementById('result-image');
+        if (!imgElement.complete || imgElement.naturalWidth === 0) {
+            return;
+        }
+        
+        // 获取当前显示的图像尺寸
+        const displayWidth = imgElement.offsetWidth;
+        const displayHeight = imgElement.offsetHeight;
+        
+        // 计算缩放比例
+        const scaleX = originalSize.width > 0 ? displayWidth / originalSize.width : 1;
+        const scaleY = originalSize.height > 0 ? displayHeight / originalSize.height : 1;
+        
+        regionsInfo.forEach((region) => {
+            if (region.polygon && region.polygon.length >= 3) {
+                const area = document.createElement('area');
+                area.shape = 'poly';
+                
+                // 缩放坐标以适应显示的图像尺寸
+                const scaledCoords = region.polygon.map(point => [
+                    Math.round(point[0] * scaleX),
+                    Math.round(point[1] * scaleY)
+                ]);
+                
+                const coordsString = scaledCoords.map(point => `${point[0]},${point[1]}`).join(',');
+                area.coords = coordsString;
+                
+                area.alt = region.name;
+                area.title = `${region.name}: ${typeof region.value === 'number' ? region.value.toFixed(4) : region.value}`;
+                
+                area.addEventListener('mouseenter', (e) => showTooltip(e, region));
+                area.addEventListener('mousemove', (e) => moveTooltip(e));
+                area.addEventListener('mouseleave', hideTooltip);
+                
+                mapElement.appendChild(area);
+            }
+        });
+    }
+    
+    function showTooltip(event, region) {
+        const tooltip = document.getElementById('tooltip');
+        let valueDisplay;
+        
+        if (typeof region.value === 'number') {
+            valueDisplay = region.value.toFixed(4);
+        } else {
+            valueDisplay = region.value;
+        }
+        
+        tooltip.innerHTML = `
+            <strong>${region.name}</strong><br>
+            表达值: ${valueDisplay}
+        `;
+        tooltip.style.display = 'block';
+        moveTooltip(event);
+    }
+    
+    function moveTooltip(event) {
+        const tooltip = document.getElementById('tooltip');
+        const img = document.getElementById('result-image');
+        
+        if (!img.complete || img.naturalWidth === 0) {
+            return;
+        }
+        
+        const imgRect = img.getBoundingClientRect();
+        const x = event.clientX - imgRect.left + 15;
+        const y = event.clientY - imgRect.top + 15;
+        
+        const maxX = imgRect.width - tooltip.offsetWidth - 10;
+        const maxY = imgRect.height - tooltip.offsetHeight - 10;
+        
+        tooltip.style.left = `${Math.min(x, maxX)}px`;
+        tooltip.style.top = `${Math.min(y, maxY)}px`;
+    }
+    
+    function hideTooltip() {
+        const tooltip = document.getElementById('tooltip');
+        tooltip.style.display = 'none';
+    }
+    
+    function showMessage(text, type) {
+        const messageDiv = document.getElementById('message');
+        messageDiv.textContent = text;
+        messageDiv.className = type;
+        messageDiv.style.display = 'block';
+    }
+    
+    function hideMessage() {
+        document.getElementById('message').style.display = 'none';
+    }
+    
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    // 支持回车键提交
+    document.getElementById('gene_id').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            generateImage();
+        }
+    });
+    
+    // 窗口大小变化时重新计算坐标
+    window.addEventListener('resize', function() {
+        if (currentRegionsInfo.length > 0 && currentImageSize.width > 0) {
+            createImageMap(currentRegionsInfo, currentImageSize);
+        }
+    });
+    document.getElementById('fillExample').addEventListener('click', function() {
+        const exampleIDs = `Ghjin_A01g000040`;
+        document.getElementById('gene_id').value = exampleIDs;
+    });
+    </script>
+</body>
+</html>
+
+{% endblock content %}
