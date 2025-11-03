@@ -35,4 +35,4 @@ urlpatterns = [
     path('tools/', include(('tools.gene_expression.urls', 'tools.gene_expression'), namespace='tools_gene_expression')),
     path('tools/', include(('tools.gene_expression_in_eFP.urls', 'tools.gene_expression_in_eFP'), namespace='tools_gene_expression_in_eFP')),
     path('tools/', include(('tools.jbrowse.urls', 'tools.jbrowse'), namespace='tools_jbrowse')),
-]+ static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+]+ static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) 
