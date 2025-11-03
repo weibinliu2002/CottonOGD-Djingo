@@ -129,7 +129,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'Asia/Shanghai'
+TIME_ZONE = 'UTC'
 
 USE_I18N = True
 
@@ -138,8 +138,8 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
-# 增加静态文件处理的缓冲区大小，以支持大文件加载
-DJANGO_SERVE_STATIC_FILES_WITH_BUFFER_SIZE = 1024 * 1024 * 1024  # 1GB缓冲区
+
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -149,5 +149,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static'),
                      os.path.join(BASE_DIR, 'tools/blastp/static'),
-                     ]
+                     os.path.join(BASE_DIR, 'tools/jbrowse/jbrowse'), ]
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')

@@ -8,11 +8,11 @@
         "adapter": {
           "type": "IndexedFastaAdapter",
           "fastaLocation": {
-            "uri": "/tools/jbrowse/large/Ghirsutum_genome_HAU_v1.0.fasta",
+            "uri": "Ghirsutum_genome_HAU_v1.0.fasta",
             "locationType": "UriLocation"
           },
           "faiLocation": {
-            "uri": "/tools/jbrowse/large/Ghirsutum_genome_HAU_v1.0.fasta.fai",
+            "uri": "Ghirsutum_genome_HAU_v1.0.fasta.fai",
             "locationType": "UriLocation"
           }
         }
@@ -27,17 +27,17 @@
   "tracks": [
     {
       "type": "FeatureTrack",
-      "trackId": "TM-1.gff",
-      "name": "TM-1.gff",
+      "trackId": "Ghirsutum.gff",
+      "name": "Ghirsutum.gff",
       "adapter": {
         "type": "Gff3TabixAdapter",
         "gffGzLocation": {
-          "uri": "/tools/jbrowse/large/TM-1.gff.gz",
+          "uri": "Ghirsutum.gff.gz",
           "locationType": "UriLocation"
         },
         "index": {
           "location": {
-            "uri": "/tools/jbrowse/large/TM-1.gff.gz.tbi",
+            "uri": "Ghirsutum.gff.gz.tbi",
             "locationType": "UriLocation"
           },
           "indexType": "TBI"
