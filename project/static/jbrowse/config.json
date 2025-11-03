@@ -8,11 +8,11 @@
         "adapter": {
           "type": "IndexedFastaAdapter",
           "fastaLocation": {
-            "uri": "/tools/jbrowse/large/Ghirsutum_genome_HAU_v1.0.fasta",
+            "uri": "Ghirsutum_genome_HAU_v1.0.fasta",
             "locationType": "UriLocation"
           },
           "faiLocation": {
-            "uri": "/tools/jbrowse/large/Ghirsutum_genome_HAU_v1.0.fasta.fai",
+            "uri": "Ghirsutum_genome_HAU_v1.0.fasta.fai",
             "locationType": "UriLocation"
           }
         }
