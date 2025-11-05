@@ -42,7 +42,7 @@ jobs:
         ssh-private-key: ${{ secrets.WEB_SSH_KEY }}
     - name: Add SSH known hosts
       run: |
-        ssh-keyscan -H 172.28.226.114 >> ~/.ssh/known_hosts
+        mkdir -p ~/.ssh && ssh-keyscan -H 172.28.226.114 >> ~/.ssh/known_hosts || true
     - name: Deploy to server
       run: |
         # 连接到服务器并执行部署命令
