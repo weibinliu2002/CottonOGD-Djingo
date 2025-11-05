@@ -1,4 +1,4 @@
-name: Django CI
+name: Django CI/CD
 
 on:
   push:
@@ -8,7 +8,6 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 4
@@ -28,3 +27,33 @@ jobs:
     - name: Run Tests
       run: |
         python project/manage.py test
+
+  deploy:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup SSH agent
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+    - name: Add SSH known hosts
+      run: |
+        ssh-keyscan -H 172.28.226.114 >> ~/.ssh/known_hosts
+    - name: Deploy to server
+      run: |
+        # 连接到服务器并执行部署命令
+        ssh web@172.28.226.114 "cd /data/web/CottonOGD/OGD && \
+        git pull origin master && \
+        screen -d OGD && \
+        screen -r OGD && \
+        cd /data/web/CottonOGD/OGD && \
+        source virtual/bin/activate && \
+        pip install -r requirements.txt && \
+        python project/manage.py migrate && \
+        python project/manage.py collectstatic --noinput "
+
+
+
