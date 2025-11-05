@@ -45,8 +45,25 @@ jobs:
         mkdir -p ~/.ssh && ssh-keyscan -H 172.28.226.114 >> ~/.ssh/known_hosts || true
     - name: Deploy to server
       run: |
-        ssh web@172.28.226.114 "cd /data/web/CottonOGD/OGD && \
-        git pull origin master && screen -d OGD && screen -r OGD -X quit || true && cd /data/web/CottonOGD/OGD && source virtual/bin/activate &&  pip install -r requirements.txt && python project/manage.py runserver 0.0.0.0:8000 "
+        # 连接到服务器并执行部署命令，拆分为多行以提高可读性
+        ssh web@172.28.226.114 "
+        # 切换到项目目录
+        cd /data/web/CottonOGD/OGD && \
+        # 拉取最新代码
+        git pull origin master && \
+        # 分离现有的screen会话
+        screen -d OGD && \
+        # 停止现有会话（如果存在）
+        screen -r OGD -X quit || true && \
+        # 确保在正确的目录中
+        cd /data/web/CottonOGD/OGD && \
+        # 激活虚拟环境
+        source virtual/bin/activate && \
+        # 安装依赖
+        pip install -r requirements.txt && \
+        # 启动Django服务器
+        python project/manage.py runserver 0.0.0.0:8000
+        "
 
 
 
