@@ -53,6 +53,7 @@ jobs:
       continue-on-error: true
       run: |
         # 连接到服务器并执行部署命令
+        #
         echo "尝试连接到服务器172.28.226.114..."
         ping -c 3 172.28.226.114 || { echo "警告：无法连接到服务器172.28.226.114"; exit 1; }
         ssh -o ConnectTimeout=30 web@172.28.226.114 "
