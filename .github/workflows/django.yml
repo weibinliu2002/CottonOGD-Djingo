@@ -26,6 +26,7 @@ jobs:
         #pip install -r requirements.txt
         pip install Django
         pip install pymysql
+        pip install django-debug-toolbar
     - name: Run Tests
       run: |
         python project/manage.py test
@@ -53,6 +54,7 @@ jobs:
         screen -d OGD && \
         screen -r OGD && \
         cd /data/web/CottonOGD/OGD && \
+        pip install -r requirements.txt && \
         source virtual/bin/activate && \
         pip install -r requirements.txt && \
         python project/manage.py migrate && \
