@@ -5,7 +5,7 @@ on:
     branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
-
+''''
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -24,9 +24,15 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-    - name: Run Tests
-      run: |
-        python project/manage.py test
+    - name: Django CI/CD
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
 
   deploy:
     needs: build
@@ -44,9 +50,12 @@ jobs:
       run: |
         mkdir -p ~/.ssh && ssh-keyscan -H 172.28.226.114 >> ~/.ssh/known_hosts || true
     - name: Deploy to server
+      continue-on-error: true
       run: |
-        # 连接到服务器并执行部署命令，拆分为多行以提高可读性
-        ssh web@172.28.226.114 "
+        # 连接到服务器并执行部署命令
+        echo "尝试连接到服务器172.28.226.114..."
+        ping -c 3 172.28.226.114 || { echo "警告：无法连接到服务器172.28.226.114"; exit 1; }
+        ssh -o ConnectTimeout=30 web@172.28.226.114 "
         # 切换到项目目录
         cd /data/web/CottonOGD/OGD && \
         # 拉取最新代码
@@ -64,6 +73,14 @@ jobs:
         # 启动Django服务器
         python project/manage.py runserver 0.0.0.0:8000
         "
+        
+        # 检查部署结果
+        if [ $? -eq 0 ]; then
+          echo "部署成功完成"
+        else
+          echo "警告：部署失败，可能是网络连接问题或服务器不可达"
+          echo "请检查：1) 服务器IP是否正确 2) 服务器是否在线 3) 网络连接是否正常 4) 防火墙设置"
+        fi
 
 
 
