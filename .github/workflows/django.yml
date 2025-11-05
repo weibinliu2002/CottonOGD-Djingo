@@ -26,6 +26,7 @@ jobs:
         #pip install -r requirements.txt
         pip install Django
         pip install mysqlclient
+        pip install pymysql
         pip install django-debug-toolbar
     - name: Run Tests
       run: |
