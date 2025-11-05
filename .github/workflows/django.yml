@@ -46,13 +46,7 @@ jobs:
     - name: Deploy to server
       run: |
         ssh web@172.28.226.114 "cd /data/web/CottonOGD/OGD && \
-        git pull origin master && \
-        screen -d OGD && \
-        screen -r OGD -X quit || true && \
-        cd /data/web/CottonOGD/OGD && \  
-        source virtual/bin/activate && \
-        pip install -r requirements.txt && \
-        python project/manage.py runserver 0.0.0.0:8000 "
+        git pull origin master && screen -d OGD && screen -r OGD -X quit || true && cd /data/web/CottonOGD/OGD && source virtual/bin/activate &&  pip install -r requirements.txt && python project/manage.py runserver 0.0.0.0:8000 "
 
 
 
