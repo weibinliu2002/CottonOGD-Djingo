@@ -1,40 +1,22 @@
 from django.http import HttpResponse, StreamingHttpResponse
 from django.templatetags.static import static
 import os
+from django.shortcuts import render
 from django.conf import settings
 
 # Create your views here.
 def index(request):
-    # 直接使用/static/jbrowse/index.html路径
-    # 确保index.html加载时能找到同目录下的config.json
-    jbrowse_index_url = '/static/jbrowse/index.html'
+    # 我们已经在settings.py中添加了tools/templates目录到模板搜索路径
+    # 现在我们可以使用正确的模板路径进行渲染
+    # 确保模板路径为'tools/jbrowse/index.html'
+    context = {
+        'jbrowse_url': '/static/jbrowse/index.html'
+    }
     
-    # 直接返回包含iframe的HTML响应
-    html_content = '''
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>JBrowse Genome Browser</title>
-        <style>
-            body {
-                margin: 0;
-                padding: 0;
-                height: 100vh;
-                overflow: hidden;
-            }
-            iframe {
-                width: 100%;
-                height: 800px; /* 设置固定高度，确保内容可见 */
-                border: none;
-            }
-        </style>
-    </head>
-    <body>
-        <iframe src="''' + jbrowse_index_url + '''"></iframe>
-    </body>
-    </html>
-    '''
-    return HttpResponse(html_content)
+    # 尝试使用render函数渲染模板
+    # 请注意：您需要确保在tools/templates目录下创建了正确的目录结构和模板文件
+    # 模板文件应该位于：tools/templates/tools/jbrowse/index.html
+    return render(request, 'index.html', context)
 
 
 def serve_large_file(request, filename):

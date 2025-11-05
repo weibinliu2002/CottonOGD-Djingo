@@ -19,11 +19,13 @@ from django.urls import path, include
 from home.views import HomeView
 from django.conf.urls.static import static
 from django.conf import settings
-
+from debug_toolbar.toolbar import debug_toolbar_urls
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('home.urls')),
+    path('Browse/', include(('Browse.urls', 'Browse'), namespace='browse')),
+    path('submit/', include(('submit.urls', 'submit'), namespace='submit')),
     path('tools/', include(('tools.urls', 'tools'), namespace='tools')),
     path('tools/', include(('tools.id_search.urls', 'tools.id_search'), namespace='tools_id_search')),
     path('tools/', include(('tools.blastp.urls', 'tools.blastp'), namespace='tools_blastp')),
@@ -35,4 +37,4 @@ urlpatterns = [
     path('tools/', include(('tools.gene_expression.urls', 'tools.gene_expression'), namespace='tools_gene_expression')),
     path('tools/', include(('tools.gene_expression_in_eFP.urls', 'tools.gene_expression_in_eFP'), namespace='tools_gene_expression_in_eFP')),
     path('tools/', include(('tools.jbrowse.urls', 'tools.jbrowse'), namespace='tools_jbrowse')),
-]+ static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) 
+]+ static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) + debug_toolbar_urls()

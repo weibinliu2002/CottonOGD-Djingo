@@ -39,6 +39,11 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'home.apps.HomeConfig',
+    'submit.apps.SubmitConfig',
+    'Browse.apps.BrowseConfig',
+    'Browse.Genome.apps.GenomeConfig',
+    'Browse.Species.apps.SpeciesConfig',
+    'Browse.TF.apps.TfConfig',
     'tools.kegg_annotation',
     'tools.go_annotation',
     'tools.go_enrichment',
@@ -48,9 +53,11 @@ INSTALLED_APPS = [
     'tools.heatmap',
     'tools.gene_expression',
     'tools.gene_expression_in_eFP.apps.ThermalMapConfig',
+    'debug_toolbar',
 ]
 
 MIDDLEWARE = [
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -66,7 +73,9 @@ TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [
+            os.path.join(BASE_DIR, 'home/templates'),
             os.path.join(BASE_DIR, 'tools/templates'),
+            os.path.join(BASE_DIR, 'tools/jbrowse/templates'),
         ],
         'APP_DIRS': True,
         'OPTIONS': {
@@ -127,7 +136,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'zh-hans'
 
 TIME_ZONE = 'Asia/Shanghai'
 

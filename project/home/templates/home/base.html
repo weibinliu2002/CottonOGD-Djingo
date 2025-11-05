@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}棉花基因功能网站{% endblock %}</title>
+    <title>{% block title %}CottonOGD{% endblock %}</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="icon" type="image/png" href="{% static 'home/images/favicon.png' %}">
     <link rel="shortcut icon" type="image/png" href="{% static 'home/images/favicon.png' %}">
@@ -13,7 +13,7 @@
        
         /* 自定义浅绿色导航栏 */
         .custom-navbar {
-            background-color: #39b62b;
+            background-color: #6f9fc7;
             border-bottom: 1px solid #c3e6cb;
         }
         
@@ -139,7 +139,7 @@
         <div class="container">
             <a class="navbar-brand" href="{% url 'home' %}">
                 <img src="{% static 'home/images/favicon.png' %}" alt="Logo" width="30" height="30" class="d-inline-block align-top me-2">
-                棉花基因
+                CottonOGD Website
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -148,6 +148,14 @@
                 <ul class="navbar-nav">
                     <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}" href="{% url 'home' %}">Home</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="BrowseDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Browse</a>
+                        <ul class="dropdown-menu" aria-labelledby="BrowseDropdown">
+                            <li><a class="dropdown-item" href="{% url 'browse:browse_genome' %}">Genome</a></li>
+                            <li><a class="dropdown-item" href="{% url 'browse:browse_species' %}">Species</a></li>
+                            <li><a class="dropdown-item" href="{% url 'browse:browse_tf' %}">TF</a></li>
+                        </ul>
                     </li>
                     <li class="nav-item dropdown">
 
@@ -171,10 +179,16 @@
                         </ul>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'about' %}active{% endif %}" href="#">About</a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'about' %}active{% endif %}" href="#">Download</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'download' %}active{% endif %}" href="#">Download</a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'download' %}active{% endif %}" href="#">About</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'contact' %}active{% endif %}" href="#">Contact us</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'contact' %}active{% endif %}" href="{% url 'submit:submit' %}">Submit</a>
                     </li>
                 </ul>
             </div>
@@ -212,7 +226,7 @@
         <!-- 页脚 -->
         <footer>
             <div class="container">
-                <p class="mb-0">棉花基因功能网站 &copy; 2025</p>
+                <p class="mb-0">CottonOGD Website &copy; 2025</p>
             </div>
         </footer>
     </div>
