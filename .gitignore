@@ -1,0 +1,12 @@
+data/
+project.zip
+project/static/jbrowse/Ghirsutum_genome_HAU_v1.0.fasta*
+project/static/jbrowse/TM-1.gff.gz*
+project/static/jbrowse/test_data/*
+static/jbrowse/Ghirsutum_genome_HAU_v1.0.fasta*
+project/static/jbrowse/Ghirsutum_genome_HAU_v1.0.fasta*
+*.sqlite3
+__pycache__/
+*.pyc
+*.log
+virtual/
