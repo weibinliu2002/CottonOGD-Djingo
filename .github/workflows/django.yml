@@ -54,6 +54,7 @@ jobs:
         screen -d OGD && \
         screen -r OGD && \
         cd /data/web/CottonOGD/OGD && \
+        pip install -r requirements.txt && \
         source virtual/bin/activate && \
         pip install -r requirements.txt && \
         python project/manage.py migrate && \
