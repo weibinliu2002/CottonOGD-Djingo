@@ -45,17 +45,14 @@ jobs:
         mkdir -p ~/.ssh && ssh-keyscan -H 172.28.226.114 >> ~/.ssh/known_hosts || true
     - name: Deploy to server
       run: |
-        # 连接到服务器并执行部署命令
         ssh web@172.28.226.114 "cd /data/web/CottonOGD/OGD && \
         git pull origin master && \
         screen -d OGD && \
         screen -r OGD -X quit || true && \
-        cd /data/web/CottonOGD/OGD && \
-        pip install -r requirements.txt && \
+        cd /data/web/CottonOGD/OGD && \  
         source virtual/bin/activate && \
         pip install -r requirements.txt && \
-        python project/manage.py migrate && \
-        python project/manage.py collectstatic --noinput "
+        python project/manage.py runserver 0.0.0.0:8000 "
 
 
 
