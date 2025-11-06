@@ -3,10 +3,9 @@
     <h2>Species Browser</h2>
     <h3>Species</h3>
     <ul>
-        <li>Cotton Species</li>
-        <li>Oryza sativa</li>
-        <li>Populus trichocarpa</li>
-        <li>Gossypium herbaceum</li>
+        {% for species in species_list %}
+        <li><a href="{{ species }}">{{ species }}</a></li>
+        {% endfor %}   
     </ul>
     <p>Interactive species visualization tool</p>
 {% endblock %}
