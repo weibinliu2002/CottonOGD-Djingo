@@ -1,7 +1,6 @@
 from django.urls import path
-from Browse.Species import browse_species
+from . import views
 
 urlpatterns = [
-    path('.', browse_species),
+    path('', views.browse_species, name='browse_species'),
 ]
-

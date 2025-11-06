@@ -1,5 +1,9 @@
 {% extends "home/base.html" %}
 {% block content %}
     <h2>Genome Browser</h2>
-    <p>Interactive genome visualization tool</p>
+    <ul>
+        {% for genome in genome_list %}
+        <li><a href="{{ genome }}">{{ genome }}</a></li>
+        {% endfor %}
+    </ul>
 {% endblock %}
