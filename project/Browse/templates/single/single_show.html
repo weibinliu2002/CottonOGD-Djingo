@@ -1,0 +1,26 @@
+{% extends "home/base.html" %}
+{% block content %}
+    <h3>{{ species }}</h3>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>arguement</th>   
+                <th>value</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if table_data %}
+                {% for item in table_data %}
+                <tr>
+                    <td>{{ item.argument }}</td>
+                    <td>{{ item.value }}</td>   
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="2">暂无数据</td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+{% endblock %}
