@@ -1,9 +1,61 @@
 {% extends "home/base.html" %}
 {% block content %}
     <h2>Genome Browser</h2>
-    <ul>
-        {% for genome in genome_list %}
-        <li><a href="{{ genome }}">{{ genome }}</a></li>
+    
+    <style>
+        .toggle-list .toggle-btn {
+            cursor: pointer;
+            user-select: none;
+            display: inline-block;
+            padding: 2px 5px;
+        }
+        .toggle-list .toggle-btn::before {
+            content: '▶';
+            font-size: 10px;
+            margin-right: 5px;
+            transition: transform 0.3s;
+        }
+        .toggle-list .toggle-btn:not(.collapsed)::before {
+            transform: rotate(90deg);
+        }
+        .toggle-list .nested {
+            overflow: hidden;
+            max-height: 1000px;
+            transition: max-height 0.3s ease-out;
+        }
+        .toggle-list .nested.collapsed {
+            max-height: 0;
+        }
+        .toggle-list ul {
+            list-style-type: none;
+            padding-left: 20px;
+        }
+    </style>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggleButtons = document.querySelectorAll('.toggle-btn');
+            
+            toggleButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    this.classList.toggle('collapsed');
+                    const nestedList = this.nextElementSibling;
+                    nestedList.classList.toggle('collapsed');
+                });
+            });
+        });
+    </script>
+    
+    <ul class="toggle-list">
+        {% for category, sub_genome_list in genome_categories %}
+        <li>
+            <span class="toggle-btn collapsed">{{ category }}</span>
+            <ul class="nested collapsed">
+                {% for sub_genome in sub_genome_list %}
+                <li><a href="{% url 'Browse:single_show' species=sub_genome %}">{{ sub_genome }}</a></li>
+                {% endfor %}
+            </ul>
+        </li>
         {% endfor %}
     </ul>
 {% endblock %}

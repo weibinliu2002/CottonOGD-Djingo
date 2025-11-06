@@ -7,6 +7,13 @@ static/jbrowse/Ghirsutum_genome_HAU_v1.0.fasta*
 project/static/jbrowse/Ghirsutum_genome_HAU_v1.0.fasta*
 *.sqlite3
 __pycache__/
+.gitignore
 *.pyc
 *.log
-virtual/
+virtual/*
+*/*pyc
+*/*/*pyc
+*/*/*/*pyc
+*/*/*/*/*pyc
+*/*/*/*/*/*pyc
+*/*/*/*/*/*/*pyc
