@@ -20,7 +20,10 @@ from home.views import HomeView
 from django.conf.urls.static import static
 from django.conf import settings
 from debug_toolbar.toolbar import debug_toolbar_urls
+from django.http import HttpResponse
 
+def chrome_devtools_config(request):
+    return HttpResponse(status=204)  # 返回空内容的成功响应
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('home.urls')),
@@ -37,4 +40,5 @@ urlpatterns = [
     path('tools/', include(('tools.gene_expression.urls', 'tools.gene_expression'), namespace='tools_gene_expression')),
     path('tools/', include(('tools.gene_expression_in_eFP.urls', 'tools.gene_expression_in_eFP'), namespace='tools_gene_expression_in_eFP')),
     path('tools/', include(('tools.jbrowse.urls', 'tools.jbrowse'), namespace='tools_jbrowse')),
+    path('.well-known/appspecific/com.chrome.devtools.json', chrome_devtools_config),
 ]+ static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) + debug_toolbar_urls()
