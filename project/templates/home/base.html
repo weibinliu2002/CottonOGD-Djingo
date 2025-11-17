@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}  
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CottonOGD{% endblock %}</title>
+    <!-- Font Awesome via CDN -->
+    <!-- 保留本地链接作为备份 -->
+    <link href="{% static 'css/all.min.css' %}" rel="stylesheet">
+    <link rel="icon" type="image/png" href="{% static 'home/images/favicon.png' %}">
+    <link rel="shortcut icon" type="image/png" href="{% static 'home/images/favicon.png' %}">
+    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet"> 
+   <link href="{% static 'css/base_site.css' %}" rel="stylesheet">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- 顶部图片展示区 -->
+    <div class="image-row top-row">
+        <div class="image-tile">
+            <img src="{% static 'home/images/c1.jpg' %}" alt="图片1">
+        </div>
+        <div class="image-tile">
+            <img src="{% static 'home/images/c2.jpg' %}" alt="图片2">
+        </div>
+        <div class="image-tile">
+            <img src="{% static 'home/images/c3.jpg' %}" alt="图片3">
+        </div>
+        <div class="image-tile">
+            <img src="{% static 'home/images/c4.jpg' %}" alt="图片4">
+        </div>
+        <div class="image-tile">
+            <img src="{% static 'home/images/c5.jpg' %}" alt="图片5">
+        </div>
+        <div class="image-tile">
+            <img src="{% static 'home/images/c6.jpg' %}" alt="图片6">
+        </div>
+        <div class="image-tile">
+            <img src="{% static 'home/images/c7.jpg' %}" alt="图片7">
+        </div>
+    </div>  
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg custom-navbar">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'home' %}">
+                <img src="{% static 'home/images/favicon.png' %}" alt="Logo" width="30" height="30" class="d-inline-block align-top me-2">
+                CottonOGD Website
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}" href="{% url 'home' %}">Home</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="BrowseDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Browse</a>
+                        <ul class="dropdown-menu" aria-labelledby="BrowseDropdown">
+                            <li><a class="dropdown-item" href="{% url 'browse:browse_genome' %}">Genome</a></li>
+                            <li><a class="dropdown-item" href="{% url 'browse:browse_species' %}">Species</a></li>
+                            <li><a class="dropdown-item" href="{% url 'browse:browse_tf' %}">TF</a></li>
+                        </ul>
+                        
+                    </li>
+                     <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'jbrowse' %}active{% endif %}" href="{% url 'Jbrowse:jbrowse' %}">Jbrowse</a>
+                    </li>
+                    
+                    <li class="nav-item dropdown">
+
+                        <a class="nav-link dropdown-toggle" href="#" id="toolsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Tools
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="toolsDropdown">
+                            <li><a class="dropdown-item" href="{% url 'tools_id_search:id_search' %}">Search by GeneID</a></li>
+                            <li><a class="dropdown-item" href="{% url 'tools_blastp:blastp' %}">blastp</a></li>
+                            <li><a class="dropdown-item" href="{% url 'tools_go_enrichment:go_enrichment' %}">go_enrichment</a></li>
+                            <li><a class="dropdown-item" href="{% url 'tools_go_annotation:go_annotation' %}">go_annotation</a></li>
+                            <li><a class="dropdown-item" href="{% url 'tools_kegg_annotation:kegg_annotation' %}">kegg_annotation</a></li>
+                            <li><a class="dropdown-item" href="{% url 'tools_kegg_enrichment:kegg_enrichment' %}">kegg_enrichment</a></li>
+                            <li><a class="dropdown-item" href="{% url 'tools_heatmap:heatmap' %}">heatmap</a></li>
+                            <li><a class="dropdown-item" href="{% url 'tools_gene_expression:gene_expression' %}">gene_expression</a></li>
+                            <li><a class="dropdown-item" href="{% url 'tools_gene_expression_in_eFP:gene_expression_in_eFP' %}">gene_expression_in_eFP</a></li>
+                            
+                       
+                            
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'about' %}active{% endif %}" href="#">Download</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'download' %}active{% endif %}" href="#">About</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'contact' %}active{% endif %}" href="#">Contact us</a>
+                    </li>
+                    <!--
+                        <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'contact' %}active{% endif %}" href="{% url 'submit:submit' %}">Submit</a>
+                    </li>
+                -->
+                </ul>
+            </div>
+        </div>
+    </nav>  
+    <!-- 主要内容 -->
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>  
+    <!-- 底部区域 -->
+    <div class="footer-section">
+        <div class="image-row bottom-row">            
+            <div class="image-tile">
+                <img src="{% static 'home/images/c8.jpg' %}" alt="底部图片8">
+            </div>
+            <div class="image-tile">
+                <img src="{% static 'home/images/c9.jpg' %}" alt="底部图片9">
+            </div>
+            <div class="image-tile">
+                <img src="{% static 'home/images/c10.jpg' %}" alt="底部图片10">
+            </div>
+            <div class="image-tile">
+                <img src="{% static 'home/images/c11.jpg' %}" alt="底部图片11">
+            </div>
+            <div class="image-tile">
+                <img src="{% static 'home/images/c12.jpg' %}" alt="底部图片12">
+            </div>
+            <div class="image-tile">
+                <img src="{% static 'home/images/c13.jpg' %}" alt="底部图片13">
+            </div>
+            <div class="image-tile">
+                <img src="{% static 'home/images/c14.jpg' %}" alt="底部图片14">
+            </div>
+        </div>       
+        <!-- 页脚 -->
+        <footer>
+            <div class="container">
+                <p class="mb-0">CottonOGD Website &copy; 2025</p>
+            </div>
+        </footer>
+    </div>
+    {% block extra_js %}{% endblock %}
+    
+    <script src="{% static 'js/jquery-3.6.0.min.js' %}"></script>
+    <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+</body>
+</html>

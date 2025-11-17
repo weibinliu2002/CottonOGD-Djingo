@@ -1,0 +1,33 @@
+{% extends "home/base.html" %}
+{% block content %}
+    <h2>TF Browser</h2>
+    <p>Interactive TF visualization tool</p>
+    <ul>
+        <table class='tf_info'>
+            {% if tf_genomes %}
+                {% for genome, tf_list in tf_genomes %}
+                    {% if forloop.counter0|divisibleby:5 %}
+                        <tr {% if forloop.counter0|divisibleby:10 %}class="alt"{% endif %}>
+                    {% endif %}
+                    <td style='width: 16%'><a href='family_ext.php?fam={{ family.name }}'>{{ family.name }}</a>&nbsp;({{ family.count }})</td>
+                    {% if forloop.counter|divisibleby:5 or forloop.last %}
+                        {% if forloop.last %}
+                            {% with remaining=5|add:forloop.counter|divisibleby:5|yesno:"0,1,2,3,4"|first %}
+                                {% if remaining > 0 %}
+                                    {% for i in "x"|rjust:remaining %}
+                                        <td style="width: 25"></td>
+                                    {% endfor %}
+                                {% endif %}
+                            {% endwith %}
+                        {% endif %}
+                        </tr>
+                    {% endif %}
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="5">暂无TF信息</td>
+                </tr>
+            {% endif %}
+        </table>
+    </ul>
+{% endblock %}

@@ -1,0 +1,127 @@
+{% extends 'home/base.html' %}
+{% load static %}
+
+{% block content %}
+
+<script src="{% static 'js/id_search_summary.js' %}"></script>
+<div class="table-responsive">
+        <table class="table table-bordered">
+            <thead>
+                <tr class="text-center">
+                    <th style="width: 10%">Input ID</th>
+                    <th style="width: 10%">Query ID</th>
+                    <th style="width: 10%">Species</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for result in results %}
+           
+                <tr>
+                    <td class="text-center align-middle" style="width: 10%">
+                        {{ result.original_id }}
+                    </td>
+                    <td class="text-center align-middle" style="width: 10%">
+                        <a href="{% url 'id_search:id_search_results' %}?id={{ result.original_id }}">{{ result.IDs }}</a>
+                    </td>
+                    <td class="text-center align-middle" style="width: 10%">
+                        {{ result.species }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+         <!-- 序列展示区域 - 按序列类型分组 -->
+    <div class="mt-6">
+        {% if has_sequences %}
+            <!-- 基因组序列部分 -->
+            <div class="mb-5">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4>Genomic Sequences</h4>
+                    <div>
+                        <button class="btn btn-sm btn-primary me-2" onclick="downloadAllFasta('genomic')">Download All</button>
+                        <button class="btn btn-sm btn-secondary" onclick="copyAllFasta('genomic')">Copy All</button>
+                    </div>
+                </div>
+                {% for result in results %}
+                    {% if result.gene_seq and result.gene_seq != 'N/A' %}
+                    <div class="mb-3 p-2 border rounded">
+                        <div class="mb-2">
+                            <strong>>{{ result.IDs }} genomic</strong>
+                        </div>
+                        <div class="bg-light p-2 rounded overflow-y-auto" style="max-height: 100px; white-space: normal; word-break: break-all; text-align: left;">{{ result.gene_seq }}</div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+            <!-- mRNA序列部分 -->
+            <div class="mb-5">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4>mRNA Sequences</h4>
+                    <div>
+                        <button class="btn btn-sm btn-primary me-2" onclick="downloadAllFasta('mrna')">Download All</button>
+                        <button class="btn btn-sm btn-secondary" onclick="copyAllFasta('mrna')">Copy All</button>
+                    </div>
+                </div>
+                {% for result in results %}
+                    {% if result.mrna_seq and result.mrna_seq != 'N/A' %}
+                    <div class="mb-3 p-2 border rounded">
+                        <div class="mb-2">
+                            <strong>>{{ result.IDs }} mrna</strong>
+                        </div>
+                        <div class="bg-light p-2 rounded overflow-y-auto" style="max-height: 100px; white-space: normal; word-break: break-all; text-align: left;">{{ result.mrna_seq }}</div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+            <!-- CDS序列部分 -->
+            <div class="mb-5">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4>CDS Sequences</h4>
+                    <div>
+                        <button class="btn btn-sm btn-primary me-2" onclick="downloadAllFasta('cds')">Download All</button>
+                        <button class="btn btn-sm btn-secondary" onclick="copyAllFasta('cds')">Copy All</button>
+                    </div>
+                </div>
+                {% for result in results %}
+                    {% if result.cds_seq and result.cds_seq != 'N/A' and result.cds_seq != '未找到CDS序列' %}
+                    <div class="mb-3 p-2 border rounded">
+                        <div class="mb-2">
+                            <strong>>{{ result.IDs }} cds</strong>
+                        </div>
+                        <div class="bg-light p-2 rounded overflow-y-auto" style="max-height: 100px; white-space: normal; word-break: break-all; text-align: left;">{{ result.cds_seq }}</div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+            <!-- 蛋白序列部分 -->
+            <div class="mb-5">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4>Protein Sequences</h4>
+                    <div>
+                        <button class="btn btn-sm btn-primary me-2" onclick="downloadAllFasta('protein')">Download All</button>
+                        <button class="btn btn-sm btn-secondary" onclick="copyAllFasta('protein')">Copy All</button>
+                    </div>
+                </div>
+                {% for result in results %}
+                    {% if result.protein_seq and result.protein_seq != 'N/A' and result.protein_seq != '未找到蛋白序列' %}
+                    <div class="mb-3 p-2 border rounded">
+                        <div class="mb-2">
+                            <strong>>{{ result.IDs }} protein</strong>
+                        </div>
+                        <div class="bg-light p-2 rounded overflow-y-auto" style="max-height: 100px; white-space: normal; word-break: break-all; text-align: left;">{{ result.protein_seq }}</div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+        {% else %}
+            <p class="text-muted">No gene sequences available.</p>
+        {% endif %}
+    </div>
+    </div>
+
+<!-- JavaScript functions are now in external file: static/js/id_search_summary.js -->
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends 'home/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Search by GeneID</h1>
+    
+    <div class="card">
+        <div class="card-body"> 
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label for="query_ids" class="form-label">Input Gene IDs</label>
+                    <textarea class="form-control" id="query_ids" name="query_ids" rows="5"></textarea>
+                    <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="fillExample">
+                        load example
+                    </button>
+                   
+                   
+                    <small class="text-muted d-block mt-1">
+                        one gene ID per line
+                    </small>
+                </div>
+                <br>
+                <div class="mb-3">
+                    <label class="form-label">select file</label>
+                    <input type="file" class="form-control" name="gene_file" id="gene_file">
+                    <div class="form-text">support .txt or .csv file</div>
+                </div>
+                <br>
+                <label for="Genome" class="form-label">Select Genome</label>
+                 <select class="form-select mt-2" id="Genome" name="Genome" data-bs-popper="bottom">
+                     
+                        <option value="" disabled selected>Please select a genome</option>
+                        {% for category in genome_categories %}
+                    
+                             <option value="{{ category }}">{{ category }}</option>
+                         
+                        {% endfor %}
+                    </select>
+                    <br>
+                <div class="d-flex gap-3">
+                    <button type="submit" class="btn btn-primary">submit</button>
+                    <button type="reset" class="btn btn-secondary">reset</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* 自定义样式 */
+    textarea {
+        min-height: 150px;
+    }
+    .form-text {
+        color: #6c757d;
+        font-size: 0.9em;
+    }
+</style>
+
+<script>
+    document.getElementById('fillExample').addEventListener('click', function() {
+        const exampleIDs = "Ghir_A01G000040.1\nGhir_A01G000060\nGhir_A01G000290.1";
+        document.getElementById('query_ids').value = exampleIDs;
+    });
+</script>
+{% endblock %}

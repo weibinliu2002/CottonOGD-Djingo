@@ -8,11 +8,11 @@
         "adapter": {
           "type": "IndexedFastaAdapter",
           "fastaLocation": {
-            "uri": "/tools/jbrowse/large/Ghirsutum_genome_HAU_v1.0.fasta",
+            "uri": "/Jbrowse/large/Ghirsutum_genome_HAU_v1.0.fasta",
             "locationType": "UriLocation"
           },
           "faiLocation": {
-            "uri": "/tools/jbrowse/large/Ghirsutum_genome_HAU_v1.0.fasta.fai",
+            "uri": "/Jbrowse/large/Ghirsutum_genome_HAU_v1.0.fasta.fai",
             "locationType": "UriLocation"
           }
         }
@@ -21,23 +21,30 @@
   ],
   "configuration": {},
   "connections": [],
-  "defaultSession": {
-    "name": "New Session"
-  },
+  "defaultSession": {},
   "tracks": [
     {
       "type": "FeatureTrack",
       "trackId": "TM-1.gff",
       "name": "TM-1.gff",
+      "maxFeatureScreenDensity": 5000000,
+      "displayMode": "collapsed",
+      "displays": [
+        {
+          "type": "LinearBasicDisplay",
+          "maxFeatureScreenDensity": 5000000,
+          "displayMode": "collapsed"
+        }
+      ],
       "adapter": {
         "type": "Gff3TabixAdapter",
         "gffGzLocation": {
-          "uri": "/tools/jbrowse/large/TM-1.gff.gz",
+          "uri": "/Jbrowse/large/TM-1.gff.gz",
           "locationType": "UriLocation"
         },
         "index": {
           "location": {
-            "uri": "/tools/jbrowse/large/TM-1.gff.gz.tbi",
+            "uri": "/Jbrowse/large/TM-1.gff.gz.tbi",
             "locationType": "UriLocation"
           },
           "indexType": "TBI"

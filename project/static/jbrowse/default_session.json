@@ -1,0 +1,19 @@
+{
+  "name": "New Session",
+  "view": {
+    "id": "linearGenomeView",
+    "type": "LinearGenomeView",
+    "bpPerPx": 100000,
+    "displayedRegions": [
+      {
+        "refName": "Ghir_A01",
+        "start": 0,
+        "end": 1000000
+      }
+    ]
+  },
+  "tracks": [
+    "Ghirsutum_genome_HAU_v1.0-ReferenceSequenceTrack",
+    "TM-1.gff"
+  ]
+}

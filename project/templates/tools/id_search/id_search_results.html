@@ -1,0 +1,279 @@
+{% extends 'home/base.html' %}
+{% load static %}
+
+{% block content %}
+<script src="{% static 'js/id_search_results.js' %}"></script>
+<!--< class="container">-->
+    <h1 class="text-left my-4">Gene ID Search Results</h1>
+<!--
+    <div class="text-center mb-4">
+        <a href="{% url 'id_search:id_search' %}" class="btn btn-primary">New Search</a>
+    </div>
+-->   
+
+    <!--基因描述  --><!--
+    <div class="mb-4">
+        <p>Total Genes Found: {{ total_genes }}</p>
+    </div>
+    <div class="mb-4">
+        <tr class="text-center">
+                    <ul style="width: 10">Identifer</ul>
+                    <ul style="width: 10%">Assembly</ul>
+                    <ul style="width: 10%">Annotation</ul>
+                    <ul style="width: 10%">Description</ul>
+                    <ul style="width: 10%">Organism</ul>
+                    <ul style="width: 10%">Secondary Identifier</ul>
+                </tr>
+    </div>  
+-->
+    <!-- 基因信息表格 -->
+    <div class="table-responsive">
+        <table class="table table-bordered">
+            <thead>
+                <tr class="text-center">
+                    <th style="width: 10%">Input ID</th>
+                    <th style="width: 10%">Query ID</th>
+                    <th style="width: 10%">Species</th>
+                    <th style="width: 10%">source</th>
+                    <th style="width: 10%">Chromosome</th>
+                    <th style="width: 10%">start</th>
+                    <th style="width: 10%">end</th>
+                    <th style="width: 10%">strand</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for result in results %}
+                <tr>
+                    <td class="text-center align-middle" style="width: 10%">
+                            {{ result.original_id }}
+                        
+                    </td>
+                    <td class="text-center align-middle" style="width: 10%">
+                        {{ result.IDs }}
+                    </td>
+                    <td class="text-center align-middle" style="width: 10%">
+                        {{ result.species }}
+                    </td>
+                    <td class="text-center align-middle" style="width: 10%">
+                        {{ result.source }}
+                    </td>
+                    <td class="text-center align-middle" style="width: 10%">
+                        {{ result.seqid }}
+                    </td>
+                    <td class="text-center align-middle" style="width: 10%">
+                        {{ result.start }}
+                    </td>
+                    <td class="text-center align-middle" style="width: 10%">
+                        {{ result.end }}
+                    </td>
+                    <td class="text-center align-middle" style="width: 10%">
+                        {{ result.strand }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div></div>
+    <!-- JBrowse 容器 -->
+    <div class="mt-6">
+        <style>
+            .jbrowse-container {
+            width: 100%;
+            height: 30vh;
+            border: none;
+            overflow: hidden;
+        }
+        </style>
+        <div class="mb-4">
+            <h4>JBrowse and Gene structure</h4>
+        </div>
+        <div class="mb-4">
+            <iframe class="jbrowse-container" src="{{ jbrowse_url }}"></iframe>
+        </div>
+        
+        <!-- 基因结构图区域 -->
+        <div class="mt-6">
+            <h4>Gene Structure Views</h4>
+            {% for result in results %}
+                {% if result.structure_data %}
+                <div class="mt-4 p-4 border rounded">
+                    <h5>Gene: {{ result.original_id }} ({{ result.IDs }})</h5>
+                    <div class="mt-2">
+                        <span class="text-muted">Location: {{ result.seqid }}:{{ result.start }}-{{ result.end }}</span>
+                        <span class="text-muted ml-4">Strand: {{ result.strand }}</span>
+                    </div>
+                    <!-- 基因结构图画布容器 -->
+                    <div class="mt-3">
+                        <canvas id="gene-structure-{{ forloop.counter }}" width="800" height="200"></canvas>
+                    </div>
+                    
+                    <script>
+                        // 使用外部JS文件中的函数来渲染基因结构图
+                        document.addEventListener('DOMContentLoaded', function() {
+                            // 基因结构数据 - 使用JSON.parse确保正确解析
+                            const geneData = JSON.parse('{{ result.structure_data|escapejs }}');
+                            
+                            // 调用外部JS文件中的renderGeneStructure函数
+                            renderGeneStructure('gene-structure-{{ forloop.counter }}', geneData);
+                        });
+                    </script>
+                </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+        
+    </div>
+    
+    <!-- 基因序列展示 -->
+    <div class="mt-6">
+        <!--<h4>Gene Sequences</h4>-->
+        {% if has_sequences %}
+            {% for result in results %}
+            <div class="mt-4 p-3 border rounded">
+                <h5 class="mb-3">Gene: {{ result.original_id }} ({{ result.IDs }})</h5>
+                
+                <!-- 基因组序列单独一行 -->
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <strong>Genomic Sequence:</strong>
+                        <div>
+                            <button class="btn btn-sm btn-outline-primary me-1" onclick="downloadFasta('{{ result.original_id|escapejs }}', 'genomic', '{{ result.gene_seq|default:','|escapejs }}')">Download</button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="copyFasta('{{ result.original_id|escapejs }}', 'genomic', '{{ result.gene_seq|default:','|escapejs }}')">Copy</button>
+                        </div>
+                    </div>
+                    <div class="bg-light p-2 rounded overflow-y-auto" style="max-height: 150px; white-space: normal; word-break: break-all; text-align: left;">{{ result.gene_seq|default:'N/A' }}</div>
+                </div>
+                
+                <!-- mRNA序列和链信息 -->
+                
+                <div class="mt-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <strong>mRNA Sequence:</strong>
+                        <div>
+                            <button class="btn btn-sm btn-outline-primary me-1" onclick="downloadFasta('{{ result.original_id|escapejs }}', 'mrna', '{{ result.mrna_seq|default:','|escapejs }}')">Download</button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="copyFasta('{{ result.original_id|escapejs }}', 'mrna', '{{ result.mrna_seq|default:','|escapejs }}')">Copy</button>
+                        </div>
+                    </div>
+                    <div class="bg-light p-2 rounded overflow-y-auto" style="max-height: 150px; white-space: normal; word-break: break-all; text-align: left;">{{ result.mrna_seq|default:'N/A' }}</div>
+                </div>
+                
+                <!-- 上游序列 -->
+                <div class="mt-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <strong>Upstream Sequence:</strong>
+                        <select id="upstream_length_selector" style="margin-left: 10px;" class="form-control-sm" onchange="updateFlankingSequences()">
+                            <option value="500">500bp</option>
+                            <option value="1000">1000bp</option>
+                            <option value="2000" selected>2000bp</option>
+                            <option value="3000">3000bp</option>
+                            <option value="5000">5000bp</option>
+                        </select>                        <div>
+                            <button class="btn btn-sm btn-outline-primary me-1" onclick="downloadFasta('{{ result.original_id|escapejs }}', 'upstream', '{{ result.upstream_seq|default:','|escapejs }}')">Download</button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="copyFasta('{{ result.original_id|escapejs }}', 'upstream', '{{ result.upstream_seq|default:','|escapejs }}')">Copy</button>
+                        </div>
+                    </div>
+                    <div class="bg-light p-2 rounded overflow-y-auto"  style="max-height: 150px; white-space: normal; word-break: break-all; text-align: left;">{{ result.upstream_seq|default:'N/A' }}</div>
+                </div>
+                
+                <!-- 下游序列 -->
+                <div class="mt-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <strong>Downstream Sequence:</strong>
+                         <select id="downstream_length_selector" style="margin-left: 10px;" class="form-control-sm" onchange="updateFlankingSequences()">
+                            <option value="500">500bp</option>
+                            <option value="1000">1000bp</option>
+                            <option value="2000" selected>2000bp</option>
+                            <option value="3000">3000bp</option>
+                            <option value="5000">5000bp</option>
+                        </select>
+                        <div>
+                            <button class="btn btn-sm btn-outline-primary me-1" onclick="downloadFasta('{{ result.original_id|escapejs }}', 'downstream', '{{ result.downstream_seq|default:','|escapejs }}')">Download</button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="copyFasta('{{ result.original_id|escapejs }}', 'downstream', '{{ result.downstream_seq|default:','|escapejs }}')">Copy</button>
+                        </div>
+                    </div>
+                    <div class="bg-light p-2 rounded overflow-y-auto"  style="max-height: 150px; white-space: normal; word-break: break-all; text-align: left;">{{ result.downstream_seq|default:'N/A' }}</div>
+                </div>
+                
+                
+                <!-- CDS序列 -->
+                <div class="mt-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <strong>CDS Sequence:</strong>
+                        <div>
+                            <button class="btn btn-sm btn-outline-primary me-1" onclick="downloadFasta('{{ result.original_id|escapejs }}', 'cds', '{{ result.cds_seq|default:','|escapejs }}')">Download</button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="copyFasta('{{ result.original_id|escapejs }}', 'cds', '{{ result.cds_seq|default:','|escapejs }}')">Copy</button>
+                        </div>
+                    </div>
+                    <div class="bg-light p-2 rounded overflow-y-auto"  style="max-height: 150px; white-space: normal; word-break: break-all; text-align: left;">{{ result.cds_seq|default:'N/A' }}</div>
+                </div>
+                
+                <!-- 蛋白序列 -->
+                <div class="mt-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <strong>Protein Sequence:</strong>
+                        <div>
+                            <button class="btn btn-sm btn-outline-primary me-1" onclick="downloadFasta('{{ result.original_id|escapejs }}', 'protein', '{{ result.protein_seq|default:','|escapejs }}')">Download</button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="copyFasta('{{ result.original_id|escapejs }}', 'protein', '{{ result.protein_seq|default:','|escapejs }}')">Copy</button>
+                        </div>
+                    </div>
+                    <div class="bg-light p-2 rounded overflow-y-auto" style="max-height: 150px; white-space: normal; word-break: break-all; text-align: left;">{{ result.protein_seq|default:'N/A' }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p class="text-muted">No gene sequences available.</p>
+        {% endif %}
+    </div>
+    <div>
+        <h4>Function annotations</h4>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Gene ID</th>
+                        <th>Function Annotation</th>
+                    </tr>
+                </thead>
+                <tbody>
+                     {% for annotation in annotation_dict %}
+                        <tr>
+                            <td>{{ annotation.Gene_ID }}</td>
+                            <td>{{ annotation.annotation_text|default:"No annotation available" }}</td>
+                        </tr>
+                    {% endfor %}              
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div>
+        <h4>Gene structure annotations</h4>
+    </div>
+</div>
+
+<style>
+    .combined-id {
+        color: blue;
+        font-weight: bold;
+    }
+    .toggle-ids-btn {
+        margin-left: 5px;
+        cursor: pointer;
+        background: #f9f8f8;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+        padding: 0 5px;
+    }
+    .toggle-ids-btn:hover {
+        background: #e0e0e0;
+    }
+    table {
+        table-layout: fixed;
+    }
+    th, td {
+        vertical-align: middle !important;
+    }
+</style>
+
+<!-- JavaScript functions are now in external file: static/js/id_search_results.js -->
+{% endblock %}

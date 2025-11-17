@@ -1,0 +1,376 @@
+{% extends "home/base.html" %}  
+{% load static %}
+{% block content %}
+
+<style>
+    /* 背景 */
+    body {
+        background-color: #fffaf0;
+    }
+    
+ 
+    .section-container {
+        margin-bottom: 20px;
+    }
+    
+    /* 标题条带样式 */
+    .section-header {
+        background-color: #8b4513; 
+        color: white;
+        padding: 10px 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: default;
+        border-radius: 5px 5px 0 0;
+    }
+    
+    .section-header h2 {
+        margin: 0;
+        font-size: 1.5rem;
+    }
+    
+    .toggle-btn {
+        background: none;
+        border: none;
+        color: white;
+        font-size: 1.2rem;
+        cursor: pointer;
+        padding: 5px 10px;
+    }
+    
+    /* 内容区域样式 */
+    .section-content {
+        background-color: #f3e8caff;
+        padding: 20px;
+        border-radius: 0 0 5px 5px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        overflow: hidden; 
+        transition: all 0.2s ease-in-out;
+        max-height: 1000px; 
+    }
+    
+    /* 折叠状态下的样式 */
+    .section-content.collapsed {
+        max-height: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+        opacity: 0;
+    }
+    
+    /* CottonOGD板块特殊样式*/
+    .intro-section {
+        background-color: #f3e8caff;
+        padding: 40px 20px;
+        margin-bottom: 20px;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .intro-section h2 {
+        text-align: center;
+        color: #2c3e50;
+        margin-bottom: 20px;
+    }
+    
+    .intro-section p {
+        text-align: center;
+        font-size: 1.1rem;
+        line-height: 1.6;
+    }
+    
+    /* 数据统计卡片样式 */
+    .data-card {
+        text-align: center;
+        padding: 20px;
+        border-radius: 5px;
+        background-color: #52b347ff;
+        color: white;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .data-number {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 10px;
+    }
+    
+    .data-label {
+        font-size: 1rem;
+    }
+    
+    /* 功能卡片样式 */
+    .feature-card {
+        border: none;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        height: 100%;
+        padding: 10px;
+        background-color: white;
+        margin-bottom: 15px;
+    }
+    
+    .feature-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .feature-icon {
+        font-size: 2rem;
+        color: #39b62b;
+        margin-bottom: 15px;
+    }
+    
+    /* 工具卡片样式 */
+    .tool-card {
+        border: none;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        height: 100%;
+        padding: 15px;
+        background-color: white;
+        margin-bottom: 15px;
+    }
+    
+    .tool-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .tool-icon {
+        font-size: 1.5rem;
+        color: #39b62b;
+        margin-bottom: 10px;
+    }
+    
+    .btn-outline-success {
+        border-color: #39b62b;
+        color: #39b62b;
+    }
+    
+    .btn-outline-success:hover {
+        background-color: #39b62b;
+        color: white;
+    }
+</style>
+<section class="intro-section">
+    <h2>CottonOGD</h2>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <p class="lead">
+                    CottonOGD is a comprehensive cotton multi-omics database. First, we integrated all publicly available cotton multi-omics data with our own projects, conducted unified analysis and quality control. The resulting valuable data resources are provided to the cotton research community through a user-friendly cotton omics interface.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+<div class="container section-container">
+    <div class="section-header">
+        <h2>Database Statistics</h2>
+        <button class="toggle-btn" onclick="toggleSection('stats-section', this)">-</button>
+    </div>
+    <div class="section-content" id="stats-section">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="data-card">
+                    <div class="data-number">52,345</div>
+                    <div class="data-label">Genes</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="data-card">
+                    <div class="data-number">8</div>
+                    <div class="data-label">Cotton Species</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="data-card">
+                    <div class="data-number">12,567</div>
+                    <div class="data-label">GO Annotations</div>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="data-card">
+                    <div class="data-number">3,245</div>
+                    <div class="data-label">KEGG Pathways</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container section-container">
+    <div class="section-header">
+        <h2>Key Features</h2>
+        <button class="toggle-btn" onclick="toggleSection('features-section', this)">-</button>
+    </div>
+    <div class="section-content" id="features-section">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="feature-card text-center">
+                    <div class="feature-icon">
+                        <i class="fas fa-dna"></i>
+                    </div>
+                    <h3>Gene Search</h3>
+                    <p>Comprehensive search functionality for cotton genes with detailed annotations, expression profiles, and homologs across multiple species.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card text-center">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <h3>Expression Analysis</h3>
+                    <p>Visualization tools for exploring gene expression patterns across different tissues, developmental stages, and stress conditions.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card text-center">
+                    <div class="feature-icon">
+                        <i class="fas fa-project-diagram"></i>
+                    </div>
+                    <h3>Network Analysis</h3>
+                    <p>Construction and visualization of gene co-expression networks and protein-protein interaction networks for cotton.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container section-container">
+    <div class="section-header">
+        <h2>Tools</h2>
+        <button class="toggle-btn" onclick="toggleSection('tools-section', this)">-</button>
+    </div>
+    <div class="section-content" id="tools-section">
+        <div class="row">
+            <!-- ID Search -->
+            <div class="col-md-4">
+                <div class="tool-card text-center">
+                    <div class="tool-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <h4>ID Search</h4>
+                    <p>Search cotton genes by ID, symbol, or description.</p>
+                    <a href="{% url 'tools_id_search:id_search' %}" class="btn btn-outline-success mt-2">Access Tool</a>
+                </div>
+            </div>
+            
+            <!-- BLAST -->
+            <div class="col-md-4">
+                <div class="tool-card text-center">
+                    <div class="tool-icon">
+                        <i class="fas fa-align-left"></i>
+                    </div>
+                    <h4>BLAST</h4>
+                    <p>Search cotton protein sequences using BLASTP.</p>
+                    <a href="{% url 'tools_blastp:blastp' %}" class="btn btn-outline-success mt-2">Access Tool</a>
+                </div>
+            </div>
+            
+            <!-- GO Enrichment -->
+            <div class="col-md-4">
+                <div class="tool-card text-center">
+                    <div class="tool-icon">
+                        <i class="fas fa-sitemap"></i>
+                    </div>
+                    <h4>GO Enrichment</h4>
+                    <p>Perform Gene Ontology enrichment analysis.</p>
+                    <a href="{% url 'tools_go_enrichment:go_enrichment' %}" class="btn btn-outline-success mt-2">Access Tool</a>
+                </div>
+            </div>
+            
+            <!-- GO Annotation -->
+            <div class="col-md-4">
+                <div class="tool-card text-center">
+                    <div class="tool-icon">
+                        <i class="fas fa-tags"></i>
+                    </div>
+                    <h4>GO Annotation</h4>
+                    <p>Browse GO annotations for cotton genes.</p>
+                    <a href="{% url 'tools_go_annotation:go_annotation' %}" class="btn btn-outline-success mt-2">Access Tool</a>
+                </div>
+            </div>
+            
+            <!-- KEGG Annotation -->
+            <div class="col-md-4">
+                <div class="tool-card text-center">
+                    <div class="tool-icon">
+                        <i class="fas fa-map-marked-alt"></i>
+                    </div>
+                    <h4>KEGG Annotation</h4>
+                    <p>Explore KEGG pathway annotations.</p>
+                    <a href="{% url 'tools_kegg_annotation:kegg_annotation' %}" class="btn btn-outline-success mt-2">Access Tool</a>
+                </div>
+            </div>
+            
+            <!-- KEGG Enrichment -->
+            <div class="col-md-4">
+                <div class="tool-card text-center">
+                    <div class="tool-icon">
+                        <i class="fas fa-project-diagram"></i>
+                    </div>
+                    <h4>KEGG Enrichment</h4>
+                    <p>Identify enriched KEGG pathways.</p>
+                    <a href="{% url 'tools_kegg_enrichment:kegg_enrichment' %}" class="btn btn-outline-success mt-2">Access Tool</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container section-container">
+    <div class="section-header">
+        <h2>Data Source</h2>
+        <button class="toggle-btn" onclick="toggleSection('data-source-section', this)">-</button>
+    </div>
+    <div class="section-content" id="data-source-section">
+        <div class="row">
+            <div class="col-md-12">
+                <p>Our database integrates data from multiple sources including:</p>
+                <ul>
+                    <li>Publicly available cotton genome databases</li>
+                    <li>Published research papers on cotton genomics</li>
+                    <li>Our own sequencing and analysis projects</li>
+                    <li>Collaborative research data from partner institutions</li>
+                </ul>
+                <p>All data has undergone rigorous quality control and standardized processing to ensure consistency and reliability.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 切换板块显示/隐藏的函数
+    function toggleSection(sectionId, button) {
+        const section = document.getElementById(sectionId);
+        
+        // 切换折叠类
+        section.classList.toggle('collapsed');
+        
+        // 更新按钮文本
+        if (section.classList.contains('collapsed')) {
+            button.textContent = '+';
+        } else {
+            button.textContent = '-';
+        }
+    }
+    
+    // 页面加载时默认展开所有可折叠板块
+    document.addEventListener('DOMContentLoaded', function() {
+        // 获取所有可折叠的内容区域
+        const collapsibleSections = document.querySelectorAll('.section-content');
+        
+        // 默认展开所有板块
+        collapsibleSections.forEach(section => {
+            section.classList.remove('collapsed');
+        });
+    });
+</script>
+
+{% endblock %}
