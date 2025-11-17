@@ -16,6 +16,7 @@ import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 GO_OBO_FILE = os.path.join(BASE_DIR, 'data', 'go_ontology', 'go-basic.obo')
+GENOME_DATA_DIR = os.path.join(BASE_DIR, 'data', 'genome')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -73,9 +74,7 @@ TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [
-            os.path.join(BASE_DIR, 'home/templates'),
-            os.path.join(BASE_DIR, 'tools/templates'),
-            os.path.join(BASE_DIR, 'tools/jbrowse/templates'),
+            os.path.join(BASE_DIR, 'templates'),
         ],
         'APP_DIRS': True,
         'OPTIONS': {
@@ -157,6 +156,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static'),
-                     os.path.join(BASE_DIR, 'tools/blastp/static'),
                      ]
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
