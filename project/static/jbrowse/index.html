@@ -1,13 +1,31 @@
 <!doctype html>
 <html lang="en">
     <head><meta charset="utf-8"/>
-        <link rel="shortcut icon" href="./favicon.ico"/>
+        <link rel="shortcut icon" href="/assets/jbrowse/favicon.ico"/>
         <meta name="viewport" content="width=device-width,initial-scale=1"/>
         <meta name="theme-color" content="#000000"/>
         <meta name="description" content="A fast and flexible genome browser"/>
-        <link rel="manifest" href="./manifest.json"/>
+        <link rel="manifest" href="/assets/jbrowse/manifest.json"/>
         <title>CottonOGD JBrowse</title>
-        <script defer="defer" src="static/js/main.b2f85018.js">
+        <script>
+            // 清除可能损坏的本地存储会话数据
+            try {
+                const keys = Object.keys(localStorage);
+                keys.forEach(key => {
+                    if (key.includes('jbrowse') || key.includes('session')) {
+                        try {
+                            JSON.parse(localStorage.getItem(key));
+                        } catch (e) {
+                            console.log('清除损坏的本地存储键:', key);
+                            localStorage.removeItem(key);
+                        }
+                    }
+                });
+            } catch (e) {
+                console.log('本地存储访问错误:', e);
+            }
+        </script>
+        <script defer="defer" src="/assets/jbrowse/static/js/main.b2f85018.js">
         </script>
     </head>
     <body style="overscroll-behavior:none">

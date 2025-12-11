@@ -3,7 +3,7 @@ from . import views
 app_name = 'tools' 
 urlpatterns = [
     path('blastp/', include('tools.blastp.urls')),
-    path('id_search/', include('tools.id_search.urls')),
+    path('id-search/', include('tools.id_search.urls')),
     path('go_enrichment/', include('tools.go_enrichment.urls')),
     path('go_annotation/', include('tools.go_annotation.urls')),
     path('kegg_annotation/', include('tools.kegg_annotation.urls')),

@@ -29,6 +29,18 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
+# 允许的CSRF来源
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+    #'http://172.28.226.114:8000',
+    'http://172.28.226.114:3306',
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:5174',
+]
+
 
 # Application definition
 
@@ -39,12 +51,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',
     'home.apps.HomeConfig',
     'submit.apps.SubmitConfig',
     'Browse.apps.BrowseConfig',
     'Browse.Genome.apps.GenomeConfig',
     'Browse.Species.apps.SpeciesConfig',
     'Browse.TF.apps.TfConfig',
+    'jbrowse.apps.JbrowseConfig',
     'tools.kegg_annotation',
     'tools.go_annotation',
     'tools.go_enrichment',
@@ -58,6 +72,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -68,13 +83,27 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+CORS_ALLOW_CREDENTIALS = True
+CORS_ORIGIN_ALLOW_ALL = True
+CORS_ORIGIN_WHITELIST = [
+    *(f'http://localhost:{port}' for port in range(5173, 5180)),
+]
+CORS_ALLOW_HEADERS = [
+    'x-request-id',
+    'content-type',
+    'x-csrftoken',
+    'authorization',
+    'accept',
+    'origin',
+]
 ROOT_URLCONF = 'project.urls'
 
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [
-            os.path.join(BASE_DIR, 'templates'),
+            #os.path.join(BASE_DIR, 'templates'),
+            os.path.join(BASE_DIR, '../vue_app', 'dist'),
         ],
         'APP_DIRS': True,
         'OPTIONS': {
@@ -99,6 +128,7 @@ DATABASES = {
         "USER": "root",
         "PASSWORD": "1234",
         "HOST": "localhost",
+        #"HOST": "172.28.226.114",
         "PORT": "3306",
          'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
@@ -153,8 +183,13 @@ DJANGO_SERVE_STATIC_FILES_WITH_BUFFER_SIZE = 1024 * 1024 * 1024  # 1GB缓冲区
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+X_FRAME_OPTIONS = 'SAMEORIGIN'
 
-STATIC_URL = '/static/'
-STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static'),
+STATIC_URL = '/assets/'
+STATICFILES_DIRS = [#os.path.join(BASE_DIR, 'static'),
+                    os.path.join(BASE_DIR,'../vue_app'),
+                    os.path.join(BASE_DIR, '../vue_app','dist'),
+                     os.path.join(BASE_DIR, '../vue_app','dist/assets'),
+                     os.path.join(BASE_DIR, '../vue_app','dist/jbrowse'),
                      ]
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+#STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')

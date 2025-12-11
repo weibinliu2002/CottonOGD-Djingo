@@ -79,47 +79,35 @@
     <div class="mt-6">
         <style>
             .jbrowse-container {
-            width: 100%;
-            height: 30vh;
-            border: none;
-            overflow: hidden;
-        }
+                width: 100%;
+                height: 500px; /* 使用固定高度替代视口高度，确保更好的显示效果 */
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                overflow: hidden;
+            }
         </style>
         <div class="mb-4">
             <h4>JBrowse and Gene structure</h4>
         </div>
         <div class="mb-4">
-            <iframe class="jbrowse-container" src="{{ jbrowse_url }}"></iframe>
+            <iframe class="jbrowse-container" src="{{ jbrowse_url }}" frameborder="0"></iframe>
         </div>
         
         <!-- 基因结构图区域 -->
         <div class="mt-6">
             <h4>Gene Structure Views</h4>
             {% for result in results %}
-                {% if result.structure_data %}
                 <div class="mt-4 p-4 border rounded">
-                    <h5>Gene: {{ result.original_id }} ({{ result.IDs }})</h5>
+                    <h5>Gene: ({{ result.IDs }})</h5>
                     <div class="mt-2">
                         <span class="text-muted">Location: {{ result.seqid }}:{{ result.start }}-{{ result.end }}</span>
                         <span class="text-muted ml-4">Strand: {{ result.strand }}</span>
                     </div>
                     <!-- 基因结构图画布容器 -->
                     <div class="mt-3">
-                        <canvas id="gene-structure-{{ forloop.counter }}" width="800" height="200"></canvas>
-                    </div>
-                    
-                    <script>
-                        // 使用外部JS文件中的函数来渲染基因结构图
-                        document.addEventListener('DOMContentLoaded', function() {
-                            // 基因结构数据 - 使用JSON.parse确保正确解析
-                            const geneData = JSON.parse('{{ result.structure_data|escapejs }}');
-                            
-                            // 调用外部JS文件中的renderGeneStructure函数
-                            renderGeneStructure('gene-structure-{{ forloop.counter }}', geneData);
-                        });
-                    </script>
+                        <img src="{{ result.structure_data }}" alt="Gene Structure" style="width: 100%; height: auto;">
+                    </div> 
                 </div>
-                {% endif %}
             {% endfor %}
         </div>
         
@@ -127,14 +115,35 @@
     
     <!-- 基因序列展示 -->
     <div class="mt-6">
-        <!--<h4>Gene Sequences</h4>-->
+        <!-- 批量下载按钮 - 改为两行排列并均匀分布 -->
+        <div class="row mb-3">
+            <div class="col-md-6 mb-2">
+                <div class="btn-group">
+                    <button class="btn btn-sm btn-outline-primary" onclick="downloadAllSequences('genomic')">批量下载基因组序列</button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="copyAllSequences('genomic')">批量复制基因组序列</button>
+                </div>
+            </div>
+            <div class="col-md-6 mb-2">
+                <div class="btn-group">
+                    <button class="btn btn-sm btn-outline-primary" onclick="downloadAllSequences('mrna')">批量下载mRNA序列</button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="copyAllSequences('mrna')">批量复制mRNA序列</button>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="btn-group">
+                    <button class="btn btn-sm btn-outline-primary" onclick="downloadAllSequences('protein')">批量下载蛋白序列</button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="copyAllSequences('protein')">批量复制蛋白序列</button>
+                </div>
+            </div>
+        </div>
+        
         {% if has_sequences %}
             {% for result in results %}
             <div class="mt-4 p-3 border rounded">
                 <h5 class="mb-3">Gene: {{ result.original_id }} ({{ result.IDs }})</h5>
                 
-                <!-- 基因组序列单独一行 -->
-                <div class="mb-2">
+                <!-- 基因组序列 -->
+                <div class="mb-4">
                     <div class="d-flex justify-content-between align-items-center mb-1">
                         <strong>Genomic Sequence:</strong>
                         <div>
@@ -145,24 +154,136 @@
                     <div class="bg-light p-2 rounded overflow-y-auto" style="max-height: 150px; white-space: normal; word-break: break-all; text-align: left;">{{ result.gene_seq|default:'N/A' }}</div>
                 </div>
                 
-                <!-- mRNA序列和链信息 -->
-                
-                <div class="mt-3">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <strong>mRNA Sequence:</strong>
-                        <div>
-                            <button class="btn btn-sm btn-outline-primary me-1" onclick="downloadFasta('{{ result.original_id|escapejs }}', 'mrna', '{{ result.mrna_seq|default:','|escapejs }}')">Download</button>
-                            <button class="btn btn-sm btn-outline-secondary" onclick="copyFasta('{{ result.original_id|escapejs }}', 'mrna', '{{ result.mrna_seq|default:','|escapejs }}')">Copy</button>
+                <!-- 转录本序列（折叠展示） -->
+                <div class="mb-4">
+                    <h6 class="mb-2">转录本序列</h6>
+                    
+                    <!-- 使用从数据库中提取的mRNA转录本数据 -->
+                    {% if mrna_transcripts %}
+                        {% for transcript in mrna_transcripts %}
+                        <div class="mb-3 p-2 bg-gray-50 rounded">
+                            <div class="d-flex justify-content-between items-center cursor-pointer" onclick="toggleTranscript('transcript-{{ result.original_id|escapejs }}-{{ transcript.id|escapejs }}')">
+                                <strong>{{ transcript.original_id }}</strong>
+                                <span class="badge badge-secondary">点击展开/收起</span>
+                            </div>
+                            
+                            <div id="transcript-{{ result.original_id|escapejs }}-{{ transcript.id|escapejs }}" style="display: none; margin-top: 10px;">
+                                <!-- mRNA序列 -->
+                                <div class="mt-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <strong>mRNA Sequence:</strong>
+                                        <div>
+                                            <button class="btn btn-sm btn-outline-primary me-1" onclick="downloadFasta('{{ transcript.original_id|escapejs }}', 'mrna', '{{ transcript.mrna_seq|default:","|escapejs }}')">Download</button>
+                                            <button class="btn btn-sm btn-outline-secondary" onclick="copyFasta('{{ transcript.original_id|escapejs }}', 'mrna', '{{ transcript.mrna_seq|default:","|escapejs }}')">Copy</button>
+                                        </div>
+                                    </div>
+                                    <div class="bg-light p-2 rounded overflow-y-auto" style="max-height: 150px; white-space: normal; word-break: break-all; text-align: left;">{{ transcript.mrna_seq|default:'N/A' }}</div>
+                                </div>
+                                
+                                <!-- CDS序列 -->
+                                <div class="mt-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <strong>CDS Sequence:</strong>
+                                        <div>
+                                            <button class="btn btn-sm btn-outline-primary me-1" onclick="downloadFasta('{{ transcript.original_id|escapejs }}', 'cds', '{{ transcript.cds_seq|default:","|escapejs }}')">Download</button>
+                                            <button class="btn btn-sm btn-outline-secondary" onclick="copyFasta('{{ transcript.original_id|escapejs }}', 'cds', '{{ transcript.cds_seq|default:","|escapejs }}')">Copy</button>
+                                        </div>
+                                    </div>
+                                    <div class="bg-light p-2 rounded overflow-y-auto" style="max-height: 150px; white-space: normal; word-break: break-all; text-align: left;">{{ transcript.cds_seq|default:'N/A' }}</div>
+                                </div>
+                                
+                                <!-- 蛋白序列 -->
+                                <div class="mt-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <strong>Protein Sequence:</strong>
+                                        <div>
+                                            <button class="btn btn-sm btn-outline-primary me-1" onclick="downloadFasta('{{ transcript.original_id|escapejs }}', 'protein', '{{ transcript.protein_seq|default:","|escapejs }}')">Download</button>
+                                            <button class="btn btn-sm btn-outline-secondary" onclick="copyFasta('{{ transcript.original_id|escapejs }}', 'protein', '{{ transcript.protein_seq|default:","|escapejs }}')">Copy</button>
+                                        </div>
+                                    </div>
+                                    <div class="bg-light p-2 rounded overflow-y-auto" style="max-height: 150px; white-space: normal; word-break: break-all; text-align: left;">{{ transcript.protein_seq|default:'N/A' }}</div>
+                                </div>
+                                
+                                <!-- mRNA上游序列 -->
+                                <div class="mt-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <strong>mRNA Upstream Sequence:</strong>
+                                        <div>
+                                            <button class="btn btn-sm btn-outline-primary me-1" onclick="downloadFasta('{{ transcript.original_id|escapejs }}_upstream', 'upstream', '{{ transcript.upstream_seq|default:","|escapejs }}')">Download</button>
+                                            <button class="btn btn-sm btn-outline-secondary" onclick="copyFasta('{{ transcript.original_id|escapejs }}_upstream', 'upstream', '{{ transcript.upstream_seq|default:","|escapejs }}')">Copy</button>
+                                        </div>
+                                    </div>
+                                    <div class="bg-light p-2 rounded overflow-y-auto" style="max-height: 150px; white-space: normal; word-break: break-all; text-align: left;">{{ transcript.upstream_seq|default:'N/A' }}</div>
+                                </div>
+                                
+                                <!-- mRNA下游序列 -->
+                                <div class="mt-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <strong>mRNA Downstream Sequence:</strong>
+                                        <div>
+                                            <button class="btn btn-sm btn-outline-primary me-1" onclick="downloadFasta('{{ transcript.original_id|escapejs }}_downstream', 'downstream', '{{ transcript.downstream_seq|default:","|escapejs }}')">Download</button>
+                                            <button class="btn btn-sm btn-outline-secondary" onclick="copyFasta('{{ transcript.original_id|escapejs }}_downstream', 'downstream', '{{ transcript.downstream_seq|default:","|escapejs }}')">Copy</button>
+                                        </div>
+                                    </div>
+                                    <div class="bg-light p-2 rounded overflow-y-auto" style="max-height: 150px; white-space: normal; word-break: break-all; text-align: left;">{{ transcript.downstream_seq|default:'N/A' }}</div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="bg-light p-2 rounded overflow-y-auto" style="max-height: 150px; white-space: normal; word-break: break-all; text-align: left;">{{ result.mrna_seq|default:'N/A' }}</div>
+                        {% endfor %}
+                    {% else %}
+                        <!-- 默认显示单个mRNA信息 -->
+                        <div class="mb-3 p-2 bg-gray-50 rounded">
+                            <div class="d-flex justify-content-between items-center cursor-pointer" onclick="toggleTranscript('default-transcript-{{ result.original_id|escapejs }}')">
+                                <strong>mRNA: {{ result.original_id }}</strong>
+                                <span class="badge badge-secondary">点击展开/收起</span>
+                            </div>
+                            
+                            <div id="default-transcript-{{ result.original_id|escapejs }}" style="display: none; margin-top: 10px;">
+                                <!-- mRNA序列 -->
+                                <div class="mt-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <strong>mRNA Sequence:</strong>
+                                        <div>
+                                            <button class="btn btn-sm btn-outline-primary me-1" onclick="downloadFasta('{{ result.original_id|escapejs }}', 'mrna', '{{ result.mrna_seq|default:','|escapejs }}')">Download</button>
+                                            <button class="btn btn-sm btn-outline-secondary" onclick="copyFasta('{{ result.original_id|escapejs }}', 'mrna', '{{ result.mrna_seq|default:','|escapejs }}')">Copy</button>
+                                        </div>
+                                    </div>
+                                    <div class="bg-light p-2 rounded overflow-y-auto" style="max-height: 150px; white-space: normal; word-break: break-all; text-align: left;">{{ result.mrna_seq|default:'N/A' }}</div>
+                                </div>
+                                
+                                <!-- CDS序列 -->
+                                <div class="mt-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <strong>CDS Sequence:</strong>
+                                        <div>
+                                            <button class="btn btn-sm btn-outline-primary me-1" onclick="downloadFasta('{{ result.original_id|escapejs }}', 'cds', '{{ result.cds_seq|default:','|escapejs }}')">Download</button>
+                                            <button class="btn btn-sm btn-outline-secondary" onclick="copyFasta('{{ result.original_id|escapejs }}', 'cds', '{{ result.cds_seq|default:','|escapejs }}')">Copy</button>
+                                        </div>
+                                    </div>
+                                    <div class="bg-light p-2 rounded overflow-y-auto" style="max-height: 150px; white-space: normal; word-break: break-all; text-align: left;">{{ result.cds_seq|default:'N/A' }}</div>
+                                </div>
+                                
+                                <!-- 蛋白序列 -->
+                                <div class="mt-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <strong>Protein Sequence:</strong>
+                                        <div>
+                                            <button class="btn btn-sm btn-outline-primary me-1" onclick="downloadFasta('{{ result.original_id|escapejs }}', 'protein', '{{ result.protein_seq|default:','|escapejs }}')">Download</button>
+                                            <button class="btn btn-sm btn-outline-secondary" onclick="copyFasta('{{ result.original_id|escapejs }}', 'protein', '{{ result.protein_seq|default:','|escapejs }}')">Copy</button>
+                                        </div>
+                                    </div>
+                                    <div class="bg-light p-2 rounded overflow-y-auto" style="max-height: 150px; white-space: normal; word-break: break-all; text-align: left;">{{ result.protein_seq|default:'N/A' }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
                 </div>
                 
                 <!-- 上游序列 -->
-                <div class="mt-3">
+                <div class="mb-3">
                     <div class="d-flex justify-content-between align-items-center mb-1">
                         <strong>Upstream Sequence:</strong>
-                        <select id="upstream_length_selector" style="margin-left: 10px;" class="form-control-sm" onchange="updateFlankingSequences()">
+                        <select id="upstream_length_selector_{{ forloop.counter }}" style="margin-left: 10px;" class="form-control-sm" onchange="updateFlankingSequences({{ forloop.counter }})">
                             <option value="500">500bp</option>
                             <option value="1000">1000bp</option>
                             <option value="2000" selected>2000bp</option>
@@ -177,10 +298,10 @@
                 </div>
                 
                 <!-- 下游序列 -->
-                <div class="mt-3">
+                <div class="mb-3">
                     <div class="d-flex justify-content-between align-items-center mb-1">
                         <strong>Downstream Sequence:</strong>
-                         <select id="downstream_length_selector" style="margin-left: 10px;" class="form-control-sm" onchange="updateFlankingSequences()">
+                         <select id="downstream_length_selector_{{ forloop.counter }}" style="margin-left: 10px;" class="form-control-sm" onchange="updateFlankingSequences({{ forloop.counter }})">
                             <option value="500">500bp</option>
                             <option value="1000">1000bp</option>
                             <option value="2000" selected>2000bp</option>
@@ -194,60 +315,220 @@
                     </div>
                     <div class="bg-light p-2 rounded overflow-y-auto"  style="max-height: 150px; white-space: normal; word-break: break-all; text-align: left;">{{ result.downstream_seq|default:'N/A' }}</div>
                 </div>
-                
-                
-                <!-- CDS序列 -->
-                <div class="mt-3">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <strong>CDS Sequence:</strong>
-                        <div>
-                            <button class="btn btn-sm btn-outline-primary me-1" onclick="downloadFasta('{{ result.original_id|escapejs }}', 'cds', '{{ result.cds_seq|default:','|escapejs }}')">Download</button>
-                            <button class="btn btn-sm btn-outline-secondary" onclick="copyFasta('{{ result.original_id|escapejs }}', 'cds', '{{ result.cds_seq|default:','|escapejs }}')">Copy</button>
-                        </div>
-                    </div>
-                    <div class="bg-light p-2 rounded overflow-y-auto"  style="max-height: 150px; white-space: normal; word-break: break-all; text-align: left;">{{ result.cds_seq|default:'N/A' }}</div>
-                </div>
-                
-                <!-- 蛋白序列 -->
-                <div class="mt-3">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <strong>Protein Sequence:</strong>
-                        <div>
-                            <button class="btn btn-sm btn-outline-primary me-1" onclick="downloadFasta('{{ result.original_id|escapejs }}', 'protein', '{{ result.protein_seq|default:','|escapejs }}')">Download</button>
-                            <button class="btn btn-sm btn-outline-secondary" onclick="copyFasta('{{ result.original_id|escapejs }}', 'protein', '{{ result.protein_seq|default:','|escapejs }}')">Copy</button>
-                        </div>
-                    </div>
-                    <div class="bg-light p-2 rounded overflow-y-auto" style="max-height: 150px; white-space: normal; word-break: break-all; text-align: left;">{{ result.protein_seq|default:'N/A' }}</div>
-                </div>
             </div>
             {% endfor %}
         {% else %}
             <p class="text-muted">No gene sequences available.</p>
         {% endif %}
     </div>
+    
+    <script>
+    // 切换转录本显示状态
+    function toggleTranscript(transcriptId) {
+        const element = document.getElementById(transcriptId);
+        if (element) {
+            element.style.display = element.style.display === 'none' ? 'block' : 'none';
+        }
+    }
+    
+    // 批量下载所有同类型序列
+        function downloadAllSequences(seqType) {
+            let allFastaContent = '';
+            
+            {% for result in results %}
+                {% if seqType == 'genomic' and result.gene_seq %}
+                    allFastaContent += `>${{ result.original_id|escapejs }}\n${{ result.gene_seq|escapejs }}\n`;
+                {% elif seqType == 'mrna' %}
+                    {% if mrna_transcripts %}
+                        {% for transcript in mrna_transcripts %}
+                            {% if transcript.mrna_seq %}
+                                allFastaContent += `>${{ transcript.original_id|escapejs }}\n${{ transcript.mrna_seq|escapejs }}\n`;
+                            {% endif %}
+                        {% endfor %}
+                    {% elif result.mrna_seq %}
+                        allFastaContent += `>${{ result.original_id|escapejs }}\n${{ result.mrna_seq|escapejs }}\n`;
+                    {% endif %}
+                {% elif seqType == 'protein' %}
+                    {% if mrna_transcripts %}
+                        {% for transcript in mrna_transcripts %}
+                            {% if transcript.protein_seq %}
+                                allFastaContent += `>${{ transcript.original_id|escapejs }}\n${{ transcript.protein_seq|escapejs }}\n`;
+                            {% endif %}
+                        {% endfor %}
+                    {% elif result.protein_seq %}
+                        allFastaContent += `>${{ result.original_id|escapejs }}\n${{ result.protein_seq|escapejs }}\n`;
+                    {% endif %}
+                {% elif seqType == 'upstream' %}
+                    {% if mrna_transcripts %}
+                        {% for transcript in mrna_transcripts %}
+                            {% if transcript.upstream_seq %}
+                                allFastaContent += `>${{ transcript.original_id|escapejs }}_upstream\n${{ transcript.upstream_seq|escapejs }}\n`;
+                            {% endif %}
+                        {% endfor %}
+                    {% elif result.upstream_seq %}
+                        allFastaContent += `>${{ result.original_id|escapejs }}_upstream\n${{ result.upstream_seq|escapejs }}\n`;
+                    {% endif %}
+                {% elif seqType == 'downstream' %}
+                    {% if mrna_transcripts %}
+                        {% for transcript in mrna_transcripts %}
+                            {% if transcript.downstream_seq %}
+                                allFastaContent += `>${{ transcript.original_id|escapejs }}_downstream\n${{ transcript.downstream_seq|escapejs }}\n`;
+                            {% endif %}
+                        {% endfor %}
+                    {% elif result.downstream_seq %}
+                        allFastaContent += `>${{ result.original_id|escapejs }}_downstream\n${{ result.downstream_seq|escapejs }}\n`;
+                    {% endif %}
+                {% endif %}
+            {% endfor %}
+            
+            if (allFastaContent) {
+                const blob = new Blob([allFastaContent], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `all_${seqType}_sequences.fasta`;
+                a.click();
+                URL.revokeObjectURL(url);
+            } else {
+                alert('没有可下载的序列');
+            }
+        }
+        
+        // 批量复制所有同类型序列
+        function copyAllSequences(seqType) {
+            let allFastaContent = '';
+            
+            {% for result in results %}
+                {% if seqType == 'genomic' and result.gene_seq %}
+                    allFastaContent += `>${{ result.original_id|escapejs }}\n${{ result.gene_seq|escapejs }}\n`;
+                {% elif seqType == 'mrna' %}
+                    {% if mrna_transcripts %}
+                        {% for transcript in mrna_transcripts %}
+                            {% if transcript.mrna_seq %}
+                                allFastaContent += `>${{ transcript.id|escapejs }}\n${{ transcript.mrna_seq|escapejs }}\n`;
+                            {% endif %}
+                        {% endfor %}
+                    {% elif result.mrna_seq %}
+                        allFastaContent += `>${{ result.original_id|escapejs }}\n${{ result.mrna_seq|escapejs }}\n`;
+                    {% endif %}
+                {% elif seqType == 'protein' %}
+                    {% if mrna_transcripts %}
+                        {% for transcript in mrna_transcripts %}
+                            {% if transcript.protein_seq %}
+                                allFastaContent += `>${{ transcript.id|escapejs }}\n${{ transcript.protein_seq|escapejs }}\n`;
+                            {% endif %}
+                        {% endfor %}
+                    {% elif result.protein_seq %}
+                        allFastaContent += `>${{ result.original_id|escapejs }}\n${{ result.protein_seq|escapejs }}\n`;
+                    {% endif %}
+                {% elif seqType == 'upstream' %}
+                    {% if mrna_transcripts %}
+                        {% for transcript in mrna_transcripts %}
+                            {% if transcript.upstream_seq %}
+                                allFastaContent += `>${{ transcript.id|escapejs }}_upstream\n${{ transcript.upstream_seq|escapejs }}\n`;
+                            {% endif %}
+                        {% endfor %}
+                    {% elif result.upstream_seq %}
+                        allFastaContent += `>${{ result.original_id|escapejs }}_upstream\n${{ result.upstream_seq|escapejs }}\n`;
+                    {% endif %}
+                {% elif seqType == 'downstream' %}
+                    {% if mrna_transcripts %}
+                        {% for transcript in mrna_transcripts %}
+                            {% if transcript.downstream_seq %}
+                                allFastaContent += `>${{ transcript.id|escapejs }}_downstream\n${{ transcript.downstream_seq|escapejs }}\n`;
+                            {% endif %}
+                        {% endfor %}
+                    {% elif result.downstream_seq %}
+                        allFastaContent += `>${{ result.original_id|escapejs }}_downstream\n${{ result.downstream_seq|escapejs }}\n`;
+                    {% endif %}
+                {% endif %}
+            {% endfor %}
+            
+            if (allFastaContent) {
+                navigator.clipboard.writeText(allFastaContent).then(() => {
+                    alert('已复制所有序列到剪贴板');
+                }).catch(err => {
+                    console.error('复制失败:', err);
+                    alert('复制失败，请手动选择并复制');
+                });
+            } else {
+                alert('没有可复制的序列');
+            }
+        }
+    </script>
     <div>
         <h4>Function annotations</h4>
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Gene ID</th>
-                        <th>Function Annotation</th>
-                    </tr>
-                </thead>
-                <tbody>
-                     {% for annotation in annotation_dict %}
-                        <tr>
-                            <td>{{ annotation.Gene_ID }}</td>
-                            <td>{{ annotation.annotation_text|default:"No annotation available" }}</td>
-                        </tr>
-                    {% endfor %}              
-                </tbody>
-            </table>
+        <div id="function_annotations" class="text-left text-muted">
+            <ul class="list-unstyled"> KOG annotations: {{ annotation_dict.KOG_class_annotation|join:", "|default:"No KOG annotations available" }}</ul>
+            <ul class="list-unstyled">Pfam: {{ annotation_dict.Pfam_annotation|join:", "|default:"No pfam annotations available" }}</ul>
+            <ul class="list-unstyled">Swiss-Prot: {{ annotation_dict.Swissprot_annotation|join:", "|default:"No Swiss-Prot annotations available" }}</ul>
+            <ul class="list-unstyled">TrEMBL: {{ annotation_dict.TrEMBL_annotation|join:", "|default:"No TrEMBL annotations available" }}</ul>
+            <ul class="list-unstyled">nr: {{ annotation_dict.nr_annotation|join:", "|default:"No nr annotations available" }}</ul>
         </div>
     </div>
-    <div>
+    <div class="mt-3">
+        <h4>GO and KEGG annotations</h4>
+        <div id="go_kegg" class="text-left text-muted">
+        <div>
+            <ul class="list-unstyled">GO annotations: {{ annotation_dict.GO_annotation|join:", "|default:"No GO annotations available" }}</ul>
+            <ul class="list-unstyled">KEGG annotations: {{ annotation_dict.KEGG_annotation|join:", "|default:"No KEGG annotations available" }}</ul>
+        </div>
+        
+    </div>
+    <div class="mt-3">
         <h4>Gene structure annotations</h4>
+    </div>
+    <div id="gene_structure_annotations" class="text-left text-muted">
+         <table class="table table-bordered">
+            <thead>
+                <tr class="text-center">
+                    <th style="width: 8%">Chromosome</th>
+                    <th style="width: 8%">Start</th>
+                    <th style="width: 8%">End</th>
+                    <th style="width: 10%">Type</th>
+                    <th style="width: 8%">Strand</th>
+                    <th style="width: 50%">Attribute</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- 简化的分页实现，直接使用列表切片 -->
+                {% for result in gene_records|slice:':10' %}
+                <tr>
+                    <td class="text-center align-middle" style="width: 10%">
+                        {{ result.seqid }}
+                    </td>
+                    <td class="text-center align-middle" style="width: 10%">
+                        {{ result.start }}
+                    </td>
+                    <td class="text-center align-middle" style="width: 10%">
+                        {{ result.end }}
+                    </td>
+                    <td class="text-center align-middle" style="width: 10%">
+                        {{ result.type }}
+                    </td>
+                    <td class="text-center align-middle" style="width: 10%">
+                        {{ result.strand }}
+                    </td>
+                    <td class="text-center align-middle" style="width: 10%">
+                        {{ result.attributes }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <!-- 简化的分页信息 -->
+        {% with total=gene_records|length %}
+        {% if total > 10 %}
+        <div class="text-center mt-3 text-muted">
+            显示前 10 条记录，共 {{ total }} 条。请在后端实现完整的分页功能。
+        </div>
+        {% endif %}
+        {% endwith %}
+        
+        <div>
+            </tbody>
+        </table>
     </div>
 </div>
 

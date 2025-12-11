@@ -3,6 +3,8 @@ from django.shortcuts import render
 from django.db import connection
 from django.conf import settings
 from django.core.cache import cache
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from scipy.stats import fisher_exact
@@ -14,11 +16,16 @@ import numpy as np
 import pickle
 import os
 import time
+import uuid
+import json
 import pandas as pd
 import matplotlib.pyplot as plt
 from textwrap import wrap
 import base64
 from io import BytesIO
+
+# 模拟任务存储（实际项目中应使用Redis或数据库）
+TASKS = {}
 def plot_kegg_enrichment(kegg_results, max_terms=30, figsize=(15, 7)):
     """
     Create combined barplot and dotplot for KEGG enrichment results
@@ -334,7 +341,119 @@ def kegg_enrichment(request):
                 'gene_list': ', '.join(gene_list),
                 'plot_image': plot_image
             }
-            return render(request, 'tools/kegg_enrichment_result.html', context)
+            return render(request, 'tools/kegg_enrichment/kegg_enrichment_result.html', context)
         except Exception as e:
-            return render(request, 'tools/kegg_enrichment.html', 
+            return render(request, 'tools/kegg_enrichment/kegg_enrichment.html', 
                          {'error': f'分析出错: {str(e)}'})
+
+@csrf_exempt
+def start_kegg_enrichment_api(request):
+    # API视图：开始KEGG富集分析任务
+    if request.method == 'POST':
+        try:
+            # 解析JSON数据
+            data = json.loads(request.body)
+            gene_list = data.get('gene_list', '').strip().split()
+            gene_list = [gene.strip().upper() for gene in gene_list if gene.strip()]
+            p_value_threshold = float(data.get('p_value_threshold', 0.05))
+            
+            # 生成任务ID
+            task_id = str(uuid.uuid4())
+            
+            # 模拟异步任务
+            # 实际项目中应使用Celery等任务队列
+            TASKS[task_id] = {
+                'status': 'processing',
+                'created_at': time.time(),
+                'parameters': {
+                    'gene_list': gene_list,
+                    'p_value_threshold': p_value_threshold
+                }
+            }
+            
+            # 立即执行分析（同步模拟）
+            kegg_analysis = KEGGEnrichment()
+            result_data = kegg_analysis.perform_enrichment(gene_list)
+            plot_base64 = plot_kegg_enrichment(result_data['results'])
+            
+            # 过滤结果
+            filtered_results = [r for r in result_data['results'] if r.get('p_value', 1.0) <= p_value_threshold]
+            
+            # 更新任务状态
+            TASKS[task_id].update({
+                'status': 'success',
+                'results': filtered_results,
+                'plot_base64': plot_base64,
+                'gene_count': result_data['input_gene_count'],
+                'background_gene_count': result_data['background_gene_count']
+            })
+            
+            # 返回任务ID
+            return JsonResponse({
+                'status': 'success',
+                'task_id': task_id
+            })
+        
+        except Exception as e:
+            return JsonResponse({
+                'status': 'error',
+                'error': str(e)
+            })
+    
+    return JsonResponse({
+        'status': 'error',
+        'error': 'Method not allowed'
+    })
+
+@csrf_exempt
+def get_kegg_enrichment_results(request):
+    # API视图：获取KEGG富集分析结果
+    if request.method == 'GET':
+        task_id = request.GET.get('task_id')
+        if not task_id:
+            return JsonResponse({
+                'status': 'error',
+                'error': 'Missing task_id parameter'
+            })
+        
+        # 检查任务状态
+        if task_id not in TASKS:
+            return JsonResponse({
+                'status': 'error',
+                'error': 'Task not found'
+            })
+        
+        task = TASKS[task_id]
+        
+        # 返回任务状态和结果
+        if task['status'] == 'success':
+            # 获取分页参数
+            page_size = int(request.GET.get('page_size', 10))
+            page = int(request.GET.get('page', 1))
+            start = (page - 1) * page_size
+            end = start + page_size
+            
+            # 返回分页结果
+            return JsonResponse({
+                'status': 'success',
+                'results': task['results'][start:end],
+                'total': len(task['results']),
+                'plot_image': task['plot_base64'],
+                'gene_count': task['gene_count'],
+                'background_gene_count': task['background_gene_count'],
+                'execution_time': time.time() - task['created_at']
+            })
+        elif task['status'] == 'processing':
+            return JsonResponse({
+                'status': 'processing'
+            })
+        else:
+            return JsonResponse({
+                'status': 'error',
+                'error': task.get('error', 'Unknown error')
+            })
+    
+    return JsonResponse({
+        'status': 'error',
+        'error': 'Method not allowed'
+    })

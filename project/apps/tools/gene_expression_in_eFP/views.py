@@ -97,6 +97,9 @@ def generate_thermal_image(request):
             else:
                 min_val = 0
                 max_val = 10
+                # Calculate log values for the default min_val and max_val
+                min_log = math.log10(min_val + 1)
+                max_log = math.log10(max_val + 1)
             
             # 解析颜色值
             low_rgb = hex_to_rgb(low_color)
@@ -139,8 +142,12 @@ def generate_thermal_image(request):
                         continue
                     
                     log_value = math.log10(value + 1)
-                    normalized = (log_value - min_log) / (max_log - min_log) if max_log > min_log else 0.5
-                    normalized = max(0, min(1, normalized))
+                    # 防止除以零
+                    if max_log > min_log:
+                        normalized = (log_value - min_log) / (max_log - min_log)
+                        normalized = max(0, min(1, normalized))
+                    else:
+                        normalized = 0.5  # 当所有值相同时，使用中间色
                     
                     # 使用用户选择的颜色
                     color = custom_value_to_color(normalized, low_rgb, mid_rgb, high_rgb)
@@ -159,7 +166,7 @@ def generate_thermal_image(request):
                     }
                     region_info_list.append(region_info)
                         
-                except (ValueError, TypeError):
+                except (ValueError, TypeError) as e:
                     if len(polygon) > 1:
                         closed_polygon = polygon + [polygon[0]]
                         draw.line(closed_polygon, fill='gray', width=2, joint='curve')

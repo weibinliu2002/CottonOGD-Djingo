@@ -1,19 +1,40 @@
+# 数据和项目文件
 data/
 project.zip
+genomes/
+project/data/
+
+# JBrowse相关文件
 project/static/jbrowse/Ghirsutum_genome_HAU_v1.0.fasta*
 project/static/jbrowse/TM-1.gff.gz*
 project/static/jbrowse/test_data/*
 static/jbrowse/Ghirsutum_genome_HAU_v1.0.fasta*
-project/static/jbrowse/Ghirsutum_genome_HAU_v1.0.fasta*
+
+# IDE和工具目录
+.trae/
+.vscode/
+.github/
+
+# Python相关文件
 *.sqlite3
 __pycache__/
-.gitignore
 *.pyc
 *.log
-virtual/*
-*/*pyc
-*/*/*pyc
-*/*/*/*pyc
-*/*/*/*/*pyc
-*/*/*/*/*/*pyc
-*/*/*/*/*/*/*pyc
+
+# 虚拟环境
+virtual/
+
+# PHP文件
+index.php
+
+# 临时复制文件
+* copy.py
+
+# 忽略vue_app目录下的所有内容
+vue_app/*
+
+# 但允许跟踪vue_app/dist目录
+!vue_app/dist/
+
+# 允许跟踪vue_app/dist目录下的所有内容
+!vue_app/dist/**
