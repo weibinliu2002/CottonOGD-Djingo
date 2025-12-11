@@ -22,6 +22,9 @@ def gene_expression(request):
     default_selected_bottom_left = []
     default_selected_bottom_right = []
     
+    # 检查是否是API请求
+    is_api = request.headers.get('Accept') == 'application/json' or request.GET.get('api') == 'true'
+    
     if request.method == 'POST':
         # 获取用户输入的基因ID（列格式，每行一个）
         gene_input = request.POST.get('gene_ids', '').strip()
@@ -44,6 +47,8 @@ def gene_expression(request):
         
         if not gene_ids:
             error_msg = "请输入基因ID"
+            if is_api:
+                return JsonResponse({'error': error_msg}, status=400)
             return render(request, 'tools/gene_expression/gene_expression.html', {
                 'error': error_msg,
                 'gene_ids': gene_input,
@@ -57,6 +62,8 @@ def gene_expression(request):
         
         if not selected_columns:
             error_msg = "请至少选择一个组织/发育阶段"
+            if is_api:
+                return JsonResponse({'error': error_msg}, status=400)
             return render(request, 'tools/gene_expression.html', {
                 'error': error_msg,
                 'gene_ids': gene_input,
@@ -71,6 +78,28 @@ def gene_expression(request):
         try:
             # 从数据库获取数据
             heatmap_data, gene_ids_list, columns_list = generate_gene_expression_data(gene_ids, selected_columns)
+            
+            result_data = {
+                'heatmap_data': heatmap_data,
+                'gene_ids': gene_ids_list,
+                'columns': columns_list,
+                'options': {
+                    'top': top_options,
+                    'bottom_left': bottom_left_options,
+                    'bottom_right': bottom_right_options
+                },
+                'selected': {
+                    'top': selected_top,
+                    'bottom_left': selected_bottom_left,
+                    'bottom_right': selected_bottom_right
+                }
+            }
+            
+            if is_api:
+                return JsonResponse({
+                    'success': True,
+                    'data': result_data
+                })
             
             # 将数据传递给模板
             context = {
@@ -89,6 +118,8 @@ def gene_expression(request):
             
         except Exception as e:
             error_msg = f"处理数据时出错: {str(e)}"
+            if is_api:
+                return JsonResponse({'error': error_msg}, status=500)
             return render(request, 'tools/gene_expression.html', {
                 'error': error_msg,
                 'gene_ids': gene_input,
@@ -99,6 +130,21 @@ def gene_expression(request):
                 'selected_bottom_left': selected_bottom_left,
                 'selected_bottom_right': selected_bottom_right
             })
+    
+    if is_api:
+        return JsonResponse({
+            'success': True,
+            'options': {
+                'top': top_options,
+                'bottom_left': bottom_left_options,
+                'bottom_right': bottom_right_options
+            },
+            'default_selected': {
+                'top': default_selected_top,
+                'bottom_left': default_selected_bottom_left,
+                'bottom_right': default_selected_bottom_right
+            }
+        })
     
     # GET请求显示输入表单（使用默认选中所有选项）
     return render(request, 'tools/gene_expression.html', {

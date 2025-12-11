@@ -1,8 +1,10 @@
 from django.core.paginator import Paginator
 from django.shortcuts import render
+from django.http import JsonResponse
 from django.db import connection
 from django.conf import settings
 from django.core.cache import cache
+from django.views.decorators.csrf import csrf_exempt
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from scipy.stats import fisher_exact
@@ -12,6 +14,7 @@ import requests
 import pickle
 import os
 import time
+import uuid
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -20,6 +23,10 @@ from matplotlib.gridspec import GridSpec
 from textwrap import wrap
 import base64
 from io import BytesIO
+import json
+
+# 模拟任务存储（实际项目中应使用Redis或数据库）
+TASKS = {}
 
 class GOEnrichment:
     _go_ontology_cache = None
@@ -293,6 +300,7 @@ class GOEnrichment:
             'background_gene_count': total_background_genes
         }
 
+@csrf_exempt
 def go_enrichment(request):
     if request.method == 'GET':
         # 检查是否是分页请求
@@ -341,54 +349,115 @@ def go_enrichment(request):
         
         # 普通GET请求，返回空表单
         return render(request, 'tools/go_enrichment/go_enrichment.html')
-    
-    elif request.method == 'POST':
-        gene_list = request.POST.get('gene_list', '').strip().split()
-        gene_list = [gene.strip().upper() for gene in gene_list if gene.strip()]
-        
-        if not gene_list:
-            return render(request, 'tools/go_enrichment/go_enrichment.html', 
-                         {'error': '请输入有效的基因列表'})
-        
-        # 保存基因列表到session
-        request.session['go_enrichment_gene_list'] = gene_list
-        
+
+@csrf_exempt
+def start_go_enrichment_api(request):
+    # API视图：开始GO富集分析任务
+    if request.method == 'POST':
         try:
-            go_analysis = GOEnrichment()
-            result_data = go_analysis.perform_enrichment(gene_list)
-            per_page = int(request.POST.get('per_page', 5))
+            # 解析JSON数据
+            data = json.loads(request.body)
+            gene_list = data.get('gene_list', '').strip().split('\n')
+            gene_list = [gene.strip().upper() for gene in gene_list if gene.strip()]
             
-            paginated_results = {}
+            # 生成任务ID
+            task_id = str(uuid.uuid4())
+            
+            # 模拟异步任务
+            # 实际项目中应使用Celery等任务队列
+            TASKS[task_id] = {
+                'status': 'processing',
+                'created_at': time.time(),
+                'parameters': {
+                    'gene_list': gene_list
+                }
+            }
+            
+            # 立即执行分析（同步模拟）
+            go_analysis = GOEnrichment()
+            results = go_analysis.perform_enrichment(gene_list)
+            
+            # 更新任务状态
+            TASKS[task_id].update({
+                'status': 'success',
+                'results': results,
+                'gene_count': len(gene_list)
+            })
+            
+            # 返回任务ID
+            return JsonResponse({
+                'status': 'success',
+                'task_id': task_id
+            })
+        
+        except Exception as e:
+            return JsonResponse({
+                'status': 'error',
+                'error': str(e)
+            })
+    
+    return JsonResponse({
+        'status': 'error',
+        'error': 'Method not allowed'
+    })
+
+def get_go_enrichment_results(request):
+    # API视图：获取GO富集分析结果
+    if request.method == 'GET':
+        task_id = request.GET.get('task_id')
+        if not task_id:
+            return JsonResponse({
+                'status': 'error',
+                'error': 'Missing task_id parameter'
+            })
+        
+        # 检查任务状态
+        if task_id not in TASKS:
+            return JsonResponse({
+                'status': 'error',
+                'error': 'Task not found'
+            })
+        
+        task = TASKS[task_id]
+        
+        # 返回任务状态和结果
+        if task['status'] == 'success':
+            # 生成可视化图形
+            go_analysis = GOEnrichment()
             plot_images = {}
             
-            for category, items in result_data['results'].items():
-                paginator = Paginator(items, per_page)
-                page_number = request.GET.get(f'{category}_page', 1)
-                paginated_results[category] = paginator.get_page(page_number)
-                
-                # 生成图表
-                plot_image = go_analysis._generate_go_plot(
-                    items,
-                    category='MF' if category == 'MF' else 
-                            'BP' if category == 'BP' else 
-                            'CC' if category == 'CC' else 'Other',
-                    max_terms=20
-                )
-                if plot_image:
-                    plot_images[category] = plot_image
+            # 为每个类别生成图形
+            for category, items in task['results']['results'].items():
+                if items:
+                    plot_image = go_analysis._generate_go_plot(
+                        items,
+                        category='MF' if category == 'MF' else \
+                                'BP' if category == 'BP' else \
+                                'CC' if category == 'CC' else 'Other',
+                        max_terms=20
+                    )
+                    if plot_image:
+                        plot_images[category] = plot_image
             
-            context = {
-                'results': paginated_results,
-                'input_gene_count': result_data['input_gene_count'],
-                'background_gene_count': result_data['background_gene_count'],
-                'per_page': per_page,
-                'gene_list': ', '.join(gene_list),
+            return JsonResponse({
+                'status': 'success',
+                'results': task['results'],
+                'gene_count': task['gene_count'],
                 'plot_images': plot_images
-            }
-            return render(request, 'tools/go_enrichment/go_enrichment_result.html', context)
-        except Exception as e:
-            return render(request, 'tools/go_enrichment/go_enrichment.html', 
-                         {'error': f'分析出错: {str(e)}'})
+            })
+        elif task['status'] == 'processing':
+            return JsonResponse({
+                'status': 'processing'
+            })
+        else:
+            return JsonResponse({
+                'status': 'error',
+                'error': task.get('error', 'Unknown error')
+            })
     
+    return JsonResponse({
+        'status': 'error',
+        'error': 'Method not allowed'
+    })
 
-    return render(request, 'tools/go_enrichment/go_enrichment.html')
+# 清理了错误放置的代码块

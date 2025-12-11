@@ -1,3 +1,34 @@
+// 显示通知函数
+function showNotification(message, type = 'success') {
+    // 创建通知元素
+    let notification = document.createElement('div');
+    notification.className = `notification ${type} alert alert-${type === 'success' ? 'success' : 'danger'} fixed-top left-0 right-0 m-4 p-3 shadow-lg z-50 mx-auto w-50 text-center`;
+    notification.textContent = message;
+    notification.style.position = 'fixed';
+    notification.style.top = '16px';
+    notification.style.left = '50%';
+    notification.style.transform = 'translateX(-50%)';
+    notification.style.zIndex = '1000';
+    notification.style.padding = '12px 20px';
+    notification.style.borderRadius = '6px';
+    notification.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+    notification.style.backgroundColor = type === 'success' ? '#28a745' : '#dc3545';
+    notification.style.color = 'white';
+    notification.style.fontSize = '16px';
+    notification.style.transition = 'opacity 0.5s ease';
+    
+    // 添加到文档
+    document.body.appendChild(notification);
+    
+    // 3秒后淡出并移除
+    setTimeout(() => {
+        notification.style.opacity = '0';
+        setTimeout(() => {
+            document.body.removeChild(notification);
+        }, 500);
+    }, 800);
+}
+
 // 批量下载所有指定类型的序列
 function downloadAllFasta(seqType) {
     let allSequences = '';
@@ -9,7 +40,6 @@ function downloadAllFasta(seqType) {
     sequenceBlocks.forEach(block => {
         const title = block.querySelector('strong').textContent;
         const sequence = block.querySelector('.bg-light').textContent;
-        
         // 根据标题判断序列类型
         if (seqType === 'genomic' && title.includes('genomic')) {
             allSequences += title + '\n' + formatSequence(sequence) + '\n\n';
@@ -27,7 +57,7 @@ function downloadAllFasta(seqType) {
     });
     
     if (!hasValidSeq) {
-        alert('没有可用的序列');
+        showNotification('没有可用的序列', 'error');
         return;
     }
     
@@ -41,6 +71,9 @@ function downloadAllFasta(seqType) {
     a.click();
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
+    
+    // 下载成功后显示自动消失的通知
+    showNotification(`所有${seqType}序列已下载成功`);
 }
 
 // 批量复制所有指定类型的序列
@@ -70,24 +103,21 @@ function copyAllFasta(seqType) {
             hasValidSeq = true;
         }
     });
-    
+      // 复制到剪贴板
+    navigator.clipboard.writeText(allSequences)
+        .then(() => {
+            showNotification('Sequence copied to clipboard');
+        })
+        .catch(err => {
+            console.error('Copy failed:', err);
+            showNotification('Copy failed. Please copy the sequence manually', 'error');
+        });
     if (!hasValidSeq) {
-        alert('没有可用的序列');
+        showNotification('没有可用的序列', 'error');
         return;
     }
     
-    navigator.clipboard.writeText(allSequences).then(function() {
-        alert(`所有${seqType}序列已复制到剪贴板`);
-    }).catch(function(err) {
-        // 降级方案
-        const textArea = document.createElement('textarea');
-        textArea.value = allSequences;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-        alert(`所有${seqType}序列已复制到剪贴板`);
-    });
+   
 }
 
 // 更新侧翼序列长度（如果需要的话）

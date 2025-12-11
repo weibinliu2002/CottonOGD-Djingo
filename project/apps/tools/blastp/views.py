@@ -1,6 +1,8 @@
 from django.views import View
 from django.shortcuts import render, HttpResponse
 from django.db import connection
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 import tempfile
 import os
 import json 
@@ -12,22 +14,37 @@ from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio.Blast import NCBIXML
+from django.http import JsonResponse
 
+@method_decorator(csrf_exempt, name='dispatch')
 class BlastpView(View):
     template_name = 'tools/blastp/blastp.html'
     results_template = 'tools/blastp/blastp_results.html'
     
     def get(self, request):
-        """显示BLASTP搜索表单"""
-        return render(request, self.template_name)
+        """处理GET请求，区分API请求和页面请求"""
+        # 检查是否是API请求
+        is_api = request.headers.get('Accept') == 'application/json' or request.GET.get('api') == 'true'
+        
+        if is_api:
+            # API请求返回JSON响应
+            return JsonResponse({'message': 'BLASTP API is ready', 'status': 'success'})
+        else:
+            # 页面请求返回HTML模板
+            return render(request, self.template_name)
     
     def post(self, request):
         """处理BLASTP搜索请求"""
+        # 检查是否是API请求
+        is_api = request.headers.get('Accept') == 'application/json' or request.GET.get('api') == 'true'
+        
         sequence = request.POST.get('sequence', '').strip()
         evalue = request.POST.get('evalue', '0.01')
         max_target_seqs = request.POST.get('max_target_seqs', '30')
         
         if not sequence:
+            if is_api:
+                return JsonResponse({'error': 'Please provide a protein sequence'}, status=400)
             return render(request, self.template_name, {
                 'error': 'Please provide a protein sequence'
             })
@@ -73,24 +90,43 @@ class BlastpView(View):
                     'qEnd': hit['qEnd'],
                 } for hit in blast_data['hits']]
             }
-
+            
+            execution_time = round(time.time() - start_time, 2)
+            
+            if is_api:
+                return JsonResponse({
+                    'success': True,
+                    'query_sequence': sequence,
+                    'hits': blast_data['hits'],
+                    'execution_time': execution_time,
+                    'evalue': evalue,
+                    'max_target_seqs': max_target_seqs,
+                    'chord_data': chord_data
+                })
+            
             return render(request, self.results_template, {
                 'query_sequence': sequence,
                 'hits': blast_data['hits'],
-                'execution_time': round(time.time() - start_time, 2),
+                'execution_time': execution_time,
                 'evalue': evalue,
                 'max_target_seqs': max_target_seqs,
                 'chord_data_json': chord_data
             })
             
         except subprocess.CalledProcessError as e:
+            error_msg = f"BLAST执行失败: {e.stderr.decode('utf-8') if e.stderr else str(e)}"
+            if is_api:
+                return JsonResponse({'error': error_msg}, status=500)
             return render(request, self.template_name, {
-                'error': f"BLAST执行失败: {e.stderr.decode('utf-8') if e.stderr else str(e)}"
+                'error': error_msg
             })
             
         except Exception as e:
+            error_msg = f"系统错误: {str(e)}"
+            if is_api:
+                return JsonResponse({'error': error_msg}, status=500)
             return render(request, self.template_name, {
-                'error': f"系统错误: {str(e)}"
+                'error': error_msg
             })
             
         finally:
