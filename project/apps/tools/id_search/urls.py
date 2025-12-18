@@ -1,11 +1,8 @@
 from django.urls import path
-from .views import IDSearchView, IdSearchResults, IdSearchAPIView, IdSearchFormAPIView
-
-app_name = 'id_search'
+from .views import IdSearchResults, IdSearchAPIView, IdSearchFormAPIView
 
 urlpatterns = [
-    # 仅保留API路由，让Vue前端处理页面路由
-    # API端点 - 为Vue前端提供数据
+    path('id-search/', IdSearchResults.as_view(), name='id_search_results'),
     path('api/id-search/', IdSearchAPIView.as_view(), name='id_search_api'),
     path('api/id-search-form/', IdSearchFormAPIView.as_view(), name='id_search_form_api'),
 ]

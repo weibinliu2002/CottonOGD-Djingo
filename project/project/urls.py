@@ -32,11 +32,15 @@ import os
 # 添加jbrowse静态文件目录
 JBROWSE_STATIC_DIR = os.path.join(settings.BASE_DIR, '../vue_app/dist/jbrowse')
 
+# 添加jbrowse静态文件目录
+JBROWSE_STATIC_DIR = os.path.join(settings.BASE_DIR, '../vue_app/dist/jbrowse')
+
 urlpatterns = [
     path('', TemplateView.as_view(template_name='index.html'), name='home'),
     path('admin/', admin.site.urls),
     #path('', include('home.urls')),
     #path('Browse/', include(('Browse.urls', 'Browse'), namespace='browse')),
+    # 使用自定义视图处理jbrowse请求
     path('jbrowse/', include(('jbrowse.urls', 'jbrowse'), namespace='jbrowse')),
     #path('submit/', include(('submit.urls', 'submit'), namespace='submit')),
     path('tools/', include(('tools.urls', 'tools'), namespace='tools')),
@@ -52,4 +56,4 @@ urlpatterns = [
     path('.well-known/appspecific/com.chrome.devtools.json', chrome_devtools_config),
     # 捕获所有其他路由，指向index.html，让Vue Router处理
     path('<path:path>', TemplateView.as_view(template_name='index.html')),
-]+ static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) + static('/jbrowse/', document_root=JBROWSE_STATIC_DIR) + static('/static/jbrowse/', document_root=JBROWSE_STATIC_DIR)
+]+ static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) + static('/assets/jbrowse/', document_root=os.path.join(settings.BASE_DIR, 'static/jbrowse'))

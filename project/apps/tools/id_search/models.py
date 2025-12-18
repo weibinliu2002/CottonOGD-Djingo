@@ -200,5 +200,10 @@ class gene_seq(models.Model):
     def __str__(self):
         return str(self.gene_id)
 
+class genome_seq(models.Model):
+    gene_id = models.CharField(max_length=100, blank=True, null=True)
+    seq = models.TextField(blank=True, null=True)
+    def __str__(self):
+        return str(self.gene_id)
 
 
