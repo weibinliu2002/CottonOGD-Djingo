@@ -38,3 +38,6 @@ vue_app/*
 
 # 允许跟踪vue_app/dist目录下的所有内容
 !vue_app/dist/**
+!vue_app/src/**
+!vue_app/*json
+!vue_app/*js

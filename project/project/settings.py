@@ -37,8 +37,10 @@ CSRF_TRUSTED_ORIGINS = [
     'http://172.28.226.114:3306',
     'http://localhost:5173',
     'http://localhost:5174',
+    'http://localhost:5713',
     'http://127.0.0.1:5173',
     'http://127.0.0.1:5174',
+    'http://127.0.0.1:5713',
 ]
 
 
@@ -87,6 +89,8 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ORIGIN_ALLOW_ALL = True
 CORS_ORIGIN_WHITELIST = [
     *(f'http://localhost:{port}' for port in range(5173, 5180)),
+    'http://localhost:5713',
+    'http://127.0.0.1:5713',
 ]
 CORS_ALLOW_HEADERS = [
     'x-request-id',
@@ -186,10 +190,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 X_FRAME_OPTIONS = 'SAMEORIGIN'
 
 STATIC_URL = '/assets/'
-STATICFILES_DIRS = [#os.path.join(BASE_DIR, 'static'),
-                    os.path.join(BASE_DIR,'../vue_app'),
-                    os.path.join(BASE_DIR, '../vue_app','dist'),
-                     os.path.join(BASE_DIR, '../vue_app','dist/assets'),
-                     os.path.join(BASE_DIR, '../vue_app','dist/jbrowse'),
-                     ]
+# 确保static/jbrowse目录被正确映射到/assets/jbrowse/URL
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),  # 主static目录，包含jbrowse
+    os.path.join(BASE_DIR, '../vue_app/dist'),  # Vue应用构建输出目录
+    os.path.join(BASE_DIR, '../vue_app/dist/assets'),  # Vue应用资源目录
+]
+
 #STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
