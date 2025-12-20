@@ -54,12 +54,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'corsheaders',
-    'home.apps.HomeConfig',
-    'submit.apps.SubmitConfig',
     'Browse.apps.BrowseConfig',
-    'Browse.Genome.apps.GenomeConfig',
-    'Browse.Species.apps.SpeciesConfig',
-    'Browse.TF.apps.TfConfig',
     'jbrowse.apps.JbrowseConfig',
     'tools.kegg_annotation',
     'tools.go_annotation',
@@ -89,8 +84,6 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ORIGIN_ALLOW_ALL = True
 CORS_ORIGIN_WHITELIST = [
     *(f'http://localhost:{port}' for port in range(5173, 5180)),
-    'http://localhost:5713',
-    'http://127.0.0.1:5713',
 ]
 CORS_ALLOW_HEADERS = [
     'x-request-id',

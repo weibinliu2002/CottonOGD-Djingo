@@ -7,6 +7,21 @@ import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 
 // https://vite.dev/config/
 export default defineConfig({
+  // vite.config.js
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // 将大型库单独打包
+          'element-plus': ['element-plus'],
+          'chart-js': ['chart.js'],
+          'd3': ['d3'],
+          'tools': ['heatmap.js'],
+        }
+      }
+    },
+    chunkSizeWarningLimit: 1000 // 调整chunk大小警告阈值
+  },
   // 显式设置publicDir配置
   publicDir: 'public',
   plugins: [
@@ -23,27 +38,18 @@ export default defineConfig({
     port: 5713,
     hmr: true,
     proxy: {
-      '/api': {
+      // 使用正则表达式匹配所有需要转发的路径
+      '^/(api|tools|jbrowse|assets/jbrowse|Browse)': {
         target: 'http://127.0.0.1:8000',
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path.replace(/^\/api/, '')
-      },
-      '/tools': {
-        target: 'http://127.0.0.1:8000',
-        changeOrigin: true,
-        secure: false
-      },
-      '/jbrowse': {
-        target: 'http://127.0.0.1:8000',
-        changeOrigin: true,
-        secure: false
-      },
-      // 确保JBrowse静态资源能正确访问
-      '/assets/jbrowse': {
-        target: 'http://127.0.0.1:8000',
-        changeOrigin: true,
-        secure: false
+        rewrite: (path) => {
+          // 只有/api路径需要去掉前缀，其他路径直接转发
+          if (path.startsWith('/api')) {
+            return path.replace(/^\/api/, '');
+          }
+          return path;
+        }
       }
     }
   },
