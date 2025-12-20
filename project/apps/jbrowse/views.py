@@ -9,14 +9,8 @@ genome_name = 'Ghirsutum_genome_HAU_v1.0'
 location = 'Ghir_A01:1-1000000'
 gff_name = 'TM-1.gff'
 def index(request):
-    # 直接返回jbrowse的静态HTML文件，只显示基础的JBrowse视图
-    jbrowse_index_path = os.path.join(settings.BASE_DIR, 'static/jbrowse/index.html')
-    if os.path.exists(jbrowse_index_path):
-        with open(jbrowse_index_path, 'r', encoding='utf-8') as f:
-            html_content = f.read()
-        return HttpResponse(html_content)
-    else:
-        return HttpResponse(f'JBrowse index file not found at: {jbrowse_index_path}', status=404)
+    # 直接返回index.html模板
+    return render(request, "index.html")
 
 
 def serve_large_file(request, filename):

@@ -1,6 +1,6 @@
 from tkinter import N
 from django.db import models
-from Browse.Species.models import Species
+#from Browse.models import Species
 '''
 class Orthogroups(models.Model):
     col_0 = models.CharField(max_length=255)
@@ -181,7 +181,8 @@ class gene_annotation(models.Model):
         return self.Gene_ID
 
 class Genome_Assembly(models.Model):
-    name = models.ForeignKey(Species, on_delete=models.CASCADE,related_name='species')
+    #name = models.ForeignKey(Species, on_delete=models.CASCADE,related_name='species')
+    name = models.CharField(max_length=100, blank=True, null=True)
     fasta_file = models.FileField(upload_to='data/genomes/')   # 存原始文件
     created_at = models.DateTimeField(auto_now_add=True)
     def __str__(self):
@@ -193,9 +194,9 @@ class gene_seq(models.Model):
     gene_id = models.CharField(max_length=100, blank=True, null=True)
     mrna_id = models.CharField(max_length=100, blank=True, null=True)
     mrna_seq = models.TextField(blank=True, null=True)
-    cds_id = models.CharField(max_length=100, blank=True, null=True)
     cds_seq = models.TextField(blank=True, null=True)
-    protein_id = models.CharField(max_length=100, blank=True, null=True)
+    upstream_seq = models.TextField(blank=True, null=True)
+    downstream_seq = models.TextField(blank=True, null=True)
     protein_seq = models.TextField(blank=True, null=True)
     def __str__(self):
         return str(self.gene_id)
