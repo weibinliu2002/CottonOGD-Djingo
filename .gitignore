@@ -31,13 +31,7 @@ index.php
 * copy.py
 
 # 忽略vue_app目录下的所有内容
-vue_app/*
+vue_app/.vscode/
+vue_app/node_modules/
 
-# 但允许跟踪vue_app/dist目录
-!vue_app/dist/
 
-# 允许跟踪vue_app/dist目录下的所有内容
-!vue_app/dist/**
-!vue_app/src/**
-!vue_app/*json
-!vue_app/*js

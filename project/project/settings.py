@@ -64,7 +64,7 @@ INSTALLED_APPS = [
     'tools.kegg_enrichment',
     'tools.id_search.apps.IdSearchConfig',  
     'tools.blastp.apps.BlastpConfig',
-    'tools.heatmap',
+    #'tools.heatmap',
     'tools.gene_expression',
     'tools.gene_expression_in_eFP.apps.ThermalMapConfig',
     'debug_toolbar',
