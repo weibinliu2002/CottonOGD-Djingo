@@ -152,7 +152,7 @@ class Orthogroups(models.Model):
 '''
 class gene_info(models.Model):
     id = models.BigAutoField(primary_key=True)
-    IDs = models.TextField(blank=True, null=True)
+    IDs = models.CharField(max_length=100, blank=True, null=True)
     seqid = models.CharField(max_length=100)
     source = models.CharField(max_length=100)
     species = models.CharField(max_length=100, blank=True, null=True)
@@ -195,6 +195,7 @@ class gene_seq(models.Model):
     mrna_id = models.CharField(max_length=100, blank=True, null=True)
     mrna_seq = models.TextField(blank=True, null=True)
     cds_seq = models.TextField(blank=True, null=True)
+    cdna_seq = models.TextField(blank=True, null=True)
     upstream_seq = models.TextField(blank=True, null=True)
     downstream_seq = models.TextField(blank=True, null=True)
     protein_seq = models.TextField(blank=True, null=True)
@@ -206,5 +207,11 @@ class genome_seq(models.Model):
     seq = models.TextField(blank=True, null=True)
     def __str__(self):
         return str(self.gene_id)
+
+
+
+
+
+
 
 

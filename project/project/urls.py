@@ -23,12 +23,28 @@ from debug_toolbar.toolbar import debug_toolbar_urls
 from django.http import HttpResponse
 #from rest_framework.response import DefaultRenderer
 from django.views.generic import TemplateView
-def chrome_devtools_config(request):
-    return HttpResponse(status=204)  # 返回空内容的成功响应
 from django.conf.urls.static import static
 from django.conf import settings
 import os
+from rest_framework import permissions
+from drf_yasg.views import get_schema_view
+from drf_yasg import openapi
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+def chrome_devtools_config(request):
+    return HttpResponse(status=204)  # 返回空内容的成功响应
 
+schema_view = get_schema_view(
+    openapi.Info(
+        title="Your API",
+        default_version='v1',
+        description="API description",
+        terms_of_service="https://www.example.com/terms/",
+        contact=openapi.Contact(email="contact@example.com"),
+        license=openapi.License(name="BSD License"),
+    ),
+    public=True,
+    permission_classes=(permissions.AllowAny,),
+)
 # 添加jbrowse静态文件目录
 JBROWSE_STATIC_DIR = os.path.join(settings.BASE_DIR, '../vue_app/dist/jbrowse')
 
@@ -50,7 +66,14 @@ urlpatterns = [
     #path('tools/', include(('tools.heatmap.urls', 'tools.heatmap'), namespace='tools_heatmap')),
     #path('tools/', include(('tools.gene_expression.urls', 'tools.gene_expression'), namespace='tools_gene_expression')),
     #path('tools/', include(('tools.gene_expression_in_eFP.urls', 'tools.gene_expression_in_eFP'), namespace='tools_gene_expression_in_eFP')),
+    path('schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    # ...
+
+    path('swagger<format>/', schema_view.without_ui(cache_timeout=0), name='schema-json'),
+    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
     path('.well-known/appspecific/com.chrome.devtools.json', chrome_devtools_config),
     # 捕获所有其他路由，指向index.html，让Vue Router处理
     path('<path:path>', TemplateView.as_view(template_name='index.html')),
-]+ static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) + static('/jbrowse/', document_root=JBROWSE_STATIC_DIR) + static('/static/jbrowse/', document_root=JBROWSE_STATIC_DIR)
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) + static('/jbrowse/', document_root=JBROWSE_STATIC_DIR) + static('/static/jbrowse/', document_root=JBROWSE_STATIC_DIR)
