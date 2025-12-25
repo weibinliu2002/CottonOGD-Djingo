@@ -1,7 +1,7 @@
 <template>
   <div class="sequence-display-component">
     <!-- 通用按钮模式：显示各个序列类型的按钮 -->
-    <div v-if="displayMode === 'buttons' || displayMode === 'full'" class="d-flex flex-wrap gap-3 mb-4">
+    <div class="d-flex flex-wrap gap-3 mb-4">
       <div v-for="seq in sequenceTypes" :key="seq.key" class="text-center flex-shrink-0">
         <h4 class="h6 mb-2">{{ seq.title }}</h4>
         <button
@@ -14,7 +14,7 @@
     </div>
 
     <!-- 上下游长度选择器 -->
-    <div v-if="displayMode === 'buttons' || displayMode === 'full'" class="mb-4 d-flex justify-content-start">
+    <div class="mb-4 d-flex justify-content-start">
       <div class="d-flex gap-3 align-items-end w-25">
         <div class="flex-shrink-0 flex-grow-1">
           <label for="upstreamLengthSelect" class="form-label form-label-sm text-center">Upstream</label>
@@ -27,32 +27,6 @@
           <select class="form-select form-select-sm" id="downstreamLengthSelect" v-model.number="selectedDownstreamLength" @change="handleLengthChange">
             <option v-for="option in lengthOptions" :key="option" :value="option">{{ option }}</option>
           </select>
-        </div>
-      </div>
-    </div>
-
-    <!-- full模式展示FASTA -->
-    <div v-if="displayMode === 'full' && showSequences" class="mt-6">
-      <div v-for="(seqType, index) in sequenceTypes" :key="index" class="mb-6">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h4>{{ seqType.title }}</h4>
-          <div>
-            <button class="btn btn-sm btn-primary me-2" @click="$emit('download-all', seqType.key)">下载全部</button>
-            <button class="btn btn-sm btn-secondary" @click="$emit('copy-all', seqType.key)">复制全部</button>
-          </div>
-        </div>
-
-        <div class="bg-light p-4 rounded overflow-y-auto" style="max-height: 300px; white-space: pre-wrap; font-family: monospace; text-align: left;">
-          <template v-for="(result, geneIndex) in results" :key="`${seqType.key}-${geneIndex}`">
-            <!-- 获取对应序列 -->
-            <template v-if="getSequenceTypeContent(seqType.key, result, geneIndex)">
-              {{ getSequenceTypeContent(seqType.key, result, geneIndex) }}
-            </template>
-          </template>
-
-          <template v-if="!hasSequences(seqType.key)">
-            <em>该类型没有可用序列</em>
-          </template>
         </div>
       </div>
     </div>
@@ -97,9 +71,6 @@ const lengthOptions = [500, 1000, 2000, 3000, 4000, 5000, 10000]
 const selectedUpstreamLength = ref(10000)
 const selectedDownstreamLength = ref(10000)
 
-// full模式下，默认显示序列
-const showSequences = ref(true)
-
 // 组件初始化时，将初始长度传递给父组件
 emit('length-change', {
   upstreamLength: selectedUpstreamLength.value,
@@ -126,59 +97,30 @@ const hasSequences = (seqType) => {
 }
 
 const getSequence = (seqType) => {
-  const upLen = selectedUpstreamLength.value || 500
-  const downLen = selectedDownstreamLength.value || 500
   const ct = props.currentTranscript
 
   // 1. 检查top-level props（单个基因情况）- 优先检查，确保genomic序列能被正确获取
   if (seqType === 'genomic' && props.gene_seq) return props.gene_seq
   
   // 2. 检查currentTranscript（单个转录本情况）
-  // 只有当currentTranscript中有对应序列时才返回，否则继续检查其他位置
-  if (ct) {
-    if (seqType === 'mrna' && ct.mrna_seq) return ct.mrna_seq
-    if (seqType === 'upstream' && ct.upstream_seq) return ct.upstream_seq.slice(0, upLen)
-    if (seqType === 'downstream' && ct.downstream_seq) return ct.downstream_seq.slice(0, downLen)
-    if (seqType === 'cdna' && ct.cdna_seq) return ct.cdna_seq
-    if (seqType === 'cds' && ct.cds_seq) return ct.cds_seq
-    if (seqType === 'protein' && ct.protein_seq) return ct.protein_seq
-  }
+  if (ct && seqType === 'genomic' && ct.gene_seq) return ct.gene_seq
 
-  // 3. 检查其他top-level props（单个基因情况）
-  if (seqType === 'mrna' && props.mrna_seq) return props.mrna_seq
-  if (seqType === 'upstream' && props.upstream_seq) return props.upstream_seq.slice(0, upLen)
-  if (seqType === 'downstream' && props.downstream_seq) return props.downstream_seq.slice(0, downLen)
-  if (seqType === 'cdna' && props.cdna_seq) return props.cdna_seq
-  if (seqType === 'cds' && props.cds_seq) return props.cds_seq
-  if (seqType === 'protein' && props.protein_seq) return props.protein_seq
-
-  // 4. 检查props.results（多个基因/转录本情况）
-  if (props.results && props.results.length > 0) {
+  // 3. 检查props.results（多个基因情况）
+  if (seqType === 'genomic' && props.results && props.results.length > 0) {
     for (const result of props.results) {
-      // 检查result本身的序列
-      if (seqType === 'genomic' && result.gene_seq) return result.gene_seq
-      if (seqType === 'mrna' && result.mrna_seq) return result.mrna_seq
-      if (seqType === 'upstream' && result.upstream_seq) return result.upstream_seq.slice(0, upLen)
-      if (seqType === 'downstream' && result.downstream_seq) return result.downstream_seq.slice(0, downLen)
-      if (seqType === 'cdna' && result.cdna_seq) return result.cdna_seq
-      if (seqType === 'cds' && result.cds_seq) return result.cds_seq
-      if (seqType === 'protein' && result.protein_seq) return result.protein_seq
-      
-      // 检查result.mrna_transcripts中的序列
-      if (result.mrna_transcripts && result.mrna_transcripts.length > 0) {
-        for (const transcript of result.mrna_transcripts) {
-          if (seqType === 'mrna' && transcript.mrna_seq) return transcript.mrna_seq
-          if (seqType === 'upstream' && transcript.upstream_seq) return transcript.upstream_seq.slice(0, upLen)
-          if (seqType === 'downstream' && transcript.downstream_seq) return transcript.downstream_seq.slice(0, downLen)
-          if (seqType === 'cdna' && transcript.cdna_seq) return transcript.cdna_seq
-          if (seqType === 'cds' && transcript.cds_seq) return transcript.cds_seq
-          if (seqType === 'protein' && transcript.protein_seq) return transcript.protein_seq
-        }
-      }
+      if (result.gene_seq) return result.gene_seq
     }
   }
 
+  // 对于其他序列类型，返回空字符串，让父组件在弹窗中展示所有序列
   return ''
+}
+
+// 辅助函数：将序列按每行80个字符换行
+const formatSequence = (seq) => {
+  if (!seq) return ''
+  // 使用正则表达式将序列按每80个字符分割
+  return seq.replace(/(.{1,80})/g, '$1\n')
 }
 
 const getSequenceTypeContent = (seqType, result, geneIndex) => {
@@ -191,68 +133,76 @@ const getSequenceTypeContent = (seqType, result, geneIndex) => {
   let content = ''
 
   if (seqType === 'genomic' && checkSeq(result.gene_seq)) {
-    content += `>${geneId} genomic\n${result.gene_seq}\n\n`
+    content += `>${geneId} genomic\n${formatSequence(result.gene_seq)}\n`
   }
 
   if (seqType === 'mrna') {
     // 直接显示所有转录本的mRNA序列，使用转录本ID作为FASTA头部
     if (result.mrna_transcripts && result.mrna_transcripts.length > 0) {
       result.mrna_transcripts.forEach(t => { 
-        if (checkSeq(t.mrna_seq)) content += `>${t.id} mrna\n${t.mrna_seq}\n\n` 
+        if (checkSeq(t.mrna_seq)) content += `>${t.id} mrna\n${formatSequence(t.mrna_seq)}\n` 
       }) 
     } else if (checkSeq(result.mrna_seq)) {
       // 如果没有transcripts数组但有mrna_seq，使用geneId
-      content += `>${geneId} mrna\n${result.mrna_seq}\n\n`
+      content += `>${geneId} mrna\n${formatSequence(result.mrna_seq)}\n`
     }
   }
 
   if (seqType === 'upstream') {
     if (result.mrna_transcripts && result.mrna_transcripts.length > 0) {
       result.mrna_transcripts.forEach(t => { 
-        if (checkSeq(t.upstream_seq)) content += `>${t.id} upstream (${upLen}bp)\n${t.upstream_seq.slice(0, upLen)}\n\n` 
+        if (checkSeq(t.upstream_seq)) {
+          const seq = t.upstream_seq.slice(0, upLen)
+          content += `>${t.id} upstream (${upLen}bp)\n${formatSequence(seq)}\n` 
+        }
       })
     } else if (checkSeq(result.upstream_seq)) {
-      content += `>${geneId} upstream (${upLen}bp)\n${result.upstream_seq.slice(0, upLen)}\n\n`
+      const seq = result.upstream_seq.slice(0, upLen)
+      content += `>${geneId} upstream (${upLen}bp)\n${formatSequence(seq)}\n`
     }
   }
 
   if (seqType === 'downstream') {
     if (result.mrna_transcripts && result.mrna_transcripts.length > 0) {
       result.mrna_transcripts.forEach(t => { 
-        if (checkSeq(t.downstream_seq)) content += `>${t.id} downstream (${downLen}bp)\n${t.downstream_seq.slice(0, downLen)}\n\n` 
+        if (checkSeq(t.downstream_seq)) {
+          const seq = t.downstream_seq.slice(0, downLen)
+          content += `>${t.id} downstream (${downLen}bp)\n${formatSequence(seq)}\n` 
+        }
       })
     } else if (checkSeq(result.downstream_seq)) {
-      content += `>${geneId} downstream (${downLen}bp)\n${result.downstream_seq.slice(0, downLen)}\n\n`
+      const seq = result.downstream_seq.slice(0, downLen)
+      content += `>${geneId} downstream (${downLen}bp)\n${formatSequence(seq)}\n`
     }
   }
 
   if (seqType === 'cdna') {
     if (result.mrna_transcripts && result.mrna_transcripts.length > 0) {
       result.mrna_transcripts.forEach(t => { 
-        if (checkSeq(t.cdna_seq)) content += `>${t.id} cdna\n${t.cdna_seq}\n\n` 
+        if (checkSeq(t.cdna_seq)) content += `>${t.id} cdna\n${formatSequence(t.cdna_seq)}\n` 
       })
     } else if (checkSeq(result.cdna_seq)) {
-      content += `>${geneId} cdna\n${result.cdna_seq}\n\n`
+      content += `>${geneId} cdna\n${formatSequence(result.cdna_seq)}\n`
     }
   }
 
   if (seqType === 'cds') {
     if (result.mrna_transcripts && result.mrna_transcripts.length > 0) {
       result.mrna_transcripts.forEach(t => { 
-        if (checkSeq(t.cds_seq)) content += `>${t.id} cds\n${t.cds_seq}\n\n` 
+        if (checkSeq(t.cds_seq)) content += `>${t.id} cds\n${formatSequence(t.cds_seq)}\n` 
       })
     } else if (checkSeq(result.cds_seq)) {
-      content += `>${geneId} cds\n${result.cds_seq}\n\n`
+      content += `>${geneId} cds\n${formatSequence(result.cds_seq)}\n`
     }
   }
 
   if (seqType === 'protein') {
     if (result.mrna_transcripts && result.mrna_transcripts.length > 0) {
       result.mrna_transcripts.forEach(t => { 
-        if (checkSeq(t.protein_seq)) content += `>${t.id} protein\n${t.protein_seq}\n\n` 
+        if (checkSeq(t.protein_seq)) content += `>${t.id} protein\n${formatSequence(t.protein_seq)}\n` 
       })
     } else if (checkSeq(result.protein_seq)) {
-      content += `>${geneId} protein\n${result.protein_seq}\n\n`
+      content += `>${geneId} protein\n${formatSequence(result.protein_seq)}\n`
     }
   }
 
@@ -269,11 +219,7 @@ const handleLengthChange = () => {
 const handleButtonClick = (type, title, content, id) => {
   // 对于基因组序列，直接传递真实的序列内容
   // 对于其他序列类型（特别是上下游序列），传递空字符串，让父组件重新请求
-  if (type === 'genomic') {
-    emit('show-sequence', { type, title, content, id })
-  } else {
-    emit('show-sequence', { type, title, content: '', id })
-  }
+  emit('show-sequence', { type, title, content, id })
 }
 </script>
 
