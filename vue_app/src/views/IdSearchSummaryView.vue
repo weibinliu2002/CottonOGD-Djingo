@@ -56,14 +56,12 @@
         <h4>Gene Sequences</h4>
     
           
-          <!-- 使用通用序列展示组件，full模式 -->
+          <!-- 使用通用序列展示组件 -->
           <sequence-display
-            display-mode="full"
             :results="results"
             :loading="false"
             @show-sequence="handleShowSequence"
-            @download-all="downloadAllFasta"
-            @copy-all="copyAllFasta"
+            @length-change="handleLengthChange"
           />
        
         
@@ -121,8 +119,11 @@ export default {
       has_sequences: false,
       loading: false,
       error: null,
+      // 上下游长度选择
+      selectedUpstreamLength: 10000,
+      selectedDownstreamLength: 10000,
       // 序列缓存和加载状态
-      sequenceCache: {},   // key: geneId|type|transcriptId
+      sequenceCache: {},   // key: geneId|type|transcriptId|upLen|downLen
       sequenceLoading: {}, // loading 状态
       // 弹窗相关状态
       showModal: false,
@@ -139,6 +140,12 @@ export default {
     this.fetchSearchResults()
   },
   methods: {
+  // 处理长度变化事件
+  handleLengthChange(lengths) {
+    this.selectedUpstreamLength = lengths.upstreamLength || 10000
+    this.selectedDownstreamLength = lengths.downstreamLength || 10000
+  },
+  
   async fetchSearchResults() {
     this.loading = true;
     this.error = null;
@@ -335,6 +342,12 @@ export default {
     }
   },
   
+  // 辅助函数：将序列按每行80个字符换行
+  formatSequence(seq) {
+    if (!seq) return ''
+    return seq.replace(/(.{1,80})/g, '$1\n')
+  },
+  
   // 处理序列显示事件
   async handleShowSequence(eventData) {
     const { type, title, content, id } = eventData
@@ -342,70 +355,203 @@ export default {
     this.currentSeqType = type
     this.currentGeneId = id
     
-    // 从results中找到对应的基因数据
-    const geneData = this.results.find(result => result.IDs === id)
-    if (!geneData) {
-      this.modalContent = '未找到对应基因数据'
-      this.showModal = true
-      return
-    }
+    // 获取选择的长度
+    const upLen = this.selectedUpstreamLength || 500
+    const downLen = this.selectedDownstreamLength || 500
     
-    // 使用mrnaid替代transcriptId，与后端字段名保持一致
-    const mrnaid = geneData.mrna_id || id
-    const cacheKey = `${id}|${type}|${mrnaid}`
+    // 生成所有基因的该类型序列的FASTA内容
+    let allFastaContent = ''
     
-    // 已经加载过，直接弹窗
-    if (this.sequenceCache[cacheKey]) {
-      this.modalContent = this.sequenceCache[cacheKey]
-      this.showModal = true
-      return
-    }
-    
-    // 正在加载，避免重复点击
-    if (this.sequenceLoading[cacheKey]) return
-    this.sequenceLoading[cacheKey] = true
-    
-    try {
-      let seqContent = ''
+    // 遍历所有基因结果
+    for (const geneData of this.results) {
+      const geneId = geneData.IDs
       
-      // 直接使用content参数，无论type是什么类型
-      if (content) {
-        seqContent = content
-      } 
-      // 如果content为空，向后端请求序列
-      else {
-        const res = await httpInstance.post(
-          '/tools/id-search/api/sequence/',
-          {
-            gene_id: id,
-            transcript_id: mrnaid,
-            type: type
-          }
-        )
-        console.log('序列检索成功:', res)
-        const seq = res.sequence || '未找到序列'
-        
-        // 如果返回的是有效序列，直接使用
-        if (seq && seq !== '未找到序列' && seq !== 'N/A') {
-          seqContent = seq
-        } else {
-          seqContent = seq
-        }
+      // 1. 首先处理基因组序列（如果是基因组序列类型）
+      if (type === 'genomic' && geneData.gene_seq && geneData.gene_seq !== 'N/A' && geneData.gene_seq !== '') {
+        // 直接从result中获取基因组序列，不需要请求后端
+        allFastaContent += `>${geneId} genomic\n`
+        allFastaContent += this.formatSequence(geneData.gene_seq)
+        allFastaContent += '\n\n'
+        continue // 基因组序列不需要处理转录本
       }
       
-      // 缓存序列
-      this.sequenceCache[cacheKey] = seqContent
-      this.sequenceLoading[cacheKey] = false
-      
-      // 显示序列
-      this.modalContent = seqContent
-      this.showModal = true
-    } catch (error) {
-      console.error('序列检索失败:', error)
-      this.sequenceLoading[cacheKey] = false
-      this.modalContent = '序列检索失败: ' + (error.message || '未知错误')
-      this.showModal = true
+      // 2. 处理其他序列类型
+      // 对于其他序列类型，处理所有转录本的序列
+      if (geneData.mrna_transcripts && geneData.mrna_transcripts.length > 0) {
+        // 使用transcript_id替代mrnaid，修复拼写错误
+        for (const transcript of geneData.mrna_transcripts) {
+          const transcriptId = transcript.id || transcript.transcript_id || geneId
+          // 在缓存键中添加长度信息
+          const cacheKey = `${geneId}|${type}|${transcriptId}|${upLen}|${downLen}`
+          
+          // 检查缓存
+          if (this.sequenceCache[cacheKey]) {
+            allFastaContent += this.sequenceCache[cacheKey]
+            allFastaContent += '\n\n'
+            continue
+          }
+          
+          // 正在加载，跳过
+          if (this.sequenceLoading[cacheKey]) continue
+          
+          // 设置加载状态
+          this.sequenceLoading[cacheKey] = true
+          
+          try {
+            let seqContent = ''
+            
+            // 从转录本对象中获取序列（如果有）
+            if (transcript[type + '_seq'] && transcript[type + '_seq'] !== 'N/A' && transcript[type + '_seq'] !== '未找到CDS序列' && transcript[type + '_seq'] !== '未找到蛋白序列') {
+              seqContent = transcript[type + '_seq']
+            } 
+            // 如果转录本中没有，向后端请求序列
+            else {
+              const res = await httpInstance.post(
+                '/tools/id-search/api/sequence/',
+                {
+                  gene_id: geneId,
+                  transcript_id: transcriptId,
+                  type: type,
+                  // 添加长度参数
+                  upstream_length: upLen,
+                  downstream_length: downLen
+                }
+              )
+              console.log('序列检索成功:', res)
+              const seq = res.sequence || '未找到序列'
+              
+              // 如果返回的是有效序列，直接使用
+              if (seq && seq !== '未找到序列' && seq !== 'N/A') {
+                seqContent = seq
+              } else {
+                seqContent = seq
+              }
+            }
+            
+            // 对上下游序列进行长度截取
+            if ((type === 'upstream' || type === 'downstream') && seqContent && seqContent !== '未找到序列' && seqContent !== 'N/A') {
+              const maxLen = type === 'upstream' ? upLen : downLen
+              seqContent = seqContent.slice(0, maxLen)
+            }
+            
+            // 生成FASTA格式的序列
+            let fastaContent = ''
+            if (seqContent && seqContent !== '未找到序列' && seqContent !== 'N/A') {
+              // 添加FASTA头部，包含长度信息
+              const lenInfo = (type === 'upstream' || type === 'downstream') ? ` (${type === 'upstream' ? upLen : downLen}bp)` : ''
+              fastaContent = `>${transcriptId} ${type}${lenInfo}\n`
+              // 格式化序列，每80个字符换行
+              fastaContent += this.formatSequence(seqContent)
+            } else {
+              fastaContent = seqContent
+            }
+            
+            // 缓存FASTA格式的序列
+            this.sequenceCache[cacheKey] = fastaContent
+            
+            // 添加到所有序列内容中
+            allFastaContent += fastaContent
+            allFastaContent += '\n\n'
+          } catch (error) {
+            console.error('序列检索失败:', error)
+            allFastaContent += `>${transcriptId} ${type}\n检索序列失败\n\n`
+          } finally {
+            this.sequenceLoading[cacheKey] = false
+          }
+        }
+      } else {
+        // 如果没有transcripts数组，使用geneData本身的序列
+        // 在缓存键中添加长度信息
+        const cacheKey = `${geneId}|${type}|${geneId}|${upLen}|${downLen}`
+        
+        // 检查缓存
+        if (this.sequenceCache[cacheKey]) {
+          allFastaContent += this.sequenceCache[cacheKey]
+          allFastaContent += '\n\n'
+          continue
+        }
+        
+        // 正在加载，跳过
+        if (this.sequenceLoading[cacheKey]) continue
+        
+        // 设置加载状态
+        this.sequenceLoading[cacheKey] = true
+        
+        try {
+          let seqContent = ''
+          
+          // 从geneData对象中获取序列（如果有）
+          if (geneData[type + '_seq'] && geneData[type + '_seq'] !== 'N/A' && geneData[type + '_seq'] !== '未找到CDS序列' && geneData[type + '_seq'] !== '未找到蛋白序列') {
+            seqContent = geneData[type + '_seq']
+          } 
+          // 如果没有，向后端请求序列
+          else {
+            const res = await httpInstance.post(
+              '/tools/id-search/api/sequence/',
+              {
+                gene_id: geneId,
+                transcript_id: geneId,
+                type: type,
+                // 添加长度参数
+                upstream_length: upLen,
+                downstream_length: downLen
+              }
+            )
+            console.log('序列检索成功:', res)
+            const seq = res.sequence || '未找到序列'
+            
+            // 如果返回的是有效序列，直接使用
+            if (seq && seq !== '未找到序列' && seq !== 'N/A') {
+              seqContent = seq
+            } else {
+              seqContent = seq
+            }
+          }
+          
+          // 对上下游序列进行长度截取
+          if ((type === 'upstream' || type === 'downstream') && seqContent && seqContent !== '未找到序列' && seqContent !== 'N/A') {
+            const maxLen = type === 'upstream' ? upLen : downLen
+            seqContent = seqContent.slice(0, maxLen)
+          }
+          
+          // 生成FASTA格式的序列
+          let fastaContent = ''
+          if (seqContent && seqContent !== '未找到序列' && seqContent !== 'N/A') {
+            // 添加FASTA头部，包含长度信息
+            const lenInfo = (type === 'upstream' || type === 'downstream') ? ` (${type === 'upstream' ? upLen : downLen}bp)` : ''
+            fastaContent = `>${geneId} ${type}${lenInfo}\n`
+            // 格式化序列，每80个字符换行
+            fastaContent += this.formatSequence(seqContent)
+          } else {
+            fastaContent = seqContent
+          }
+          
+          // 缓存FASTA格式的序列
+          this.sequenceCache[cacheKey] = fastaContent
+          
+          // 添加到所有序列内容中
+          allFastaContent += fastaContent
+          allFastaContent += '\n\n'
+        } catch (error) {
+          console.error('序列检索失败:', error)
+          allFastaContent += `>${geneId} ${type}\n检索序列失败\n\n`
+        } finally {
+          this.sequenceLoading[cacheKey] = false
+        }
+      }
     }
+    
+    // 移除最后多余的换行
+    allFastaContent = allFastaContent.trim()
+    
+    // 如果没有序列，显示提示信息
+    if (!allFastaContent) {
+      allFastaContent = '未找到该类型的序列'
+    }
+    
+    // 显示所有序列
+    this.modalContent = allFastaContent
+    this.showModal = true
   },
   
   // 关闭弹窗
@@ -414,56 +560,220 @@ export default {
   },
   
   // 批量下载所有序列
-  downloadAllSequences() {
+  async downloadAllSequences() {
+    // 所有可能的序列类型
+    const sequenceTypes = ['genomic', 'mrna', 'upstream', 'downstream', 'cdna', 'cds', 'protein']
+    
+    // 获取选择的长度
+    const upLen = this.selectedUpstreamLength || 500
+    const downLen = this.selectedDownstreamLength || 500
+    
     let allSequences = ''
+    let hasSequences = false
     
-    // 收集所有基因的所有序列类型
-    this.results.forEach(result => {
-      const geneId = result.IDs
+    // 遍历所有基因结果
+    for (const geneData of this.results) {
+      const geneId = geneData.IDs
       
-      // 添加基因组序列
-      if (result.gene_seq && result.gene_seq !== 'N/A' && result.gene_seq !== '') {
-        allSequences += `>${geneId} genomic\n${result.gene_seq}\n\n`
+      // 遍历所有序列类型
+      for (const type of sequenceTypes) {
+        // 1. 首先处理基因组序列
+        if (type === 'genomic' && geneData.gene_seq && geneData.gene_seq !== 'N/A' && geneData.gene_seq !== '') {
+          // 直接从result中获取基因组序列
+          allSequences += `>${geneId} genomic\n`
+          allSequences += this.formatSequence(geneData.gene_seq)
+          allSequences += '\n\n'
+          hasSequences = true
+          continue
+        }
+        
+        // 2. 处理所有转录本的序列
+        if (geneData.mrna_transcripts && geneData.mrna_transcripts.length > 0) {
+          for (const transcript of geneData.mrna_transcripts) {
+            const transcriptId = transcript.id || transcript.transcript_id || geneId
+            const cacheKey = `${geneId}|${type}|${transcriptId}|${upLen}|${downLen}`
+            
+            let seqContent = ''
+            let found = false
+            
+            // 检查缓存
+            if (this.sequenceCache[cacheKey]) {
+              seqContent = this.sequenceCache[cacheKey]
+              found = true
+            }
+            // 从转录本对象中获取序列（如果有）
+            else if (transcript[type + '_seq'] && transcript[type + '_seq'] !== 'N/A' && transcript[type + '_seq'] !== '未找到CDS序列' && transcript[type + '_seq'] !== '未找到蛋白序列') {
+              seqContent = transcript[type + '_seq']
+              found = true
+            }
+            // 从geneData对象中获取序列（如果有）
+            else if (geneData[type + '_seq'] && geneData[type + '_seq'] !== 'N/A' && geneData[type + '_seq'] !== '未找到CDS序列' && geneData[type + '_seq'] !== '未找到蛋白序列') {
+              seqContent = geneData[type + '_seq']
+              found = true
+            }
+            
+            // 对上下游序列进行长度截取
+            if ((type === 'upstream' || type === 'downstream') && seqContent && seqContent !== '未找到序列' && seqContent !== 'N/A') {
+              const maxLen = type === 'upstream' ? upLen : downLen
+              seqContent = seqContent.slice(0, maxLen)
+            }
+            
+            // 如果找到了序列，添加到结果中
+            if (found && seqContent && seqContent !== '未找到序列' && seqContent !== 'N/A') {
+              // 添加FASTA头部，包含长度信息
+              const lenInfo = (type === 'upstream' || type === 'downstream') ? ` (${type === 'upstream' ? upLen : downLen}bp)` : ''
+              allSequences += `>${transcriptId} ${type}${lenInfo}\n`
+              allSequences += this.formatSequence(seqContent)
+              allSequences += '\n\n'
+              hasSequences = true
+            }
+            // 如果没有找到，从后端获取
+            else {
+              try {
+                const res = await httpInstance.post(
+                  '/tools/id-search/api/sequence/',
+                  {
+                    gene_id: geneId,
+                    transcript_id: transcriptId,
+                    type: type,
+                    // 添加长度参数
+                    upstream_length: upLen,
+                    downstream_length: downLen
+                  }
+                )
+                const seq = res.sequence || '未找到序列'
+                
+                // 如果返回的是有效序列，添加到结果中
+                if (seq && seq !== '未找到序列' && seq !== 'N/A') {
+                  // 对上下游序列进行长度截取
+                  let finalSeq = seq
+                  if ((type === 'upstream' || type === 'downstream')) {
+                    const maxLen = type === 'upstream' ? upLen : downLen
+                    finalSeq = seq.slice(0, maxLen)
+                  }
+                  
+                  // 添加FASTA头部，包含长度信息
+                  const lenInfo = (type === 'upstream' || type === 'downstream') ? ` (${type === 'upstream' ? upLen : downLen}bp)` : ''
+                  allSequences += `>${transcriptId} ${type}${lenInfo}\n`
+                  allSequences += this.formatSequence(finalSeq)
+                  allSequences += '\n\n'
+                  hasSequences = true
+                  
+                  // 缓存序列
+                  this.sequenceCache[cacheKey] = finalSeq
+                }
+              } catch (error) {
+                console.error('序列检索失败:', error)
+                // 跳过失败的序列，继续处理其他序列
+              }
+            }
+          }
+        } else {
+          // 如果没有transcripts数组，使用geneData本身的序列或从后端获取
+          const cacheKey = `${geneId}|${type}|${geneId}|${upLen}|${downLen}`
+          
+          let seqContent = ''
+          let found = false
+          
+          // 检查缓存
+          if (this.sequenceCache[cacheKey]) {
+            seqContent = this.sequenceCache[cacheKey]
+            found = true
+          }
+          // 从geneData对象中获取序列（如果有）
+          else if (geneData[type + '_seq'] && geneData[type + '_seq'] !== 'N/A' && geneData[type + '_seq'] !== '未找到CDS序列' && geneData[type + '_seq'] !== '未找到蛋白序列') {
+            seqContent = geneData[type + '_seq']
+            found = true
+          }
+          
+          // 对上下游序列进行长度截取
+          if ((type === 'upstream' || type === 'downstream') && seqContent && seqContent !== '未找到序列' && seqContent !== 'N/A') {
+            const maxLen = type === 'upstream' ? upLen : downLen
+            seqContent = seqContent.slice(0, maxLen)
+          }
+          
+          // 如果找到了序列，添加到结果中
+          if (found && seqContent && seqContent !== '未找到序列' && seqContent !== 'N/A') {
+            // 添加FASTA头部，包含长度信息
+            const lenInfo = (type === 'upstream' || type === 'downstream') ? ` (${type === 'upstream' ? upLen : downLen}bp)` : ''
+            allSequences += `>${geneId} ${type}${lenInfo}\n`
+            allSequences += this.formatSequence(seqContent)
+            allSequences += '\n\n'
+            hasSequences = true
+          }
+          // 如果没有找到，从后端获取
+          else {
+            try {
+              const res = await httpInstance.post(
+                '/tools/id-search/api/sequence/',
+                {
+                  gene_id: geneId,
+                  transcript_id: geneId,
+                  type: type,
+                  // 添加长度参数
+                  upstream_length: upLen,
+                  downstream_length: downLen
+                }
+              )
+              const seq = res.sequence || '未找到序列'
+              
+              // 如果返回的是有效序列，添加到结果中
+              if (seq && seq !== '未找到序列' && seq !== 'N/A') {
+                // 对上下游序列进行长度截取
+                let finalSeq = seq
+                if ((type === 'upstream' || type === 'downstream')) {
+                  const maxLen = type === 'upstream' ? upLen : downLen
+                  finalSeq = seq.slice(0, maxLen)
+                }
+                
+                // 添加FASTA头部，包含长度信息
+                const lenInfo = (type === 'upstream' || type === 'downstream') ? ` (${type === 'upstream' ? upLen : downLen}bp)` : ''
+                allSequences += `>${geneId} ${type}${lenInfo}\n`
+                allSequences += this.formatSequence(finalSeq)
+                allSequences += '\n\n'
+                hasSequences = true
+                
+                // 缓存序列
+                this.sequenceCache[cacheKey] = finalSeq
+              }
+            } catch (error) {
+              console.error('序列检索失败:', error)
+              // 跳过失败的序列，继续处理其他序列
+            }
+          }
+        }
       }
-      
-      // 添加mRNA序列
-      if (result.mrna_seq && result.mrna_seq !== 'N/A' && result.mrna_seq !== '') {
-        allSequences += `>${geneId} mrna\n${result.mrna_seq}\n\n`
-      }
-      
-      // 添加CDS序列
-      if (result.cds_seq && result.cds_seq !== 'N/A' && result.cds_seq !== '未找到CDS序列') {
-        allSequences += `>${geneId} cds\n${result.cds_seq}\n\n`
-      }
-      
-      // 添加蛋白序列
-      if (result.protein_seq && result.protein_seq !== 'N/A' && result.protein_seq !== '未找到蛋白序列') {
-        allSequences += `>${geneId} protein\n${result.protein_seq}\n\n`
-      }
-    })
+    }
     
-    if (allSequences) {
+    // 移除最后多余的换行
+    allSequences = allSequences.trim()
+    
+    if (allSequences && hasSequences) {
       const blob = new Blob([allSequences], { type: 'text/plain' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
       a.download = `all_sequences.fasta`
+      // 使用document.createEvent来创建一个自定义事件，避免触发页面刷新
+      const event = new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        view: window
+      })
       document.body.appendChild(a)
-      a.click()
+      a.dispatchEvent(event)
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
     } else {
-      alert('没有找到可用的序列数据')
+      // 使用自定义消息提示，避免alert弹窗
+      this.showTemporaryMessage('没有找到可用的序列数据')
     }
   },
   
   // 复制序列到剪贴板
   copySequence(sequence) {
-    // 按照FASTA格式复制序列，包含基因ID和序列类型
-    const header = `>${this.currentGeneId} ${this.currentSeqType}`
-    const fastaContent = `${header}\n${sequence}`
-    
-    navigator.clipboard.writeText(fastaContent)
+    // 直接复制完整的FASTA格式序列
+    navigator.clipboard.writeText(sequence)
       .then(() => {
         // 创建临时提示元素显示给用户
         this.showTemporaryMessage('序列已复制到剪贴板')
@@ -477,16 +787,22 @@ export default {
   
   // 下载FASTA格式序列
   downloadFasta() {
-    const header = `>${this.currentGeneId} ${this.currentSeqType}`
-    const fastaContent = `${header}\n${this.modalContent}`
+    // 直接使用完整的FASTA格式序列
+    const fastaContent = this.modalContent
     
     const blob = new Blob([fastaContent], { type: 'text/plain' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `${this.currentGeneId}_${this.currentSeqType}.fasta`
+    a.download = `${this.currentGeneId}_${this.currentSeqType}_all_transcripts.fasta`
+    // 使用document.createEvent来创建一个自定义事件，避免触发页面刷新
+    const event = new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+      view: window
+    })
     document.body.appendChild(a)
-    a.click()
+    a.dispatchEvent(event)
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
   },
