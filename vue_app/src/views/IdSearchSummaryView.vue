@@ -121,6 +121,9 @@ export default {
       has_sequences: false,
       loading: false,
       error: null,
+      // 序列缓存和加载状态
+      sequenceCache: {},   // key: geneId|type|transcriptId
+      sequenceLoading: {}, // loading 状态
       // 弹窗相关状态
       showModal: false,
       modalTitle: '',
@@ -135,7 +138,7 @@ export default {
     // 从URL参数或API获取数据
     this.fetchSearchResults()
   },
- methods: {
+  methods: {
   async fetchSearchResults() {
     this.loading = true;
     this.error = null;
@@ -180,210 +183,344 @@ export default {
   },
 
   // 删除 fetchGeneDetails 方法，前端只依赖一次 POST 返回的 results
-},
 
+  downloadAllFasta(type) {
+    // 实现批量下载功能，支持所有转录本
+    let fastaContent = ''
     
-    downloadAllFasta(type) {
-      // 实现批量下载功能
-      let fastaContent = ''
+    this.results.forEach(result => {
+      const geneId = result.IDs
       
-      this.results.forEach(result => {
-        let sequence = ''
-        let header = `>${result.IDs} ${type}`
-        
-        switch(type) {
-          case 'genomic':
-            sequence = result.gene_seq || ''
-            break
-          case 'mrna':
-            sequence = result.mrna_seq || ''
-            break
-          case 'cds':
-            sequence = result.cds_seq || ''
-            break
-          case 'protein':
-            sequence = result.protein_seq || ''
-            break
-        }
-        
-        if (sequence && sequence !== 'N/A' && sequence !== '未找到CDS序列' && sequence !== '未找到蛋白序列') {
-          fastaContent += `${header}\n${sequence}\n\n`
-        }
-      })
-      
-      if (fastaContent) {
-        const blob = new Blob([fastaContent], { type: 'text/plain' })
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `all_${type}_sequences.fasta`
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-        URL.revokeObjectURL(url)
+      // 处理基因组序列
+      if (type === 'genomic' && result.gene_seq && result.gene_seq !== 'N/A' && result.gene_seq !== '') {
+        fastaContent += `>${geneId} genomic\n${result.gene_seq}\n\n`
       }
-    },
-    copyAllFasta(type) {
-      // 实现批量复制功能
-      let fastaContent = ''
       
-      this.results.forEach(result => {
-        let sequence = ''
-        let header = `>${result.IDs} ${type}`
-        
-        switch(type) {
-          case 'genomic':
-            sequence = result.gene_seq || ''
-            break
-          case 'mrna':
-            sequence = result.mrna_seq || ''
-            break
-          case 'cds':
-            sequence = result.cds_seq || ''
-            break
-          case 'protein':
-            sequence = result.protein_seq || ''
-            break
-        }
-        
-        if (sequence && sequence !== 'N/A' && sequence !== '未找到CDS序列' && sequence !== '未找到蛋白序列') {
-          fastaContent += `${header}\n${sequence}\n\n`
-        }
-      })
-      
-      if (fastaContent) {
-        navigator.clipboard.writeText(fastaContent)
-          .then(() => {
-            alert('序列已复制到剪贴板')
-          })
-          .catch(err => {
-            console.error('复制失败:', err)
-          })
-      }
-    },
-    
-    // 处理序列显示事件
-    handleShowSequence(eventData) {
-      const { type, title, content, id } = eventData
-      this.modalTitle = title
-      this.modalContent = content
-      this.currentSeqType = type
-      this.currentGeneId = id
-      this.showModal = true
-    },
-    
-    // 关闭弹窗
-    closeModal() {
-      this.showModal = false
-    },
-    
-    // 批量下载所有序列
-    downloadAllSequences() {
-      let allSequences = ''
-      
-      // 收集所有基因的所有序列类型
-      this.results.forEach(result => {
-        const geneId = result.IDs
-        
-        // 添加基因组序列
-        if (result.gene_seq && result.gene_seq !== 'N/A' && result.gene_seq !== '') {
-          allSequences += `>${geneId} genomic\n${result.gene_seq}\n\n`
-        }
-        
-        // 添加mRNA序列
-        if (result.mrna_seq && result.mrna_seq !== 'N/A' && result.mrna_seq !== '') {
-          allSequences += `>${geneId} mrna\n${result.mrna_seq}\n\n`
-        }
-        
-        // 添加CDS序列
-        if (result.cds_seq && result.cds_seq !== 'N/A' && result.cds_seq !== '未找到CDS序列') {
-          allSequences += `>${geneId} cds\n${result.cds_seq}\n\n`
-        }
-        
-        // 添加蛋白序列
-        if (result.protein_seq && result.protein_seq !== 'N/A' && result.protein_seq !== '未找到蛋白序列') {
-          allSequences += `>${geneId} protein\n${result.protein_seq}\n\n`
-        }
-      })
-      
-      if (allSequences) {
-        const blob = new Blob([allSequences], { type: 'text/plain' })
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `all_sequences.fasta`
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-        URL.revokeObjectURL(url)
+      // 处理转录本序列
+      if (result.mrna_transcripts && result.mrna_transcripts.length > 0) {
+        result.mrna_transcripts.forEach(transcript => {
+          let sequence = ''
+          
+          switch(type) {
+            case 'mrna':
+              sequence = transcript.mrna_seq || ''
+              break
+            case 'cdna':
+              sequence = transcript.cdna_seq || ''
+              break
+            case 'cds':
+              sequence = transcript.cds_seq || ''
+              break
+            case 'protein':
+              sequence = transcript.protein_seq || ''
+              break
+            case 'upstream':
+              sequence = transcript.upstream_seq || ''
+              break
+            case 'downstream':
+              sequence = transcript.downstream_seq || ''
+              break
+          }
+          
+          if (sequence && sequence !== 'N/A' && sequence !== '未找到CDS序列' && sequence !== '未找到蛋白序列') {
+            fastaContent += `>${transcript.id} ${type}\n${sequence}\n\n`
+          }
+        })
       } else {
-        alert('没有找到可用的序列数据')
+        // 如果没有transcripts数组，使用result本身的序列
+        let sequence = ''
+        
+        switch(type) {
+          case 'mrna':
+            sequence = result.mrna_seq || ''
+            break
+          case 'cds':
+            sequence = result.cds_seq || ''
+            break
+          case 'protein':
+            sequence = result.protein_seq || ''
+            break
+        }
+        
+        if (sequence && sequence !== 'N/A' && sequence !== '未找到CDS序列' && sequence !== '未找到蛋白序列') {
+          fastaContent += `>${geneId} ${type}\n${sequence}\n\n`
+        }
       }
-    },
+    })
     
-    // 复制序列到剪贴板
-    copySequence(sequence) {
-      // 按照FASTA格式复制序列，包含基因ID和序列类型
-      const header = `>${this.currentGeneId} ${this.currentSeqType}`
-      const fastaContent = `${header}\n${sequence}`
-      
-      navigator.clipboard.writeText(fastaContent)
-        .then(() => {
-          // 创建临时提示元素显示给用户
-          this.showTemporaryMessage('序列已复制到剪贴板')
-        })
-        .catch(err => {
-          console.error('复制失败:', err)
-          // 创建临时提示元素显示给用户
-          this.showTemporaryMessage('复制失败，请手动复制')
-        })
-    },
-    
-    // 下载FASTA格式序列
-    downloadFasta() {
-      const header = `>${this.currentGeneId} ${this.currentSeqType}`
-      const fastaContent = `${header}\n${this.modalContent}`
-      
+    if (fastaContent) {
       const blob = new Blob([fastaContent], { type: 'text/plain' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `${this.currentGeneId}_${this.currentSeqType}.fasta`
+      a.download = `all_${type}_sequences.fasta`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
-    },
-    
-    // 显示临时消息的方法
-    showTemporaryMessage(message) {
-      // 创建提示元素
-      const msgElement = document.createElement('div')
-      msgElement.textContent = message
-      msgElement.style.position = 'fixed'
-      msgElement.style.top = '50%'
-      msgElement.style.left = '50%'
-      msgElement.style.transform = 'translate(-50%, -50%)'
-      msgElement.style.padding = '10px 20px'
-      msgElement.style.backgroundColor = 'rgba(0, 0, 0, 0.8)'
-      msgElement.style.color = 'white'
-      msgElement.style.borderRadius = '4px'
-      msgElement.style.zIndex = '9999'
-      msgElement.style.fontSize = '16px'
-      
-      // 添加到页面
-      document.body.appendChild(msgElement)
-      
-      // 短暂显示后移除
-      setTimeout(() => {
-        msgElement.style.opacity = '0'
-        msgElement.style.transition = 'opacity 0.5s ease-out'
-        setTimeout(() => {
-          document.body.removeChild(msgElement)
-        }, 500)
-      }, 1500)
     }
+  },
+  copyAllFasta(type) {
+    // 实现批量复制功能，支持所有转录本
+    let fastaContent = ''
+    
+    this.results.forEach(result => {
+      const geneId = result.IDs
+      
+      // 处理基因组序列
+      if (type === 'genomic' && result.gene_seq && result.gene_seq !== 'N/A' && result.gene_seq !== '') {
+        fastaContent += `>${geneId} genomic\n${result.gene_seq}\n\n`
+      }
+      
+      // 处理转录本序列
+      if (result.mrna_transcripts && result.mrna_transcripts.length > 0) {
+        result.mrna_transcripts.forEach(transcript => {
+          let sequence = ''
+          
+          switch(type) {
+            case 'mrna':
+              sequence = transcript.mrna_seq || ''
+              break
+            case 'cdna':
+              sequence = transcript.cdna_seq || ''
+              break
+            case 'cds':
+              sequence = transcript.cds_seq || ''
+              break
+            case 'protein':
+              sequence = transcript.protein_seq || ''
+              break
+            case 'upstream':
+              sequence = transcript.upstream_seq || ''
+              break
+            case 'downstream':
+              sequence = transcript.downstream_seq || ''
+              break
+          }
+          
+          if (sequence && sequence !== 'N/A' && sequence !== '未找到CDS序列' && sequence !== '未找到蛋白序列') {
+            fastaContent += `>${transcript.id} ${type}\n${sequence}\n\n`
+          }
+        })
+      } else {
+        // 如果没有transcripts数组，使用result本身的序列
+        let sequence = ''
+        
+        switch(type) {
+          case 'mrna':
+            sequence = result.mrna_seq || ''
+            break
+          case 'cds':
+            sequence = result.cds_seq || ''
+            break
+          case 'protein':
+            sequence = result.protein_seq || ''
+            break
+        }
+        
+        if (sequence && sequence !== 'N/A' && sequence !== '未找到CDS序列' && sequence !== '未找到蛋白序列') {
+          fastaContent += `>${geneId} ${type}\n${sequence}\n\n`
+        }
+      }
+    })
+    
+    if (fastaContent) {
+      navigator.clipboard.writeText(fastaContent)
+        .then(() => {
+          alert('序列已复制到剪贴板')
+        })
+        .catch(err => {
+          console.error('复制失败:', err)
+        })
+    }
+  },
+  
+  // 处理序列显示事件
+  async handleShowSequence(eventData) {
+    const { type, title, content, id } = eventData
+    this.modalTitle = title
+    this.currentSeqType = type
+    this.currentGeneId = id
+    
+    // 从results中找到对应的基因数据
+    const geneData = this.results.find(result => result.IDs === id)
+    if (!geneData) {
+      this.modalContent = '未找到对应基因数据'
+      this.showModal = true
+      return
+    }
+    
+    // 使用mrnaid替代transcriptId，与后端字段名保持一致
+    const mrnaid = geneData.mrna_id || id
+    const cacheKey = `${id}|${type}|${mrnaid}`
+    
+    // 已经加载过，直接弹窗
+    if (this.sequenceCache[cacheKey]) {
+      this.modalContent = this.sequenceCache[cacheKey]
+      this.showModal = true
+      return
+    }
+    
+    // 正在加载，避免重复点击
+    if (this.sequenceLoading[cacheKey]) return
+    this.sequenceLoading[cacheKey] = true
+    
+    try {
+      let seqContent = ''
+      
+      // 直接使用content参数，无论type是什么类型
+      if (content) {
+        seqContent = content
+      } 
+      // 如果content为空，向后端请求序列
+      else {
+        const res = await httpInstance.post(
+          '/tools/id-search/api/sequence/',
+          {
+            gene_id: id,
+            transcript_id: mrnaid,
+            type: type
+          }
+        )
+        console.log('序列检索成功:', res)
+        const seq = res.sequence || '未找到序列'
+        
+        // 如果返回的是有效序列，直接使用
+        if (seq && seq !== '未找到序列' && seq !== 'N/A') {
+          seqContent = seq
+        } else {
+          seqContent = seq
+        }
+      }
+      
+      // 缓存序列
+      this.sequenceCache[cacheKey] = seqContent
+      this.sequenceLoading[cacheKey] = false
+      
+      // 显示序列
+      this.modalContent = seqContent
+      this.showModal = true
+    } catch (error) {
+      console.error('序列检索失败:', error)
+      this.sequenceLoading[cacheKey] = false
+      this.modalContent = '序列检索失败: ' + (error.message || '未知错误')
+      this.showModal = true
+    }
+  },
+  
+  // 关闭弹窗
+  closeModal() {
+    this.showModal = false
+  },
+  
+  // 批量下载所有序列
+  downloadAllSequences() {
+    let allSequences = ''
+    
+    // 收集所有基因的所有序列类型
+    this.results.forEach(result => {
+      const geneId = result.IDs
+      
+      // 添加基因组序列
+      if (result.gene_seq && result.gene_seq !== 'N/A' && result.gene_seq !== '') {
+        allSequences += `>${geneId} genomic\n${result.gene_seq}\n\n`
+      }
+      
+      // 添加mRNA序列
+      if (result.mrna_seq && result.mrna_seq !== 'N/A' && result.mrna_seq !== '') {
+        allSequences += `>${geneId} mrna\n${result.mrna_seq}\n\n`
+      }
+      
+      // 添加CDS序列
+      if (result.cds_seq && result.cds_seq !== 'N/A' && result.cds_seq !== '未找到CDS序列') {
+        allSequences += `>${geneId} cds\n${result.cds_seq}\n\n`
+      }
+      
+      // 添加蛋白序列
+      if (result.protein_seq && result.protein_seq !== 'N/A' && result.protein_seq !== '未找到蛋白序列') {
+        allSequences += `>${geneId} protein\n${result.protein_seq}\n\n`
+      }
+    })
+    
+    if (allSequences) {
+      const blob = new Blob([allSequences], { type: 'text/plain' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `all_sequences.fasta`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } else {
+      alert('没有找到可用的序列数据')
+    }
+  },
+  
+  // 复制序列到剪贴板
+  copySequence(sequence) {
+    // 按照FASTA格式复制序列，包含基因ID和序列类型
+    const header = `>${this.currentGeneId} ${this.currentSeqType}`
+    const fastaContent = `${header}\n${sequence}`
+    
+    navigator.clipboard.writeText(fastaContent)
+      .then(() => {
+        // 创建临时提示元素显示给用户
+        this.showTemporaryMessage('序列已复制到剪贴板')
+      })
+      .catch(err => {
+        console.error('复制失败:', err)
+        // 创建临时提示元素显示给用户
+        this.showTemporaryMessage('复制失败，请手动复制')
+      })
+  },
+  
+  // 下载FASTA格式序列
+  downloadFasta() {
+    const header = `>${this.currentGeneId} ${this.currentSeqType}`
+    const fastaContent = `${header}\n${this.modalContent}`
+    
+    const blob = new Blob([fastaContent], { type: 'text/plain' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${this.currentGeneId}_${this.currentSeqType}.fasta`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  },
+  
+  // 显示临时消息的方法
+  showTemporaryMessage(message) {
+    // 创建提示元素
+    const msgElement = document.createElement('div')
+    msgElement.textContent = message
+    msgElement.style.position = 'fixed'
+    msgElement.style.top = '50%'
+    msgElement.style.left = '50%'
+    msgElement.style.transform = 'translate(-50%, -50%)'
+    msgElement.style.padding = '10px 20px'
+    msgElement.style.backgroundColor = 'rgba(0, 0, 0, 0.8)'
+    msgElement.style.color = 'white'
+    msgElement.style.borderRadius = '4px'
+    msgElement.style.zIndex = '9999'
+    msgElement.style.fontSize = '16px'
+    
+    // 添加到页面
+    document.body.appendChild(msgElement)
+    
+    // 短暂显示后移除
+    setTimeout(() => {
+      msgElement.style.opacity = '0'
+      msgElement.style.transition = 'opacity 0.5s ease-out'
+      setTimeout(() => {
+        document.body.removeChild(msgElement)
+      }, 500)
+    }, 1500)
   }
+  }
+}
 </script>
 
 <style scoped>

@@ -222,6 +222,7 @@
                 :current-transcript="currentTranscript"
                 :loading="isLoading"
                 @show-sequence="handleShowSequence"
+                @length-change="handleLengthChange"
               />
           
           <div class="mb-3">
@@ -441,7 +442,10 @@ export default {
       modalContent: '',
       currentSeqType: '',
       currentGeneId: '',
-      svgWidth: 800 // 基因结构图SVG宽度
+      svgWidth: 800, // 基因结构图SVG宽度
+      // 上下游序列长度
+      upstreamLength: 500, // 默认值
+      downstreamLength: 500 // 默认值
     }
   },
   computed: {
@@ -631,6 +635,29 @@ mounted() {
     switchTranscript(index) {
       this.selectedTranscriptIndex = index;
     },
+    
+    // 处理序列长度变化事件
+    handleLengthChange(eventData) {
+      const { upstreamLength, downstreamLength } = eventData;
+      this.upstreamLength = upstreamLength;
+      this.downstreamLength = downstreamLength;
+      console.log('Sequence length changed:', upstreamLength, downstreamLength);
+      
+      // 当长度变化时，清除所有相关缓存，确保下次请求时使用新长度
+      // 遍历缓存，清除包含upstream或downstream类型的缓存项
+      Object.keys(this.sequenceCache).forEach(key => {
+        if (key.includes('upstream') || key.includes('downstream')) {
+          delete this.sequenceCache[key];
+        }
+      });
+      
+      // 清除对应的加载状态
+      Object.keys(this.sequenceLoading).forEach(key => {
+        if (key.includes('upstream') || key.includes('downstream')) {
+          this.sequenceLoading[key] = false;
+        }
+      });
+    },
     // 下载当前转录本的所有序列
     downloadCurrentTranscriptSequences() {
       if (!this.result || !this.currentTranscript) {
@@ -727,7 +754,9 @@ mounted() {
 
   // 使用mrnaid替代transcriptId，与后端字段名保持一致
   const mrnaid = this.currentTranscript?.id || id
-  const cacheKey = `${id}|${type}|${mrnaid}`
+  // 对于上下游序列，缓存key需要包含长度信息，确保不同长度的序列缓存分开
+  const lengthPart = (type === 'upstream' || type === 'downstream') ? `|${type === 'upstream' ? this.upstreamLength : this.downstreamLength}` : ''
+  const cacheKey = `${id}|${type}|${mrnaid}${lengthPart}`
 
   // 已经加载过，直接弹窗
   if (this.sequenceCache[cacheKey]) {
@@ -768,8 +797,17 @@ mounted() {
       if (seq && seq !== '未找到序列' && seq !== 'N/A') {
         // 构建FASTA头部，使用mrnaid作为主要标识
         const headerId = mrnaid
-        const lengthInfo = (type === 'upstream' || type === 'downstream') ? ` (${type === 'upstream' ? this.upstreamLength : this.downstreamLength}bp)` : ''
-        fastaContent = `>${headerId} ${type}${lengthInfo}\n${seq}\n`
+        
+        // 根据类型和长度截取序列
+        let processedSeq = seq
+        if (type === 'upstream') {
+          processedSeq = seq.slice(0, this.upstreamLength)
+        } else if (type === 'downstream') {
+          processedSeq = seq.slice(0, this.downstreamLength)
+        }
+        
+        const lengthInfo = (type === 'upstream' || type === 'downstream') ? ` (${processedSeq.length}bp)` : ''
+        fastaContent = `>${headerId} ${type}${lengthInfo}\n${processedSeq}\n`
       } else {
         // 无效序列直接使用
         fastaContent = seq
