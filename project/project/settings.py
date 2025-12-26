@@ -128,7 +128,7 @@ WSGI_APPLICATION = 'project.wsgi.application'
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
-        "NAME": "CottonOGD-ortho",
+        "NAME": "cottonogd-ortho",
         "USER": "root",
         "PASSWORD": "1234",
         "HOST": "localhost",
