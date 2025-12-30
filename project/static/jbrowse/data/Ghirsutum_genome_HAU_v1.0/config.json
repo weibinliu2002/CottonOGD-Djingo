@@ -1,0 +1,55 @@
+{
+  "assemblies": [
+    {
+      "name": "Ghirsutum_genome_HAU_v1.0",
+      "sequence": {
+        "type": "ReferenceSequenceTrack",
+        "trackId": "Ghirsutum_genome_HAU_v1.0-ReferenceSequenceTrack",
+        "adapter": {
+          "type": "BgzipFastaAdapter",
+          "fastaLocation": {
+            "uri": "Ghirsutum_genome_HAU_v1.0.genome.fa.gz",
+            "locationType": "UriLocation"
+          },
+          "faiLocation": {
+            "uri": "Ghirsutum_genome_HAU_v1.0.genome.fa.gz.fai",
+            "locationType": "UriLocation"
+          },
+          "gziLocation": {
+            "uri": "Ghirsutum_genome_HAU_v1.0.genome.fa.gz.gzi",
+            "locationType": "UriLocation"
+          }
+        }
+      }
+    }
+  ],
+  "configuration": {},
+  "connections": [],
+  "defaultSession": {
+    "name": "New Session"
+  },
+  "tracks": [
+    {
+      "type": "FeatureTrack",
+      "trackId": "Ghirsutum_genome_HAU_v1.0.gff",
+      "name": "Ghirsutum_genome_HAU_v1.0",
+      "adapter": {
+        "type": "Gff3TabixAdapter",
+        "gffGzLocation": {
+          "uri": "Ghirsutum_genome_HAU_v1.0.gff.gz",
+          "locationType": "UriLocation"
+        },
+        "index": {
+          "location": {
+            "uri": "Ghirsutum_genome_HAU_v1.0.gff.gz.tbi",
+            "locationType": "UriLocation"
+          },
+          "indexType": "TBI"
+        }
+      },
+      "assemblyNames": [
+        "Ghirsutum_genome_HAU_v1.0"
+      ]
+    }
+  ]
+}

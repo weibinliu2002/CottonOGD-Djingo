@@ -5,6 +5,7 @@ import numpy as np
 import io
 import base64
 import logging
+import re
 from django.db import connection
 from django.http import JsonResponse
 
@@ -13,6 +14,18 @@ from django.views.decorators.csrf import csrf_exempt
 # 抑制matplotlib调试日志
 logging.getLogger('matplotlib.font_manager').setLevel(logging.WARNING)
 logging.getLogger('matplotlib').setLevel(logging.WARNING)
+
+# 导入id_search应用中的normalize_gene_id函数
+# 或者直接复制函数实现
+def normalize_gene_id(id_str: str) -> str:
+    """去掉括号、引号、转录本后缀，只保留合法字符"""
+    id_str = re.sub(r'[()\[\]"\'\s]', '', id_str.strip())
+    id_str = re.sub(r'[^a-zA-Z0-9_:.-]', '', id_str)
+    id_str = re.sub(r'\.\d+$', '', id_str)
+    id_str = re.sub(r'\.[tT]\d+$', '', id_str)
+    if not re.match(r'^[a-zA-Z0-9_:.-]+$', id_str):
+        id_str = f"ID_{id_str}"
+    return id_str
 
 @csrf_exempt
 def gene_expression(request):
@@ -32,7 +45,7 @@ def gene_expression(request):
         })
 
     # ===== 参数解析 =====
-    gene_ids = [g.strip() for g in request.POST.get('gene_ids', '').splitlines() if g.strip()]
+    gene_ids = list(dict.fromkeys([normalize_gene_id(g.strip()) for g in request.POST.get('gene_ids', '').splitlines() if g.strip()]))
     selected_columns = (
         request.POST.getlist('top_columns') or TOP
     ) + request.POST.getlist('bottom_left_columns') + request.POST.getlist('bottom_right_columns')

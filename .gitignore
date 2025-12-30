@@ -1,14 +1,18 @@
 # 数据和项目文件
-data/
+project/data/
 project.zip
 genomes/
-project/data/
 
 # JBrowse相关文件
 project/static/jbrowse/Ghirsutum_genome_HAU_v1.0.fasta*
 project/static/jbrowse/TM-1.gff.gz*
 project/static/jbrowse/test_data/*
 static/jbrowse/Ghirsutum_genome_HAU_v1.0.fasta*
+
+# 忽略JBrowse数据目录下的所有内容，但不包括JSON配置文件
+project/static/jbrowse/data/**
+!project/static/jbrowse/data/**/
+!project/static/jbrowse/data/*/config.json
 
 # IDE和工具目录
 .trae/
@@ -33,5 +37,3 @@ index.php
 # 忽略vue_app目录下的所有内容
 vue_app/.vscode/
 vue_app/node_modules/
-
-

@@ -14,7 +14,7 @@ class TFApiView(View):
     def get(self, request):
         # 获取请求参数
          #genome = request.GET.get('genome', '').strip()
-        genome='TM_2'
+        genome='TM_1'
         family = request.GET.get('family', '').strip()
         search = request.GET.get('search', '').strip()
 

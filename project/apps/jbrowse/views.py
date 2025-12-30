@@ -1,82 +1,50 @@
-from django.http import HttpResponse, StreamingHttpResponse
-from django.templatetags.static import static
-import os
-from django.shortcuts import render
+from django.http import FileResponse, HttpResponse
 from django.conf import settings
+import os
 
-# Create your views here.
-genome_name = 'Ghirsutum_genome_HAU_v1.0'
-location = 'Ghir_A01:1-1000000'
-gff_name = 'TM-1.gff'
-def index(request):
-    # 直接返回index.html模板
-    return render(request, "index.html")
+JBROWSE_ROOT = os.path.join(settings.BASE_DIR, 'static', 'jbrowse', 'data')
 
+def serve_large_file(request, genome_name, filename):
+    """
+    JBrowse 3.x safe file server
+    - 支持 Range
+    - 不会 fetch pending
+    - 注意：不要设置Content-Encoding: gzip，让JBrowse自己处理解压缩
+    """
 
-def serve_large_file(request, filename):
-    """自定义视图用于处理大文件下载，支持断点续传"""
-    # 使用Django的静态文件查找机制
-    from django.contrib.staticfiles import finders
-    file_path = finders.find(f'jbrowse/{filename}')
-    if not file_path:
-        # 回退到旧路径
-        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        file_path = os.path.join(base_dir, 'static', 'jbrowse', filename)
-    
-    # 检查文件是否存在
+    # 安全校验（防止 ../）
+    if '..' in genome_name or '..' in filename:
+        return HttpResponse(status=400)
+
+    file_path = os.path.join(JBROWSE_ROOT, genome_name, filename)
+
     if not os.path.exists(file_path):
         return HttpResponse(f'File not found: {file_path}', status=404)
-    
-    # 获取文件大小
-    file_size = os.path.getsize(file_path)
-    
-    # 处理Range请求头
-    range_header = request.headers.get('Range', '')
-    if range_header:
-        # 支持断点续传
-        try:
-            range_match = range_header.split('=')[1]
-            if '-' in range_match:
-                start, end = range_match.split('-')
-                start = int(start)
-                end = int(end) if end else file_size - 1
-                length = end - start + 1
-                
-                response = StreamingHttpResponse(stream_file(file_path, start, length))
-                response['Content-Range'] = f'bytes {start}-{end}/{file_size}'
-                response['Content-Length'] = str(length)
-                response.status_code = 206  # Partial Content
-            else:
-                return HttpResponse('Invalid Range header', status=400)
-        except Exception as e:
-            return HttpResponse(f'Error processing range: {str(e)}', status=400)
-    else:
-        # 完整文件传输
-        response = StreamingHttpResponse(stream_file(file_path))
-        response['Content-Length'] = str(file_size)
-    
-    # 设置响应头
-    response['Content-Type'] = 'application/octet-stream'
+
+    response = FileResponse(open(file_path, 'rb'))
+
+    # 关键 header
     response['Accept-Ranges'] = 'bytes'
-    
+
+    # 设置正确的Content-Type，但不要设置Content-Encoding
+    # JBrowse的bgzf-filehandle库会自己处理解压缩
+    if filename.endswith('.gff.gz'):
+        response['Content-Type'] = 'application/octet-stream'
+    elif filename.endswith('.fa.gz'):
+        response['Content-Type'] = 'application/octet-stream'
+    elif filename.endswith('.tbi'):
+        response['Content-Type'] = 'application/octet-stream'
+    elif filename.endswith('.fa'):
+        response['Content-Type'] = 'text/x-fasta'
+    elif filename.endswith('.fai'):
+        response['Content-Type'] = 'text/plain'
+    elif filename.endswith('.gff'):
+        response['Content-Type'] = 'application/gff3'
+    else:
+        response['Content-Type'] = 'application/octet-stream'
+
     return response
 
-
-def stream_file(file_path, start=0, length=None):
-    """流式传输文件内容"""
-    chunk_size = 8192  # 8KB块
-    with open(file_path, 'rb') as f:
-        f.seek(start)
-        remaining = length
-        while True:
-            if remaining is not None:
-                if remaining <= 0:
-                    break
-                chunk = f.read(min(chunk_size, remaining))
-                remaining -= len(chunk)
-            else:
-                chunk = f.read(chunk_size)
-            
-            if not chunk:
-                break
-            yield chunk
+# 保留jbrowse_file函数作为兼容别名
+def jbrowse_file(request, genome, filename):
+    return serve_large_file(request, genome, filename)

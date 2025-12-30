@@ -22,6 +22,7 @@ import KeggAnnotationResultView from '../views/KeggAnnotationResultView.vue'
 import KeggEnrichmentView from '../views/KeggEnrichmentView.vue'
 import KeggEnrichmentResultView from '../views/KeggEnrichmentResultView.vue'
 import TFView from '@/views/TFView.vue'
+import PrimerView from '@/views/PrimerView.vue'
 
 // 简单的占位组件
 const SimpleView = { 
@@ -133,6 +134,11 @@ const routes = [
   {    path: '/tools/gene-expression-efp',
     name: 'GeneExpressionEfp',
     component: GeneExpressionEfpView
+  },
+  {
+    path: '/tools/primer-design',
+    name: 'PrimerDesign',
+    component: PrimerView
   },
   {
     path: '/tools/ks-calculator',

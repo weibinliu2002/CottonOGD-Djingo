@@ -47,6 +47,7 @@
                <!--<router-link class="dropdown-item" to="/tools/heatmap">heatmap</router-link></li>-->
                 <li><router-link class="dropdown-item" to="/tools/gene-expression">gene_expression</router-link></li>
                 <li><router-link class="dropdown-item" to="/tools/gene-expression-efp">gene_expression_in_eFP</router-link></li>
+                <li><router-link class="dropdown-item" to="/tools/primer-design">primer_design</router-link></li>
               </ul>
             </li>
             <li class="nav-item">

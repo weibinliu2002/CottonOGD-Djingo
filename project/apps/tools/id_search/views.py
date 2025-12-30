@@ -23,11 +23,18 @@ def normalize_gene_id(id_str: str) -> str:
 
 def build_jbrowse_url(seqid: str, start: int, end: int) -> str:
     """拼装 JBrowse 单基因视图地址"""
+    # 使用config-based URL格式，这是之前有问题的格式
+    
+    genome_name = 'G.hirsutum(AD1)TM-1_HAU_v1.1'
+    gff_name = 'GFF'
+    loc = f"{seqid}:{max(0, start-1000)}-{end+1000}"
+    # 使用正确的JBrowse 3.6.5 URL格式，包含index.html
+    return f"/assets/jbrowse/index.html?config=data/{genome_name}/config.json&assembly={genome_name}&loc={loc}&tracks={gff_name}"
+    '''
     genome_name = 'Ghirsutum_genome_HAU_v1.0'
     gff_name = 'TM-1.gff'
     loc = f"{seqid}:{max(0, start-1000)}-{end+1000}"
-    return f"/assets/jbrowse/index.html?assembly={genome_name}&loc={loc}&tracks={gff_name}"
-
+    return f"/assets/jbrowse/index.html?assembly={genome_name}&loc={loc}&tracks={gff_name}"'''
 # ===========================
 # 核心批量查询函数
 # ===========================

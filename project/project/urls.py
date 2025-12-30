@@ -48,13 +48,15 @@ schema_view = get_schema_view(
 # 添加jbrowse静态文件目录
 JBROWSE_STATIC_DIR = os.path.join(settings.BASE_DIR, '../vue_app/dist/jbrowse')
 
+
 urlpatterns = [
     path('', TemplateView.as_view(template_name='index.html'), name='home'),
     path('admin/', admin.site.urls),
     #path('', include('home.urls')),
     path('Browse/', include(('Browse.urls', 'Browse'), namespace='browse')),
-    # 使用自定义视图处理jbrowse请求
-    path('jbrowse/', include(('jbrowse.urls', 'jbrowse'), namespace='jbrowse')),
+    
+    # 处理jbrowse基础请求
+    #path('jbrowse/', TemplateView.as_view(template_name='index.html'), name='jbrowse'),
     #path('submit/', include(('submit.urls', 'submit'), namespace='submit')),
     path('tools/', include(('tools.urls', 'tools'), namespace='tools')),
     #path('tools/', include(('tools.id_search.urls', 'tools.id_search'), namespace='tools_id_search')),
