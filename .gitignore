@@ -11,8 +11,10 @@ static/jbrowse/Ghirsutum_genome_HAU_v1.0.fasta*
 
 # 忽略JBrowse数据目录下的所有内容，但不包括JSON配置文件
 project/static/jbrowse/data/**
-!project/static/jbrowse/data/**/
-!project/static/jbrowse/data/*/config.json
+# 保留所有config.json文件（现在和将来的）
+!project/static/jbrowse/data/**/config.json
+# 保留目录结构
+!project/static/jbrowse/data/*/
 
 # IDE和工具目录
 .trae/
