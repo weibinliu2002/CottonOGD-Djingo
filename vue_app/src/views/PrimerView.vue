@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h1>primer-design View</h1>
+    <h1>Primer View</h1>
   </div>
 </template>
 <script setup>

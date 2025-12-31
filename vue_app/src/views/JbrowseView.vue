@@ -50,8 +50,42 @@
 </template>
 
 <script>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import { QuestionFilled, VideoPlay } from '@element-plus/icons-vue'
+
+// 获取第一个染色体名称的函数
+const getFirstChromosome = async (genomeName) => {
+  try {
+    const faiUrl = `/assets/jbrowse/data/${genomeName}/${genomeName}.genome.fa.gz.fai`
+    console.log('尝试获取.fai文件:', faiUrl)
+    const response = await fetch(faiUrl)
+    
+    if (!response.ok) {
+      console.warn(`无法获取 .fai 文件: ${faiUrl}, 状态码: ${response.status}`)
+      return 'Ghir_A01' // 默认 fallback
+    }
+    console.log('成功获取.fai文件响应')
+    const text = await response.text()
+    console.log('fai文件内容长度:', text.length)
+    
+    const lines = text.trim().split('\n')
+    console.log('fai文件行数:', lines.length)
+    
+    if (lines.length === 0) {
+      console.warn('.fai 文件为空')
+      return 'Ghir_A01'
+    }
+    
+    // 获取第一行的第一个字段（染色体名称）
+    const firstChromosome = lines[0].split('\t')[0]
+    console.log(`获取到的第一个染色体: ${firstChromosome}`)
+    return firstChromosome
+    
+  } catch (error) {
+    console.error('获取第一个染色体时出错:', error)
+    return 'Ghir_A01' // 出错时返回默认值
+  }
+}
 
 export default {
   name: 'JbrowseView',
@@ -115,7 +149,9 @@ export default {
     }
     
     // 处理基因组选择变化
-    const handleGenomeChange = (value) => {
+    const handleGenomeChange = async (value) => {
+      console.log('选择的基因组值:', value)
+      
       if (value && value.length > 0) {
         // 查找选中的基因组数据
         const selectedValue = value[0]
@@ -129,9 +165,13 @@ export default {
         if (genomeData) {
           selectedGenomeInfo.value = genomeData
           console.log('选择的基因组:', selectedGenomeInfo.value.name)
+          
+          // 获取第一个染色体名称
+          const firstChromosome = await getFirstChromosome(genomeData.name)
+          console.log('第一个染色体:', firstChromosome)
           // 使用name作为URL参数，因为目录名与name匹配
           // tracks参数应该使用trackId，从config.json中可以看到trackId是"GFF"
-          const url = `/assets/jbrowse/index.html?config=data/${genomeData.name}/config.json&assembly=${genomeData.name}&tracks=GFF&loc=Ghir_A01:1-1000000`
+          const url = `/assets/jbrowse/index.html?config=data/${genomeData.name}/config.json&assembly=${genomeData.name}&tracks=GFF&loc=${firstChromosome}:1-1000000`
           console.log('构建的URL:', url)
           currentIframeUrl.value = url
           refreshIframe()
@@ -183,9 +223,13 @@ export default {
             console.log('选择基因组:', selectedGenome.value)
             selectedGenomeInfo.value = firstGenome
             console.log('选择的基因组信息:', selectedGenomeInfo.value)
+            
+            // 获取第一个染色体名称
+            const firstChromosome = await getFirstChromosome(firstGenome.name)
+            
             // 使用name作为URL参数，因为目录名与name匹配
             // tracks参数使用trackId "GFF"，从config.json中获取
-            const url = `/assets/jbrowse/index.html?config=data/Ghirsutum_genome_HAU_v1.0/config.json&assembly=Ghirsutum_genome_HAU_v1.0&tracks=TM-1.gff&loc=Ghir_A01:1-1000000`
+            const url = `/assets/jbrowse/index.html?config=data/${firstGenome.name}/config.json&assembly=${firstGenome.name}&tracks=GFF&loc=${firstChromosome}:1-1000000`
             currentIframeUrl.value = url
             console.log('默认选中的基因组:', firstGenome.name, 'URL:', url)
           }
@@ -208,8 +252,12 @@ export default {
           const defaultGenome = genomes.value[0]  // 修复：使用索引0而不是65
           selectedGenome.value = [defaultGenome.name]  // 使用name作为value
           selectedGenomeInfo.value = defaultGenome
+          
+          // 获取第一个染色体名称
+          const firstChromosome = await getFirstChromosome(defaultGenome.name)
+          
           // tracks参数使用trackId "GFF"，从config.json中获取
-          const url = `/assets/jbrowse/index.html?config=data/${defaultGenome.name}/config.json&assembly=${defaultGenome.name}&tracks=GFF&loc=Ghir_A01:1-1000000`
+          const url = `/assets/jbrowse/index.html?config=data/${defaultGenome.name}/config.json&assembly=${defaultGenome.name}&tracks=GFF&loc=${firstChromosome}:1-1000000`
           currentIframeUrl.value = url
           console.log('默认选中的基因组:', defaultGenome.name, 'URL:', url)
         }
@@ -323,4 +371,9 @@ export default {
   }
 }
 </style>
+
+
+
+
+
 

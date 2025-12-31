@@ -52,7 +52,7 @@ JBROWSE_STATIC_DIR = os.path.join(settings.BASE_DIR, '../vue_app/dist/jbrowse')
 urlpatterns = [
     path('', TemplateView.as_view(template_name='index.html'), name='home'),
     path('admin/', admin.site.urls),
-    #path('', include('home.urls')),
+    path('', include('home.urls')),
     path('Browse/', include(('Browse.urls', 'Browse'), namespace='browse')),
     
     # 处理jbrowse基础请求
