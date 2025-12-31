@@ -9,6 +9,7 @@ project/static/jbrowse/TM-1.gff.gz*
 project/static/jbrowse/test_data/*
 static/jbrowse/Ghirsutum_genome_HAU_v1.0.fasta*
 
+project/soft/windows/primer3/kmer_lists/homo_sapiens_16.list
 # 忽略JBrowse数据目录下的所有内容，但不包括JSON配置文件
 project/static/jbrowse/data/**
 # 保留所有config.json文件（现在和将来的）
