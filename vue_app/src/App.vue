@@ -30,6 +30,7 @@
                 <li><router-link class="dropdown-item" to="/browse/genome">Genome</router-link></li>
                 <li><router-link class="dropdown-item" to="/browse/species">Species</router-link></li>
                 <li><router-link class="dropdown-item" to="/browse/tf">TF</router-link></li>
+                <li><router-link class="dropdown-item" to="/browse/tr">TR</router-link></li>
               </ul>
             </li>
             <li class="nav-item">
@@ -44,6 +45,7 @@
                 <li><router-link class="dropdown-item" to="/tools/go-annotation">go_annotation</router-link></li>
                 <li><router-link class="dropdown-item" to="/tools/kegg-annotation">kegg_annotation</router-link></li>
                 <li><router-link class="dropdown-item" to="/tools/kegg-enrichment">kegg_enrichment</router-link></li>
+                
                <!--<router-link class="dropdown-item" to="/tools/heatmap">heatmap</router-link></li>-->
                 <li><router-link class="dropdown-item" to="/tools/gene-expression">gene_expression</router-link></li>
                 <li><router-link class="dropdown-item" to="/tools/gene-expression-efp">gene_expression_in_eFP</router-link></li>

@@ -17,10 +17,17 @@ def serve_large_file(request, genome_name, filename):
     if '..' in genome_name or '..' in filename:
         return HttpResponse(status=400)
 
+    # 构建文件路径
     file_path = os.path.join(JBROWSE_ROOT, genome_name, filename)
 
     if not os.path.exists(file_path):
         return HttpResponse(f'File not found: {file_path}', status=404)
+
+    # 检查文件名是否为大文件类型
+    large_file_extensions = ['.bam', '.cram', '.vcf.gz', '.gff.gz', '.bigwig', '.beddb']
+    if not any(filename.endswith(ext) for ext in large_file_extensions):
+        # 不是大文件，使用默认静态文件服务
+        return HttpResponseNotFound("File not found")
 
     # 获取文件大小
     file_size = os.path.getsize(file_path)

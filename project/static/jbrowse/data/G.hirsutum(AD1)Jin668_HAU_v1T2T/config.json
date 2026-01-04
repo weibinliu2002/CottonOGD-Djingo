@@ -36,7 +36,7 @@
       "adapter": {
         "type": "Gff3TabixAdapter",
         "gffGzLocation": {
-          "uri": "/jbrowse/large/G.hirsutum(AD1)Jin668_HAU_v1T2T/G.hirsutum(AD1)Jin668_HAU_v1T2T.gff.gz",
+          "uri": "G.hirsutum(AD1)Jin668_HAU_v1T2T/G.hirsutum(AD1)Jin668_HAU_v1T2T.gff.gz",
           "locationType": "UriLocation"
         },
         "index": {

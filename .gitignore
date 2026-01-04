@@ -29,7 +29,7 @@ __pycache__/
 *.log
 
 # 虚拟环境
-virtual/
+virtual/**
 
 # PHP文件
 index.php

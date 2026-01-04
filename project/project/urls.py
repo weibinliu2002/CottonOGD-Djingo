@@ -30,6 +30,8 @@ from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+# 导入jbrowse的views
+from apps.jbrowse.views import serve_large_file
 def chrome_devtools_config(request):
     return HttpResponse(status=204)  # 返回空内容的成功响应
 
@@ -68,13 +70,12 @@ urlpatterns = [
     #path('tools/', include(('tools.heatmap.urls', 'tools.heatmap'), namespace='tools_heatmap')),
     #path('tools/', include(('tools.gene_expression.urls', 'tools.gene_expression'), namespace='tools_gene_expression')),
     #path('tools/', include(('tools.gene_expression_in_eFP.urls', 'tools.gene_expression_in_eFP'), namespace='tools_gene_expression_in_eFP')),
-    path('schema/', SpectacularAPIView.as_view(), name='schema'),
-    path('schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
-    # ...
-
-    path('swagger<format>/', schema_view.without_ui(cache_timeout=0), name='schema-json'),
-    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
-    path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
+    # 添加jbrowse应用的URL配置
+    # 在静态文件服务之前添加jbrowse大文件服务的URL配置
+    path('jbrowse/large/<str:genome_name>/<str:filename>', serve_large_file, name='serve_large_file'),
+    path('static/jbrowse/data/<str:genome_name>/<str:filename>', serve_large_file, name='serve_large_file_static'),
+    # 添加jbrowse应用的URL配置
+    path('jbrowse/', include(('apps.jbrowse.urls', 'jbrowse'), namespace='jbrowse')),
     path('.well-known/appspecific/com.chrome.devtools.json', chrome_devtools_config),
     # 捕获所有其他路由，指向index.html，让Vue Router处理
     path('<path:path>', TemplateView.as_view(template_name='index.html')),

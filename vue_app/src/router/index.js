@@ -22,6 +22,7 @@ import KeggAnnotationResultView from '../views/KeggAnnotationResultView.vue'
 import KeggEnrichmentView from '../views/KeggEnrichmentView.vue'
 import KeggEnrichmentResultView from '../views/KeggEnrichmentResultView.vue'
 import TFView from '@/views/TFView.vue'
+import TRView from '@/views/TRView.vue'
 import PrimerView from '@/views/PrimerView.vue'
 
 // 简单的占位组件
@@ -53,6 +54,11 @@ const routes = [
     path: '/browse/tf',
     name: 'BrowseTF',
     component: TFView
+  },
+  {
+    path: '/browse/tr',
+    name: 'BrowseTR',
+    component: TRView
   },
   {
     path: '/jbrowse',
