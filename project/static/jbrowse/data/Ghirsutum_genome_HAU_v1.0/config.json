@@ -8,15 +8,15 @@
         "adapter": {
           "type": "BgzipFastaAdapter",
           "fastaLocation": {
-            "uri": "Ghirsutum_genome_HAU_v1.0.genome.fa.gz",
+            "uri": "/jbrowse/large/Ghirsutum_genome_HAU_v1.0/Ghirsutum_genome_HAU_v1.0.genome.fa.gz",
             "locationType": "UriLocation"
           },
           "faiLocation": {
-            "uri": "Ghirsutum_genome_HAU_v1.0.genome.fa.gz.fai",
+            "uri": "/jbrowse/large/Ghirsutum_genome_HAU_v1.0/Ghirsutum_genome_HAU_v1.0.genome.fa.gz.fai",
             "locationType": "UriLocation"
           },
           "gziLocation": {
-            "uri": "Ghirsutum_genome_HAU_v1.0.genome.fa.gz.gzi",
+            "uri": "/jbrowse/large/Ghirsutum_genome_HAU_v1.0/Ghirsutum_genome_HAU_v1.0.genome.fa.gz.gzi",
             "locationType": "UriLocation"
           }
         }
@@ -36,12 +36,12 @@
       "adapter": {
         "type": "Gff3TabixAdapter",
         "gffGzLocation": {
-          "uri": "Ghirsutum_genome_HAU_v1.0.gff.gz",
+          "uri": "/jbrowse/large/Ghirsutum_genome_HAU_v1.0/Ghirsutum_genome_HAU_v1.0.gff.gz",
           "locationType": "UriLocation"
         },
         "index": {
           "location": {
-            "uri": "Ghirsutum_genome_HAU_v1.0.gff.gz.tbi",
+            "uri": "/jbrowse/large/Ghirsutum_genome_HAU_v1.0/Ghirsutum_genome_HAU_v1.0.gff.gz.tbi",
             "locationType": "UriLocation"
           },
           "indexType": "TBI"

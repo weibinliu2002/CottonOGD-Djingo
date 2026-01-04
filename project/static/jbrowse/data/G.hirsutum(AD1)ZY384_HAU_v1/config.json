@@ -8,15 +8,15 @@
         "adapter": {
           "type": "BgzipFastaAdapter",
           "fastaLocation": {
-            "uri": "G.hirsutum(AD1)ZY384_HAU_v1.genome.fa.gz",
+            "uri": "/jbrowse/large/G.hirsutum(AD1)ZY384_HAU_v1/G.hirsutum(AD1)ZY384_HAU_v1.genome.fa.gz",
             "locationType": "UriLocation"
           },
           "faiLocation": {
-            "uri": "G.hirsutum(AD1)ZY384_HAU_v1.genome.fa.gz.fai",
+            "uri": "/jbrowse/large/G.hirsutum(AD1)ZY384_HAU_v1/G.hirsutum(AD1)ZY384_HAU_v1.genome.fa.gz.fai",
             "locationType": "UriLocation"
           },
           "gziLocation": {
-            "uri": "G.hirsutum(AD1)ZY384_HAU_v1.genome.fa.gz.gzi",
+            "uri": "/jbrowse/large/G.hirsutum(AD1)ZY384_HAU_v1/G.hirsutum(AD1)ZY384_HAU_v1.genome.fa.gz.gzi",
             "locationType": "UriLocation"
           }
         }
@@ -36,12 +36,12 @@
       "adapter": {
         "type": "Gff3TabixAdapter",
         "gffGzLocation": {
-          "uri": "G.hirsutum(AD1)ZY384_HAU_v1.gff.gz",
+          "uri": "/jbrowse/large/G.hirsutum(AD1)ZY384_HAU_v1/G.hirsutum(AD1)ZY384_HAU_v1.gff.gz",
           "locationType": "UriLocation"
         },
         "index": {
           "location": {
-            "uri": "G.hirsutum(AD1)ZY384_HAU_v1.gff.gz.tbi",
+            "uri": "/jbrowse/large/G.hirsutum(AD1)ZY384_HAU_v1/G.hirsutum(AD1)ZY384_HAU_v1.gff.gz.tbi",
             "locationType": "UriLocation"
           },
           "indexType": "TBI"

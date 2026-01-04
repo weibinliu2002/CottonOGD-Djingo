@@ -27,3 +27,4 @@ app<-function(name1){
    system(paste0("bash add_jbrowes.sh \"",name1,"\" \"",path,"\" \"",genome,"\" \"",gff,"\""))
 }
 sapply(namess,app)
+system("python update_config.py")

@@ -8,15 +8,15 @@
         "adapter": {
           "type": "BgzipFastaAdapter",
           "fastaLocation": {
-            "uri": "G.mustelinum(AD4)_JGI_JGI-AD4.genome.fa.gz",
+            "uri": "/jbrowse/large/G.mustelinum(AD4)_JGI_JGI-AD4/G.mustelinum(AD4)_JGI_JGI-AD4.genome.fa.gz",
             "locationType": "UriLocation"
           },
           "faiLocation": {
-            "uri": "G.mustelinum(AD4)_JGI_JGI-AD4.genome.fa.gz.fai",
+            "uri": "/jbrowse/large/G.mustelinum(AD4)_JGI_JGI-AD4/G.mustelinum(AD4)_JGI_JGI-AD4.genome.fa.gz.fai",
             "locationType": "UriLocation"
           },
           "gziLocation": {
-            "uri": "G.mustelinum(AD4)_JGI_JGI-AD4.genome.fa.gz.gzi",
+            "uri": "/jbrowse/large/G.mustelinum(AD4)_JGI_JGI-AD4/G.mustelinum(AD4)_JGI_JGI-AD4.genome.fa.gz.gzi",
             "locationType": "UriLocation"
           }
         }
@@ -36,12 +36,12 @@
       "adapter": {
         "type": "Gff3TabixAdapter",
         "gffGzLocation": {
-          "uri": "G.mustelinum(AD4)_JGI_JGI-AD4.gff.gz",
+          "uri": "/jbrowse/large/G.mustelinum(AD4)_JGI_JGI-AD4/G.mustelinum(AD4)_JGI_JGI-AD4.gff.gz",
           "locationType": "UriLocation"
         },
         "index": {
           "location": {
-            "uri": "G.mustelinum(AD4)_JGI_JGI-AD4.gff.gz.tbi",
+            "uri": "/jbrowse/large/G.mustelinum(AD4)_JGI_JGI-AD4/G.mustelinum(AD4)_JGI_JGI-AD4.gff.gz.tbi",
             "locationType": "UriLocation"
           },
           "indexType": "TBI"

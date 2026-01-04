@@ -8,15 +8,15 @@
         "adapter": {
           "type": "BgzipFastaAdapter",
           "fastaLocation": {
-            "uri": "G.darwinii(AD5)_HGSC_HGS_v1.1.genome.fa.gz",
+            "uri": "/jbrowse/large/G.darwinii(AD5)_HGSC_HGS_v1.1/G.darwinii(AD5)_HGSC_HGS_v1.1.genome.fa.gz",
             "locationType": "UriLocation"
           },
           "faiLocation": {
-            "uri": "G.darwinii(AD5)_HGSC_HGS_v1.1.genome.fa.gz.fai",
+            "uri": "/jbrowse/large/G.darwinii(AD5)_HGSC_HGS_v1.1/G.darwinii(AD5)_HGSC_HGS_v1.1.genome.fa.gz.fai",
             "locationType": "UriLocation"
           },
           "gziLocation": {
-            "uri": "G.darwinii(AD5)_HGSC_HGS_v1.1.genome.fa.gz.gzi",
+            "uri": "/jbrowse/large/G.darwinii(AD5)_HGSC_HGS_v1.1/G.darwinii(AD5)_HGSC_HGS_v1.1.genome.fa.gz.gzi",
             "locationType": "UriLocation"
           }
         }
@@ -36,12 +36,12 @@
       "adapter": {
         "type": "Gff3TabixAdapter",
         "gffGzLocation": {
-          "uri": "G.darwinii(AD5)_HGSC_HGS_v1.1.gff.gz",
+          "uri": "/jbrowse/large/G.darwinii(AD5)_HGSC_HGS_v1.1/G.darwinii(AD5)_HGSC_HGS_v1.1.gff.gz",
           "locationType": "UriLocation"
         },
         "index": {
           "location": {
-            "uri": "G.darwinii(AD5)_HGSC_HGS_v1.1.gff.gz.tbi",
+            "uri": "/jbrowse/large/G.darwinii(AD5)_HGSC_HGS_v1.1/G.darwinii(AD5)_HGSC_HGS_v1.1.gff.gz.tbi",
             "locationType": "UriLocation"
           },
           "indexType": "TBI"
