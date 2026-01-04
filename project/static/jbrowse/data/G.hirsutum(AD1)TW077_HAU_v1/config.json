@@ -1,22 +1,22 @@
 {
   "assemblies": [
     {
-      "name": "G.hirsutum(AD1)Jin668_HAU_v1T2T",
+      "name": "G.hirsutum(AD1)TW077_HAU_v1",
       "sequence": {
         "type": "ReferenceSequenceTrack",
-        "trackId": "G.hirsutum(AD1)Jin668_HAU_v1T2T-ReferenceSequenceTrack",
+        "trackId": "G.hirsutum(AD1)TW077_HAU_v1-ReferenceSequenceTrack",
         "adapter": {
           "type": "BgzipFastaAdapter",
           "fastaLocation": {
-            "uri": "G.hirsutum(AD1)Jin668_HAU_v1T2T.genome.fa.gz",
+            "uri": "G.hirsutum(AD1)TW077_HAU_v1.genome.fa.gz",
             "locationType": "UriLocation"
           },
           "faiLocation": {
-            "uri": "G.hirsutum(AD1)Jin668_HAU_v1T2T.genome.fa.gz.fai",
+            "uri": "G.hirsutum(AD1)TW077_HAU_v1.genome.fa.gz.fai",
             "locationType": "UriLocation"
           },
           "gziLocation": {
-            "uri": "G.hirsutum(AD1)Jin668_HAU_v1T2T.genome.fa.gz.gzi",
+            "uri": "G.hirsutum(AD1)TW077_HAU_v1.genome.fa.gz.gzi",
             "locationType": "UriLocation"
           }
         }
@@ -32,23 +32,23 @@
     {
       "type": "FeatureTrack",
       "trackId": "GFF",
-      "name": "G.hirsutum(AD1)Jin668_HAU_v1T2T",
+      "name": "G.hirsutum(AD1)TW077_HAU_v1",
       "adapter": {
         "type": "Gff3TabixAdapter",
         "gffGzLocation": {
-          "uri": "/jbrowse/large/G.hirsutum(AD1)Jin668_HAU_v1T2T/G.hirsutum(AD1)Jin668_HAU_v1T2T.gff.gz",
+          "uri": "G.hirsutum(AD1)TW077_HAU_v1.gff.gz",
           "locationType": "UriLocation"
         },
         "index": {
           "location": {
-            "uri": "G.hirsutum(AD1)Jin668_HAU_v1T2T.gff.gz.tbi",
+            "uri": "G.hirsutum(AD1)TW077_HAU_v1.gff.gz.tbi",
             "locationType": "UriLocation"
           },
           "indexType": "TBI"
         }
       },
       "assemblyNames": [
-        "G.hirsutum(AD1)Jin668_HAU_v1T2T"
+        "G.hirsutum(AD1)TW077_HAU_v1"
       ]
     }
   ]
