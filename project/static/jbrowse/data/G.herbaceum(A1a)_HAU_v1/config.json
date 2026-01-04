@@ -36,7 +36,7 @@
       "adapter": {
         "type": "Gff3TabixAdapter",
         "gffGzLocation": {
-          "uri": "/jbrowse/large/G.herbaceum(A1a)_HAU_v1/G.herbaceum(A1a)_HAU_v1.gff.gz",
+          "uri": "G.herbaceum(A1a)_HAU_v1.gff.gz",
           "locationType": "UriLocation"
         },
         "index": {
