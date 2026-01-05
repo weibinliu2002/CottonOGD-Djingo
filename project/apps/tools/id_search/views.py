@@ -211,6 +211,96 @@ class IdSearchFormAPIView(View):
 
 
 @method_decorator(csrf_exempt, name='dispatch')
+class SequenceByPositionAPIView(View):
+    def get(self, request):
+        return self._handle_request(request)
+    
+    def post(self, request):
+        return self._handle_request(request)
+    
+    def _handle_request(self, request):
+        # 从GET或POST中获取参数
+        chromosome = None
+        start = None
+        end = None
+        genome = None
+        
+        if request.method == 'GET':
+            # 处理GET请求
+            chromosome = request.GET.get('chromosome')
+            start = request.GET.get('start')
+            end = request.GET.get('end')
+            genome = request.GET.get('genome')
+        else:
+            # 处理POST请求，支持表单数据和JSON数据
+            try:
+                # 尝试解析JSON数据
+                import json
+                post_data = json.loads(request.body)
+                chromosome = post_data.get('chromosome')
+                start = post_data.get('start')
+                end = post_data.get('end')
+                genome = post_data.get('genome')
+            except Exception as e:
+                # 如果解析失败，尝试从表单数据中获取
+                logger.error(f"解析POST数据失败: {e}")
+                chromosome = request.POST.get('chromosome')
+                start = request.POST.get('start')
+                end = request.POST.get('end')
+                genome = request.POST.get('genome')
+        
+        logger.info(f"获取到的参数: genome={genome}, chromosome={chromosome}, start={start}, end={end}")
+        
+        # 验证参数
+        if not chromosome or not start or not end:
+            return JsonResponse({'status': 'error', 'msg': '请提供完整的染色体名称、起始位置和结束位置'}, status=400)
+        
+        try:
+            start = int(start)
+            end = int(end)
+        except ValueError:
+            return JsonResponse({'status': 'error', 'msg': '起始位置和结束位置必须是整数'}, status=400)
+        
+        if start >= end:
+            return JsonResponse({'status': 'error', 'msg': '起始位置必须小于结束位置'}, status=400)
+        
+        # 查询该染色体区域的基因信息
+        gene_info_qs = gene_info.objects.filter(
+            seqid=chromosome,
+            start__lte=end,
+            end__gte=start
+        ).order_by('start')
+        
+        if not gene_info_qs.exists():
+            return JsonResponse({'status': 'error', 'msg': '该区域未找到基因信息'}, status=404)
+        
+        # 构建完整的序列
+        full_sequence = ''
+        
+        # 遍历该区域内的基因
+        for gene in gene_info_qs:
+            # 查询该基因的序列
+            gene_seq_data = gene_seq.objects.filter(gene_id=gene.IDs).first()
+            if gene_seq_data and gene_seq_data.mrna_seq:
+                full_sequence += gene_seq_data.mrna_seq
+        
+        if not full_sequence:
+            return JsonResponse({'status': 'error', 'msg': '该区域未找到序列信息'}, status=404)
+        
+        logger.info(f"查询结果: genome={genome}, chromosome={chromosome}, start={start}, end={end}, sequence_length={len(full_sequence)}")
+        
+        # 返回结果
+        return JsonResponse({
+            'status': 'success',
+            'genome': genome,
+            'chromosome': chromosome,
+            'start': start,
+            'end': end,
+            'sequence': full_sequence
+        })
+
+
+@method_decorator(csrf_exempt, name='dispatch')
 class SequenceAPIView(View):
     def get(self, request):
         return self._handle_request(request)
@@ -286,4 +376,3 @@ class SequenceAPIView(View):
             'type': seq_type,
             'sequence': seq or ''
         })
-

@@ -11,5 +11,7 @@ urlpatterns = [
     path('kegg_enrichment/', include('tools.kegg_enrichment.urls')),
     path('gene_expression/', include('tools.gene_expression.urls')),
     path('gene_expression_in_eFP/', include('tools.gene_expression_in_eFP.urls')),
+    # 引物设计API
     path('primer_design/api/primers/', PrimerDesignAPIView.as_view(), name='primer_design_api'),
 ]
+
