@@ -40,7 +40,7 @@ export default defineConfig({
     proxy: {
       // 使用正则表达式匹配所有需要转发的路径
       '^/(api|tools|jbrowse|assets/jbrowse|Browse)': {
-        target: 'http://127.0.0.1:8000',
+        target: 'http://172.28.226.114:8000',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => {

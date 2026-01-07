@@ -136,16 +136,31 @@ export default {
       
       console.log('构建基因组选项，原始genomes数据:', genomes.value)
       
-      // 简化级联选择器结构，直接使用扁平列表，与TFView保持一致
-      // 直接使用所有基因组数据，不进行任何过滤或去重，确保所有基因组都能显示
-      genomeOptions.value = genomes.value.map(genome => ({
-        value: genome.name,  // 使用name作为value，因为目录名与name匹配
-        label: genome.name,
-        genomeData: genome
+      // 按Genome_type分组，构建二级级联选择器，与TFView保持一致
+      const genomesByType = {}  // 按Genome_type分组
+      
+      // 按Genome_type分组
+      genomes.value.forEach(genome => {
+        const genomeType = genome.assembly || 'undefined'
+        if (!genomesByType[genomeType]) {
+          genomesByType[genomeType] = []
+        }
+        genomesByType[genomeType].push({
+          value: genome.name,  // 使用name作为value，因为目录名与name匹配
+          label: genome.name,
+          genomeData: genome
+        })
+      })
+      
+      // 转换为级联选择器格式
+      genomeOptions.value = Object.entries(genomesByType).map(([type, items]) => ({
+        value: type,
+        label: type,
+        children: items
       }))
       
       console.log('构建的基因组级联选项:', genomeOptions.value)
-      console.log('基因组数量:', genomeOptions.value.length)
+      console.log('基因组数量:', genomes.value.length)
     }
     
     // 处理基因组选择变化
@@ -153,14 +168,21 @@ export default {
       console.log('选择的基因组值:', value)
       
       if (value && value.length > 0) {
-        // 查找选中的基因组数据
-        const selectedValue = value[0]
-        // 确保genomeOptions.value已初始化
-        if (genomeOptions.value.length === 0) {
-          console.error('genomeOptions.value为空，无法查找基因组数据')
-          return
+        // 查找选中的基因组数据，级联选择器返回的是数组，最后一个元素是选中的基因组名称
+        const selectedValue = value[value.length - 1]
+        
+        // 遍历所有基因组选项，查找选中的基因组数据
+        let genomeData = null
+        for (const option of genomeOptions.value) {
+          if (option.children) {
+            // 遍历子选项查找选中的基因组
+            const childOption = option.children.find(child => child.value === selectedValue)
+            if (childOption) {
+              genomeData = childOption.genomeData
+              break
+            }
+          }
         }
-        const genomeData = genomeOptions.value.find(option => option.value === selectedValue)?.genomeData
         
         if (genomeData) {
           selectedGenomeInfo.value = genomeData
@@ -216,10 +238,12 @@ export default {
           buildGenomeOptions()
           
           // 默认选中第一个基因组
-          if (genomes.value.length > 0) {
+          if (genomes.value.length > 0 && genomeOptions.value.length > 0) {
             const firstGenome = genomes.value[0]
-            // 级联选择器现在只有一级，所以使用单个值的数组
-            selectedGenome.value = [firstGenome.name]  // 使用name作为value
+            // 级联选择器现在是二级结构，需要使用包含两级的数组
+            // 获取第一个基因组的类型（即父级value）
+            const firstGenomeType = firstGenome.assembly || 'undefined'
+            selectedGenome.value = [firstGenomeType, firstGenome.name]  // 二级结构：[类型, 基因组名称]
             console.log('选择基因组:', selectedGenome.value)
             selectedGenomeInfo.value = firstGenome
             console.log('选择的基因组信息:', selectedGenomeInfo.value)
@@ -248,9 +272,11 @@ export default {
         ]
         buildGenomeOptions()
         // 设置默认选中的基因组
-        if (genomes.value.length > 0) {
+        if (genomes.value.length > 0 && genomeOptions.value.length > 0) {
           const defaultGenome = genomes.value[0]  // 修复：使用索引0而不是65
-          selectedGenome.value = [defaultGenome.name]  // 使用name作为value
+          // 级联选择器现在是二级结构，需要使用包含两级的数组
+          const defaultGenomeType = defaultGenome.assembly || 'undefined'
+          selectedGenome.value = [defaultGenomeType, defaultGenome.name]  // 二级结构：[类型, 基因组名称]
           selectedGenomeInfo.value = defaultGenome
           
           // 获取第一个染色体名称
