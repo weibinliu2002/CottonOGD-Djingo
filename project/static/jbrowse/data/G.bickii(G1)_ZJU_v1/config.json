@@ -1,22 +1,22 @@
 {
   "assemblies": [
     {
-      "name": "Ghirsutum_genome_HAU_v1.0",
+      "name": "G.bickii(G1)_ZJU_v1",
       "sequence": {
         "type": "ReferenceSequenceTrack",
-        "trackId": "Ghirsutum_genome_HAU_v1.0-ReferenceSequenceTrack",
+        "trackId": "G.bickii(G1)_ZJU_v1-ReferenceSequenceTrack",
         "adapter": {
           "type": "BgzipFastaAdapter",
           "fastaLocation": {
-            "uri": "/jbrowse/large/Ghirsutum_genome_HAU_v1.0/Ghirsutum_genome_HAU_v1.0.genome.fa.gz",
+            "uri": "/jbrowse/large/G.bickii(G1)_ZJU_v1/G.bickii(G1)_ZJU_v1.genome.fa.gz",
             "locationType": "UriLocation"
           },
           "faiLocation": {
-            "uri": "/jbrowse/large/Ghirsutum_genome_HAU_v1.0/Ghirsutum_genome_HAU_v1.0.genome.fa.gz.fai",
+            "uri": "/jbrowse/large/G.bickii(G1)_ZJU_v1/G.bickii(G1)_ZJU_v1.genome.fa.gz.fai",
             "locationType": "UriLocation"
           },
           "gziLocation": {
-            "uri": "/jbrowse/large/Ghirsutum_genome_HAU_v1.0/Ghirsutum_genome_HAU_v1.0.genome.fa.gz.gzi",
+            "uri": "/jbrowse/large/G.bickii(G1)_ZJU_v1/G.bickii(G1)_ZJU_v1.genome.fa.gz.gzi",
             "locationType": "UriLocation"
           }
         }
@@ -32,23 +32,23 @@
     {
       "type": "FeatureTrack",
       "trackId": "GFF",
-      "name": "Ghirsutum_genome_HAU_v1.0",
+      "name": "G.bickii(G1)_ZJU_v1",
       "adapter": {
         "type": "Gff3TabixAdapter",
         "gffGzLocation": {
-          "uri": "/jbrowse/large/Ghirsutum_genome_HAU_v1.0/Ghirsutum_genome_HAU_v1.0.gff.gz",
+          "uri": "/jbrowse/large/G.bickii(G1)_ZJU_v1/G.bickii(G1)_ZJU_v1.gff.gz",
           "locationType": "UriLocation"
         },
         "index": {
           "location": {
-            "uri": "/jbrowse/large/Ghirsutum_genome_HAU_v1.0/Ghirsutum_genome_HAU_v1.0.gff.gz.tbi",
+            "uri": "/jbrowse/large/G.bickii(G1)_ZJU_v1/G.bickii(G1)_ZJU_v1.gff.gz.tbi",
             "locationType": "UriLocation"
           },
           "indexType": "TBI"
         }
       },
       "assemblyNames": [
-        "Ghirsutum_genome_HAU_v1.0"
+        "G.bickii(G1)_ZJU_v1"
       ]
     }
   ]
