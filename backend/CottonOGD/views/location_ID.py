@@ -1,3 +1,5 @@
+from ast import alias
+from django.db.models import Q
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from CottonOGD.views.base import UuidManager
@@ -25,17 +27,22 @@ def attach_db_id(genome_gene_id: dict, map_ids: dict) -> dict:
     return genome_gene_id
 
 #@api_view(['POST'])
+#def Id_map(request):
 def Id_map(gene_id: str,genome_id: str):
     '''
     uuid=request.headers.get('uuid')
     if not uuid:
-        return Response({'error': 'uuid is required'}, status=400)
+        return Response({'error': 'uuid is required'}, status=400)'''
+    '''
     gene_id = request.data.get('gene_id') or request.query_params.get('gene_id')
     genome_id = request.data.get('genome_id') or request.query_params.get('genome_id')
     if not gene_id or not genome_id:
         return Response({'error': 'gene_id and genome_id are required'}, status=400)'''
-    gene_ids = [gid.strip() for gid in gene_id.split(',')]
-    genome_ids = [gid.strip() for gid in genome_id.split(',')]
+    # 以逗号或换行符分割输入，过滤空字符串
+    
+    gene_ids = [gid.strip() for gid in re.split(r'[,|\n]+', gene_id) if gid.strip()]
+    #genome_ids = [gid.strip() for gid in re.split(r'[,|\n]+', genome_id) if gid.strip()]
+    genome_ids = ['G.hirsutumAD1_TM-1_HAU_v1.1']
     # 检查基因 ID 和基因组 ID 列表长度是否相同
     '''
     if len(gene_ids) != len(genome_ids):
@@ -44,16 +51,25 @@ def Id_map(gene_id: str,genome_id: str):
     id_map = {}
     normalized_ids = {}
     search_ids=[]
-    for gid, genome in zip(gene_ids, genome_ids):
+    logger.info(f"gene_ids: {gene_ids}")
+    for gid in gene_ids:
+        # 如果 genome_ids 为空，跳过
+        if not genome_ids:
+            continue
+        # 如果基因 ID 数量大于基因组 ID 数量，重复使用第一个基因组 ID
+        genome = genome_ids[0] if len(gene_ids) > len(genome_ids) else genome_ids[gene_ids.index(gid)]
         nid = clean_gene_id(gid)
         if nid not in norm_map:
             norm_map.append(nid)
             search_ids.append(f"{genome}_{nid}")
             normalized_ids[nid] = {'normalized_id': nid, 'genome_id': genome,'search_id':f"{genome}_{nid}"}
         id_map[gid] = {'geneid':nid,'genome_id':genome,'search_id':f"{genome}_{nid}"}
-    map_ids=GeneMaster.objects.filter(alias__in=search_ids).values('alias','id')
+    #logger.info(f"search_ids: {search_ids}")
+    #logger.info(f"norm_map: {norm_map}")
+    #map_ids=GeneMaster.objects.filter(alias__in=search_ids).values('alias','id')
+    map_ids=GeneMaster.objects.filter(Q(geneid__in=norm_map) | Q(genome_id__in=genome_ids)).values('alias','id')
     map_ids={item['alias']:item['id'] for item in map_ids}
     genome_gene_id = attach_db_id(id_map, map_ids)
     return genome_gene_id
     #logger.info(f"id_map: {id_map}")
-    #return Response({'map':genome_gene_id})
+    #return Response({'map':genome_gene_id,'normalized_ids':norm_map})

@@ -1,16 +1,28 @@
 #!/bin/bash
 name=$1
-#name="name"
-#$path=$2
 genome=$2
 gff=$3
 path=../../data/genome/${name}
-#static=$PWD/../../static/jbrowse/
-printf "name: %s\npath: %s\ngenome: %s\ngff: %s\n" $name $path $genome $gff
-#bgzip -c $path/$genome > $path/$name.genome.fa.gz -@ 100
-#samtools faidx $path/$name.genome.fa.gz 
-jbrowse sort-gff $path/$gff | bgzip > $path/$name.gff.gz
-tabix $path/$name.gff.gz
-jbrowse add-assembly $path/$name.genome.fa.gz --load symlink -n $name --out data/$name --force
-jbrowse add-track $path/$name.gff.gz --load symlink -n $name --out data/$name --trackId GFF --force
-python update_config_paths.py
+
+# 检查参数是否存在
+if [ -z "$name" ] || [ -z "$genome" ] || [ -z "$gff" ]; then
+  echo "Usage: $0 <name> <genome_file> <gff_file>"
+  exit 1
+fi
+
+# 检查文件是否存在
+if [ ! -f "$path/$name.genome.fa.gz" ]; then
+  echo "Error: Genome file not found: $path/$name.genome.fa.gz"
+  exit 1
+fi
+
+if [ ! -f "$path/$name.gff.gz" ]; then
+  echo "Error: GFF file not found: $path/$name.gff.gz"
+  exit 1
+fi
+
+# 执行 jbrowse 命令
+echo "Adding assembly for $name..."
+jbrowse add-assembly "$path/$name.genome.fa.gz" --load symlink --name "$name" --out "data/$name" --force
+echo "Adding track for $name..."
+jbrowse add-track "$path/$name.gff.gz" --load symlink --name "$name" --out "data/$name" --trackId "GFF" --force

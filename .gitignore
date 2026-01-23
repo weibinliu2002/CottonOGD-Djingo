@@ -1,22 +1,4 @@
 # 数据和项目文件
-project/data/
-project.zip
-genomes/
-
-# JBrowse相关文件
-project/static/jbrowse/Ghirsutum_genome_HAU_v1.0.fasta*
-project/static/jbrowse/TM-1.gff.gz*
-project/static/jbrowse/test_data/*
-static/jbrowse/Ghirsutum_genome_HAU_v1.0.fasta*
-
-project/soft/windows/primer3/kmer_lists/homo_sapiens_16.list
-# 忽略JBrowse数据目录下的所有内容，但不包括JSON配置文件
-project/static/jbrowse/data/**
-# 保留所有config.json文件（现在和将来的）
-!project/static/jbrowse/data/**/config.json
-# 保留目录结构
-!project/static/jbrowse/data/*/
-
 # IDE和工具目录
 .trae/
 .vscode/
@@ -28,15 +10,24 @@ __pycache__/
 *.pyc
 *.log
 
-# 虚拟环境
-virtual/**
-
 # PHP文件
 index.php
-
-# 临时复制文件
-* copy.py
-
+apps/
+templates/
 # 忽略vue_app目录下的所有内容
-vue_app/.vscode/
-vue_app/node_modules/
+backend/.vscode/
+backend/node_modules/
+
+# 忽略JBrowse数据目录下的所有内容，但不包括JSON配置文件
+backend/static/jbrowse/data/**
+# 保留所有config.json文件（现在和将来的）
+!backend/static/jbrowse/data/**/config.json
+# 保留目录结构
+!backend/static/jbrowse/data/*/
+backend/soft/windows/primer3/kmer_lists/homo_sapiens_16.list
+backend/data/genome/
+backend/data/TF_family/
+backend/data/blast_db/
+backend/temp/
+backend/venv/Lib/
+frontend/node_modules/

@@ -22,6 +22,8 @@ from django.http import HttpResponse
 #from rest_framework.response import DefaultRenderer
 from django.views.generic import TemplateView
 # 导入jbrowse的views
+from CottonOGD.views.jbrowes_file import serve_large_file
+
 def chrome_devtools_config(request):
     return HttpResponse(status=204)  # 返回空内容的成功响应
 
@@ -33,6 +35,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('CottonOGD_api/', include(('CottonOGD.urls', 'CottonOGD'), namespace='CottonOGD')),
     path('.well-known/appspecific/com.chrome.devtools.json', chrome_devtools_config),
+    path('jbrowse/large/<str:genome_name>/<str:filename>', serve_large_file, name='serve_large_file'),
+    path('static/jbrowse/data/<str:genome_name>/<str:filename>', serve_large_file, name='serve_large_file_static'),
     # 捕获所有路由，指向index.html，让Vue Router处理
     path('', TemplateView.as_view(template_name='index.html')),
     #path('<path:path>', TemplateView.as_view(template_name='index.html')),

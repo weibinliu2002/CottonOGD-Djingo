@@ -1,4 +1,5 @@
 from django.urls import include, path
+#from CottonOGD.views.jbrowes_file import *
 from CottonOGD.views.base import *
 from CottonOGD.views.base_info import *
 from CottonOGD.views.location_ID import *
@@ -12,6 +13,7 @@ from CottonOGD.views.primer_design import *
 
 urlpatterns = [
     #path('Browse/', include(('apps.Browse.urls', 'Browse'), namespace='browse')),
+    #path('large/<str:genome_name>/<str:filename>', serve_large_file, name='serve_large_file'),
     path('login/', login, name='login'),
     path('logout/', logout, name="logout"),
     path('get_species_info/', get_species_info, name='species_info'),

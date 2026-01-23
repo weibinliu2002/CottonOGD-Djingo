@@ -7,6 +7,8 @@ from CottonOGD.views.location_ID import Id_map
 import os
 import subprocess
 import re
+import platform
+from django.conf import settings
 import logging
 logger = logging.getLogger(__name__)
 
@@ -82,10 +84,10 @@ def primer_design(request):
         logger.debug(f"Boulder input: {boulder_input_str}")
         
         # 使用Django的BASE_DIR构建更可靠的路径
-        from django.conf import settings
+        
         
         # 定义primer3_core的路径
-        import platform
+       
         system = platform.system().lower()
         
         if system == 'windows':

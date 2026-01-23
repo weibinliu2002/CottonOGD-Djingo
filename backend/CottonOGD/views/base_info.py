@@ -11,25 +11,45 @@ logger = logging.getLogger(__name__)
 
 @api_view(['GET'])
 def get_species_info(request):
+    
     uuid=request.headers.get('uuid')
     if uuid not in UuidManager.uuid_storage:
         return Response({'error': 'uuid is required'}, status=status.HTTP_400_BAD_REQUEST)
     try:
         species_info = Species_info.objects.all().values('Cotton_Species','Genome_type','name','alias')
-        return Response({'species_info': list(species_info)}, status=status.HTTP_200_OK)
+        responce=json.dumps(list(species_info), ensure_ascii=False)
+        return Response({'species_info': responce}, status=status.HTTP_200_OK)
     except Exception as e:
         logger.error(f"Error fetching species info: {e}")
         return Response({'error': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
 def get_family_info(request):
+    
     uuid=request.headers.get('uuid')
     if uuid not in UuidManager.uuid_storage:
         return Response({'error': 'uuid is required'}, status=status.HTTP_400_BAD_REQUEST)
     #species=request.GET.get('species')
     try:
-        family_info = Family.objects.all().values()
-        return Response({'family_info': list(family_info)}, status=status.HTTP_200_OK)
+        family_list = list(Family.objects.all().values())
+        #logger.info(f"family_list: {family_list}")
+        
+        # 计算每个家族的基因数量
+        family_counts = {}
+        for family in family_list:
+            tf_name = family['TF_name']
+            if tf_name in family_counts:
+                family_counts[tf_name] += 1
+            else:
+                family_counts[tf_name] = 1
+        
+        # 构建家族信息列表
+        family_info = [{'name': name, 'count': count} for name, count in family_counts.items()]
+        #logger.info(f"family_info: {family_info}")
+        
+        info=json.dumps(family_info, ensure_ascii=False)
+        family_list_json=json.dumps(family_list, ensure_ascii=False)
+        return Response({'family_info': info,'family_list':family_list_json}, status=status.HTTP_200_OK)
     except Exception as e:
         logger.error(f"Error fetching family info: {e}")
         return Response({'error': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
