@@ -21,16 +21,16 @@ MAKEBLASTDB=$blast_path/makeblastdb
 
 # 仅当文件参数非空时创建blast数据库
 if [ -n "$genome" ]; then
-    $MAKEBLASTDB -in "${name}/$genome" -dbtype nucl -out "$output/${name}/genome/${name}" &
+    $MAKEBLASTDB -in "$genome" -dbtype nucl -out "$output/genome/${name}" &
 fi
 if [ -n "$mrna" ]; then
-    $MAKEBLASTDB -in "${name}/$mrna" -dbtype nucl -out "$output/${name}/mrna/${name}" &
+    $MAKEBLASTDB -in "$mrna" -dbtype nucl -out "$output/mrna/${name}" &
 fi
 if [ -n "$cds" ]; then
-    $MAKEBLASTDB -in "${name}/$cds" -dbtype nucl -out "$output/${name}/cds/${name}" &
+    $MAKEBLASTDB -in "$cds" -dbtype nucl -out "$output/cds/${name}" &
 fi
 if [ -n "$protein" ]; then
-    $MAKEBLASTDB -in "${name}/$protein" -dbtype prot -out "$output/${name}/protein/${name}" &
+    $MAKEBLASTDB -in "$protein" -dbtype prot -out "$output/protein/${name}" &
 fi
 
 # 等待所有后台进程完成

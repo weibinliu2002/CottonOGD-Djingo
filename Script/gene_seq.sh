@@ -69,7 +69,7 @@ fi
 #PATH
 genome_path=$workdir/backend/data/genome/$name
 blastdb_path=$workdir/backend/data/blast_db/CottonOGD/${name}
-jbrowse_path=$workdir/backend/startup/jbrowse/data/$name
+jbrowse_path=$workdir/backend/static/jbrowse/data/$name
 Script_path=$workdir/Script/script
 blast_path=$workdir/backend/soft/UNIX/blast+/bin
 TF_gene_family=$workdir/backend/data/TF_family/$name
@@ -116,13 +116,15 @@ fi
 #prepare genemaster
 if [ -n "$genome" ] && [ -n "$gff" ]; then
     echo '1 准备genemaster'
-    Rscript $Script_path/genemaster.R "$genome" "$gff_file"
+    echo "Rscript $Script_path/genemaster.R "$name" "$gff_file""
+    Rscript $Script_path/genemaster.R "$name" "$gff_file"
     echo '1 genemaster准备完成'
 fi
 
 #add jbrowes
 if [ -n "$genome" ] && [ -n "$gff" ]; then
     echo '2 添加jbrowes'
+    echo "$Script_path/add_jbrowes.sh "$name" "$genome" "$gff" "$genome_path" "$jbrowse_path" "$Script_path""
     bash $Script_path/add_jbrowes.sh "$name" "$genome" "$gff" "$genome_path" "$jbrowse_path" "$Script_path"
     echo '2 jbrowes添加完成'
     new_gff_file=$genome_path/${name}.gff.gz
@@ -131,7 +133,42 @@ fi
 
 #prepare gene_seq database
 echo '3 准备gene_seq数据库'
-Rscript $Script_path/extract_seq.R -i "$name" -g "$new_genome_file" -f "$new_gff_file" -m "$mrna_file" -d "$cdna_file" -c "$cds_file" -p "$protein_file" -o "$genome_path"
+
+# 构建extract_seq.R命令，只包含存在的文件参数
+extract_cmd="Rscript $Script_path/extract_seq.R -i \"$name\" -o \"$genome_path\""
+
+# 检查并添加genome_file
+if [ -n "$genome_file" ] && [ -f "$genome_file" ]; then
+    extract_cmd="$extract_cmd -g \"$genome_file\""
+fi
+
+# 检查并添加gff_file
+if [ -n "$gff_file" ] && [ -f "$gff_file" ]; then
+    extract_cmd="$extract_cmd -f \"$gff_file\""
+fi
+
+# 检查并添加mrna_file
+if [ -n "$mrna_file" ] && [ -f "$mrna_file" ]; then
+    extract_cmd="$extract_cmd -m \"$mrna_file\""
+fi
+
+# 检查并添加cdna_file
+if [ -n "$cdna_file" ] && [ -f "$cdna_file" ]; then
+    extract_cmd="$extract_cmd -d \"$cdna_file\""
+fi
+
+# 检查并添加cds_file
+if [ -n "$cds_file" ] && [ -f "$cds_file" ]; then
+    extract_cmd="$extract_cmd -c \"$cds_file\""
+fi
+
+# 检查并添加protein_file
+if [ -n "$protein_file" ] && [ -f "$protein_file" ]; then
+    extract_cmd="$extract_cmd -p \"$protein_file\""
+fi
+
+echo "$extract_cmd"
+eval $extract_cmd
 echo '3 gene_seq数据库准备完成'
 
 #prepare longest protein sequence
@@ -141,37 +178,60 @@ cds_longest_files=$genome_path/${name}.cds_longest.fasta
 mran_longest_files=$genome_path/${name}.mrna_longest.fasta
 
 if [ -n "$protein" ]; then
-    Rscript $Script_path/longest.R $protein_file $pro_longest_files
-    if [ -f "$pro_longest_files" ]; then
-        echo '4 最长蛋白质序列准备完成'
-    fi
+    protein_file=$protein_file
+    echo $protein_file
+    else 
+   
+    protein_file=$genome_path/${name}.pro.fa
+     echo $protein_file
+fi
+Rscript $Script_path/longest.R $protein_file $pro_longest_files 
+if [ -f "$pro_longest_files" ]; then
+    echo '4 最长蛋白质序列准备完成'
 fi
 
+
 if [ -n "$cdna" ]; then
-    Rscript $Script_path/longest.R $cdna_file $cds_longest_files
+    cdna_file=$cdna_file        
+    echo $cdna_file
+    else 
+    cdna_file=$genome_path/${name}.cdna.fa
+    echo $cdna_file
+fi
+ Rscript $Script_path/longest.R $cdna_file $cds_longest_files 
     if [ -f "$cds_longest_files" ]; then
         echo '4 最长cds序列准备完成'
     fi
-fi
 
-if [ -n "$mrna" ]; then
-    Rscript $Script_path/longest.R $mrna_file $mran_longest_files
+
+
+if [ -n "$mrna" ]; then     
+    mrna_file=$mrna_file
+    echo $mrna_file
+    else 
+    mrna_file=$genome_path/${name}.mrna.fa
+    echo $mrna_file
+fi
+ Rscript $Script_path/longest.R $mrna_file $mran_longest_files  
     if [ -f "$mran_longest_files" ]; then
         echo '4 最长mrna序列准备完成'
     fi
-fi
+
+
 
 echo '4 最长序列准备完成'
 
 #prepare blastdb genome ,longest_mrna,longest_cds,longest_protein
 echo '5 准备blastdb'
-bash $Script_path/add_blast_db.sh "$name" "$new_genome_file" "$mran_longest_files" "$cds_longest_files" "$pro_longest_files" "$blast_path" "$blastdb_path"
+echo "$Script_path/add_blast_db.sh "$name" "$genome_file" "$mran_longest_files" "$cds_longest_files" "$pro_longest_files" "$blast_path" "$blastdb_path""
+bash $Script_path/add_blast_db.sh "$name" "$genome_file" "$mran_longest_files" "$cds_longest_files" "$pro_longest_files" "$blast_path" "$blastdb_path"
 echo '5 blastdb准备完成'
 
 #preapre TF_gene_family
 if [ -n "$protein" ] && [ -n "$gff" ]; then
     echo '6 鉴定转录因子和转录响应因子家族 '
-    pro_longest_blast=$genome_path/${name}/protein/${name}
+    pro_longest_blast=$blastdb_path/protein/${name}
+    echo "Rscript $Script_path/TF.R "$protein_file" "$new_gff_file" "$name" "$TF_gene_family" "$pro_longest_blast" "$Script_path" "
     Rscript $Script_path/TF.R "$protein_file" "$new_gff_file" "$name" "$TF_gene_family" "$pro_longest_blast" "$Script_path"
     echo '6 转录因子和转录响应因子家族鉴定完成'
 fi

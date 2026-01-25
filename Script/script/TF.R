@@ -11,9 +11,9 @@ sample = args[3]
 output = args[4]
 blastdb=args[5]
 sc=args[6]
-TF_list = paste0(sc,'../data/Ath_TF_list.txt')
-TF_domain = paste0(sc,'../data/TF-domain.txt')
-At.pro.fa = paste0(sc,'../data/seq/AT.pro.fa')
+TF_list = paste0(sc,'/../data/Ath_TF_list.txt')
+TF_domain = paste0(sc,'/../data/TF-domain.txt')
+At.pro.fa = paste0(sc,'/../data/AT.pro.fa')
 # 读取TF列表
 TF_LIST <- read.table(TF_list, header=F, sep='\t', skip=1)  # 跳过表头行
 print(str(TF_LIST))
@@ -60,7 +60,7 @@ longest <- function(fa) {
 filter_domain<-function(TF_name){
     domain_num<-TF_domain[TF_domain$V1==TF_name,]
     domain.id<-domain_num$V2
-    hmm_result <- paste0(TF_name, '/', TF_name, '.hmm.result')
+    hmm_result <- paste0(base_out,'/TF_pro/',TF_name, '/', TF_name, '.hmm.result')
     system(paste0('sed -i \'s/  / /g\' ', hmm_result))
     system(paste0('sed -i \'s/  / /g\' ', hmm_result))
     system(paste0('sed -i \'s/  / /g\' ', hmm_result))
@@ -123,7 +123,7 @@ TF <- function(TF_name, At.id, domain.id = NULL) {
     
     # BLAST分析
     blast_output <- paste0(base_out,'/TF_pro/',TF_name, '/', TF_name, '_AT.pro.fa.blastp')
-    system(paste0('blastp -query ', output_file, ' -db seq/',sample,'/TM_1 -outfmt 6 -num_threads 40 -out ', blast_output))
+    system(paste0('blastp -query ', output_file, ' -db ',blastdb,' -outfmt 6 -num_threads 40 -out ', blast_output))
     
     # 过滤BLAST结果
     blast_filtered <- paste0(base_out,'/TF_pro/',TF_name, '/', TF_name, '_AT.pro.fa.blastp.1')
@@ -173,14 +173,14 @@ TF <- function(TF_name, At.id, domain.id = NULL) {
     
       # 提取最长转录本
       final_output_longest <- paste0(base_out,'/TF_pro/',TF_name, '/', TF_name, '.hmm.result.longest.fa')
-      system(paste0('Rscript longest.R ', final_output, ' ', final_output_longest))
+      system(paste0('Rscript ', sc,'/longest.R ', final_output, ' ', final_output_longest))
       id_name<-paste0(base_out,'/TF_pro/',TF_name, '/', TF_name,'.id')
       system(paste0('grep ">" ', final_output_longest, '| cut -f 1 | sed "s/>//" > ', id_name))
      
     
     #提取gff
 
-    system(paste0('Rscript info.R ',id_name,' ', final_output_longest,' ', TM_1.gff, ' ', base_out,'/TF_pro/',TF_name,'/',TF_name))
+    #system(paste0('Rscript ', sc,'/info.R ',id_name,' ', final_output_longest,' ', TM_1.gff, ' ', base_out,'/TF_pro/',TF_name,'/',TF_name))
     }
     #final_output_longest <- paste0(TF_name, '/', TF_name, '.hmm.result.longest.fa')
     geneid<-read.table(id_name,header = F)$V1
@@ -192,18 +192,18 @@ TF <- function(TF_name, At.id, domain.id = NULL) {
     write.csv(TF_dat, paste0(base_out,'/TF_pro/',TF_name, '/', TF_name,'_TF.csv'), row.names = FALSE, col.names = TRUE, quote = FALSE)
     if (file.exists(final_output_longest)==T){
       #system(paste0('ln -fs ../../',final_output_longest, ' TF_result/TF_pro/'))
-      system(paste0('ln -fs ../../',base_out,'/TF_pro/',TF_name,'/',TF_name,'_TF.csv', ' TF_result/TF_id/'))
-      system(paste0('ln -fs ../../',base_out,'/TF_pro/',TF_name, '/',TF_name,  ' TF_result/TF_info/'))
+      system(paste0('ln -fs ','../TF_pro/',TF_name,'/',TF_name,'_TF.csv', ' ', base_out,'/TF_id/'))
+      system(paste0('ln -fs ','../TF_pro/',TF_name, '/',TF_name,  ' ', base_out,'/TF_info/'))
     }else{
-      system(paste0('ln -fs ../../',base_out,'/TF_pro/',TF_name, '/',TF_name, '_TM_1.pro.fa', ' /TF_result/TF_pro/'))
+      system(paste0('ln -fs ','../TF_pro/',TF_name, '/',TF_name, '_TM_1.pro.fa', ' ', base_out,'/TF_pro/'))
     }
     
   }
 }
 merge_TF<-function(x){
-  CSV<-list.files(paste0(x, '/'), pattern = '_TF.csv', full.names = T)
+  CSV<-list.files(paste0(base_out,'/TF_id/'), pattern = '_TF.csv', full.names = T)
   TF_dat<-do.call(rbind, lapply(CSV, function(x) read.csv(x)))
-  write.csv(TF_dat, paste0(base_out,'/',sample,'_TF.csv'), row.names = FALSE, col.names = TRUE, quote = FALSE)
+  write.csv(TF_dat, paste0(base_out,'/',sample,'_TF.csv'), row.names = FALSE,  quote = FALSE)
 }
 
 # 示例运行：CPP家族的TF分析
@@ -251,13 +251,15 @@ run_TF(tf_families)
 print("Analysis completed successfully!")
 
 family<-read.csv(paste0(base_out,'/',sample,'_TF.csv'),header = T)
+family$geneid<-gsub('\\.\\d+','',family$geneid)
 
 print(str(family))
 print('连接数据库')
 library(DBI)
+library(dplyr)
 library(RMySQL)
 con <- dbConnect(RMySQL::MySQL(),
-                 dbname = "CottonOGD-ortho",
+                 dbname = "cottonogd-ortho",
                  host = "127.0.0.1",
                  port=3306,
                  user = "root",
@@ -267,15 +269,15 @@ con <- dbConnect(RMySQL::MySQL(),
 print('列出数据库')
 dbListTables(con)
 genemaster<-dplyr::tbl(con,'genemaster')|>as.data.frame()
-family <- family %>%
+family <- family |>
   left_join(
-    genemaster %>% select(geneid, genome_id,id),
+    genemaster |> select(geneid, genome_id,id),
     by = c("geneid" = "geneid", "genome_id" = "genome_id")
   ) 
 names(family)[5]<-'id_id'
 print('写入数据库')
 
-dbWriteTable(con,"genefamily",family,overwrite=F,,append=T,row.names=F)
+dbWriteTable(con,"genefamily",family,overwrite=F,append=T,row.names=F)
 print('断开数据库')
 DBI::dbDisconnect(con)
 print('断开数据库成功')

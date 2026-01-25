@@ -11,6 +11,8 @@ data<-data.frame(
     genome_id=genome
     )
 data$alias<-paste(data$genome_id,data$geneid,sep = '_')
+write.csv(data, paste0(genome,'_genemaster.csv'), row.names = FALSE,  quote = FALSE)
+data<-read.csv(paste0(genome,'_genemaster.csv'),header = T)
 print(str(data))
 print('连接数据库')
 library(DBI)

@@ -56,18 +56,22 @@ print(pro_files)
 # 处理空参数
 if (is.na(mrna_files) || mrna_files == "") {
   mrna_files <- paste0(genome_path,'/', genome_id, ".mrna.fa")
+  print(paste0("gffread ", gff_files, " -g ", genome_files, " -u ", mrna_files, ' --w-nocds'))
   system(paste0("gffread ", gff_files, " -g ", genome_files, " -u ", mrna_files, ' --w-nocds'))
 }
 if (is.na(cdna_files) || cdna_files == "") {
   cdna_files <- paste0(genome_path,'/', genome_id, ".cdna.fa")
+  print(paste0("gffread ", gff_files, " -g ", genome_files, " -w ", cdna_files, " --w-nocds"))
   system(paste0("gffread ", gff_files, " -g ", genome_files, " -w ", cdna_files, " --w-nocds"))
 }
 if (is.na(cds_files) || cds_files == "") {
     cds_files <- paste0(genome_path,'/', genome_id, ".cds.fa")
-  system(paste0("gffread ", gff_files, " -g ", genome_files, " -x ", cds_files, " --w-nocds"))
+    print(paste0("gffread ", gff_files, " -g ", genome_files, " -x ", cds_files, " --w-nocds"))
+    system(paste0("gffread ", gff_files, " -g ", genome_files, " -x ", cds_files, " --w-nocds"))
 }
 if (is.na(pro_files) || pro_files == "") {
   pro_files <- paste0(genome_path,'/', genome_id, ".pro.fa")
+  print(paste0("gffread ", gff_files, " -g ", genome_files, " -y ", pro_files, " --w-nocds"))
   system(paste0("gffread ", gff_files, " -g ", genome_files, " -y ", pro_files, " --w-nocds"))
 }
 
@@ -104,11 +108,13 @@ if (!file.exists(gene_genome_files)){
 }
 upstream_files <- paste0(genome_path,'/', genome_id, ".upstream20000.fa")
 if (!file.exists(upstream_files)) {
+    print(paste0("java -cp /data/wbliu/soft/TBtools-II-2.311/TBtools_JRE1.6.jar biocjava.bioIO.GFF.ExtractFeaturefromGFF3andGenome --inGtf ", gff_files, " --inGenome ", genome_files, " --outFile ", upstream_files, " --targetFeature CDS --targetIdTag Parent --upStreamBases 20000 --onlyCheck false --onlyRetainFlank true"))
   system(paste0("java -cp /data/wbliu/soft/TBtools-II-2.311/TBtools_JRE1.6.jar biocjava.bioIO.GFF.ExtractFeaturefromGFF3andGenome --inGtf ", gff_files, " --inGenome ", genome_files, " --outFile ", upstream_files, " --targetFeature CDS --targetIdTag Parent --upStreamBases 20000 --onlyCheck false --onlyRetainFlank true"))
 }
 
-downstream_files <- paste0(work_dir,'/', work_dir_base, ".downstream20000.fasta")
+downstream_files <- paste0(genome_path,'/', genome_id, ".downstream20000.fa")
 if (!file.exists(downstream_files)) {
+    print(paste0("java -cp /data/wbliu/soft/TBtools-II-2.311/TBtools_JRE1.6.jar biocjava.bioIO.GFF.ExtractFeaturefromGFF3andGenome --inGtf ", gff_files, " --inGenome ", genome_files, " --outFile ", downstream_files, " --targetFeature CDS --targetIdTag Parent --downStreamBases 20000 --onlyCheck false --onlyRetainFlank true"))
   system(paste0("java -cp /data/wbliu/soft/TBtools-II-2.311/TBtools_JRE1.6.jar biocjava.bioIO.GFF.ExtractFeaturefromGFF3andGenome --inGtf ", gff_files, " --inGenome ", genome_files, " --outFile ", downstream_files, " --targetFeature CDS --targetIdTag Parent --downStreamBases 20000 --onlyCheck false --onlyRetainFlank true"))
 }
 
@@ -146,20 +152,19 @@ print(str(fu))
 print('连接数据库')
 library(DBI)
 library(RMySQL)
+print('开始连接mysql数据库：')
 con <- dbConnect(RMySQL::MySQL(),
-                 dbname = "CottonOGD-ortho",
+                 dbname = "cottonogd-ortho",
                  host = "127.0.0.1",
-                 port=3306,
+                 PORT=3306,
                  user = "root",
                  password = "1234",
-                 #client.flag = CLIENT_MULTI_STATEMENTS | CLIENT_LOCAL_FILES
                  )
-print('列出数据库')
-dbListTables(con)
+print(paste0('数据表：',dbListTables(con)))
 genemaster<-dplyr::tbl(con,'genemaster')|>as.data.frame()
-fu <- fu %>%
+fu <- fu |>
   left_join(
-    genemaster %>% select(geneid, genome_id,id),
+    genemaster |> select(geneid, genome_id,id),
     by = c("geneid_id" = "geneid", "genome_id" = "genome_id")
   ) 
 names(fu)[6]<-'id_id'
