@@ -48,7 +48,7 @@
           <el-table-column prop="original_id" label="Input ID" width="200" />
           <el-table-column label="Query ID" width="200">
             <template #default="scope">
-              <router-link :to="{ path: '/tools/id-search/results/', query: { db_id: scope.row.db_id } }">
+              <router-link :to="{ path: '/tools/id-search/results/', query: { db_id: scope.row.db_id, geneData: JSON.stringify(scope.row) } }">
                 {{ scope.row.IDs || '-' }}
               </router-link>
             </template>
@@ -84,34 +84,26 @@
     </el-card>
     
     <!-- 序列弹窗组件 -->
-    <el-dialog
-      v-model="showModal"
-      :title="modalTitle"
-      width="80%"
-      destroy-on-close
-    >
-      <el-scrollbar height="400px">
-        <pre class="bg-light p-3 rounded" style="white-space: pre-wrap; font-family: monospace;">
-          {{ modalContent }}
-        </pre>
-      </el-scrollbar>
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="closeModal">Close</el-button>
-          <el-button type="primary" @click="downloadFasta">Download FASTA</el-button>
-          <el-button type="success" @click="copySequence(modalContent)">Copy Sequence</el-button>
-        </span>
-      </template>
-    </el-dialog>
+    <sequence-modal
+      v-model:show-modal="showModal"
+      :modal-title="modalTitle"
+      :modal-content="modalContent"
+      :current-seq-type="currentSeqType"
+      :current-gene-id="currentGeneId"
+      @download="handleDownload"
+      @copy="handleCopy"
+    />
   </div>
 </template>
 <script>
 import httpInstance from '../utils/http'
 import SequenceDisplay from '@/components/SequenceDisplay.vue'
+import SequenceModal from '@/components/SequenceModal.vue'
+import { useGeneSearchStore } from '@/stores/geneSearch.ts'
 
 export default {
   name: 'IdSearchSummaryView',
-  components: { SequenceDisplay },
+  components: { SequenceDisplay, SequenceModal },
   data() {
     return {
       results: [],
@@ -120,13 +112,12 @@ export default {
       error: null,
       selectedUpstreamLength: 10000,
       selectedDownstreamLength: 10000,
-      sequenceCache: {},   // key: geneId|type|transcriptId|upLen|downLen
-      sequenceLoading: {}, // loading 状态
       showModal: false,
       modalTitle: '',
       modalContent: '',
       currentSeqType: '',
-      currentGeneId: ''
+      currentGeneId: '',
+      geneSearchStore: useGeneSearchStore()
     }
   },
   mounted() {
@@ -155,9 +146,9 @@ export default {
 
       if (changed) {
         // 清理上下游 cache
-        Object.keys(this.sequenceCache).forEach(key => {
+        Object.keys(this.geneSearchStore.sequenceCache).forEach(key => {
           if (key.includes('|upstream|') || key.includes('|downstream|')) {
-            delete this.sequenceCache[key]
+            delete this.geneSearchStore.sequenceCache[key]
           }
         })
         this.scheduleSequencePreload()
@@ -221,11 +212,39 @@ export default {
           // 遍历 searchMap 中的每个条目
           for (const [originalId, info] of Object.entries(searchMap)) {
             if (info && typeof info === 'object') {
+              // 尝试从 geneInfoResult 中获取物种信息
+              let speciesInfo = '未知物种'
+              
+              // 首先尝试从 searchMap 中的 info.genome_id 获取
+              if (info.genome_id) {
+                speciesInfo = info.genome_id
+              }
+              
+              // 然后尝试从 geneInfoResult 中获取更详细的物种信息
+              if (geneInfoResult && Array.isArray(geneInfoResult)) {
+                const geneInfo = geneInfoResult.find(item => 
+                  item.db_id === info.db_id || item.geneid === info.geneid
+                )
+                if (geneInfo && geneInfo.species) {
+                  speciesInfo = geneInfo.species
+                }
+              }
+              
+              // 最后尝试从 geneidResult 中获取物种信息
+              if (geneidResult && Array.isArray(geneidResult)) {
+                const geneidInfo = geneidResult.find(item => 
+                  item.db_id === info.db_id || item.geneid === info.geneid
+                )
+                if (geneidInfo && geneidInfo.species) {
+                  speciesInfo = geneidInfo.species
+                }
+              }
+              
               this.results.push({
                 original_id: originalId,  // 使用带 .1 的原始 ID
                 IDs: info.geneid,         // 使用 geneid 作为 IDS
                 db_id: info.db_id,        // 使用 db_id 作为数据库 ID
-                species: info.genome_id || '未知物种',  // 使用 genome_id 作为物种
+                species: speciesInfo,     // 使用获取到的物种信息
                 mrna_transcripts: [{ id: info.geneid }]  // 添加默认的转录本信息
               })
             }
@@ -235,13 +254,38 @@ export default {
         // 如果 searchMap 解析失败，使用 geneIds 作为后备
         if (this.results.length === 0 && geneIds) {
           const geneIdList = geneIds.split(',')
-          this.results = geneIdList.map(id => ({
-            original_id: id,  // 使用输入的ID作为原始ID
-            IDs: id,           // 使用输入的ID作为查询ID
-            db_id: id,         // 使用输入的ID作为数据库ID
-            species: '未知物种',  // 默认为未知物种，后续可以通过其他API获取
-            mrna_transcripts: [{ id: id }]  // 添加默认的转录本信息
-          }))
+          this.results = geneIdList.map(id => {
+            // 尝试从 geneInfoResult 和 geneidResult 中获取物种信息
+            let speciesInfo = '未知物种'
+            
+            // 尝试从 geneInfoResult 中获取物种信息
+            if (geneInfoResult && Array.isArray(geneInfoResult)) {
+              const geneInfo = geneInfoResult.find(item => 
+                item.db_id === id || item.geneid === id
+              )
+              if (geneInfo && geneInfo.species) {
+                speciesInfo = geneInfo.species
+              }
+            }
+            
+            // 尝试从 geneidResult 中获取物种信息
+            if (geneidResult && Array.isArray(geneidResult)) {
+              const geneidInfo = geneidResult.find(item => 
+                item.db_id === id || item.geneid === id
+              )
+              if (geneidInfo && geneidInfo.species) {
+                speciesInfo = geneidInfo.species
+              }
+            }
+            
+            return {
+              original_id: id,  // 使用输入的ID作为原始ID
+              IDs: id,           // 使用输入的ID作为查询ID
+              db_id: id,         // 使用输入的ID作为数据库ID
+              species: speciesInfo,  // 使用获取到的物种信息
+              mrna_transcripts: [{ id: id }]  // 添加默认的转录本信息
+            }
+          })
         }
         
         this.has_sequences = this.results.length > 0
@@ -280,7 +324,7 @@ export default {
       const cacheKey = `${geneId}|${type}|${transcriptId}|${upLen}|${downLen}`
 
       // 已缓存 / 正在加载 → 跳过
-      if (this.sequenceCache[cacheKey] || this.sequenceLoading[cacheKey]) return
+      if (this.geneSearchStore.sequenceCache[cacheKey] || this.geneSearchStore.sequenceLoading[cacheKey]) return
 
       batchPayload.push({
         gene_id: geneId,
@@ -291,7 +335,7 @@ export default {
         cacheKey
       })
 
-      this.sequenceLoading[cacheKey] = true
+      this.geneSearchStore.sequenceLoading[cacheKey] = true
     })
   })
 })
@@ -306,7 +350,7 @@ if (!batchPayload.length) return
   if (dbIds.length === 0) {
     console.warn('No db_ids found for sequence extraction')
     batchPayload.forEach(r => {
-      this.sequenceLoading[r.cacheKey] = false
+      this.geneSearchStore.sequenceLoading[r.cacheKey] = false
     })
     return
   }
@@ -329,13 +373,13 @@ if (!batchPayload.length) return
   
   // 暂时将所有缓存键标记为加载完成
   batchPayload.forEach(r => {
-    this.sequenceCache[r.cacheKey] = 'Sequence data available'
-    this.sequenceLoading[r.cacheKey] = false
+    this.geneSearchStore.sequenceCache[r.cacheKey] = 'Sequence data available'
+    this.geneSearchStore.sequenceLoading[r.cacheKey] = false
   })
 } catch (err) {
   console.error('批量热加载失败', err)
   batchPayload.forEach(r => {
-    this.sequenceLoading[r.cacheKey] = false
+    this.geneSearchStore.sequenceLoading[r.cacheKey] = false
   })
 }
 
@@ -346,7 +390,7 @@ if (!batchPayload.length) return
       return seq.replace(/(.{1,80})/g, '$1\n')
     },
 
-    handleShowSequence({ type, title, content, id }) {
+    async handleShowSequence({ type, title, content, id }) {
       this.modalTitle = title
       this.currentSeqType = type
       this.currentGeneId = id
@@ -355,67 +399,87 @@ if (!batchPayload.length) return
       const downLen = this.selectedDownstreamLength || 500
       let allFastaContent = ''
 
-      this.results.forEach(geneData => {
+      for (const geneData of this.results) {
         const geneId = geneData.IDs
         if (type === 'genomic' && geneData.gene_seq && geneData.gene_seq !== 'N/A') {
           allFastaContent += `>${geneId} genomic\n${this.formatSequence(geneData.gene_seq)}\n\n`
-          return
+          continue
         }
 
         const transcripts = geneData.mrna_transcripts?.length ? geneData.mrna_transcripts : [geneData]
 
-        transcripts.forEach(transcript => {
+        for (const transcript of transcripts) {
           const transcriptId = transcript.id || transcript.transcript_id || geneId
-          const cacheKey = `${geneId}|${type}|${transcriptId}|${upLen}|${downLen}`
-          allFastaContent += this.sequenceCache[cacheKey]
-            ? this.sequenceCache[cacheKey] + '\n\n'
-            : `>${transcriptId} ${type}\n序列未加载\n\n`
-        })
-      })
+          try {
+            const sequence = await this.geneSearchStore.fetchSequence(geneId, transcriptId, type, upLen, downLen)
+            if (sequence && sequence !== '未找到序列' && sequence !== 'N/A') {
+              allFastaContent += `>${transcriptId} ${type}\n${this.formatSequence(sequence)}\n\n`
+            } else {
+              allFastaContent += `>${transcriptId} ${type}\n${sequence}\n\n`
+            }
+          } catch (error) {
+            console.error('Error fetching sequence:', error)
+            allFastaContent += `>${transcriptId} ${type}\n序列获取失败\n\n`
+          }
+        }
+      }
 
       this.modalContent = allFastaContent.trim() || '未找到该类型的序列'
       this.showModal = true
     },
 
-    closeModal() {
-      this.showModal = false
-    },
-
-    downloadFasta() {
-      const blob = new Blob([this.modalContent], { type: 'text/plain' })
+    handleDownload({ content, type, geneId }) {
+      const blob = new Blob([content], { type: 'text/plain' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `${this.currentGeneId}_${this.currentSeqType}_all_transcripts.fasta`
+      a.download = `${geneId}_${type}_all_transcripts.fasta`
       a.click()
       URL.revokeObjectURL(url)
     },
 
-    downloadAllSequences() {
+    handleCopy({ content }) {
+      navigator.clipboard.writeText(content).then(() => {
+        this.$message.success('序列已复制到剪贴板')
+      }).catch(err => {
+        console.error('复制失败:', err)
+        this.$message.error('复制失败，请手动复制')
+      })
+    },
+
+    async downloadAllSequences() {
       if (!this.results?.length) return
       const types = ['genomic', 'upstream', 'downstream', 'mrna', 'cdna', 'cds', 'protein']
       const upLen = this.selectedUpstreamLength || 500
       const downLen = this.selectedDownstreamLength || 500
 
       let allContent = ''
-      this.results.forEach(geneData => {
+      
+      for (const geneData of this.results) {
         const geneId = geneData.IDs
-        types.forEach(type => {
+        for (const type of types) {
           if (type === 'genomic' && geneData.gene_seq && geneData.gene_seq !== 'N/A') {
             allContent += `>${geneId} genomic\n${this.formatSequence(geneData.gene_seq)}\n\n`
-            return
+            continue
           }
 
           const transcripts = geneData.mrna_transcripts?.length ? geneData.mrna_transcripts : [geneData]
-          transcripts.forEach(transcript => {
+          for (const transcript of transcripts) {
             const transcriptId = transcript.id || transcript.transcript_id || geneId
-            const cacheKey = `${geneId}|${type}|${transcriptId}|${upLen}|${downLen}`
-            allContent += this.sequenceCache[cacheKey]
-              ? this.sequenceCache[cacheKey] + '\n\n'
-              : `>${transcriptId} ${type}\n序列未加载\n\n`
-          })
-        })
-      })
+            try {
+              const sequence = await this.geneSearchStore.fetchSequence(geneId, transcriptId, type, upLen, downLen)
+              if (sequence && sequence !== '未找到序列' && sequence !== 'N/A') {
+                allContent += `>${transcriptId} ${type}\n${this.formatSequence(sequence)}\n\n`
+              } else {
+                allContent += `>${transcriptId} ${type}\n${sequence}\n\n`
+              }
+            } catch (error) {
+              console.error('Error fetching sequence:', error)
+              allContent += `>${transcriptId} ${type}\n序列获取失败\n\n`
+            }
+          }
+        }
+      }
 
       const blob = new Blob([allContent.trim()], { type: 'text/plain' })
       const url = URL.createObjectURL(blob)
@@ -429,6 +493,7 @@ if (!batchPayload.length) return
   }
 }
 </script>
+
 
 
 

@@ -35,13 +35,11 @@ export const useGenomeStore = defineStore('genome', {
     // 原始物种数据
     speciesData: [] as Species[],
     // 错误信息
-    error: null as string | null
+    error: null as string | null,
+    // 用于缓存请求的Promise
+    _fetchPromise: null as Promise<void> | null
   }),
   
-  // 用于缓存请求的Promise
-  _fetchPromise: null as Promise<void> | null,
-  
-  // 初始化时自动获取基因组数据
   getters: {
     // 获取所有基因组类型
     genomeTypes: (state) => {
@@ -70,46 +68,59 @@ export const useGenomeStore = defineStore('genome', {
         return;
       }
       
-      this.loading = true
-      this.error = null
-      
-      try {
-        const data = await httpInstance.get('/CottonOGD_api/get_species_info/') as ApiResponse
-        console.log('Species data from store:', data)
-        
-        // 处理后端返回的species数据
-        const speciesData = JSON.parse(data.species_info) as Species[]
-        this.speciesData = speciesData
-        
-        // 按Genome_type分组
-        const genomes: Record<string, GenomeItem[]> = {}
-        speciesData.forEach((species: Species) => {
-          const genomeType = species.Genome_type || 'undefined'
-          if (!genomes[genomeType]) {
-            genomes[genomeType] = []
-          }
-          genomes[genomeType].push({
-            value: species.alias || species.name || species.Cotton_Species || '',
-            label: species.name || species.alias || species.Cotton_Species || ''
-          })
-        })
-        
-        // 转换为级联选择器格式
-        this.genomeOptions = Object.entries(genomes).map(([type, items]) => ({
-          value: type,
-          label: type,
-          children: items
-        }))
-        
-        console.log('Genome options from store:', this.genomeOptions)
-      } catch (error: any) {
-        console.error('Error fetching genomes in store:', error)
-        this.error = error.message
-        this.genomeOptions = []
-        this.speciesData = []
-      } finally {
-        this.loading = false
+      // 如果已经有正在进行的请求，返回该请求的Promise
+      if (this._fetchPromise) {
+        console.log('Using existing fetch promise for genome data');
+        return this._fetchPromise;
       }
+      
+      // 创建新的请求Promise
+      this._fetchPromise = (async () => {
+        this.loading = true
+        this.error = null
+        
+        try {
+          const data = await httpInstance.get('/CottonOGD_api/get_species_info/') as ApiResponse
+          console.log('Species data from store:', data)
+          
+          // 处理后端返回的species数据
+          const speciesData = JSON.parse(data.species_info) as Species[]
+          this.speciesData = speciesData
+          
+          // 按Genome_type分组
+          const genomes: Record<string, GenomeItem[]> = {}
+          speciesData.forEach((species: Species) => {
+            const genomeType = species.Genome_type || 'undefined'
+            if (!genomes[genomeType]) {
+              genomes[genomeType] = []
+            }
+            genomes[genomeType].push({
+              value: species.alias || species.name || species.Cotton_Species || '',
+              label: species.name || species.alias || species.Cotton_Species || ''
+            })
+          })
+          
+          // 转换为级联选择器格式
+          this.genomeOptions = Object.entries(genomes).map(([type, items]) => ({
+            value: type,
+            label: type,
+            children: items
+          }))
+          
+          console.log('Genome options from store:', this.genomeOptions)
+        } catch (error: any) {
+          console.error('Error fetching genomes in store:', error)
+          this.error = error.message
+          this.genomeOptions = []
+          this.speciesData = []
+        } finally {
+          this.loading = false
+          // 清空Promise缓存
+          this._fetchPromise = null
+        }
+      })()
+      
+      return this._fetchPromise
     },
     
     // 重置store
@@ -118,6 +129,7 @@ export const useGenomeStore = defineStore('genome', {
       this.loading = false
       this.speciesData = []
       this.error = null
+      this._fetchPromise = null
     }
   }
 })

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { Search, DataAnalysis, PieChart, Setting } from '@element-plus/icons-vue'
+import { Search } from '@element-plus/icons-vue'
 
 const searchQuery = ref('')
 const router = useRouter()
@@ -71,7 +71,7 @@ const fillExample = () => {
           <el-col :span="8">
             <el-card shadow="hover" class="feature-card">
               <div class="feature-icon">
-                <el-icon :size="56" class="text-primary"><DataAnalysis /></el-icon>
+                <i class="fas fa-database"></i>
               </div>
               <h3 class="feature-title">Browse</h3>
               <p class="feature-description">
@@ -93,7 +93,7 @@ const fillExample = () => {
           <el-col :span="8">
             <el-card shadow="hover" class="feature-card">
               <div class="feature-icon">
-                <el-icon :size="56" class="text-primary"><Setting /></el-icon>
+                <i class="fas fa-tools"></i>
               </div>
               <h3 class="feature-title">Analysis Tools</h3>
               <p class="feature-description">
@@ -115,7 +115,7 @@ const fillExample = () => {
           <el-col :span="8">
             <el-card shadow="hover" class="feature-card">
               <div class="feature-icon">
-                <el-icon :size="56" class="text-primary"><PieChart /></el-icon>
+                <i class="fas fa-chart-pie"></i>
               </div>
               <h3 class="feature-title">Visualization</h3>
               <p class="feature-description">
@@ -539,6 +539,13 @@ const fillExample = () => {
   margin-bottom: 20px;
   display: flex;
   justify-content: center;
+  align-items: center;
+  height: 60px; /* Fixed height for consistency */
+}
+
+.feature-icon i {
+  font-size: 48px;
+  color: #3a6ea5;
 }
 
 .feature-title {
@@ -583,6 +590,10 @@ const fillExample = () => {
   font-size: 48px;
   color: #3a6ea5;
   margin-bottom: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 60px;
 }
 
 .stats-value {
@@ -621,10 +632,14 @@ const fillExample = () => {
   border-color: #3a6ea5;
 }
 
-.quick-link-icon {
-  font-size: 40px;
+.feature-icon, .stats-icon, .quick-link-icon {
+  font-size: 48px;
   color: #3a6ea5;
   margin-bottom: 16px;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  height: 60px;
 }
 
 .quick-link-title {

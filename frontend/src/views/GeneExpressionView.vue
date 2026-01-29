@@ -145,6 +145,26 @@ const handleSubmit = async () => {
   padding: 0 15px;
 }
 
+.page-header {
+  text-align: left;
+  margin-bottom: 30px;
+}
+
+.page-title {
+  font-size: 36px;
+  font-weight: 600;
+  color: #3a6ea5;
+  margin-bottom: 16px;
+}
+
+.page-description {
+  font-size: 16px;
+  color: #666;
+  line-height: 1.6;
+  max-width: 800px;
+  margin: 0;
+}
+
 .mt-4 {
   margin-top: 1.5rem;
 }

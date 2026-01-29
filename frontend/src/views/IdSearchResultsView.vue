@@ -1,9 +1,18 @@
 <template>
   <div class="container mt-4">
-    <h1>Search Results</h1>
+    <el-row :gutter="20" class="mb-4">
+      <el-col :span="18">
+        <h2>Search Results</h2>
+      </el-col>
+      <el-col :span="6" class="text-right">
+        <router-link to="/tools/id-search">
+          <el-button type="default">Return to Search</el-button>
+        </router-link>
+      </el-col>
+    </el-row>
     
     <!-- 加载状态 -->
-    <div v-if="isLoading" class="text-center py-5">
+    <div v-if="isLoading" class="mb-4">
       <el-skeleton :rows="10" animated />
     </div>
     
@@ -13,21 +22,17 @@
       type="error"
       :title="errorMessage"
       show-icon
-      class="mb-3"
-    >
-      <template #default>
-        <el-link type="primary" @click="$router.push('/tools/id-search')">new search</el-link>
-      </template>
-    </el-alert>
+      class="mb-4"
+    />
     
     <!-- 结果展示 -->
-    <div v-else-if="result" class="mt-4">
+    <div v-else-if="result">
       
       <!-- 基本信息卡片 -->
       <el-card class="mb-4">
         <template #header>
-          <div class="card-header">
-            <h2>Gene Basic Information</h2>
+          <div class="d-flex justify-content-between align-items-center">
+            <h3>Gene Basic Information</h3>
           </div>
         </template>
         <div class="card-body">
@@ -41,7 +46,7 @@
       <!-- JBrowse View -->
       <el-card v-if="jbrowse_url" class="mb-4">
         <template #header>
-          <div class="card-header">
+          <div class="d-flex justify-content-between align-items-center">
             <h3>JBrowse View</h3>
           </div>
         </template>
@@ -53,8 +58,8 @@
       <!-- 序列信息卡片 -->
       <el-card v-if="has_sequences" class="mb-4">
         <template #header>
-          <div class="card-header">
-            <h2>Sequence</h2>
+          <div class="d-flex justify-content-between align-items-center">
+            <h3>Sequence</h3>
           </div>
         </template>
         <div class="card-body">
@@ -270,8 +275,8 @@
         class="mb-4"
       >
         <template #header>
-          <div class="card-header">
-            <h2>Annotations</h2>
+          <div class="d-flex justify-content-between align-items-center">
+            <h3>Annotations</h3>
           </div>
         </template>
         <div class="card-body">
@@ -307,8 +312,8 @@
       <!-- GFF数据表格 -->
       <el-card v-if="hasGffData" class="mb-4">
         <template #header>
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <h2>GFF Data</h2>
+          <div class="d-flex justify-content-between align-items-center">
+            <h3>GFF Data</h3>
             <div>
               <el-button type="success" size="small" @click="downloadGff('txt')">Download as TXT</el-button>
               <el-button type="success" size="small" class="ml-2" @click="downloadGff('gff')">Download as GFF</el-button>
@@ -350,32 +355,18 @@
           </div>
         </div>
       </el-card>
-      
-      <!-- 返回按钮 -->
-      <div class="mt-4">
-        <el-button type="primary" @click="$router.push('/id-search')">Return to Search</el-button>
-      </div>
     </div>
     
     <!-- 序列弹窗组件 -->
-    <el-dialog
-      v-model="showModal"
-      :title="modalTitle"
-      width="50vw"
-      height="50vh"
-      append-to-body
-    >
-      <div class="bg-light p-3 rounded" style="max-height: calc(40vh - 100px); overflow-y: auto; white-space: pre-wrap; word-break: break-all;">
-        {{ modalContent }}
-      </div>
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="closeModal">Close</el-button>
-          <el-button type="primary" @click="copySequence">Copy Sequence</el-button>
-          <el-button type="success" @click="downloadFasta">Download FASTA</el-button>
-        </span>
-      </template>
-    </el-dialog>
+    <sequence-modal
+      v-model:show-modal="showModal"
+      :modal-title="modalTitle"
+      :modal-content="modalContent"
+      :current-seq-type="currentSeqType"
+      :current-gene-id="currentGeneId"
+      @download="handleDownload"
+      @copy="handleCopy"
+    />
   </div>
 </template>
 
@@ -384,8 +375,10 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import httpInstance from '@/utils/http'
 import SequenceDisplay from '@/components/SequenceDisplay.vue'
+import SequenceModal from '@/components/SequenceModal.vue'
 import { v4 as uuidv4 } from 'uuid'
 import { ElMessage } from 'element-plus'
+import { useGeneSearchStore } from '@/stores/geneSearch.ts'
 
 // 定义类型
 interface Annotation {
@@ -436,8 +429,10 @@ interface Result {
 }
 
 // 初始化路由
-const router = useRouter()
 const route = useRoute()
+
+// 获取store
+const geneSearchStore = useGeneSearchStore()
 
 // 状态管理
 const result = ref<Result | null>(null)
@@ -446,9 +441,16 @@ const annotations = ref<Record<string, Annotation[]>>({})
 const jbrowse_url = ref('')
 const isLoading = ref(false)
 const errorMessage = ref('')
-const has_sequences = ref(true)
-const sequenceCache = ref<Record<string, string>>({}) // key: geneId|type|transcriptId
-const sequenceLoading = ref<Record<string, boolean>>({}) // loading 状态
+
+// 计算是否有序列信息
+const has_sequences = computed(() => {
+  if (!result.value) return false
+  // 检查是否有直接的序列属性
+  const hasDirectSequences = !!(result.value.gene_seq || result.value.mrna_seq || result.value.upstream_seq || result.value.downstream_seq || result.value.cdna_seq || result.value.cds_seq || result.value.protein_seq)
+  // 检查是否有转录本序列
+  const hasTranscriptSequences = !!(result.value.mrna_transcripts && result.value.mrna_transcripts.length > 0)
+  return hasDirectSequences || hasTranscriptSequences
+})
 
 // 转录本选择相关
 const selectedTranscriptIndex = ref(0)
@@ -619,18 +621,7 @@ const handleLengthChange = (eventData: { upstreamLength: number; downstreamLengt
   downstreamLength.value = newDownstream
   
   // 当长度变化时，清除所有相关缓存，确保下次请求时使用新长度
-  Object.keys(sequenceCache.value).forEach(key => {
-    if (key.includes('upstream') || key.includes('downstream')) {
-      delete sequenceCache.value[key]
-    }
-  })
-  
-  // 清除对应的加载状态
-  Object.keys(sequenceLoading.value).forEach(key => {
-    if (key.includes('upstream') || key.includes('downstream')) {
-      sequenceLoading.value[key] = false
-    }
-  })
+  geneSearchStore.clearSequenceCache()
 }
 
 const processAnnotations = (geneidResult: any[]) => {
@@ -665,6 +656,40 @@ const fetchGeneData = async (db_id: string) => {
   selectedTranscriptIndex.value = 0 // 重置为默认选择第一个转录本
   
   try {
+    // 首先检查URL参数中是否有geneData
+    const geneDataStr = route.query.geneData as string
+    if (geneDataStr) {
+      try {
+        // 从URL参数中解析geneData
+        const geneData = JSON.parse(geneDataStr)
+        console.log('从URL参数获取基因数据:', geneData)
+        
+        // 直接使用解析后的数据
+        result.value = geneData
+        
+        // 处理注释数据（如果有的话）
+        processAnnotations([]) // 暂时为空，因为我们没有从后端获取注释数据
+        
+        // 设置jbrowse_url（如果有的话）
+        jbrowse_url.value = geneData.jbrowse_url || ''
+        
+        // 设置GFF数据（如果有的话）
+        gffData.value = geneData.gff_data || []
+        hasGffData.value = gffData.value.length > 0
+        // 重置页码到第一页
+        currentPage.value = 1
+        
+        // 清除加载超时定时器
+        clearTimeout(loadingTimeout)
+        isLoading.value = false
+        return
+      } catch (parseError) {
+        console.error('解析geneData失败:', parseError)
+        // 解析失败，继续从后端获取数据
+      }
+    }
+    
+    // 如果URL参数中没有geneData，从后端获取数据
     // 修改为使用现有的批量查询API，传递单个基因ID
     const formData = {
       db_id: db_id
@@ -710,14 +735,9 @@ const fetchGeneData = async (db_id: string) => {
       
       // 检查是否有序列信息：包括直接序列属性和转录本中的序列
       /*if (result.value) {
-        has_sequences.value = !!(
-          result.value.gene_seq || 
-          result.value.mrna_seq || 
-          (result.value.cds_seq && result.value.cds_seq !== '未找到CDS序列') ||
-          (result.value.protein_seq && result.value.protein_seq !== '未找到蛋白序列') ||
-          (result.value.mrna_transcripts && result.value.mrna_transcripts.length > 0)
-        )
-      }*/
+        has_sequences.value = !!(result.value.gene_seq || result.value.mrna_seq || (result.value.cds_seq && result.value.cds_seq !== '未找到CDS序列') || (result.value.protein_seq && result.value.protein_seq !== '未找到蛋白序列') || (result.value.mrna_transcripts && result.value.mrna_transcripts.length > 0))
+      }
+      */
     } else {
       throw new Error('未找到基因信息')
     }
@@ -760,43 +780,19 @@ const handleShowSequence = async (eventData: { type: string; title: string; cont
   const realGeneId = result.value?.IDs || ''
   // 使用mrnaid替代transcriptId，与后端字段名保持一致
   const mrnaid = currentTranscript.value?.id || id
-  // 对于上下游序列，缓存key需要包含长度信息，确保不同长度的序列缓存分开
-  const lengthPart = (type === 'upstream' || type === 'downstream') ? `|${type === 'upstream' ? upstreamLength.value : downstreamLength.value}` : ''
-  // 使用realGeneId作为基因ID，确保缓存key的准确性
-  const cacheKey = `${realGeneId}|${type}|${mrnaid}${lengthPart}`
-
-  // 已经加载过，直接弹窗
-  if (sequenceCache.value[cacheKey]) {
-    showSequenceModal(
-      title,
-      sequenceCache.value[cacheKey],
-      type,
-      realGeneId
-    )
-    return
-  }
-
-  // 正在加载，避免重复点击
-  if (sequenceLoading.value[cacheKey]) return
-  sequenceLoading.value[cacheKey] = true
+  // 对于上下游序列，需要包含长度信息
+  const upLen = upstreamLength.value
+  const downLen = downstreamLength.value
 
   try {
     let fastaContent = ''
     let seq = content
     let isFromContent = true
     
-    // 如果content为空，向后端请求序列
+    // 如果content为空，使用store获取序列
     if (!seq) {
       isFromContent = false
-      const res = await httpInstance.post(
-        '/CottonOGD_api/extract_seq/',
-        {
-          db_id: realGeneId,
-          type: type
-        }
-      )
-      const resData = res as any
-      seq = resData.sequence || '未找到序列'
+      seq = await geneSearchStore.fetchSequence(realGeneId, mrnaid, type, upLen, downLen)
     }
     
     // 如果返回的是有效序列，添加FASTA格式头部
@@ -807,9 +803,9 @@ const handleShowSequence = async (eventData: { type: string; title: string; cont
       // 根据类型和长度截取序列
       let processedSeq = seq
       if (type === 'upstream') {
-        processedSeq = seq.slice(0, upstreamLength.value)
+        processedSeq = seq.slice(0, upLen)
       } else if (type === 'downstream') {
-        processedSeq = seq.slice(0, downstreamLength.value)
+        processedSeq = seq.slice(0, downLen)
       }
       
       const lengthInfo = (type === 'upstream' || type === 'downstream') ? ` (${processedSeq.length}bp)` : ''
@@ -818,10 +814,6 @@ const handleShowSequence = async (eventData: { type: string; title: string; cont
       // 无效序列直接使用
       fastaContent = seq
     }
-
-    // 缓存FASTA格式的序列
-    sequenceCache.value[cacheKey] = fastaContent
-    sequenceLoading.value[cacheKey] = false
 
     // 打开弹窗，显示FASTA格式序列
     showSequenceModal(
@@ -837,22 +829,36 @@ const handleShowSequence = async (eventData: { type: string; title: string; cont
       type,
       realGeneId
     )
-    sequenceLoading.value[cacheKey] = false
-  } finally {
-    sequenceLoading.value[cacheKey] = false
   }
 }
 
-// 关闭弹窗
-const closeModal = () => {
-  showModal.value = false
+// 处理下载事件
+const handleDownload = ({ content, type, geneId }: { content: string; type: string; geneId: string }) => {
+  const header = `>${geneId} ${type}`
+  const fastaContent = `${header}\n${content}`
+  
+  const blob = new Blob([fastaContent], { type: 'text/plain' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${geneId}_${type}.fasta`
+  // 使用document.createEvent来创建一个自定义事件，避免触发页面刷新
+  const event = new MouseEvent('click', {
+    bubbles: true,
+    cancelable: true,
+    view: window
+  })
+  document.body.appendChild(a)
+  a.dispatchEvent(event)
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
 }
 
-// 复制序列
-const copySequence = () => {
+// 处理复制事件
+const handleCopy = ({ content, type, geneId }: { content: string; type: string; geneId: string }) => {
   // 按照FASTA格式复制序列，包含基因ID和序列类型
-  const header = `>${currentGeneId.value} ${currentSeqType.value}`
-  const fastaContent = `${header}\n${modalContent.value}`
+  const header = `>${geneId} ${type}`
+  const fastaContent = `${header}\n${content}`
   
   navigator.clipboard.writeText(fastaContent)
     .then(() => {
@@ -868,28 +874,6 @@ const copySequence = () => {
 const formatSequence = (seq: string) => {
   if (!seq) return ''
   return seq.replace(/(.{1,80})/g, '$1\n')
-}
-
-// 下载FASTA
-const downloadFasta = () => {
-  const header = `>${currentGeneId.value} ${currentSeqType.value}`
-  const fastaContent = `${header}\n${modalContent.value}`
-  
-  const blob = new Blob([fastaContent], { type: 'text/plain' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `${currentGeneId.value}_${currentSeqType.value}.fasta`
-  // 使用document.createEvent来创建一个自定义事件，避免触发页面刷新
-  const event = new MouseEvent('click', {
-    bubbles: true,
-    cancelable: true,
-    view: window
-  })
-  document.body.appendChild(a)
-  a.dispatchEvent(event)
-  document.body.removeChild(a)
-  URL.revokeObjectURL(url)
 }
 
 // 下载当前转录本的所有序列
@@ -1046,37 +1030,14 @@ const downloadAllSequences = async () => {
             break
         }
         
-        // 如果在result中没有找到，从后端获取
+        // 如果在result中没有找到，使用store获取序列
         if (!foundInResult) {
-          // 构建请求参数
-          const requestParams: any = {
-            gene_id: geneId,
-            transcript_id: transcriptId,
-            type: seqType
-          }
-          
-          // 对于上下游序列，添加长度信息
-          if (seqType === 'upstream') {
-            requestParams.upstream_length = upstreamLength.value
-          } else if (seqType === 'downstream') {
-            requestParams.downstream_length = downstreamLength.value
-          }
-          
-          // 发送请求获取序列
-          const response = await httpInstance.post(
-            '/CottonOGD_api/extract_seq/',
-            requestParams
-          )
-          
-          // 处理响应
-          const resData = response as any
-          if (resData.sequence && resData.sequence !== '未找到序列' && resData.sequence !== 'N/A') {
-            seqContent = resData.sequence
-          }
+          // 使用store获取序列，自动处理缓存
+          seqContent = await geneSearchStore.fetchSequence(geneId, transcriptId, seqType, upstreamLength.value, downstreamLength.value)
         }
         
         // 如果获取到了序列，添加到结果中
-        if (seqContent) {
+        if (seqContent && seqContent !== '未找到序列' && seqContent !== 'N/A') {
           const formattedSeq = formatSequence(seqContent)
           // 基因组序列使用gene_id，其他使用transcriptId
           const headerId = seqType === 'genomic' ? geneId : transcriptId

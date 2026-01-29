@@ -412,7 +412,8 @@ export default {
 .main-content h2 {
   font-size: 1.5rem;
   font-weight: bold;
-  color: #333;
+  color: #3a6ea5;
+  margin-bottom: 20px;
 }
 
 /* 转录因子家族样式 */

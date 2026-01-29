@@ -378,13 +378,13 @@ export default {
 .sidebar h3 {
   font-size: 1.2rem;
   font-weight: bold;
-  color: #333;
+  color: #3a6ea5;
 }
 
 .info-icon {
-  font-size: 1rem;
+  font-size: 1.2rem;
   margin-left: 5px;
-  color: #409eff;
+  color: #3a6ea5;
   cursor: pointer;
 }
 
@@ -412,7 +412,8 @@ export default {
 .main-content h2 {
   font-size: 1.5rem;
   font-weight: bold;
-  color: #333;
+  color: #3a6ea5;
+  margin-bottom: 20px;
 }
 
 /* 转录因子家族样式 */

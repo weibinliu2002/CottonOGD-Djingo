@@ -83,7 +83,7 @@ const activeNames = ref<string[]>([])
     <!-- 页面头部 -->
     <div class="page-header">
       <div class="container">
-        <!--<h1 class="page-title">数据下载</h1>-->
+        <h1 class="page-title">Download Data</h1>
         <p class="page-subtitle">Download genome-related files for cotton research</p>
       </div>
     </div>
@@ -208,21 +208,24 @@ const activeNames = ref<string[]>([])
 }
 
 .page-header {
-  background: linear-gradient(135deg, #869ce6 0%, #6981e2 100%);
-  color: white;
-  padding: 20px 0;
-  margin-bottom: 40px;
+  text-align: left;
+  margin-bottom: 30px;
+  padding-top: 20px;
 }
 
 .page-title {
-  font-size: 2.5rem;
+  font-size: 36px;
   font-weight: 600;
-  margin-bottom: 10px;
+  color: #3a6ea5;
+  margin-bottom: 16px;
 }
 
 .page-subtitle {
-  font-size: 1.1rem;
-  opacity: 0.9;
+  font-size: 16px;
+  color: #666;
+  line-height: 1.6;
+  max-width: 800px;
+  margin: 0;
 }
 
 .action-bar {

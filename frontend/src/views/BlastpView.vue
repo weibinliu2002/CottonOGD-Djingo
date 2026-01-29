@@ -421,7 +421,7 @@ onMounted(() => {
 
 /* 页面标题 */
 .page-header {
-  text-align: center;
+  text-align: left;
   margin-bottom: 30px;
 }
 
@@ -437,7 +437,7 @@ onMounted(() => {
   color: #666;
   line-height: 1.6;
   max-width: 800px;
-  margin: 0 auto;
+  margin: 0;
 }
 
 /* 错误提示 */

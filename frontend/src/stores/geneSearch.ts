@@ -37,6 +37,8 @@ export const useGeneSearchStore = defineStore('geneSearch', () => {
   const searchResults = ref<SearchResult | null>(null)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+  const sequenceCache = ref<Record<string, string>>({}) // 缓存序列数据，key: geneId|type|transcriptId|upLen|downLen
+  const sequenceLoading = ref<Record<string, boolean>>({}) // 缓存加载状态
 
   // Actions
   async function performSearch(geneIds: string, genomeId: string[]) {
@@ -114,6 +116,65 @@ export const useGeneSearchStore = defineStore('geneSearch', () => {
     error.value = message
   }
 
+  // 序列相关方法
+  async function fetchSequence(geneId: string, transcriptId: string, type: string, upstreamLength: number = 500, downstreamLength: number = 500) {
+    const lengthPart = (type === 'upstream' || type === 'downstream') ? `|${type === 'upstream' ? upstreamLength : downstreamLength}` : ''
+    const cacheKey = `${geneId}|${type}|${transcriptId}${lengthPart}`
+
+    // 检查缓存
+    if (sequenceCache.value[cacheKey]) {
+      return sequenceCache.value[cacheKey]
+    }
+
+    // 检查是否正在加载
+    if (sequenceLoading.value[cacheKey]) {
+      // 等待加载完成
+      return new Promise<string>((resolve) => {
+        const checkLoading = setInterval(() => {
+          if (!sequenceLoading.value[cacheKey]) {
+            clearInterval(checkLoading)
+            resolve(sequenceCache.value[cacheKey] || '')
+          }
+        }, 100)
+      })
+    }
+
+    // 开始加载
+    sequenceLoading.value[cacheKey] = true
+
+    try {
+      const params: any = {
+        gene_id: geneId,
+        transcript_id: transcriptId,
+        type: type
+      }
+
+      if (type === 'upstream') {
+        params.upstream_length = upstreamLength
+      } else if (type === 'downstream') {
+        params.downstream_length = downstreamLength
+      }
+
+      const response = await httpInstance.post('/CottonOGD_api/extract_seq/', params)
+      const data = response as any
+      const sequence = data.sequence || '未找到序列'
+
+      // 缓存序列
+      sequenceCache.value[cacheKey] = sequence
+      return sequence
+    } catch (error: any) {
+      console.error('Error fetching sequence:', error)
+      return '序列获取失败'
+    } finally {
+      sequenceLoading.value[cacheKey] = false
+    }
+  }
+
+  function clearSequenceCache() {
+    sequenceCache.value = {}
+    sequenceLoading.value = {}
+  }
+
   return {
     // state
     searchInput,
@@ -121,10 +182,14 @@ export const useGeneSearchStore = defineStore('geneSearch', () => {
     searchResults,
     isLoading,
     error,
+    sequenceCache,
+    sequenceLoading,
     // actions
     performSearch,
     clearState,
     clearError,
-    setError
+    setError,
+    fetchSequence,
+    clearSequenceCache
   }
 })
