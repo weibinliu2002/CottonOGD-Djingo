@@ -5,6 +5,7 @@ import { createPinia } from 'pinia'
 import { v4 as uuidv4 } from 'uuid'
 import '@fortawesome/fontawesome-free/css/all.min.css'
 import httpInstance from './utils/http.js'
+import { useGenomeStore } from './stores/genome_info.ts'
 const pinia = createPinia()
 const app = createApp(App)
 
@@ -17,3 +18,7 @@ app.config.globalProperties.$uuid = { v4: uuidv4 }
 app.config.globalProperties.$http = httpInstance
 
 app.use(pinia).use(router).mount('#app')
+
+// 初始化基因组store，在应用启动时获取数据
+const genomeStore = useGenomeStore()
+genomeStore.initialize()

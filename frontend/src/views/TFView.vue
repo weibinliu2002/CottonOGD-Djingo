@@ -117,6 +117,7 @@ import { QuestionFilled, VideoPlay, Search } from '@element-plus/icons-vue'
 import router from '@/router'
 import httpInstance from '@/utils/http.js'
 import { useGenomeStore } from '@/stores/genome_info'
+import { useFamilyStore } from '@/stores/familyInfo'
 
 export default {
   name: 'TFView',
@@ -128,6 +129,8 @@ export default {
   setup() {
     // 获取基因组store
     const genomeStore = useGenomeStore()
+    // 获取家族store
+    const familyStore = useFamilyStore()
     
     // 选中的基因组（级联选择器使用数组格式）
     const selectedGenome = ref([]) 
@@ -145,19 +148,29 @@ export default {
     // 从store获取加载状态
     const genomeLoading = computed(() => genomeStore.loading)
     
+    // 从store获取家族信息
+    const familyInfo = computed(() => familyStore.familyInfo)
+    // 从store获取家族列表
+    const familyList = computed(() => familyStore.familyList)
+    // 从store获取家族加载状态
+    const familyLoading = computed(() => familyStore.loading)
+    
     // 从后端获取基因组数据
     const fetchGenomes = async () => {
       await genomeStore.fetchGenomes()
     }
     
-    // 转录因子家族数据
-    const tfFamilies = ref([])
+    // 转录因子家族数据（带选中状态）
+    const tfFamilies = computed(() => {
+      return familyInfo.value.map((family, index) => ({
+        name: family.name,
+        count: family.count,
+        checked: index === 0 // 默认选中第一个家族
+      }))
+    })
     
     // 转录因子数据
     const tfData = ref([])
-    // 原始转录因子数据（存储从后端获取的完整数据）
-    const originalTFData = ref([])
-    
     // 搜索查询
     const searchQuery = ref('')
     
@@ -178,44 +191,7 @@ export default {
     
     // 获取家族数据
     const fetchFamilies = async () => {
-      try {
-        const data = await httpInstance.get('/CottonOGD_api/get_family_info/')
-        
-        const infos = JSON.parse(data.family_info)
-        originalTFData.value = JSON.parse(data.family_list)
-        // 处理后端返回的家族数据
-        if (infos) {
-          tfFamilies.value = infos.map((family, index) => ({
-            name: family.name,
-            count: family.count,
-            checked: index === 0 // 默认选中第一个家族
-          }))
-          console.log('Processed families:', tfFamilies.value)
-        }
-        
-        // 注意：以下代码存在变量未定义问题，暂时注释
-        // 这段代码的意图是根据选择的转录因子家族筛选数据
-        /*
-        if (selectedGenome.value.length > 0) {
-          const genome = selectedGenome.value[selectedGenome.value.length - 1]
-          const filter_tfData = lists.filter(item => item.TF_name === tfFamilies.value.find(f => f.checked)?.name)
-          if (filter_tfData.length > 0) {
-            tfData.value = filter_tfData.map(item => ({
-              TF_name: item.TF_name || 'Unknown',
-              TF_class: item.TF_class || 'Unknown',
-              TF_gene: item.geneid || 'Unknown',
-              db_id: item.id || 'Unknown',
-              TF_genome: genome
-            }))
-            totalCount.value = tfData.value.length || 0
-            console.log('Processed TF data:', tfData.value)
-          }
-        }
-        */
-        
-      } catch (error) {
-        console.error('Error fetching TF families:', error)
-      }
+      await familyStore.fetchFamilies()
     }
     
     // 根据选择的基因组获取转录因子数据

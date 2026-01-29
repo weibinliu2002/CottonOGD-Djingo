@@ -8,6 +8,7 @@ from CottonOGD.views.extract_seq import *
 from CottonOGD.views.gene_expression import *
 from CottonOGD.views.extract_seq_from_gff import *
 from CottonOGD.views.primer_design import *
+from CottonOGD.views.blast import *
 
 
 
@@ -25,4 +26,6 @@ urlpatterns = [
     path('extract_seq_gff/', extract_seq_gff, name='extract_seq_gff'),
     path('extract_expression/', extract_expression, name='extract_expression'),
     path('primer_design/', primer_design, name='primer_design'),
+    path('blast_cmd/', blast_cmd, name='blast_cmd'),
+
 ]

@@ -15,354 +15,871 @@ const performSearch = () => {
     })
   }
 }
+
+const fillExample = () => {
+  // 默认填充第一个示例基因ID
+  searchQuery.value = 'Ghir_A01G000100'
+}
 </script>
 <template>
   <div class="home">
-    <div class="hero-section">
+    <!-- 英雄区域 -->
+    <section class="hero-section">
       <div class="container">
-        <h1 class="text-center mb-4">Welcome to CottonOGD Website</h1>
-        <p class="text-center mb-6">Comprehensive genomic database for cotton research</p>
-        
-        <!-- 主要搜索框 -->
-        <div class="search-box-container">
-          <el-input
-            v-model="searchQuery"
-            placeholder="Enter gene ID, symbol or keyword..."
-            clearable
-            size="large"
-            @keyup.enter="performSearch"
-            class="search-input"
-          >
-            <template #append>
-              <el-button type="primary" size="large" @click="performSearch">
-                <el-icon><Search /></el-icon>
-                Search
-              </el-button>
-            </template>
-          </el-input>
+        <div class="hero-content">
+          <h1>Welcome to CottonOGD</h1>
+          <p class="hero-subtitle">A Comprehensive Cotton Orthogroups Database</p>
+          <p class="hero-description">
+            CottonOGD provides integrated genomic, transcriptomic, and functional annotation resources for cotton research, 
+            enabling researchers to explore orthogroups, gene families, and evolutionary relationships across cotton species.
+          </p>
+          
+          <!-- 主要搜索框 -->
+          <div class="search-box-container">
+            <el-input
+              v-model="searchQuery"
+              placeholder="Enter gene ID, symbol, keyword or sequence..."
+              clearable
+              size="large"
+              @keyup.enter="performSearch"
+              class="search-input"
+            >
+              <template #append>
+                <el-button type="primary" size="large" @click="performSearch">
+                  <el-icon><Search /></el-icon>
+                  Search
+                </el-button>
+              </template>
+            </el-input>
+            <div class="search-tips">
+              <span class="tip-label">Example:</span>
+              <el-tag size="small" class="tip-tag" @click="fillExample">Ghir_A01G000100</el-tag>
+              <el-tag size="small" class="tip-tag" @click="fillExample">Transcription Factor</el-tag>
+              <el-tag size="small" class="tip-tag" @click="fillExample">ABC transporter</el-tag>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </section>
     
-    <!-- 功能卡片区域 -->
-    <div class="features-section py-8">
+    <!-- 核心功能区域 -->
+    <section class="features-section">
       <div class="container">
-        <el-row :gutter="20">
+        <h2 class="section-title">Core Features</h2>
+        <el-row :gutter="24">
           <!-- 浏览功能 -->
           <el-col :span="8">
             <el-card shadow="hover" class="feature-card">
-              <div class="icon-container">
-                <el-icon :size="48" class="text-primary"><DataAnalysis /></el-icon>
+              <div class="feature-icon">
+                <el-icon :size="56" class="text-primary"><DataAnalysis /></el-icon>
               </div>
-              <h3 class="mt-3 mb-2">Browse</h3>
-              <p class="mb-4">Explore cotton genome data, species information and transcription factors</p>
-              <router-link to="/browse/genome">
-                <el-button type="primary" plain>Get Started</el-button>
-              </router-link>
-            </el-card>
-          </el-col>
-          
-          <!-- 可视化功能 -->
-          <el-col :span="8">
-            <el-card shadow="hover" class="feature-card">
-              <div class="icon-container">
-                <el-icon :size="48" class="text-primary"><PieChart /></el-icon>
+              <h3 class="feature-title">Browse</h3>
+              <p class="feature-description">
+                Explore cotton genome data, species information, transcription factors, and transposable elements 
+                through intuitive browsing interfaces.
+              </p>
+              <div class="feature-actions">
+                <router-link to="/browse/tf">
+                  <el-button type="primary" plain size="medium">TF Database</el-button>
+                </router-link>
+                <router-link to="/browse/tr">
+                  <el-button type="primary" plain size="medium" class="ml-2">TR Database</el-button>
+                </router-link>
               </div>
-              <h3 class="mt-3 mb-2">Visualization</h3>
-              <p class="mb-4">View genomic data interactively with JBrowse and expression patterns</p>
-              <router-link to="/jbrowse">
-                <el-button type="primary" plain>Launch JBrowse</el-button>
-              </router-link>
             </el-card>
           </el-col>
           
           <!-- 分析工具 -->
           <el-col :span="8">
             <el-card shadow="hover" class="feature-card">
-              <div class="icon-container">
-                <el-icon :size="48" class="text-primary"><Setting /></el-icon>
+              <div class="feature-icon">
+                <el-icon :size="56" class="text-primary"><Setting /></el-icon>
               </div>
-              <h3 class="mt-3 mb-2">Tools</h3>
-              <p class="mb-4">Use various analysis tools for gene function, expression and enrichment</p>
-              <router-link to="/tools/id-search">
-                <el-button type="primary" plain>Explore Tools</el-button>
-              </router-link>
+              <h3 class="feature-title">Analysis Tools</h3>
+              <p class="feature-description">
+                Utilize a suite of powerful tools for sequence analysis, functional annotation, 
+                expression analysis, and pathway enrichment.
+              </p>
+              <div class="feature-actions">
+                <router-link to="/tools/blastp">
+                  <el-button type="primary" plain size="medium">BLAST</el-button>
+                </router-link>
+                <router-link to="/tools/go-enrichment">
+                  <el-button type="primary" plain size="medium" class="ml-2">GO Enrichment</el-button>
+                </router-link>
+              </div>
+            </el-card>
+          </el-col>
+          
+          <!-- 可视化功能 -->
+          <el-col :span="8">
+            <el-card shadow="hover" class="feature-card">
+              <div class="feature-icon">
+                <el-icon :size="56" class="text-primary"><PieChart /></el-icon>
+              </div>
+              <h3 class="feature-title">Visualization</h3>
+              <p class="feature-description">
+                View genomic data interactively with JBrowse, explore gene expression patterns, 
+                and visualize pathway networks.
+              </p>
+              <div class="feature-actions">
+                <router-link to="/jbrowse">
+                  <el-button type="primary" plain size="medium">JBrowse</el-button>
+                </router-link>
+                <router-link to="/tools/gene-expression">
+                  <el-button type="primary" plain size="medium" class="ml-2">Expression</el-button>
+                </router-link>
+              </div>
             </el-card>
           </el-col>
         </el-row>
       </div>
-    </div>
+    </section>
     
-    <!-- 最新研究区域 -->
-    <div class="research-section bg-light py-8">
+    <!-- 数据库统计区域 -->
+    <section class="stats-section bg-light">
       <div class="container">
-        <h2 class="text-center mb-6">Latest Research Highlights</h2>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-card shadow="hover" class="research-card">
-              <h4>Genome-Wide Analysis of Cotton Transcription Factors</h4>
-              <p class="text-muted">Identification and characterization of transcription factor families across cotton species</p>
-            </el-card>
+        <h2 class="section-title">Database Statistics</h2>
+        <el-row :gutter="30">
+          <el-col :span="6">
+            <div class="stats-card">
+              <div class="stats-icon">
+                <i class="fas fa-dna"></i>
+              </div>
+              <div class="stats-content">
+                <div class="stats-value">200+</div>
+                <div class="stats-label">Genomes</div>
+              </div>
+            </div>
           </el-col>
-          <el-col :span="12">
-            <el-card shadow="hover" class="research-card">
-              <h4>Comparative Genomics of Gossypium</h4>
-              <p class="text-muted">Evolutionary insights from comparative analysis of multiple cotton genomes</p>
-            </el-card>
+          <el-col :span="6">
+            <div class="stats-card">
+              <div class="stats-icon">
+                <i class="fas fa-gene"></i>
+              </div>
+              <div class="stats-content">
+                <div class="stats-value">200,000+</div>
+                <div class="stats-label">Annotated Genes</div>
+              </div>
+            </div>
+          </el-col>
+          <el-col :span="6">
+            <div class="stats-card">
+              <div class="stats-icon">
+                <i class="fas fa-users"></i>
+              </div>
+              <div class="stats-content">
+                <div class="stats-value">15,000+</div>
+                <div class="stats-label">Orthogroups</div>
+              </div>
+            </div>
+          </el-col>
+          <el-col :span="6">
+            <div class="stats-card">
+              <div class="stats-icon">
+                <i class="fas fa-book"></i>
+              </div>
+              <div class="stats-content">
+                <div class="stats-value">5,000+</div>
+                <div class="stats-label">Literature References</div>
+              </div>
+            </div>
           </el-col>
         </el-row>
       </div>
-    </div>
-    
-    <!-- 数据统计区域 -->
-    <div class="stats-section py-8">
-      <div class="container">
-        <h2 class="text-center mb-6">Database Statistics</h2>
-        <el-row :gutter="20">
-          <el-col :span="6">
-            <el-card shadow="hover" class="stats-card">
-              <div class="text-center">
-                <el-icon :size="48" class="text-primary mb-2"><DataAnalysis /></el-icon>
-                <h3>20,000+</h3>
-                <p class="text-muted">Annotated Genes</p>
-              </div>
-            </el-card>
-          </el-col>
-          <el-col :span="6">
-            <el-card shadow="hover" class="stats-card">
-              <div class="text-center">
-                <el-icon :size="48" class="text-primary mb-2"><PieChart /></el-icon>
-                <h3>500+</h3>
-                <p class="text-muted">Pathways</p>
-              </div>
-            </el-card>
-          </el-col>
-          <el-col :span="6">
-            <el-card shadow="hover" class="stats-card">
-              <div class="text-center">
-                <el-icon :size="48" class="text-primary mb-2"><Setting /></el-icon>
-                <h3>20+</h3>
-                <p class="text-muted">Analysis Tools</p>
-              </div>
-            </el-card>
-          </el-col>
-          <el-col :span="6">
-            <el-card shadow="hover" class="stats-card">
-              <div class="text-center">
-                <el-icon :size="48" class="text-primary mb-2"><Search /></el-icon>
-                <h3>5,000+</h3>
-                <p class="text-muted">Research Papers</p>
-              </div>
-            </el-card>
-          </el-col>
-        </el-row>
-      </div>
-    </div>
+    </section>
     
     <!-- 快速访问区域 -->
-    <div class="quick-access-section bg-light py-8">
+    <section class="quick-access-section">
       <div class="container">
-        <h2 class="text-center mb-6">Quick Access</h2>
-        <el-row :gutter="20">
+        <h2 class="section-title">Quick Access</h2>
+        <el-row :gutter="24">
           <el-col :span="6">
-            <router-link to="/browse/genome" class="quick-link">
+            <router-link to="/jbrowse" class="quick-link">
               <el-card shadow="hover" class="quick-link-card">
-                <div class="text-center">
-                  <el-icon :size="32" class="text-primary mb-2"><DataAnalysis /></el-icon>
-                  <h4>Genome Browser</h4>
-                  <p class="text-muted">Explore cotton genomes</p>
+                <div class="quick-link-icon">
+                  <i class="fas fa-chromosome"></i>
                 </div>
+                <h4 class="quick-link-title">Genome Browser</h4>
+                <p class="quick-link-description">Interactive genome visualization with JBrowse</p>
               </el-card>
             </router-link>
           </el-col>
           <el-col :span="6">
             <router-link to="/tools/blastp" class="quick-link">
               <el-card shadow="hover" class="quick-link-card">
-                <div class="text-center">
-                  <el-icon :size="32" class="text-primary mb-2"><Search /></el-icon>
-                  <h4>BLAST Search</h4>
-                  <p class="text-muted">Sequence similarity search</p>
+                <div class="quick-link-icon">
+                  <i class="fas fa-search"></i>
                 </div>
+                <h4 class="quick-link-title">BLAST Search</h4>
+                <p class="quick-link-description">Sequence similarity search across genomes</p>
               </el-card>
             </router-link>
           </el-col>
           <el-col :span="6">
             <router-link to="/tools/go-enrichment" class="quick-link">
               <el-card shadow="hover" class="quick-link-card">
-                <div class="text-center">
-                  <el-icon :size="32" class="text-primary mb-2"><PieChart /></el-icon>
-                  <h4>GO Enrichment</h4>
-                  <p class="text-muted">Gene ontology analysis</p>
+                <div class="quick-link-icon">
+                  <i class="fas fa-project-diagram"></i>
                 </div>
+                <h4 class="quick-link-title">GO Enrichment</h4>
+                <p class="quick-link-description">Gene ontology enrichment analysis</p>
               </el-card>
             </router-link>
           </el-col>
           <el-col :span="6">
-            <router-link to="/jbrowse" class="quick-link">
+            <router-link to="/tools/gene-expression" class="quick-link">
               <el-card shadow="hover" class="quick-link-card">
-                <div class="text-center">
-                  <el-icon :size="32" class="text-primary mb-2"><Setting /></el-icon>
-                  <h4>JBrowse</h4>
-                  <p class="text-muted">Interactive genome viewer</p>
+                <div class="quick-link-icon">
+                  <i class="fas fa-chart-line"></i>
                 </div>
+                <h4 class="quick-link-title">Gene Expression</h4>
+                <p class="quick-link-description">Explore gene expression patterns</p>
+              </el-card>
+            </router-link>
+          </el-col>
+          <el-col :span="6">
+            <router-link to="/download" class="quick-link">
+              <el-card shadow="hover" class="quick-link-card">
+                <div class="quick-link-icon">
+                  <i class="fas fa-download"></i>
+                </div>
+                <h4 class="quick-link-title">Data Download</h4>
+                <p class="quick-link-description">Download genome assemblies and annotations</p>
+              </el-card>
+            </router-link>
+          </el-col>
+          <el-col :span="6">
+            <router-link to="/tools/primer-design" class="quick-link">
+              <el-card shadow="hover" class="quick-link-card">
+                <div class="quick-link-icon">
+                  <i class="fas fa-dna"></i>
+                </div>
+                <h4 class="quick-link-title">Primer Design</h4>
+                <p class="quick-link-description">Design PCR primers for gene amplification</p>
+              </el-card>
+            </router-link>
+          </el-col>
+          <el-col :span="6">
+            <router-link to="/browse/tf" class="quick-link">
+              <el-card shadow="hover" class="quick-link-card">
+                <div class="quick-link-icon">
+                  <i class="fas fa-user-tie"></i>
+                </div>
+                <h4 class="quick-link-title">TF Database</h4>
+                <p class="quick-link-description">Transcription factor families and functions</p>
+              </el-card>
+            </router-link>
+          </el-col>
+          <el-col :span="6">
+            <router-link to="/tools/id-search" class="quick-link">
+              <el-card shadow="hover" class="quick-link-card">
+                <div class="quick-link-icon">
+                  <i class="fas fa-id-card"></i>
+                </div>
+                <h4 class="quick-link-title">ID Search</h4>
+                <p class="quick-link-description">Search genes by ID or symbol</p>
               </el-card>
             </router-link>
           </el-col>
         </el-row>
       </div>
-    </div>
+    </section>
     
-    <!-- 新闻公告区域 -->
-    <div class="news-section py-8">
+    <!-- 最新研究与新闻区域 -->
+    <section class="news-research-section bg-light">
       <div class="container">
-        <h2 class="text-center mb-6">News & Announcements</h2>
-        <el-row :gutter="20">
-          <el-col :span="8">
-            <el-card shadow="hover" class="news-card">
+        <div class="row">
+          <!-- 最新研究 -->
+          <div class="col-md-6">
+            <h2 class="section-title">Latest Research</h2>
+            <el-card shadow="hover" class="research-card">
               <template #header>
                 <div class="card-header">
-                  <span>Latest Update</span>
-                  <el-tag type="info" size="small">New</el-tag>
+                  <span>Genome-Wide Analysis of Cotton Transcription Factors</span>
+                  <el-tag type="success" size="small">Featured</el-tag>
                 </div>
               </template>
-              <p>Database updated with latest cotton genome annotations and new analysis tools.</p>
-              <div class="text-right mt-2">
-                <el-button type="text" size="small">Read more</el-button>
-              </div>
-            </el-card>
-          </el-col>
-          <el-col :span="8">
-            <el-card shadow="hover" class="news-card">
-              <template #header>
-                <div class="card-header">
-                  <span>New Publication</span>
+              <div class="research-content">
+                <p>
+                  Identification and characterization of transcription factor families across cotton species, 
+                  revealing their evolutionary dynamics and functional diversification.
+                </p>
+                <div class="research-meta">
+                  <span class="meta-item">
+                    <i class="fas fa-user"></i> Cotton Research Team
+                  </span>
+                  <span class="meta-item">
+                    <i class="fas fa-calendar-alt"></i> 2025-01-15
+                  </span>
                 </div>
-              </template>
-              <p>New research paper published on cotton transcription factors using CottonOGD data.</p>
-              <div class="text-right mt-2">
-                <el-button type="text" size="small">Read more</el-button>
-              </div>
-            </el-card>
-          </el-col>
-          <el-col :span="8">
-            <el-card shadow="hover" class="news-card">
-              <template #header>
-                <div class="card-header">
-                  <span>Upcoming Features</span>
+                <div class="text-right mt-2">
+                  <el-button type="primary" size="small">Read Article</el-button>
                 </div>
-              </template>
-              <p>Coming soon: Enhanced gene expression analysis tools and integrated pathway viewer.</p>
-              <div class="text-right mt-2">
-                <el-button type="text" size="small">Read more</el-button>
               </div>
             </el-card>
-          </el-col>
-        </el-row>
+          </div>
+          
+          <!-- 新闻公告 -->
+          <div class="col-md-6">
+            <h2 class="section-title">News & Updates</h2>
+            <el-timeline>
+              <el-timeline-item timestamp="2025-01-20" placement="top">
+                <div class="timeline-content">
+                  <h4 class="timeline-title">Database Update v1.2 Released</h4>
+                  <p>Updated with latest cotton genome annotations and new analysis tools.</p>
+                  <el-button type="text" size="small">Read more</el-button>
+                </div>
+              </el-timeline-item>
+              <el-timeline-item timestamp="2024-12-15" placement="top">
+                <div class="timeline-content">
+                  <h4 class="timeline-title">New Publication</h4>
+                  <p>New research paper published on cotton orthogroups using CottonOGD data.</p>
+                  <el-button type="text" size="small">Read more</el-button>
+                </div>
+              </el-timeline-item>
+              <el-timeline-item timestamp="2024-11-30" placement="top">
+                <div class="timeline-content">
+                  <h4 class="timeline-title">Upcoming Features</h4>
+                  <p>Enhanced gene expression analysis tools and integrated pathway viewer coming soon.</p>
+                  <el-button type="text" size="small">Read more</el-button>
+                </div>
+              </el-timeline-item>
+            </el-timeline>
+          </div>
+        </div>
       </div>
-    </div>
+    </section>
+    
+    <!-- 合作伙伴与引用区域 -->
+    <section class="partners-section">
+      <div class="container">
+        <h2 class="section-title">Partners & Citations</h2>
+        <div class="partners-content">
+          <div class="citation-info">
+            <div class="citation-icon">
+              <i class="fas fa-quote-left"></i>
+            </div>
+            <div class="citation-text">
+              <p>
+                "CottonOGD has become an essential resource for our cotton research, providing comprehensive 
+                orthogroup information and powerful analysis tools that have accelerated our discoveries."
+              </p>
+              <div class="citation-author">- Dr. XXXX, Professor of Plant Genomics</div>
+            </div>
+          </div>
+          <div class="partners-logos">
+            <h3>Collaborating Institutions</h3>
+            <div class="logos-grid">
+              <div class="logo-item">
+                <i class="fas fa-university" style="font-size: 48px; color: #666;"></i>
+                <span>University A</span>
+              </div>
+              <div class="logo-item">
+                <i class="fas fa-university" style="font-size: 48px; color: #666;"></i>
+                <span>Institute B</span>
+              </div>
+              <div class="logo-item">
+                <i class="fas fa-university" style="font-size: 48px; color: #666;"></i>
+                <span>Research Center C</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   </div>
 </template>
 
 <style scoped>
 .home {
-  padding-bottom: 2rem;
+  padding-bottom: 0;
 }
 
+/* 英雄区域 */
 .hero-section {
-  padding: 4rem 0;
-  background-color: #f8f9fa;
+  background: linear-gradient(135deg, #3a6ea5 0%, #7297bd 100%);
+  color: #ffffff;
+  padding: 60px 0;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
 }
 
-.search-box-container {
-  max-width: 600px;
+.hero-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url('data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%25%22 height=%22100%25%22%3E%3Cdefs%3E%3Cpattern id=%22grid%22 width=%2240%22 height=%2240%22 patternUnits=%22userSpaceOnUse%22%3E%3Cpath d=%22M 40 0 L 0 0 0 40%22 fill=%22none%22 stroke=%22rgba(255,255,255,0.1)%22 stroke-width=%221%22/%3E%3C/pattern%3E%3C/defs%3E%3Crect width=%22100%25%22 height=%22100%25%22 fill=%22url(%23grid)%22/%3E%3C/svg%3E');
+  opacity: 0.3;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 1;
+  max-width: 800px;
   margin: 0 auto;
+}
+
+.hero-section h1 {
+  font-size: 48px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.hero-subtitle {
+  font-size: 24px;
+  font-weight: 500;
+  margin-bottom: 24px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.hero-description {
+  font-size: 16px;
+  line-height: 1.6;
+  margin-bottom: 32px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* 搜索框 */
+.search-box-container {
+  max-width: 700px;
+  margin: 0 auto;
+  background-color: rgba(255, 255, 255, 0.95);
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 
 .search-input {
   width: 100%;
+  border-radius: 8px;
 }
 
-.features-section {
-  background-color: white;
+.search-tips {
+  margin-top: 12px;
+  text-align: left;
+  font-size: 14px;
+  color: #666;
 }
 
+.tip-label {
+  font-weight: 500;
+  margin-right: 10px;
+}
+
+.tip-tag {
+  cursor: pointer;
+  margin-right: 8px;
+  transition: all 0.3s ease;
+}
+
+.tip-tag:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 通用 section 样式 */
+.features-section,
+.quick-access-section,
+.partners-section {
+  padding: 60px 0;
+  background-color: #ffffff;
+}
+
+.stats-section,
+.news-research-section {
+  padding: 60px 0;
+  background-color: #f8f9fa;
+}
+
+.section-title {
+  font-size: 32px;
+  font-weight: 600;
+  color: #3a6ea5;
+  margin-bottom: 40px;
+  text-align: center;
+  position: relative;
+  padding-bottom: 16px;
+}
+
+.section-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 3px;
+  background-color: #3a6ea5;
+  border-radius: 2px;
+}
+
+/* 功能卡片 */
 .feature-card {
   text-align: center;
-  padding: 2rem;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  padding: 30px 20px;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  border: 1px solid #e9ecef;
 }
 
 .feature-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+  border-color: #3a6ea5;
 }
 
-.icon-container {
-  height: 80px;
+.feature-icon {
+  margin-bottom: 20px;
   display: flex;
-  align-items: center;
   justify-content: center;
 }
 
-.research-card {
-  transition: box-shadow 0.3s ease;
+.feature-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 12px;
 }
 
-.research-card:hover {
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+.feature-description {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 24px;
+  min-height: 80px;
 }
 
-.stats-section {
-  background-color: white;
+.feature-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
+/* 统计卡片 */
 .stats-card {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  background-color: #ffffff;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
   text-align: center;
-  padding: 2rem;
+  border: 1px solid #e9ecef;
 }
 
 .stats-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
 }
 
-.quick-access-section {
-  background-color: #f8f9fa;
+.stats-icon {
+  font-size: 48px;
+  color: #3a6ea5;
+  margin-bottom: 16px;
 }
 
+.stats-value {
+  font-size: 36px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.stats-label {
+  font-size: 14px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* 快速访问卡片 */
 .quick-link {
   text-decoration: none;
   color: inherit;
+  display: block;
 }
 
 .quick-link-card {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  padding: 24px;
+  border-radius: 12px;
+  transition: all 0.3s ease;
   text-align: center;
-  padding: 1.5rem;
+  border: 1px solid #e9ecef;
+  background-color: #ffffff;
 }
 
 .quick-link-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+  border-color: #3a6ea5;
 }
 
-.news-section {
-  background-color: white;
+.quick-link-icon {
+  font-size: 40px;
+  color: #3a6ea5;
+  margin-bottom: 16px;
 }
 
-.news-card {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+.quick-link-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
 }
 
-.news-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+.quick-link-description {
+  font-size: 13px;
+  color: #666;
+  line-height: 1.5;
+}
+
+/* 研究与新闻区域 */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0 -15px;
+}
+
+.col-md-6 {
+  flex: 0 0 50%;
+  max-width: 50%;
+  padding: 0 15px;
+}
+
+.research-card {
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  border: 1px solid #e9ecef;
+}
+
+.research-card:hover {
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 16px 20px;
+  background-color: #f8f9fa;
+  border-radius: 12px 12px 0 0;
+  font-weight: 600;
+  color: #333;
+}
+
+.research-content {
+  padding: 20px;
+}
+
+.research-content p {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #666;
+  margin-bottom: 16px;
+}
+
+.research-meta {
+  display: flex;
+  gap: 20px;
+  font-size: 13px;
+  color: #999;
+  margin-bottom: 16px;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 时间线样式 */
+.timeline-content {
+  padding: 16px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e9ecef;
+}
+
+.timeline-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.timeline-content p {
+  font-size: 13px;
+  color: #666;
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+/* 合作伙伴与引用区域 */
+.partners-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  align-items: center;
+}
+
+.citation-info {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  background-color: #ffffff;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-left: 4px solid #3a6ea5;
+}
+
+.citation-icon {
+  font-size: 40px;
+  color: #3a6ea5;
+  opacity: 0.7;
+}
+
+.citation-text p {
+  font-size: 16px;
+  color: #666;
+  line-height: 1.6;
+  font-style: italic;
+  margin-bottom: 16px;
+}
+
+.citation-author {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  text-align: right;
+}
+
+.partners-logos {
+  text-align: center;
+}
+
+.partners-logos h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 24px;
+}
+
+.logos-grid {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  flex-wrap: wrap;
+}
+
+.logo-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 20px;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e9ecef;
+  transition: all 0.3s ease;
+  min-width: 150px;
+}
+
+.logo-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+}
+
+.logo-item span {
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+}
+
+/* 响应式设计 */
+@media (max-width: 992px) {
+  .partners-content {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+  
+  .hero-section h1 {
+    font-size: 36px;
+  }
+  
+  .hero-subtitle {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .col-md-6 {
+    flex: 0 0 100%;
+    max-width: 100%;
+    margin-bottom: 30px;
+  }
+  
+  .hero-section {
+    padding: 40px 0;
+  }
+  
+  .hero-section h1 {
+    font-size: 28px;
+  }
+  
+  .hero-subtitle {
+    font-size: 18px;
+  }
+  
+  .features-section,
+  .stats-section,
+  .quick-access-section,
+  .news-research-section,
+  .partners-section {
+    padding: 40px 0;
+  }
+  
+  .section-title {
+    font-size: 24px;
+    margin-bottom: 30px;
+  }
+  
+  .logos-grid {
+    gap: 20px;
+  }
+  
+  .logo-item {
+    min-width: 120px;
+    padding: 15px;
+  }
+}
+
+@media (max-width: 576px) {
+  .search-box-container {
+    padding: 15px;
+  }
+  
+  .research-meta {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .citation-info {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .citation-text p {
+    text-align: left;
+  }
 }
 </style>

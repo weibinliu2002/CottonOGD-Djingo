@@ -38,6 +38,10 @@ export const useGenomeStore = defineStore('genome', {
     error: null as string | null
   }),
   
+  // 用于缓存请求的Promise
+  _fetchPromise: null as Promise<void> | null,
+  
+  // 初始化时自动获取基因组数据
   getters: {
     // 获取所有基因组类型
     genomeTypes: (state) => {
@@ -53,8 +57,19 @@ export const useGenomeStore = defineStore('genome', {
   },
   
   actions: {
+    // 初始化方法
+    initialize() {
+      this.fetchGenomes()
+    },
+    
     // 从后端获取基因组数据
     async fetchGenomes() {
+      // 如果已经有数据，直接返回，不再请求
+      if (this.genomeOptions.length > 0) {
+        console.log('Using cached genome data');
+        return;
+      }
+      
       this.loading = true
       this.error = null
       

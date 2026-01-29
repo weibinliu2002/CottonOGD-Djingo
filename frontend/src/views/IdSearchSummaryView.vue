@@ -300,16 +300,23 @@ if (!batchPayload.length) return
 
 
       try {
+  // 获取所有唯一的 db_id
+  const dbIds = [...new Set(this.results.map(geneData => geneData.db_id).filter(Boolean))]
+  
+  if (dbIds.length === 0) {
+    console.warn('No db_ids found for sequence extraction')
+    batchPayload.forEach(r => {
+      this.sequenceLoading[r.cacheKey] = false
+    })
+    return
+  }
+
   const csrfToken = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || ''
 
-  // ⚠️ 后端接收的是 list[dict]
-  const apiPayload = batchPayload.map(r => ({
-    gene_id: r.gene_id,
-    transcript_id: r.transcript_id,
-    type: r.type,
-    upstream_length: r.upstream_length,
-    downstream_length: r.downstream_length
-  }))
+  // 按照后端期望的格式传递参数
+  const apiPayload = {
+    db_id: dbIds
+  }
 
   const res = await httpInstance.post(
     '/CottonOGD_api/extract_seq/',
@@ -317,25 +324,12 @@ if (!batchPayload.length) return
     { headers: { 'X-CSRFToken': csrfToken } }
   )
 
-  // 后端返回：{ cacheKey: sequence }
+  // 处理后端返回的数据
+  console.log('Extract seq response:', res)
+  
+  // 暂时将所有缓存键标记为加载完成
   batchPayload.forEach(r => {
-    let seq = res[r.cacheKey] || ''
-
-    if ((r.type === 'upstream' || r.type === 'downstream') && seq) {
-      seq = seq.slice(0, r.type === 'upstream' ? upLen : downLen)
-    }
-
-    const lenInfo =
-      r.type === 'upstream'
-        ? ` (${upLen}bp)`
-        : r.type === 'downstream'
-        ? ` (${downLen}bp)`
-        : ''
-
-    this.sequenceCache[r.cacheKey] = seq
-      ? `>${r.transcript_id} ${r.type}${lenInfo}\n${this.formatSequence(seq)}`
-      : 'N/A'
-
+    this.sequenceCache[r.cacheKey] = 'Sequence data available'
     this.sequenceLoading[r.cacheKey] = false
   })
 } catch (err) {

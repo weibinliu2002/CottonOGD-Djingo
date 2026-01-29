@@ -39,7 +39,7 @@ urlpatterns = [
     path('static/jbrowse/data/<str:genome_name>/<str:filename>', serve_large_file, name='serve_large_file_static'),
     # 捕获所有路由，指向index.html，让Vue Router处理
     path('', TemplateView.as_view(template_name='index.html')),
-    #path('<path:path>', TemplateView.as_view(template_name='index.html')),
+    path('<path:path>', TemplateView.as_view(template_name='index.html')),
 ] + debug_toolbar_urls()
 
 # 注释掉的路径配置

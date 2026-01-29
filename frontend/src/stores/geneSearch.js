@@ -1,16 +1,18 @@
 // 引入Pinia
 import { defineStore } from 'pinia'
+import httpInstance from '@/utils/http.js'
+import router from '@/router'
 
 // 定义基因搜索状态管理store
 export const useGeneSearchStore = defineStore('geneSearch', {
   // 状态定义
   state: () => ({
-    // 存储搜索的基因ID列表
-    geneIds: [],
-    // 存储请求ID
-    requestId: '',
+    // 存储搜索输入
+    searchInput: '',
+    // 存储选择的基因组
+    selectedGenome: [],
     // 存储搜索结果
-    searchResults: [],
+    searchResults: null,
     // 存储加载状态
     isLoading: false,
     // 存储错误信息
@@ -19,38 +21,89 @@ export const useGeneSearchStore = defineStore('geneSearch', {
 
   // 动作定义
   actions: {
-    // 设置基因ID列表
-    setGeneIds(ids) {
-      this.geneIds = ids
-    },
+    // 执行搜索
+    async performSearch(geneIds, genomeId) {
+      console.log('performSearch called');
+      this.isLoading = true;
+      this.error = null;
+      
+      try {
+        // 生成请求ID
+        const request_id = Date.now().toString();
+        console.log('Request ID:', request_id);
+        console.log('Search Input:', geneIds);
+        console.log('Selected Genome:', genomeId);
 
-    // 设置请求ID
-    setRequestId(id) {
-      this.requestId = id
-    },
+        const params = {
+          gene_id: geneIds,
+          genome_id: genomeId.join(','),
+          request_id: request_id
+        };
+        console.log('API Request Params:', params);
 
-    // 设置搜索结果
-    setSearchResults(results) {
-      this.searchResults = results
-    },
+        const response = await httpInstance.post('/CottonOGD_api/geneid_summary/', params);
+        console.log('API Response:', response);
 
-    // 设置加载状态
-    setIsLoading(loading) {
-      this.isLoading = loading
-    },
+        const data = response;
+        // 只要返回了 geneid_result，就认为成功
+        if (data && data.geneid_result) {
+          console.log('Search success');
+          this.searchResults = {
+            geneid_result: typeof data.geneid_result === 'string' ? JSON.parse(data.geneid_result) : data.geneid_result,
+            gene_info_result: typeof data.gene_info_result === 'string' ? JSON.parse(data.gene_info_result) : data.gene_info_result,
+            search_map: typeof data.search_map === 'string' ? JSON.parse(data.search_map) : data.search_map
+          };
+          console.log('Parsed Search Results:', this.searchResults);
 
-    // 设置错误信息
-    setError(error) {
-      this.error = error
+          // 导航到总结页面
+          // search_map 的结构是: { gene_id: { db_id: number, ... }, ... }
+          // 需要提取所有的 db_id
+          const dbIds = this.searchResults?.search_map 
+            ? Object.values(this.searchResults.search_map).map((item) => item.db_id).filter(Boolean)
+            : [];
+          console.log('Navigating to summary with DB IDs:', dbIds);
+          
+          // 使用导入的路由实例
+          console.log('Navigating to summary with DB IDs:', dbIds);
+          router.push({
+            name: 'idSearchSummary',
+            query: {
+              db_id: dbIds.join(','),
+              request_id: request_id
+            }
+          });
+        } else {
+          console.error('Search failed: missing geneid_result');
+          throw new Error(data.message || 'Search failed: No data returned');
+        }
+      } catch (e) {
+        console.error('Search failed with exception:', e);
+        this.error = e.message || 'An unknown error occurred';
+        this.searchResults = null;
+      } finally {
+        this.isLoading = false;
+        console.log('performSearch finished');
+      }
     },
 
     // 清除状态
     clearState() {
-      this.geneIds = []
-      this.requestId = ''
-      this.searchResults = []
+      this.searchInput = ''
+      this.selectedGenome = []
+      this.searchResults = null
       this.isLoading = false
       this.error = null
+    },
+
+    // 清除错误
+    clearError() {
+      this.error = null
+    },
+
+    // 设置错误
+    setError(message) {
+      this.error = message
     }
   }
 })
+
