@@ -48,7 +48,8 @@
           <el-table-column prop="original_id" label="Input ID" width="200" />
           <el-table-column label="Query ID" width="200">
             <template #default="scope">
-              <router-link :to="{ path: '/tools/id-search/results/', query: { db_id: scope.row.db_id, geneData: JSON.stringify(scope.row) } }">
+              <router-link :to="{ path: '/tools/id-search/results/', query: { db_id: scope.row.db_id, 
+                geneData: JSON.stringify(scope.row) } }">
                 {{ scope.row.IDs || '-' }}
               </router-link>
             </template>
@@ -100,6 +101,7 @@ import httpInstance from '../utils/http'
 import SequenceDisplay from '@/components/SequenceDisplay.vue'
 import SequenceModal from '@/components/SequenceModal.vue'
 import { useGeneSearchStore } from '@/stores/geneSearch.ts'
+import { useNavigationStore } from '@/stores/navigationStore.ts'
 
 export default {
   name: 'IdSearchSummaryView',
@@ -117,8 +119,13 @@ export default {
       modalContent: '',
       currentSeqType: '',
       currentGeneId: '',
-      geneSearchStore: useGeneSearchStore()
+      geneSearchStore: null,
+      navigationStore: null
     }
+  },
+  created() {
+    this.geneSearchStore = useGeneSearchStore()
+    this.navigationStore = useNavigationStore()
   },
   mounted() {
     this.fetchSearchResults()
@@ -162,75 +169,90 @@ export default {
       this.has_sequences = false
 
       try {
-        const queryParams = new URLSearchParams(window.location.search)
-        let geneIds = queryParams.get('db_id')
-        if (!geneIds) {
-          this.error = 'URL中未找到基因ID参数'
+        const navigationData = this.navigationStore.getNavigationData('geneSearch')
+        
+        if (!navigationData || !navigationData.results) {
+          this.error = '未找到搜索结果数据，请重新进行搜索'
           this.loading = false
           return
         }
-        
-        // 获取并解析搜索映射参数
-        const searchMapStr = queryParams.get('searchMap')
-        let searchMap = {}
-        if (searchMapStr) {
-          try {
-            searchMap = JSON.parse(searchMapStr)
-            console.log('解析后的 searchMap:', searchMap)
-          } catch (error) {
-            console.error('解析 searchMap 失败:', error)
-          }
-        }
-        
-        // 获取并解析基因信息参数
-        const geneInfoResultStr = queryParams.get('geneInfoResult')
-        let geneInfoResult = []
-        if (geneInfoResultStr) {
-          try {
-            geneInfoResult = JSON.parse(geneInfoResultStr)
-            console.log('解析后的 geneInfoResult:', geneInfoResult)
-          } catch (error) {
-            console.error('解析 geneInfoResult 失败:', error)
-          }
-        }
-        
-        // 获取并解析基因ID参数
-        const geneidResultStr = queryParams.get('geneidResult')
-        let geneidResult = []
-        if (geneidResultStr) {
-          try {
-            geneidResult = JSON.parse(geneidResultStr)
-            console.log('解析后的 geneidResult:', geneidResult)
-          } catch (error) {
-            console.error('解析 geneidResult 失败:', error)
-          }
-        }
 
-        // 使用 searchMap 构建结果，不再使用 geneIds
+        const searchResults = navigationData.results
+        const searchMap = searchResults.search_map || {}
+        const geneInfoResult = searchResults.gene_info_result || []
+        const geneidResult = searchResults.geneid_result || []
+
+        console.log('从 navigationStore 获取的数据:', searchResults)
+        console.log('searchMap:', searchMap)
+        console.log('geneInfoResult 长度:', geneInfoResult?.length)
+        
+        if (geneInfoResult && Array.isArray(geneInfoResult) && geneInfoResult.length > 0) {
+          console.log('geneInfoResult[0] 示例:', geneInfoResult[0])
+        }
+        
+        const geneInfoMap = {}
+        const mrnaInfoMap = {}
+        
+        if (geneInfoResult && Array.isArray(geneInfoResult)) {
+          geneInfoResult.forEach((item, index) => {
+            console.log(`处理 geneInfoResult[${index}]:`, item)
+            if (item.db_id) {
+              if (item.type === 'gene') {
+                geneInfoMap[item.db_id] = {
+                  start: item.start,
+                  end: item.end,
+                  strand: item.strand,
+                  species: item.species
+                }
+                console.log(`添加基因信息到 geneInfoMap: ${item.db_id}`, geneInfoMap[item.db_id])
+              } else if (item.type === 'mrna') {
+                let transcriptId = ''
+                if (item.attributes) {
+                  const idMatch = item.attributes.match(/ID=([^;]+)/)
+                  if (idMatch) {
+                    transcriptId = idMatch[1]
+                  }
+                }
+                console.log(`处理 mRNA 条目: db_id=${item.db_id}, transcriptId=${transcriptId}, attributes=${item.attributes}`)
+                if (transcriptId) {
+                  mrnaInfoMap[transcriptId] = {
+                    start: item.start,
+                    end: item.end,
+                    strand: item.strand,
+                    species: item.species,
+                    db_id: item.db_id
+                  }
+                }
+              }
+            }
+          })
+        }
+        
+        console.log('处理后的 geneInfoMap:', geneInfoMap)
+        console.log('处理后的 mrnaInfoMap:', mrnaInfoMap)
+        console.log('searchMap keys:', Object.keys(searchMap))
+
         this.results = []
         if (searchMap && typeof searchMap === 'object') {
-          // 遍历 searchMap 中的每个条目
           for (const [originalId, info] of Object.entries(searchMap)) {
+            console.log(`处理 searchMap 条目: originalId=${originalId}, info=`, info)
             if (info && typeof info === 'object') {
-              // 尝试从 geneInfoResult 中获取物种信息
+              console.log(`  info.db_id: ${info.db_id}, info.geneid: ${info.geneid}`)
+              console.log(`  geneInfoMap 中是否存在 info.db_id (${info.db_id}):`, !!geneInfoMap[info.db_id])
+              if (geneInfoMap[info.db_id]) {
+                console.log(`  geneInfoMap[${info.db_id}]:`, geneInfoMap[info.db_id])
+              }
+              
               let speciesInfo = '未知物种'
               
-              // 首先尝试从 searchMap 中的 info.genome_id 获取
               if (info.genome_id) {
                 speciesInfo = info.genome_id
               }
               
-              // 然后尝试从 geneInfoResult 中获取更详细的物种信息
-              if (geneInfoResult && Array.isArray(geneInfoResult)) {
-                const geneInfo = geneInfoResult.find(item => 
-                  item.db_id === info.db_id || item.geneid === info.geneid
-                )
-                if (geneInfo && geneInfo.species) {
-                  speciesInfo = geneInfo.species
-                }
+              if (geneInfoMap[info.db_id] && geneInfoMap[info.db_id].species) {
+                speciesInfo = geneInfoMap[info.db_id].species
               }
               
-              // 最后尝试从 geneidResult 中获取物种信息
               if (geneidResult && Array.isArray(geneidResult)) {
                 const geneidInfo = geneidResult.find(item => 
                   item.db_id === info.db_id || item.geneid === info.geneid
@@ -240,57 +262,47 @@ export default {
                 }
               }
               
+              const geneInfo = geneInfoMap[info.db_id] || {}
+              const mrnaTranscripts = []
+              
+              console.log(`  开始匹配转录本，info.db_id=${info.db_id}`)
+              console.log(`  mrnaInfoMap keys:`, Object.keys(mrnaInfoMap))
+              
+              for (const [transcriptId, mrnaInfo] of Object.entries(mrnaInfoMap)) {
+                console.log(`    检查转录本: transcriptId=${transcriptId}, mrnaInfo.db_id=${mrnaInfo.db_id}, 是否匹配=${mrnaInfo.db_id === info.db_id}`)
+                if (mrnaInfo.db_id === info.db_id) {
+                  mrnaTranscripts.push({
+                    id: transcriptId,
+                    start: mrnaInfo.start,
+                    end: mrnaInfo.end,
+                    strand: mrnaInfo.strand
+                  })
+                  console.log(`      添加转录本:`, transcriptId)
+                }
+              }
+              
+              console.log(`  最终 mrnaTranscripts 数量: ${mrnaTranscripts.length}`)
+              
+              if (mrnaTranscripts.length === 0) {
+                mrnaTranscripts.push({ id: info.geneid })
+                console.log(`  使用默认转录本: ${info.geneid}`)
+              }
+              
               this.results.push({
-                original_id: originalId,  // 使用带 .1 的原始 ID
-                IDs: info.geneid,         // 使用 geneid 作为 IDS
-                db_id: info.db_id,        // 使用 db_id 作为数据库 ID
-                species: speciesInfo,     // 使用获取到的物种信息
-                mrna_transcripts: [{ id: info.geneid }]  // 添加默认的转录本信息
+                original_id: originalId,
+                IDs: info.geneid,
+                db_id: info.db_id,
+                species: speciesInfo,
+                start: geneInfo.start,
+                end: geneInfo.end,
+                strand: geneInfo.strand,
+                mrna_transcripts: mrnaTranscripts
               })
             }
           }
         }
         
-        // 如果 searchMap 解析失败，使用 geneIds 作为后备
-        if (this.results.length === 0 && geneIds) {
-          const geneIdList = geneIds.split(',')
-          this.results = geneIdList.map(id => {
-            // 尝试从 geneInfoResult 和 geneidResult 中获取物种信息
-            let speciesInfo = '未知物种'
-            
-            // 尝试从 geneInfoResult 中获取物种信息
-            if (geneInfoResult && Array.isArray(geneInfoResult)) {
-              const geneInfo = geneInfoResult.find(item => 
-                item.db_id === id || item.geneid === id
-              )
-              if (geneInfo && geneInfo.species) {
-                speciesInfo = geneInfo.species
-              }
-            }
-            
-            // 尝试从 geneidResult 中获取物种信息
-            if (geneidResult && Array.isArray(geneidResult)) {
-              const geneidInfo = geneidResult.find(item => 
-                item.db_id === id || item.geneid === id
-              )
-              if (geneidInfo && geneidInfo.species) {
-                speciesInfo = geneidInfo.species
-              }
-            }
-            
-            return {
-              original_id: id,  // 使用输入的ID作为原始ID
-              IDs: id,           // 使用输入的ID作为查询ID
-              db_id: id,         // 使用输入的ID作为数据库ID
-              species: speciesInfo,  // 使用获取到的物种信息
-              mrna_transcripts: [{ id: id }]  // 添加默认的转录本信息
-            }
-          })
-        }
-        
         this.has_sequences = this.results.length > 0
-        
-        // 页面挂载后立即预热序列
         this.scheduleSequencePreload()
         
       } catch (error) {

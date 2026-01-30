@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import httpInstance from '@/utils/http.js'
 import { useUUIDStore } from './uuidStore.ts'
+import { useNavigationStore } from './navigationStore.ts'
 
 // 定义接口
 interface SearchParams {
@@ -30,6 +31,7 @@ interface SearchResult {
 export const useGeneSearchStore = defineStore('geneSearch', () => {
   const router = useRouter()
   const uuidStore = useUUIDStore()
+  const navigationStore = useNavigationStore()
 
   // State
   const searchInput = ref('')
@@ -62,7 +64,6 @@ export const useGeneSearchStore = defineStore('geneSearch', () => {
       console.log('API Response:', response);
 
       const data = response as any;
-      // 只要返回了 geneid_result，就认为成功
       if (data && data.geneid_result) {
         console.log('Search success');
         searchResults.value = {
@@ -72,19 +73,19 @@ export const useGeneSearchStore = defineStore('geneSearch', () => {
         };
         console.log('Parsed Search Results:', searchResults.value);
 
-        // 导航到总结页面
-        // search_map 的结构是: { gene_id: { db_id: number, ... }, ... }
-        // 需要提取所有的 db_id
         const dbIds = searchResults.value?.search_map 
           ? Object.values(searchResults.value.search_map).map((item: any) => item.db_id).filter(Boolean)
           : [];
-        console.log('Navigating to summary with DB IDs:', dbIds);
+        console.log('DB IDs:', dbIds);
+
+        navigationStore.setNavigationData('geneSearch', {
+          results: searchResults.value,
+          dbIds: dbIds,
+          requestId: request_id
+        });
+
         router.push({
-          name: 'idSearchSummary',
-          query: {
-            db_id: dbIds.join(','),
-            request_id: request_id
-          }
+          name: 'idSearchSummary'
         });
       } else {
         console.error('Search failed: missing geneid_result');

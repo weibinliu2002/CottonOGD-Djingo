@@ -2,6 +2,7 @@
 import { defineStore } from 'pinia'
 import httpInstance from '@/utils/http.js'
 import router from '@/router'
+import { useNavigationStore } from './navigationStore.ts'
 
 // 定义基因搜索状态管理store
 export const useGeneSearchStore = defineStore('geneSearch', {
@@ -45,7 +46,6 @@ export const useGeneSearchStore = defineStore('geneSearch', {
         console.log('API Response:', response);
 
         const data = response;
-        // 只要返回了 geneid_result，就认为成功
         if (data && data.geneid_result) {
           console.log('Search success');
           this.searchResults = {
@@ -55,22 +55,20 @@ export const useGeneSearchStore = defineStore('geneSearch', {
           };
           console.log('Parsed Search Results:', this.searchResults);
 
-          // 导航到总结页面
-          // search_map 的结构是: { gene_id: { db_id: number, ... }, ... }
-          // 需要提取所有的 db_id
           const dbIds = this.searchResults?.search_map 
             ? Object.values(this.searchResults.search_map).map((item) => item.db_id).filter(Boolean)
             : [];
-          console.log('Navigating to summary with DB IDs:', dbIds);
+          console.log('DB IDs:', dbIds);
           
-          // 使用导入的路由实例
-          console.log('Navigating to summary with DB IDs:', dbIds);
+          const navigationStore = useNavigationStore();
+          navigationStore.setNavigationData('geneSearch', {
+            results: this.searchResults,
+            dbIds: dbIds,
+            requestId: request_id
+          });
+
           router.push({
-            name: 'idSearchSummary',
-            query: {
-              db_id: dbIds.join(','),
-              request_id: request_id
-            }
+            name: 'idSearchSummary'
           });
         } else {
           console.error('Search failed: missing geneid_result');
