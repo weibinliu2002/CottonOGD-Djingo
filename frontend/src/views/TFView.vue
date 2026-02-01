@@ -182,6 +182,21 @@ export default {
     // 加载状态
     const loading = ref(false)
     
+    // 原始转录因子数据（用于筛选）
+    const originalTFData = ref([])
+    
+    // 监听 familyList 变化，更新 originalTFData
+    watch(familyList, (newList) => {
+      if (newList && newList.length > 0) {
+        originalTFData.value = newList
+        console.log('Updated originalTFData from familyList:', originalTFData.value.length, 'items')
+        // 如果已经选择了基因组，重新过滤数据
+        if (selectedGenome.value.length > 0) {
+          filterTFData()
+        }
+      }
+    }, { immediate: true })
+    
     // 计算分页后的数据
     const paginatedTFData = computed(() => {
       const startIndex = (currentPage.value - 1) * pageSize.value

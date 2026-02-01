@@ -120,7 +120,7 @@ import { useGenomeStore } from '@/stores/genome_info'
 import { useFamilyStore } from '@/stores/familyInfo'
 
 export default {
-  name: 'TRView',
+  name: 'TFView',
   components: {
     QuestionFilled,
     VideoPlay,
@@ -181,6 +181,21 @@ export default {
     
     // 加载状态
     const loading = ref(false)
+    
+    // 原始转录因子数据（用于筛选）
+    const originalTFData = ref([])
+    
+    // 监听 familyList 变化，更新 originalTFData
+    watch(familyList, (newList) => {
+      if (newList && newList.length > 0) {
+        originalTFData.value = newList
+        console.log('Updated originalTFData from familyList:', originalTFData.value.length, 'items')
+        // 如果已经选择了基因组，重新过滤数据
+        if (selectedGenome.value.length > 0) {
+          filterTFData()
+        }
+      }
+    }, { immediate: true })
     
     // 计算分页后的数据
     const paginatedTFData = computed(() => {
@@ -378,13 +393,13 @@ export default {
 .sidebar h3 {
   font-size: 1.2rem;
   font-weight: bold;
-  color: #333;
+  color: #3a6ea5;
 }
 
 .info-icon {
-  font-size: 1rem;
+  font-size: 1.2rem;
   margin-left: 5px;
-  color: #409eff;
+  color: #3a6ea5;
   cursor: pointer;
 }
 

@@ -9,30 +9,8 @@
       </el-col>
     </el-row>
     
-    <!-- 查询序列显示 -->
-    <el-card class="mb-4">
-      <template #header>
-        <div class="card-header">
-          <span>Query Sequence</span>
-        </div>
-      </template>
-      <div class="sequence-box">
-        <pre class="mb-0">{{ truncateSequence(querySequence, 200) }}</pre>
-        <small class="text-muted" v-if="querySequence.length > 200">(truncated - full sequence used for search)</small>
-      </div>
-    </el-card>
+        
     
-    <!-- 和弦图 -->
-    <el-card class="mb-4">
-      <template #header>
-        <div class="card-header">
-          <span>Chord Diagram</span>
-        </div>
-      </template>
-      <div v-loading="!chordData" element-loading-text="Loading..." class="chord-chart-container">
-        <div id="chord-chart" v-if="chordData"></div>
-      </div>
-    </el-card>
     
     <!-- 每页显示控制 -->
     <el-form @submit.prevent="handlePerPageChange" class="mb-3">
@@ -55,70 +33,72 @@
     
     <div v-loading="loading" element-loading-text="Loading results...">
       <div v-if="results.length > 0">
-        <!-- BLASTP结果表格 -->
-        <el-card class="mb-4">
-          <template #header>
-            <div class="d-flex justify-content-between align-items-center">
-              <span>BLASTP Hits (E-value ≤ {{ eValue }})</span>
-              <el-tag type="primary">{{ total }} results</el-tag>
-            </div>
-          </template>
-          <el-table :data="results" style="width: 100%">
-            <el-table-column prop="subject" label="Protein ID" width="200">
+       
+
+        
+
+        <!-- 原始 BLAST 结果表格 (BLAST 6 格式) -->
+        <el-card class="mb-4" v-if="rawBlastResults">
+          
+          <el-table :data="formattedRawResults" style="width: 100%">
+            <el-table-column label="Query ID" width="150">
               <template #default="scope">
-                <code>{{ truncateText(scope.row.subject, 15) }}</code>
+                <code>{{ scope.row.query_id }}</code>
               </template>
             </el-table-column>
-            <el-table-column label="E-value" align="right">
+            <el-table-column label="Subject ID" width="200">
               <template #default="scope">
-                {{ formatEvalue(scope.row.evalue) }}
+                <code>{{ scope.row.subject_id }}</code>
               </template>
             </el-table-column>
-            <el-table-column label="Bit Score" align="right">
-              <template #default="scope">
-                {{ scope.row.bit_score.toFixed(0) }}
-              </template>
-            </el-table-column>
-            <el-table-column label="Identity (%)" align="right">
+            <el-table-column label="Identity (%)" width="120" align="right">
               <template #default="scope">
                 {{ scope.row.identity.toFixed(2) }}%
               </template>
             </el-table-column>
-          </el-table>
-        </el-card>
-
-        <!-- 本地数据库匹配结果 -->
-        <el-card class="mb-4" v-if="localMatches.length > 0">
-          <template #header>
-            <div class="card-header">
-              <span>Local Database Matches</span>
-            </div>
-          </template>
-          <el-table :data="localMatches" style="width: 100%">
-            <el-table-column prop="protein_id" label="Protein ID" width="180">
+            <el-table-column label="Alignment Length" width="120" align="right">
               <template #default="scope">
-                <code>{{ scope.row.protein_id }}</code>
+                {{ scope.row.alignment_length }}
               </template>
             </el-table-column>
-            <el-table-column prop="gene_id" label="Gene ID" width="150"></el-table-column>
-            <el-table-column prop="description" label="Description">
+            <el-table-column label="Mismatches" width="100" align="right">
               <template #default="scope">
-                {{ truncateText(scope.row.description, 50) }}
+                {{ scope.row.mismatches }}
               </template>
             </el-table-column>
-            <el-table-column prop="file_source" label="Source" width="180">
+            <el-table-column label="Gap Openings" width="120" align="right">
               <template #default="scope">
-                {{ truncateText(scope.row.file_source, 20) }}
+                {{ scope.row.gap_openings }}
               </template>
             </el-table-column>
-            <el-table-column label="Actions" width="180" fixed="right">
+            <el-table-column label="Q. Start" width="100" align="right">
               <template #default="scope">
-                <el-button type="primary" size="small" circle>
-                  <el-icon><View /></el-icon>
-                </el-button>
-                <el-button type="success" size="small" circle>
-                  <el-icon><Download /></el-icon>
-                </el-button>
+                {{ scope.row.query_start }}
+              </template>
+            </el-table-column>
+            <el-table-column label="Q. End" width="100" align="right">
+              <template #default="scope">
+                {{ scope.row.query_end }}
+              </template>
+            </el-table-column>
+            <el-table-column label="S. Start" width="100" align="right">
+              <template #default="scope">
+                {{ scope.row.subject_start }}
+              </template>
+            </el-table-column>
+            <el-table-column label="S. End" width="100" align="right">
+              <template #default="scope">
+                {{ scope.row.subject_end }}
+              </template>
+            </el-table-column>
+            <el-table-column label="E-value" width="120" align="right">
+              <template #default="scope">
+                {{ formatEvalue(scope.row.evalue) }}
+              </template>
+            </el-table-column>
+            <el-table-column label="Bit Score" width="120" align="right">
+              <template #default="scope">
+                {{ scope.row.bit_score.toFixed(0) }}
               </template>
             </el-table-column>
           </el-table>
@@ -146,7 +126,17 @@
         class="mb-4"
       />
     </div>
-    
+    <!-- 和弦图 -->
+    <el-card class="mb-4">
+      <template #header>
+        <div class="card-header">
+          <span>Chord Diagram</span>
+        </div>
+      </template>
+      <div v-loading="!chordData" element-loading-text="Loading..." class="chord-chart-container">
+        <div id="chord-chart" v-if="chordData"></div>
+      </div>
+    </el-card>
     <div class="mt-3">
       <router-link to="/tools/blastp">
         <el-button type="default">返回搜索</el-button>
@@ -160,8 +150,12 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import * as d3 from 'd3'
 import { View, Download } from '@element-plus/icons-vue'
+import { useNavigationStore } from '@/stores/navigationStore'
+import { useBlastStore } from '@/stores/blastStore'
 
 const route = useRoute()
+const navigationStore = useNavigationStore()
+const blastStore = useBlastStore()
 
 // 页面数据
 const perPage = ref(10)
@@ -177,9 +171,151 @@ const total = ref(0)
 const executionTime = ref(0)
 const chordData = ref<any>(null)
 const lineChartData = ref<any[]>([])
+const rawBlastResults = ref<any>(null)
 
 // 总页数
 const totalPages = computed(() => Math.ceil(total.value / perPage.value))
+
+// 格式化原始 BLAST 结果为 BLAST 6 格式
+const formattedRawResults = computed(() => {
+  if (!rawBlastResults.value) {
+    return []
+  }
+  
+  const results = rawBlastResults.value
+  const formattedResults = []
+  
+  console.log('Formatting raw results:', results)
+  
+  // 检查结果格式并转换为 BLAST 6 格式
+  if (results.hits && Array.isArray(results.hits)) {
+    console.log('Formatting standard BLAST results with hits array:', results.hits.length)
+    results.hits.forEach((hit: any) => {
+      // 只添加有实际数据的条目
+      if (hit.protein_id || hit.subject_id) {
+        formattedResults.push({
+          query_id: results.query_def,
+          subject_id: hit.description || hit.subject_id,
+          identity: hit.identity,
+          alignment_length: hit.length || hit.alignment_length,
+          mismatches: hit.mismatches,
+          gap_openings: hit.gaps,
+          query_start: hit.qStart || hit.query_start,
+          query_end: hit.qEnd || hit.query_end,
+          subject_start: hit.sStart || hit.subject_start,
+          subject_end: hit.sEnd || hit.subject_end,
+          evalue: hit.evalue,
+          bit_score: hit.score || hit.bit_score
+        })
+      }
+    })
+  }
+  // 处理其他可能的结果格式
+  else if (typeof results === 'object') {
+    console.log('Formatting direct object results')
+    // 遍历对象的所有键，查找可能的结果数据
+    for (const key in results) {
+      if (typeof results[key] === 'object' && results[key] !== null) {
+        const value = results[key]
+        if (Array.isArray(value)) {
+          console.log('Found array under key:', key, 'with length:', value.length)
+          value.forEach((item: any) => {
+            // 只添加有实际数据的条目
+            if (item.protein_id || item.subject_id) {
+              formattedResults.push({
+                query_id: results.query_id,
+                subject_id: item.protein_id || item.subject_id,
+                identity: item.identity,
+                alignment_length: item.length || item.alignment_length,
+                mismatches: item.mismatches,
+                gap_openings: item.gaps,
+                query_start: item.qStart || item.query_start,
+                query_end: item.qEnd || item.query_end,
+                subject_start: item.sStart || item.subject_start,
+                subject_end: item.sEnd || item.subject_end,
+                evalue: item.evalue,
+                bit_score: item.score || item.bit_score
+              })
+            }
+          })
+        }
+        // 检查是否包含 BLAST 标准输出格式
+        else if (value.query_id || value.query_def || value.program) {
+          console.log('Found BLAST standard format under key:', key)
+          
+          // 检查是否有 hits 数组
+          if (value.hits && Array.isArray(value.hits)) {
+            console.log('Found hits array in BLAST format:', value.hits.length)
+            
+            value.hits.forEach((hit: any) => {
+              if (hit.protein_id || hit.subject_id || hit.subject) {
+                formattedResults.push({
+                  query_id: value.query_id || results.query_id,
+                  subject_id: hit.protein_id || hit.subject_id || hit.subject,
+                  identity: hit.identity,
+                  alignment_length: hit.length || hit.alignment_length,
+                  mismatches: hit.mismatches,
+                  gap_openings: hit.gaps,
+                  query_start: hit.qStart || hit.query_start,
+                  query_end: hit.qEnd || hit.query_end,
+                  subject_start: hit.sStart || hit.subject_start,
+                  subject_end: hit.sEnd || hit.subject_end,
+                  evalue: hit.evalue,
+                  bit_score: hit.score || hit.bit_score
+                })
+              }
+            })
+          }
+        }
+      }
+      // 检查是否是字符串，可能是 JSON 格式的 BLAST 结果
+      else if (typeof results[key] === 'string') {
+        const value = results[key]
+        console.log('Found string under key:', key, 'length:', value.length)
+        
+        // 尝试解析 JSON 字符串
+        try {
+          const parsedJson = JSON.parse(value)
+          console.log('Successfully parsed JSON for raw results, has query_id:', !!parsedJson.query_id)
+          
+          // 检查是否是 BLAST 结果格式
+          if (parsedJson.query_id || parsedJson.query_def || parsedJson.program) {
+            console.log('Parsed JSON contains BLAST result format')
+            
+            // 检查是否有 hits 数组
+            if (parsedJson.hits && Array.isArray(parsedJson.hits)) {
+              console.log('Found hits array in parsed JSON:', parsedJson.hits.length)
+              
+              parsedJson.hits.forEach((hit: any) => {
+                if (hit.protein_id || hit.subject_id || hit.subject) {
+                  formattedResults.push({
+                    query_id: parsedJson.query_id || results.query_id,
+                    subject_id: hit.protein_id || hit.subject_id || hit.subject,
+                    identity: hit.identity,
+                    alignment_length: hit.length || hit.alignment_length,
+                    mismatches: hit.mismatches,
+                    gap_openings: hit.gaps,
+                    query_start: hit.qStart || hit.query_start,
+                    query_end: hit.qEnd || hit.query_end,
+                    subject_start: hit.sStart || hit.subject_start,
+                    subject_end: hit.sEnd || hit.subject_end,
+                    evalue: hit.evalue,
+                    bit_score: hit.score || hit.bit_score
+                  })
+                }
+              })
+            }
+          }
+        } catch (e) {
+          console.log('Failed to parse string as JSON for raw results:', e.message)
+        }
+      }
+    }
+  }
+  
+  console.log('Formatted raw results count:', formattedResults.length)
+  return formattedResults
+})
 
 // 格式化E-value
 const formatEvalue = (evalue: number) => {
@@ -217,6 +353,11 @@ const changePage = (page: number) => {
 
 // 分页处理结果
 const paginateResults = () => {
+  if (!allResults.value) {
+    results.value = []
+    return
+  }
+  
   const startIndex = (currentPage.value - 1) * perPage.value
   const endIndex = startIndex + perPage.value
   results.value = allResults.value.slice(startIndex, endIndex)
@@ -227,46 +368,76 @@ const loadResults = async () => {
   loading.value = true
   
   try {
-    // 从路由查询参数中获取结果数据
+    // 从多个来源获取结果数据
+    let decodedResults = null
+    
+    // 1. 从路由查询参数中获取结果数据
     if (route.query.results) {
-      const decodedResults = JSON.parse(decodeURIComponent(route.query.results as string))
-      console.log('Received BLASTP results:', decodedResults)
+      decodedResults = JSON.parse(decodeURIComponent(route.query.results as string))
+      console.log('Received BLASTP results from route:', decodedResults)
+    }
+    // 2. 从 navigationStore 中获取结果数据
+    else if (navigationStore.getNavigationData('blast')) {
+      const blastData = navigationStore.getNavigationData('blast')
+      decodedResults = blastData.results
+      console.log('Received BLASTP results from navigationStore:', decodedResults)
+    }
+    // 3. 从 blastStore 中获取结果数据
+    else if (blastStore.blastResults) {
+      decodedResults = blastStore.blastResults
+      console.log('Received BLASTP results from blastStore:', decodedResults)
+    }
+    
+    if (decodedResults) {
+      console.log('Processing BLASTP results:', decodedResults)
+      console.log('Results type:', typeof decodedResults)
+      console.log('Results keys:', Object.keys(decodedResults))
+      
+      // 保存原始 BLAST 结果
+      rawBlastResults.value = decodedResults
       
       // 处理API返回的结果格式
-      if (decodedResults.hits) {
+      if (decodedResults.hits && Array.isArray(decodedResults.hits)) {
+        console.log('Found hits array with length:', decodedResults.hits.length)
+        
         // 将API返回的hits数组转换为组件需要的格式
-        const formattedResults = decodedResults.hits.map((hit: any, index: number) => ({
-          query: 'Query_Protein',
-          subject: hit.protein_id,
+        const formattedResults = decodedResults.hits.map((hit: any) => ({
+          query: decodedResults.query_id,
+          subject: hit.protein_id || hit.subject_id,
           identity: hit.identity,
-          alignment_length: hit.length,
-          mismatches: 0, // API未返回该字段，默认为0
-          gaps: 0, // API未返回该字段，默认为0
-          query_start: hit.qStart,
-          query_end: hit.qEnd,
-          subject_start: 0, // API未返回该字段，默认为0
-          subject_end: hit.length, // 使用蛋白质全长
+          alignment_length: hit.length || hit.alignment_length,
+          mismatches: hit.mismatches,
+          gaps: hit.gaps,
+          query_start: hit.qStart || hit.query_start,
+          query_end: hit.qEnd || hit.query_end,
+          subject_start: hit.sStart || hit.subject_start,
+          subject_end: hit.sEnd || hit.subject_end,
           evalue: hit.evalue,
-          bit_score: hit.score
+          bit_score: hit.score || hit.bit_score
         }))
+        
+        console.log('Formatted results length:', formattedResults.length)
+        console.log('First formatted result:', formattedResults[0])
         
         // 去重处理：根据subject ID去重
         const uniqueResults = [...new Map(formattedResults.map((item: any) => [item.subject, item])).values()]
+        console.log('Unique results length:', uniqueResults.length)
         
         // 按bit_score降序排序
         uniqueResults.sort((a: any, b: any) => b.bit_score - a.bit_score)
         
         allResults.value = uniqueResults
         total.value = uniqueResults.length
+        console.log('Total results:', total.value)
         
         // 设置查询序列
-        querySequence.value = decodedResults.query_sequence || ''
+        querySequence.value = decodedResults.query_sequence
         
         // 设置执行时间
-        executionTime.value = decodedResults.execution_time || 0
+        executionTime.value = decodedResults.execution_time
         
         // 设置E-value阈值
-        eValue.value = decodedResults.evalue || 0.01
+        eValue.value = decodedResults.evalue
         
         // 设置本地匹配结果
         localMatches.value = decodedResults.local_matches || []
@@ -285,8 +456,174 @@ const loadResults = async () => {
         // 准备和弦图数据
         prepareChordData(decodedResults)
       }
+      // 处理直接包含结果的对象格式
+      else {
+        console.log('No hits array found, processing as direct object')
+        
+        // 尝试从对象中提取结果
+        const formattedResults = []
+        
+        // 遍历对象的所有键
+        for (const key in decodedResults) {
+          if (typeof decodedResults[key] === 'object' && decodedResults[key] !== null) {
+            const value = decodedResults[key]
+            
+            // 如果是数组，检查是否包含结果数据
+            if (Array.isArray(value)) {
+              console.log('Found array under key:', key, 'with length:', value.length)
+              
+              value.forEach((item: any) => {
+                if (item.protein_id || item.subject_id) {
+                  formattedResults.push({
+                    query: decodedResults.query_id,
+                    subject: item.protein_id || item.subject_id,
+                    identity: item.identity,
+                    alignment_length: item.length || item.alignment_length,
+                    mismatches: item.mismatches,
+                    gaps: item.gaps,
+                    query_start: item.qStart || item.query_start,
+                    query_end: item.qEnd || item.query_end,
+                    subject_start: item.sStart || item.subject_start,
+                    subject_end: item.sEnd || item.subject_end,
+                    evalue: item.evalue,
+                    bit_score: item.score || item.bit_score
+                  })
+                }
+              })
+            }
+            // 如果是对象，检查是否包含结果数据
+            else if (value.protein_id || value.subject_id) {
+              console.log('Found single result under key:', key)
+              formattedResults.push({
+                query: decodedResults.query_id,
+                subject: value.protein_id || value.subject_id,
+                identity: value.identity,
+                alignment_length: value.length || value.alignment_length,
+                mismatches: value.mismatches,
+                gaps: value.gaps,
+                query_start: value.qStart || value.query_start,
+                query_end: value.qEnd || value.query_end,
+                subject_start: value.sStart || value.subject_start,
+                subject_end: value.sEnd || value.subject_end,
+                evalue: value.evalue,
+                bit_score: value.score || value.bit_score
+              })
+            }
+            // 检查是否包含 BLAST 标准输出格式
+            else if (value.query_id || value.query_def || value.program) {
+              console.log('Found BLAST standard format under key:', key)
+              
+              // 检查是否有 hits 数组
+              if (value.hits && Array.isArray(value.hits)) {
+                console.log('Found hits array in BLAST format:', value.hits.length)
+                
+                value.hits.forEach((hit: any) => {
+                  if (hit.protein_id || hit.subject_id || hit.subject) {
+                    formattedResults.push({
+                      query: value.query_id || decodedResults.query_id,
+                      subject: hit.protein_id || hit.subject_id || hit.subject,
+                      identity: hit.identity,
+                      alignment_length: hit.length || hit.alignment_length,
+                      mismatches: hit.mismatches,
+                      gaps: hit.gaps,
+                      query_start: hit.qStart || hit.query_start,
+                      query_end: hit.qEnd || hit.query_end,
+                      subject_start: hit.sStart || hit.subject_start,
+                      subject_end: hit.sEnd || hit.subject_end,
+                      evalue: hit.evalue,
+                      bit_score: hit.score || hit.bit_score
+                    })
+                  }
+                })
+              }
+            }
+          }
+          // 检查是否是字符串，可能是 JSON 格式的 BLAST 结果
+          else if (typeof decodedResults[key] === 'string') {
+            const value = decodedResults[key]
+            console.log('Found string under key:', key, 'length:', value.length)
+            
+            // 尝试解析 JSON 字符串
+            try {
+              const parsedJson = JSON.parse(value)
+              console.log('Successfully parsed JSON, has query_id:', !!parsedJson.query_id)
+              
+              // 检查是否是 BLAST 结果格式
+              if (parsedJson.query_id || parsedJson.query_def || parsedJson.program) {
+                console.log('Parsed JSON contains BLAST result format')
+                
+                // 检查是否有 hits 数组
+                if (parsedJson.hits && Array.isArray(parsedJson.hits)) {
+                  console.log('Found hits array in parsed JSON:', parsedJson.hits.length)
+                  
+                  parsedJson.hits.forEach((hit: any) => {
+                    if (hit.protein_id || hit.subject_id || hit.subject) {
+                      formattedResults.push({
+                        query: parsedJson.query_id || decodedResults.query_id,
+                        subject: hit.protein_id || hit.subject_id || hit.subject,
+                        identity: hit.identity,
+                        alignment_length: hit.length || hit.alignment_length,
+                        mismatches: hit.mismatches,
+                        gaps: hit.gaps,
+                        query_start: hit.qStart || hit.query_start,
+                        query_end: hit.qEnd || hit.query_end,
+                        subject_start: hit.sStart || hit.subject_start,
+                        subject_end: hit.sEnd || hit.subject_end,
+                        evalue: hit.evalue,
+                        bit_score: hit.score || hit.bit_score
+                      })
+                    }
+                  })
+                }
+              }
+            } catch (e) {
+              console.log('Failed to parse string as JSON:', e.message)
+            }
+          }
+        }
+        
+        console.log('Formatted results from direct object:', formattedResults.length)
+        
+        if (formattedResults.length > 0) {
+          // 去重处理：根据subject ID去重
+          const uniqueResults = [...new Map(formattedResults.map((item: any) => [item.subject, item])).values()]
+          
+          // 按bit_score降序排序
+          uniqueResults.sort((a: any, b: any) => b.bit_score - a.bit_score)
+          
+          allResults.value = uniqueResults
+          total.value = uniqueResults.length
+          console.log('Total results from direct object:', total.value)
+          
+          // 设置查询序列
+          querySequence.value = decodedResults.query_sequence
+          
+          // 设置执行时间
+          executionTime.value = decodedResults.execution_time
+          
+          // 设置E-value阈值
+          eValue.value = decodedResults.evalue
+          
+          // 设置本地匹配结果
+          localMatches.value = decodedResults.local_matches || []
+          
+          // 设置线图数据
+          lineChartData.value = uniqueResults.map((result: any) => ({
+            identity: result.identity,
+            evalue: result.evalue,
+            bitScore: result.bit_score,
+            subject: result.subject
+          }))
+          
+          // 分页处理
+          paginateResults()
+          
+          // 准备和弦图数据
+          prepareChordData(decodedResults)
+        }
+      }
     } else {
-      console.error('No results found in route query')
+      console.error('No results found in any source')
       results.value = []
       total.value = 0
     }

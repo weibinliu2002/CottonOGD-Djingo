@@ -144,21 +144,138 @@ export const useGeneSearchStore = defineStore('geneSearch', () => {
     sequenceLoading.value[cacheKey] = true
 
     try {
-      const params: any = {
-        gene_id: geneId,
-        transcript_id: transcriptId,
-        type: type
+      // 从 searchResults 中查找 db_id
+      let dbId = null
+      if (searchResults.value && searchResults.value.search_map) {
+        for (const [originalId, info] of Object.entries(searchResults.value.search_map)) {
+          if (info.geneid === geneId) {
+            dbId = info.db_id
+            break
+          }
+        }
       }
 
-      if (type === 'upstream') {
-        params.upstream_length = upstreamLength
-      } else if (type === 'downstream') {
-        params.downstream_length = downstreamLength
+      if (!dbId) {
+        console.error('Cannot find db_id for gene:', geneId)
+        return '未找到基因对应的数据库ID'
       }
+
+      // 对于上下游序列，使用 extract_seq_gff API 动态提取
+      if (type === 'upstream' || type === 'downstream') {
+        // 从 searchResults 中查找基因位置信息
+        let geneInfo = null
+        if (searchResults.value && searchResults.value.geneid_result) {
+          const geneItem = searchResults.value.geneid_result.find((item: any) => item.db_id === dbId && item.type === 'gene')
+          if (geneItem) {
+            geneInfo = {
+              start: geneItem.start,
+              end: geneItem.end,
+              strand: geneItem.strand,
+              species: geneItem.species,
+              chromosome: geneItem.seqid
+            }
+          }
+        }
+        
+        if (geneInfo) {
+          // 计算上下游序列的位置
+          let start, end
+          if (type === 'upstream') {
+            if (geneInfo.strand === '+') {
+              start = geneInfo.start - upstreamLength
+              end = geneInfo.start - 1
+            } else {
+              start = geneInfo.end + 1
+              end = geneInfo.end + upstreamLength
+            }
+          } else { // downstream
+            if (geneInfo.strand === '+') {
+              start = geneInfo.end + 1
+              end = geneInfo.end + downstreamLength
+            } else {
+              start = geneInfo.start - downstreamLength
+              end = geneInfo.start - 1
+            }
+          }
+          
+          // 确保位置为正数
+          start = Math.max(1, start)
+          
+          // 调用 extract_seq_gff API 提取序列
+          try {
+            const gffRes = await httpInstance.post('/CottonOGD_api/extract_seq_gff/', {
+              genome_id: geneInfo.species,
+              seqid: geneInfo.chromosome || 'unknown',
+              start: start,
+              end: end,
+              strand: geneInfo.strand
+            })
+            
+            if (gffRes.data && gffRes.data.sequence) {
+              const sequence = gffRes.data.sequence
+              sequenceCache.value[cacheKey] = sequence
+              return sequence
+            }
+          } catch (gffError) {
+            console.error('Error fetching sequence from gff:', gffError)
+          }
+        }
+      }
+
+      // 使用 db_id 参数调用后端 API
+      const params = {
+        db_id: dbId
+      }
+
+      console.log('Fetching sequence with db_id:', dbId)
 
       const response = await httpInstance.post('/CottonOGD_api/extract_seq/', params)
       const data = response as any
-      const sequence = data.sequence || '未找到序列'
+      const seqData = data.seq || {}
+
+      // 根据类型获取对应的序列
+      let sequence = '未找到序列'
+      switch (type) {
+        case 'genomic':
+          if (seqData.genome_seq && seqData.genome_seq.length > 0) {
+            sequence = seqData.genome_seq[0].seq
+          }
+          break
+        case 'mrna':
+          if (seqData.mrna_seq && seqData.mrna_seq.length > 0) {
+            // 尝试找到匹配的转录本
+            const mrnaSeq = seqData.mrna_seq.find((item: any) => 
+              item.mrna_id === transcriptId
+            )
+            sequence = mrnaSeq ? mrnaSeq.seq : seqData.mrna_seq[0].seq
+          }
+          break
+        case 'upstream':
+          if (seqData.upstream_seq && seqData.upstream_seq.length > 0) {
+            sequence = seqData.upstream_seq[0].seq
+          }
+          break
+        case 'downstream':
+          if (seqData.downstream_seq && seqData.downstream_seq.length > 0) {
+            sequence = seqData.downstream_seq[0].seq
+          }
+          break
+        case 'cdna':
+          if (seqData.cdna_seq && seqData.cdna_seq.length > 0) {
+            sequence = seqData.cdna_seq[0].seq
+          }
+          break
+        case 'cds':
+          if (seqData.cds_seq && seqData.cds_seq.length > 0) {
+            sequence = seqData.cds_seq[0].seq
+          }
+          break
+        case 'protein':
+          if (seqData.protein_seq && seqData.protein_seq.length > 0) {
+            sequence = seqData.protein_seq[0].seq
+          }
+          break
+      }
 
       // 缓存序列
       sequenceCache.value[cacheKey] = sequence

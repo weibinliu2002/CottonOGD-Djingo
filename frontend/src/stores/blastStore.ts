@@ -104,14 +104,13 @@ ATGGGCGAAGCGATAAAGAAACAAGAAGGAGTGTCTACCGTCAAGGAAGACAACAAGTTGATCGACTCCAAGAAGAAGAA
     const blastType = selectedBlastType.value;
     const endpoint = `/CottonOGD_api/blast_cmd/`;
 
-    console.log('selecthenome', selectedGenomes.value);
+    console.log('selecthenome', selectedGenomes);
     // 处理基因组ID格式，确保与数据库目录名称匹配
     // 移除括号和括号内的内容，例如将 G.hirsutum(AD1)TM-1_HAU_v1.1 转换为 G.hirsutumAD1_TM-1_HAU_v1.1
-    let processedGenome = selectedGenomes.value;
-    if (processedGenome) {
-      processedGenome = processedGenome.replace(/\([^)]*\)/g, '');
+    const processedGenome = selectedGenomes.value;
+    
       console.log('Processed genome:', processedGenome);
-    }
+    
     const payload = {
       sequence: sequence.value,
       blast_type: blastType,
@@ -130,23 +129,22 @@ ATGGGCGAAGCGATAAAGAAACAAGAAGGAGTGTCTACCGTCAAGGAAGACAACAAGTTGATCGACTCCAAGAAGAAGAA
     try {
       const response = await httpInstance.post(endpoint, payload);
       console.log('response:', response);
-      console.log('response.data:', response.data);
       
-      if (response && response.data) {
+      if (response) {
         // 尝试获取结果数据（支持多种响应格式）
         let results = null;
         
         // 检查是否有固定的 results 字段
-        if (response.data.results) {
-          results = response.data.results;
+        if (response.results) {
+          results = response.results;
         } 
         // 检查是否有以基因组名称为键的字段
-        else if (processedGenome && response.data[processedGenome]) {
-          results = response.data[processedGenome];
+        else if (processedGenome && response[processedGenome]) {
+          results = response[processedGenome];
         }
         // 检查是否直接在 data 中
         else {
-          results = response.data;
+          results = response;
         }
         
         if (results) {

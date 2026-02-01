@@ -36,7 +36,7 @@ def extract_seq(request):
             try:
                 converted_id = int(float(id_value))
                 logger.info(f"Converted db_id value: {converted_id}")
-                #converted_db_id.append(converted_id)
+                converted_db_id.append(converted_id)
             except (ValueError, TypeError):
                 # 跳过无法转换为整数的值
                 logger.warning(f"Invalid db_id value skipped: {id_value}")

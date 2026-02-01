@@ -152,14 +152,14 @@ export default {
       this.selectedDownstreamLength = downstreamLength
 
       if (changed) {
-        // 清理上下游 cache
-        Object.keys(this.geneSearchStore.sequenceCache).forEach(key => {
-          if (key.includes('|upstream|') || key.includes('|downstream|')) {
-            delete this.geneSearchStore.sequenceCache[key]
-          }
-        })
-        this.scheduleSequencePreload()
+    // 清理上下游 cache
+    Object.keys(this.geneSearchStore.sequenceCache).forEach(key => {
+      if (key.includes('|upstream|') || key.includes('|downstream|')) {
+        delete this.geneSearchStore.sequenceCache[key]
       }
+    })
+    this.scheduleSequencePreload()
+  }
     },
 
     async fetchSearchResults() {
@@ -208,14 +208,30 @@ export default {
               } else if (item.type === 'mrna') {
                 let transcriptId = ''
                 if (item.attributes) {
+                  console.log(`  处理 mRNA attributes: ${item.attributes}`)
                   const idMatch = item.attributes.match(/ID=([^;]+)/)
                   if (idMatch) {
                     transcriptId = idMatch[1]
+                    console.log(`  提取到转录本 ID: ${transcriptId}`)
+                  } else {
+                    console.log(`  无法从 attributes 中提取转录本 ID: ${item.attributes}`)
                   }
+                } else {
+                  console.log(`  mRNA 条目没有 attributes 字段:`, item)
                 }
                 console.log(`处理 mRNA 条目: db_id=${item.db_id}, transcriptId=${transcriptId}, attributes=${item.attributes}`)
                 if (transcriptId) {
                   mrnaInfoMap[transcriptId] = {
+                    start: item.start,
+                    end: item.end,
+                    strand: item.strand,
+                    species: item.species,
+                    db_id: item.db_id
+                  }
+                } else {
+                  // 如果没有提取到转录本 ID，使用 db_id 作为键
+                  console.log(`  使用 db_id 作为转录本键: ${item.db_id}`)
+                  mrnaInfoMap[item.db_id] = {
                     start: item.start,
                     end: item.end,
                     strand: item.strand,
@@ -374,6 +390,8 @@ if (!batchPayload.length) return
     db_id: dbIds
   }
 
+  console.log('Sending batch sequence request with db_ids:', dbIds)
+
   const res = await httpInstance.post(
     '/CottonOGD_api/extract_seq/',
     apiPayload,
@@ -383,11 +401,105 @@ if (!batchPayload.length) return
   // 处理后端返回的数据
   console.log('Extract seq response:', res)
   
-  // 暂时将所有缓存键标记为加载完成
-  batchPayload.forEach(r => {
-    this.geneSearchStore.sequenceCache[r.cacheKey] = 'Sequence data available'
+  // 解析返回的序列数据并存储到缓存
+  const seqData = res.data?.seq || {}
+  
+  // 为每个缓存键设置对应的序列数据
+  for (const r of batchPayload) {
+    // 根据类型获取对应的序列
+    let sequence = '未找到序列'
+    switch (r.type) {
+      case 'genomic':
+        if (seqData.genome_seq && seqData.genome_seq.length > 0) {
+          sequence = seqData.genome_seq[0].seq
+        }
+        break
+      case 'mrna':
+        if (seqData.mrna_seq && seqData.mrna_seq.length > 0) {
+          // 尝试找到匹配的转录本
+          const mrnaSeq = seqData.mrna_seq.find(item => 
+            item.mrna_id === r.transcript_id
+          )
+          sequence = mrnaSeq ? mrnaSeq.seq : seqData.mrna_seq[0].seq
+        }
+        break
+      case 'upstream':
+      case 'downstream':
+        // 对于上下游序列，需要根据长度参数动态计算位置并提取
+        const geneData = this.results.find(g => g.IDs === r.gene_id)
+        if (geneData && geneData.db_id) {
+          const geneInfo = this.geneInfoMap[geneData.db_id]
+          if (geneInfo) {
+            console.log(`计算 ${r.type} 序列位置:`, geneInfo)
+            // 计算上下游序列的位置
+            let start, end
+            if (r.type === 'upstream') {
+              if (geneInfo.strand === '+') {
+                start = geneInfo.start - r.upstream_length
+                end = geneInfo.start - 1
+              } else {
+                start = geneInfo.end + 1
+                end = geneInfo.end + r.upstream_length
+              }
+            } else { // downstream
+              if (geneInfo.strand === '+') {
+                start = geneInfo.end + 1
+                end = geneInfo.end + r.downstream_length
+              } else {
+                start = geneInfo.start - r.downstream_length
+                end = geneInfo.start - 1
+              }
+            }
+            
+            // 确保位置为正数
+            start = Math.max(1, start)
+            
+            console.log(`提取 ${r.type} 序列: genome_id=${geneInfo.species}, seqid=${geneData.chromosome || 'unknown'}, start=${start}, end=${end}, strand=${geneInfo.strand}`)
+            
+            // 调用 extract_seq_gff API 提取序列
+            try {
+              const gffRes = await httpInstance.post(
+                '/CottonOGD_api/extract_seq_gff/',
+                {
+                  genome_id: geneInfo.species,
+                  seqid: geneData.chromosome || 'unknown',
+                  start: start,
+                  end: end,
+                  strand: geneInfo.strand
+                },
+                { headers: { 'X-CSRFToken': csrfToken } }
+              )
+              console.log(`${r.type} 序列提取响应:`, gffRes)
+              if (gffRes.data && gffRes.data.sequence) {
+                sequence = gffRes.data.sequence
+              }
+            } catch (gffError) {
+              console.error(`提取 ${r.type} 序列失败:`, gffError)
+            }
+          }
+        }
+        break
+      case 'cdna':
+        if (seqData.cdna_seq && seqData.cdna_seq.length > 0) {
+          sequence = seqData.cdna_seq[0].seq
+        }
+        break
+      case 'cds':
+        if (seqData.cds_seq && seqData.cds_seq.length > 0) {
+          sequence = seqData.cds_seq[0].seq
+        }
+        break
+      case 'protein':
+        if (seqData.protein_seq && seqData.protein_seq.length > 0) {
+          sequence = seqData.protein_seq[0].seq
+        }
+        break
+    }
+    
+    // 缓存序列
+    this.geneSearchStore.sequenceCache[r.cacheKey] = sequence
     this.geneSearchStore.sequenceLoading[r.cacheKey] = false
-  })
+  }
 } catch (err) {
   console.error('批量热加载失败', err)
   batchPayload.forEach(r => {

@@ -95,8 +95,8 @@ export const useGenomeStore = defineStore('genome', {
               genomes[genomeType] = []
             }
             genomes[genomeType].push({
-              value: species.alias || species.name || species.Cotton_Species || '',
-              label: species.name || species.alias || species.Cotton_Species || ''
+              value: species.name || species.alias || species.Cotton_Species || '',
+              label: species.alias || species.name || species.Cotton_Species || ''
             })
           })
           
