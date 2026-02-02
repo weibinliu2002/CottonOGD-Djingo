@@ -24,12 +24,20 @@
       <div v-if="results.length > 0">
         <el-card class="mb-4">
           <template #header>
-            <div class="card-header">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
               <span>Expression Data</span>
+              <el-button 
+                type="primary" 
+                size="small" 
+                @click="downloadExpressionData"
+                icon="el-icon-download"
+              >
+                Download Data
+              </el-button>
             </div>
           </template>
           <el-table :data="results" style="width: 100%">
-            <el-table-column prop="gene_id" label="Gene ID" width="180"></el-table-column>
+            <el-table-column prop="geneid_id" label="Gene ID" width="180"></el-table-column>
             <el-table-column 
               v-for="tissue in tissues" 
               :key="tissue.value"
@@ -37,8 +45,8 @@
               min-width="100"
             >
               <template #default="scope">
-                <div v-if="scope.row.expression[tissue.value] !== undefined">
-                  {{ scope.row.expression[tissue.value].toFixed(4) }}
+                <div v-if="scope.row[tissue.value] !== undefined">
+                  {{ scope.row[tissue.value].toFixed(4) }}
                 </div>
                 <div v-else>-</div>
               </template>
@@ -104,56 +112,58 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed, watch, nextTick } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import httpInstance from '../utils/http'
 import { Download } from '@element-plus/icons-vue'
 // @ts-ignore - heatmap.js doesn't have proper type definitions
 import heatmap from 'heatmap.js'
+import { useGeneExpressionStore } from '@/stores/geneExpressionStore'
 
 const route = useRoute()
+const router = useRouter()
+const geneExpressionStore = useGeneExpressionStore()
 
 // 页面数据
 const perPage = ref(10)
 const geneList = ref('')
 const selectedTissue = ref('')
-const results = ref<any[]>([])
-const loading = ref(false)
 const currentPage = ref(1)
 const total = ref(0)
-const heatmapImage = ref<string>('') // 存储后端生成的热图
 const heatmapContainer = ref<HTMLElement | null>(null) // 保留用于下载功能
 const hoverInfo = ref<{ gene: string; tissue: string; value: number } | null>(null)
 
-// 组织列表 - 与后端保持一致
-const allTissues = [
-  // Top tissues
-  { value: 'Root', label: 'Root' },
-  { value: 'Stem', label: 'Stem' },
-  { value: 'Cotyledon', label: 'Cotyledon' },
-  { value: 'Leaf', label: 'Leaf' },
-  { value: 'Pholem', label: 'Pholem' },
-  { value: 'Sepal', label: 'Sepal' },
-  { value: 'Bract', label: 'Bract' },
-  { value: 'Petal', label: 'Petal' },
-  { value: 'Anther', label: 'Anther' },
-  { value: 'Stigma', label: 'Stigma' },
-  // Bottom left tissues
-  { value: '0_DPA_ovules', label: '0_DPA_ovules' },
-  { value: '3_DPA_fibers', label: '3_DPA_fibers' },
-  { value: '6_DPA_fibers', label: '6_DPA_fibers' },
-  { value: '9_DPA_fibers', label: '9_DPA_fibers' },
-  { value: '12_DPA_fibers', label: '12_DPA_fibers' },
-  { value: '15_DPA_fibers', label: '15_DPA_fibers' },
-  { value: '18_DPA_fibers', label: '18_DPA_fibers' },
-  { value: '21_DPA_fibers', label: '21_DPA_fibers' },
-  { value: '24_DPA_fibers', label: '24_DPA_fibers' },
-  // Bottom right tissues
-  { value: 'DPA0', label: 'DPA0' },
-  { value: '5_DPA_ovules', label: '5_DPA_ovules' },
-  { value: '10_DPA_ovules', label: '10_DPA_ovules' },
-  { value: '20_DPA_ovules', label: '20_DPA_ovules' },
-  { value: 'Seed', label: 'Seed' }
-]
+// 从 store 获取响应式数据
+const results = computed(() => geneExpressionStore.results)
+const loading = computed(() => geneExpressionStore.loading)
+const heatmapImage = computed(() => geneExpressionStore.heatmapImage)
+
+// 从后端返回的数据中动态获取组织列表
+const allTissues = computed(() => {
+  // 从 store 获取结果
+  const storeResults = geneExpressionStore.results
+  
+  // 如果结果为空，返回空数组
+  if (!Array.isArray(storeResults) || storeResults.length === 0) {
+    return []
+  }
+  
+  // 从第一个结果对象中提取列名，排除 id_id 和 geneid_id
+  const firstResult = storeResults[0]
+  if (!firstResult) {
+    return []
+  }
+  
+  // 提取所有非 ID 列名
+  const tissueColumns = Object.keys(firstResult).filter(key => 
+    key !== 'id_id' && key !== 'geneid_id' && typeof firstResult[key] === 'number'
+  )
+  
+  // 转换为组织列表格式
+  return tissueColumns.map(col => ({
+    value: col,
+    label: col
+  }))
+})
 
 // 使用用户检索指定的组织
 const tissues = computed(() => {
@@ -162,11 +172,11 @@ const tissues = computed(() => {
   
   if (tissueParam) {
     // 如果指定了特定组织，返回该组织
-    const selectedTissue = allTissues.find(t => t.value === tissueParam)
-    return selectedTissue ? [selectedTissue] : allTissues
+    const selectedTissue = allTissues.value.find(t => t.value === tissueParam)
+    return selectedTissue ? [selectedTissue] : allTissues.value
   } else {
     // 如果没有指定，返回所有组织
-    return allTissues
+    return allTissues.value
   }
 })
 
@@ -175,9 +185,14 @@ const totalPages = computed(() => Math.ceil(total.value / perPage.value))
 
 // 可视化数据
 const visualizationData = computed(() => {
+  // 确保 results.value 是一个数组
+  if (!Array.isArray(results.value)) {
+    return []
+  }
+  
   return results.value.map(item => ({
-    gene_id: item.gene_id,
-    expression: item.expression
+    gene_id: item.geneid_id || item.gene_id,
+    expression: item
   }))
 })
 
@@ -216,6 +231,49 @@ const downloadHeatmap = () => {
   document.body.removeChild(link)
 }
 
+// 下载表达量数据
+const downloadExpressionData = () => {
+  if (!Array.isArray(results.value) || results.value.length === 0) {
+    alert('No expression data available for download')
+    return
+  }
+
+  // 获取所有组织列名
+  const tissueColumns = tissues.value.map(t => t.value)
+  
+  // 构建CSV表头
+  const headers = ['Gene ID', ...tissueColumns]
+  
+  // 构建CSV行
+  const rows = results.value.map(item => {
+    const row = [item.geneid_id]
+    tissueColumns.forEach(col => {
+      row.push(item[col] !== undefined ? item[col] : '-')
+    })
+    return row
+  })
+  
+  // 组合表头和行
+  const csvContent = [
+    headers.join(','),
+    ...rows.map(row => row.join(','))
+  ].join('\n')
+  
+  // 创建下载链接
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+  const link = document.createElement('a')
+  
+  if (link.download !== undefined) {
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', 'gene_expression_data.csv')
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+}
+
 // 测试热图绘制
 // 测试热图功能已移除，改为使用后端生成的热图
 
@@ -227,113 +285,75 @@ watch([results, tissues, visualizationData], () => {
 
 // 加载结果数据
 const loadResults = async () => {
-  loading.value = true
+  // 从 store 获取查询参数和结果
+  const queryParams = geneExpressionStore.queryParams
+  const storeResults = geneExpressionStore.results
   
-  try {
-    // 从路由参数获取查询条件
-    const geneListParam = route.query.gene_list as string || ''
-    const tissueParam = route.query.tissue as string || ''
-    geneList.value = geneListParam
-    selectedTissue.value = tissueParam
-    
-    // 解析用户输入的基因ID
-    const userGeneIds = geneListParam.trim().split(/[,\s]+/).filter(gene => gene.trim())
-    
-    if (userGeneIds.length === 0) {
-      results.value = []
-      total.value = 0
-      heatmapImage.value = ''
-      loading.value = false
-      return
-    }
-    
-    console.log('用户输入的基因ID:', userGeneIds)
-    
-    // 调用后端API获取数据和热图
-    // 准备表单数据 - 使用URL编码格式而非JSON，避免CSRF问题
-    let formDataParts = [`gene_ids=${encodeURIComponent(userGeneIds.join('\n'))}`]
-    
-    // 根据路由参数确定要请求的组织
-    if (selectedTissue.value) {
-      // 如果指定了特定组织，只请求该组织
-      formDataParts.push(`top_columns=${encodeURIComponent(selectedTissue.value)}`)
-    } else {
-      // 如果没有指定，请求所有组织
-      // 注意：这里应该与后端保持一致，使用相同的组织列表
-      const allTissues = ['Root', 'Stem', 'Cotyledon', 'Leaf', 'Pholem', 'Sepal', 'Bract', 'Petal', 'Anther', 'Stigma', '0_DPA_ovules', '3_DPA_fibers', '6_DPA_fibers', '9_DPA_fibers', '12_DPA_fibers', '15_DPA_fibers', '18_DPA_fibers', '21_DPA_fibers', '24_DPA_fibers', 'DPA0', '5_DPA_ovules', '10_DPA_ovules', '20_DPA_ovules', 'Seed']
-      allTissues.forEach(tissue => {
-        formDataParts.push(`top_columns=${encodeURIComponent(tissue)}`)
-      })
-    }
-    
-    const formDataString = formDataParts.join('&')
-    
-    // 使用httpInstance发送请求，与IdSearchView.vue保持一致
-    const response = await httpInstance.post('/CottonOGD_api/extract_expression/', formDataString, {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Accept': 'application/json' // 添加Accept头，确保后端识别为API请求
-      }
-    })
-    
-    console.log('API响应:', response)
-    
-    // 由于httpInstance的响应拦截器已经处理了response.data，添加类型断言
-    const apiResponse = response as any
-    
-    if (apiResponse.success) {
-      const data = apiResponse.data
-      
-      // 处理结果数据
-      const apiResults = userGeneIds.map(geneId => {
-        // 查找当前基因的数据索引
-        const geneIndex = data.gene_ids?.indexOf(geneId) ?? -1
-        
-        if (geneIndex >= 0) {
-          // 构建表达数据对象
-          const expression: Record<string, number> = {}
-          data.columns?.forEach((col: string, index: number) => {
-            expression[col] = data.heatmap_data?.[geneIndex]?.[index] || 0
-          })
-          
-          return {
-            gene_id: geneId,
-            gene_name: geneId,
-            expression
-          }
-        } else {
-          return {
-            gene_id: geneId,
-            gene_name: geneId,
-            expression: {}
-          }
-        }
-      })
-      
-      results.value = apiResults
-      total.value = apiResults.length
-      heatmapImage.value = data.heatmap_image // 设置后端生成的热图
-      
-      console.log('处理后的结果数据:', results.value)
-      console.log('后端生成的热图:', heatmapImage.value ? '已获取' : '未获取')
-    } else {
-      console.error('API请求失败:', apiResponse.error)
-      results.value = []
-      total.value = 0
-      heatmapImage.value = ''
-    }
-  } catch (error) {
-    console.error('加载结果失败:', error)
-    results.value = []
+  geneList.value = queryParams.geneList
+  selectedTissue.value = queryParams.tissue
+  
+  // 解析用户输入的基因ID
+  const userGeneIds = queryParams.geneList.trim().split(/[\s,]+/).filter(gene => gene.trim())
+  
+  if (userGeneIds.length === 0) {
     total.value = 0
-    heatmapImage.value = ''
-  } finally {
-    loading.value = false
+    return
+  }
+  
+  console.log('用户输入的基因ID:', userGeneIds)
+  console.log('从 store 获取的结果:', storeResults)
+  console.log('storeResults 是否为数组:', Array.isArray(storeResults))
+  
+  // 处理结果数据
+  if (Array.isArray(storeResults) && storeResults.length > 0) {
+    // 假设 storeResults 已经是正确的格式
+    total.value = storeResults.length
+    console.log('处理后的结果数据:', storeResults)
+    console.log('total数据:', total)
+  } else if (storeResults && typeof storeResults === 'object') {
+    // 如果 storeResults 是一个对象，尝试解析它
+    try {
+      // 根据后端返回的数据结构进行处理
+      if (storeResults.expression) {
+        const apiResults = storeResults.expression.map((item: any) => {
+          return {
+            gene_id: item.geneid_id || item.id_id,
+            gene_name: item.geneid_id || item.id_id,
+            expression: item
+          }
+        })
+        
+        total.value = apiResults.length
+        console.log('处理后的结果数据:', apiResults)
+      } else {
+        console.error('无效的结果数据格式:', storeResults)
+        total.value = 0
+      }
+    } catch (error) {
+      console.error('解析结果数据失败:', error)
+      total.value = 0
+    }
+  } else {
+    console.error('没有可用的结果数据')
+    total.value = 0
+  }
+}
+
+// 检查是否有结果数据，如果没有则重定向回输入页面
+const checkResults = () => {
+  if (!geneExpressionStore.results || (Array.isArray(geneExpressionStore.results) && geneExpressionStore.results.length === 0)) {
+    console.warn('没有结果数据，重定向回输入页面')
+    router.push({
+      path: '/tools/gene-expression'
+    })
   }
 }
 
 // 组件挂载时加载数据
 onMounted(() => {
+  // 先检查是否有结果数据
+  checkResults()
+  // 然后加载结果数据
   loadResults()
 })
 </script>

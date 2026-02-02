@@ -24,6 +24,32 @@
           </div>
         </el-form-item>
         
+        <el-form-item label="Select Genome">
+          <el-select
+            v-model="selectedGenome"
+            placeholder="-- Select Genome --"
+            style="width: 100%"
+            :loading="genomeStore.loading"
+          >
+            <el-option value="" label="-- All Genomes --" />
+            <!-- 直接显示所有选项，包括大类和单个基因组 -->
+            <template v-for="group in genomeStore.genomeOptions" :key="group.value">
+              <!-- 基因组大类作为可选择选项 -->
+              <el-option
+                :label="group.label"
+                :value="group.value"
+              />
+              <!-- 单个基因组选项，添加缩进样式 -->
+              <el-option
+                v-for="item in group.children"
+                :key="item.value"
+                :label="`  ${item.label}`"
+                :value="item.value"
+              />
+            </template>
+          </el-select>
+        </el-form-item>
+        
         <el-form-item label="Select Tissue">
           <el-select
             v-model="selectedTissue"
@@ -82,17 +108,29 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import httpInstance from '../utils/http'
 import { Search } from '@element-plus/icons-vue'
+import { useGenomeStore } from '@/stores/genome_info'
+import { useGeneExpressionStore } from '@/stores/geneExpressionStore'
 
 const router = useRouter()
+const genomeStore = useGenomeStore()
+const geneExpressionStore = useGeneExpressionStore()
 
 // 表单数据
 const geneList = ref('')
 const selectedTissue = ref('')
+const selectedGenome = ref('G.hirsutumAD1_Jin668_HAU_v1T2T')
 const error = ref('')
+
+// 组件挂载时加载基因组数据
+onMounted(() => {
+  if (genomeStore.genomeOptions.length === 0) {
+    genomeStore.fetchGenomes()
+  }
+})
 
 // 填充示例数据
 const fillExample = () => {
@@ -120,20 +158,70 @@ const handleSubmit = async () => {
   }
   
   try {
-    // 构建查询参数，直接跳转到结果页面
-    // 结果页面会在组件挂载时调用API获取数据
+    // 构建查询参数
     const params = {
-      gene_list: geneList.value,
+      gene_id: geneList.value,
       tissue: selectedTissue.value,
+      genome_id: selectedGenome.value,
     }
+    console.log('params:', params)
     
-    router.push({
-      path: '/tools/gene-expression/results',
-      query: params
+    // 存储查询参数到 store
+    geneExpressionStore.setQueryParams({
+      geneList: geneList.value,
+      tissue: selectedTissue.value,
+      genome: selectedGenome.value
     })
-  } catch (err) {
+    
+    // 设置加载状态
+    geneExpressionStore.setLoading(true)
+    geneExpressionStore.setError(null)
+    
+    // 直接调用后端API获取数据
+    const response = await httpInstance.post('/CottonOGD_api/extract_expression/', params)
+    console.log('Gene expression response:', response)
+    
+    // 处理响应数据
+    if (response) {
+      // 检查响应是否包含 expression 属性
+      if (response.expression) {
+        // 存储结果到 store
+        geneExpressionStore.setResults(response.expression)
+        
+        // 检查并存储热图图像
+        if (response.heatmap_image) {
+          geneExpressionStore.setHeatmapImage(response.heatmap_image)
+        }
+        
+        // 跳转到结果页面
+        router.push({
+          path: '/tools/gene-expression/results'
+        })
+      } else {
+        // 如果响应不包含 expression 属性，尝试直接使用响应
+        geneExpressionStore.setResults(Array.isArray(response) ? response : [response])
+        
+        // 检查并存储热图图像
+        if (response.heatmap_image) {
+          geneExpressionStore.setHeatmapImage(response.heatmap_image)
+        }
+        
+        // 跳转到结果页面
+        router.push({
+          path: '/tools/gene-expression/results'
+        })
+      }
+    } else {
+      error.value = 'Invalid response from server'
+      console.error('Invalid response:', response)
+      geneExpressionStore.setError('Invalid response from server')
+    }
+  } catch (err: any) {
     error.value = 'Submission failed, please try again'
     console.error('Submission failed:', err)
+    geneExpressionStore.setError('Submission failed, please try again')
+  } finally {
+    geneExpressionStore.setLoading(false)
   }
 }
 </script>

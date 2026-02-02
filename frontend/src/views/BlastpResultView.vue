@@ -183,7 +183,7 @@ const formattedRawResults = computed(() => {
   }
   
   const results = rawBlastResults.value
-  const formattedResults = []
+  const formattedResults: any[] = []
   
   console.log('Formatting raw results:', results)
   
@@ -306,7 +306,7 @@ const formattedRawResults = computed(() => {
               })
             }
           }
-        } catch (e) {
+        } catch (e: any) {
           console.log('Failed to parse string as JSON for raw results:', e.message)
         }
       }
@@ -576,7 +576,7 @@ const loadResults = async () => {
                   })
                 }
               }
-            } catch (e) {
+            } catch (e: any) {
               console.log('Failed to parse string as JSON:', e.message)
             }
           }

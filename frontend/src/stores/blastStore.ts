@@ -133,18 +133,19 @@ ATGGGCGAAGCGATAAAGAAACAAGAAGGAGTGTCTACCGTCAAGGAAGACAACAAGTTGATCGACTCCAAGAAGAAGAA
       if (response) {
         // 尝试获取结果数据（支持多种响应格式）
         let results = null;
+        const typedResponse = response as any;
         
         // 检查是否有固定的 results 字段
-        if (response.results) {
-          results = response.results;
+        if (typedResponse.results) {
+          results = typedResponse.results;
         } 
         // 检查是否有以基因组名称为键的字段
-        else if (processedGenome && response[processedGenome]) {
-          results = response[processedGenome];
+        else if (processedGenome && typedResponse[processedGenome]) {
+          results = typedResponse[processedGenome];
         }
         // 检查是否直接在 data 中
         else {
-          results = response;
+          results = typedResponse;
         }
         
         if (results) {
