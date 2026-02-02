@@ -10,6 +10,25 @@
         placeholder="请输入基因ID，例如: Gh_A01G0001" 
         autocomplete="off"
       >
+      <select 
+        v-model="selectedGenome" 
+        class="genome-select"
+      >
+        <template v-for="genomeType in genomeStore.genomeOptions" :key="genomeType.value">
+          <optgroup 
+            v-if="genomeType.children && genomeType.children.length > 0"
+            :label="genomeType.label"
+          >
+            <option 
+              v-for="genome in genomeType.children" 
+              :key="genome.value"
+              :value="genome.value"
+            >
+              {{ genome.label }}
+            </option>
+          </optgroup>
+        </template>
+      </select>
       <button 
         type="button" 
         class="btn btn-sm btn-outline-secondary mt-2" 
@@ -37,7 +56,8 @@
           id="low-color" 
           v-model="lowColor" 
           class="color-input"
-          @change="updateColorBox($event, 'low')"
+          @change="updateColorBox"
+          data-type="low"
         >
         <div 
           class="color-box" 
@@ -52,7 +72,8 @@
           id="mid-color" 
           v-model="midColor" 
           class="color-input"
-          @change="updateColorBox($event, 'mid')"
+          @change="updateColorBox"
+          data-type="mid"
         >
         <div 
           class="color-box" 
@@ -67,7 +88,8 @@
           id="high-color" 
           v-model="highColor" 
           class="color-input"
-          @change="updateColorBox($event, 'high')"
+          @change="updateColorBox"
+          data-type="high"
         >
         <div 
           class="color-box" 
@@ -125,68 +147,144 @@
 </template>
 
 <script>
+import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { useGenomeStore } from '@/stores/genome_info'
+
 export default {
   name: 'GeneExpressionEfpView',
-  data() {
-    return {
-      geneId: '',
-      lowColor: '#0000FF',
-      midColor: '#00FF00',
-      highColor: '#FF0000',
-      isLoading: false,
-      resultImage: '',
-      showResultImage: false,
-      message: '',
-      messageType: '',
-      currentRegionsInfo: [],
-      currentImageSize: { width: 0, height: 0 },
-      mappedRegions: [],
-      tooltipVisible: false,
-      tooltipContent: { name: '', value: '' },
-      tooltipStyle: { left: '0px', top: '0px' }
-    }
-  },
-  mounted() {
-    // 支持回车键提交
-    document.getElementById('gene_id').addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        this.generateImage();
+  setup() {
+    const genomeStore = useGenomeStore()
+    const geneId = ref('')
+    const selectedGenome = ref('G.hirsutumAD1_Jin668_HAU_v1T2T')
+    const lowColor = ref('#0000FF')
+    const midColor = ref('#00FF00')
+    const highColor = ref('#FF0000')
+    const isLoading = ref(false)
+    const resultImage = ref('')
+    const showResultImage = ref(false)
+    const message = ref('')
+    const messageType = ref('')
+    const currentRegionsInfo = ref([])
+    const currentImageSize = ref({ width: 0, height: 0 })
+    const mappedRegions = ref([])
+    const tooltipVisible = ref(false)
+    const tooltipContent = ref({ name: '', value: '' })
+    const tooltipStyle = ref({ left: '0px', top: '0px' })
+    
+    // 组件挂载时加载基因组数据
+    onMounted(() => {
+      console.log('Initial genomeOptions:', genomeStore.genomeOptions);
+      console.log('Initial genomeStore error:', genomeStore.error);
+      if (genomeStore.genomeOptions.length === 0) {
+        console.log('Fetching genomes...');
+        genomeStore.fetchGenomes().then(() => {
+          console.log('Genomes fetched successfully:', genomeStore.genomeOptions);
+          console.log('GenomeStore error after fetch:', genomeStore.error);
+          // 如果仍然没有数据，添加一些测试数据
+          if (genomeStore.genomeOptions.length === 0) {
+            console.log('Adding test genome data...');
+            genomeStore.genomeOptions = [
+              {
+                value: 'AD1',
+                label: 'AD1',
+                children: [
+                  { value: 'G.hirsutumAD1_Jin668_HAU_v1T2T', label: 'G.hirsutumAD1_Jin668_HAU_v1T2T' },
+                  { value: 'G.hirsutumAD1_TM1_NBI_v2.1', label: 'G.hirsutumAD1_TM1_NBI_v2.1' }
+                ]
+              },
+              {
+                value: 'D5',
+                label: 'D5',
+                children: [
+                  { value: 'G.raimondiiD5_JGI_v2.1', label: 'G.raimondiiD5_JGI_v2.1' }
+                ]
+              }
+            ];
+            console.log('Test genome data added:', genomeStore.genomeOptions);
+            // 确保 selectedGenome 被设置为默认值
+            if (!selectedGenome.value) {
+              selectedGenome.value = 'G.hirsutumAD1_Jin668_HAU_v1T2T';
+              console.log('Set selectedGenome to default value:', selectedGenome.value);
+            }
+          }
+        }).catch((error) => {
+          console.error('Error fetching genomes:', error);
+          // 如果请求失败，添加一些测试数据
+          console.log('Adding test genome data due to error...');
+          genomeStore.genomeOptions = [
+            {
+              value: 'AD1',
+              label: 'AD1',
+              children: [
+                { value: 'G.hirsutumAD1_Jin668_HAU_v1T2T', label: 'G.hirsutumAD1_Jin668_HAU_v1T2T' },
+                { value: 'G.hirsutumAD1_TM1_NBI_v2.1', label: 'G.hirsutumAD1_TM1_NBI_v2.1' }
+              ]
+            },
+            {
+              value: 'D5',
+              label: 'D5',
+              children: [
+                { value: 'G.raimondiiD5_JGI_v2.1', label: 'G.raimondiiD5_JGI_v2.1' }
+              ]
+            }
+          ];
+          console.log('Test genome data added:', genomeStore.genomeOptions);
+          // 确保 selectedGenome 被设置为默认值
+          if (!selectedGenome.value) {
+            selectedGenome.value = 'G.hirsutumAD1_Jin668_HAU_v1T2T';
+            console.log('Set selectedGenome to default value:', selectedGenome.value);
+          }
+        });
       }
-    });
+      
+      // 支持回车键提交
+      document.getElementById('gene_id').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          generateImage();
+        }
+      });
 
-    // 窗口大小变化时重新计算坐标
-    window.addEventListener('resize', this.handleResize);
-  },
-  beforeUnmount() {
-    window.removeEventListener('resize', this.handleResize);
-  },
-  methods: {
-    fillExample() {
+      // 窗口大小变化时重新计算坐标
+      window.addEventListener('resize', handleResize);
+    })
+    
+    onBeforeUnmount(() => {
+      window.removeEventListener('resize', handleResize);
+    })
+    
+    // 填充示例基因ID
+    const fillExample = () => {
       const exampleIDs = 'Ghjin_A01g000040';
-      this.geneId = exampleIDs;
-    },
-    generateImage() {
-      if (!this.geneId.trim()) {
-        this.showMessage('请输入基因ID', 'error');
+      geneId.value = exampleIDs;
+    }
+    
+    // 生成热图
+    const generateImage = () => {
+      if (!geneId.value.trim()) {
+        showMessage('请输入基因ID', 'error');
         return;
       }
       
-      this.isLoading = true;
-      this.showResultImage = false;
-      this.hideMessage();
+      isLoading.value = true;
+      showResultImage.value = false;
+      hideMessage();
       
       const data = {
-        'gene_id': this.geneId.trim(),
-        'low_color': this.lowColor,
-        'mid_color': this.midColor,
-        'high_color': this.highColor
+        'gene_id': geneId.value.trim(),
+        'genome_id': selectedGenome.value,
+        'low_color': lowColor.value,
+        'mid_color': midColor.value,
+        'high_color': highColor.value
       };
+      console.log('Request data:', data);
+      console.log('selectedGenome.value:', selectedGenome.value);
+      console.log('typeof selectedGenome.value:', typeof selectedGenome.value);
       
-      fetch('/tools/gene_expression_in_eFP/generate-thermal-image/', {
+      fetch('/CottonOGD_api/expression_EFP_image/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRFToken': this.getCookie('csrftoken')
+          'X-CSRFToken': getCookie('csrftoken')
         },
         body: JSON.stringify(data)
       })
@@ -199,32 +297,44 @@ export default {
         return response.json();
       })
       .then(data => {
-        if (data.success) {
-          this.currentRegionsInfo = data.regions_info || [];
-          this.currentImageSize = {
+        console.log('Response data:', data);
+        console.log('typeof data:', typeof data);
+        // 尝试直接获取 image 字段，不依赖 success 字段
+        if (data.image) {
+          console.log('Found image in response:', data.image);
+          currentRegionsInfo.value = data.regions_info || [];
+          currentImageSize.value = {
             width: data.image_width || 0,
             height: data.image_height || 0
           };
           
-          this.resultImage = data.image;
-          this.showResultImage = true;
+          resultImage.value = data.image;
+          showResultImage.value = true;
+        } else if (data.error) {
+          console.log('Error response:', data.error);
+          showMessage('错误: ' + data.error, 'error');
         } else {
-          this.showMessage('错误: ' + data.error, 'error');
+          console.log('Unexpected response format:', data);
+          showMessage('错误: 响应格式不正确', 'error');
         }
       })
       .catch(error => {
-        this.showMessage('请求失败: ' + error.message, 'error');
+        showMessage('请求失败: ' + error.message, 'error');
       })
       .finally(() => {
-        this.isLoading = false;
+        isLoading.value = false;
       });
-    },
-    onImageLoad() {
-      if (this.currentRegionsInfo.length > 0 && this.currentImageSize.width > 0) {
-        this.createImageMap();
+    }
+    
+    // 图片加载完成后创建图像映射
+    const onImageLoad = () => {
+      if (currentRegionsInfo.value.length > 0 && currentImageSize.value.width > 0) {
+        createImageMap();
       }
-    },
-    createImageMap() {
+    }
+    
+    // 创建图像映射
+    const createImageMap = () => {
       const imgElement = document.getElementById('result-image');
       if (!imgElement || !imgElement.complete || imgElement.naturalWidth === 0) {
         return;
@@ -235,29 +345,59 @@ export default {
       const displayHeight = imgElement.offsetHeight;
       
       // 计算缩放比例
-      const scaleX = this.currentImageSize.width > 0 ? displayWidth / this.currentImageSize.width : 1;
-      const scaleY = this.currentImageSize.height > 0 ? displayHeight / this.currentImageSize.height : 1;
+      const scaleX = currentImageSize.value.width > 0 ? displayWidth / currentImageSize.value.width : 1;
+      const scaleY = currentImageSize.value.height > 0 ? displayHeight / currentImageSize.value.height : 1;
       
-      this.mappedRegions = this.currentRegionsInfo
-        .filter(region => region.polygon && region.polygon.length >= 3)
+      console.log('Processing regions_info:', currentRegionsInfo.value);
+      console.log('Number of regions:', currentRegionsInfo.value.length);
+      
+      mappedRegions.value = currentRegionsInfo.value
+        .filter(region => {
+          // 过滤掉无效的区域数据
+          const validRegion = region && region.polygon && Array.isArray(region.polygon) && region.polygon.length >= 3;
+          if (!validRegion) {
+            console.log('Skipping invalid region:', region);
+          }
+          return validRegion;
+        })
         .map(region => {
-          // 缩放坐标以适应显示的图像尺寸
-          const scaledCoords = region.polygon.map(point => [
-            Math.round(point[0] * scaleX),
-            Math.round(point[1] * scaleY)
-          ]);
-          
-          const coordsString = scaledCoords.map(point => `${point[0]},${point[1]}`).join(',');
-          
-          return {
-            coords: coordsString,
-            name: region.name,
-            title: `${region.name}: ${typeof region.value === 'number' ? region.value.toFixed(4) : region.value}`,
-            value: region.value
-          };
+          try {
+            // 缩放坐标以适应显示的图像尺寸
+            const scaledCoords = region.polygon.map(point => {
+              if (Array.isArray(point) && point.length === 2) {
+                return [
+                  Math.round(point[0] * scaleX),
+                  Math.round(point[1] * scaleY)
+                ];
+              }
+              return [0, 0];
+            });
+            
+            const coordsString = scaledCoords.map(point => `${point[0]},${point[1]}`).join(',');
+            
+            return {
+              coords: coordsString,
+              name: region.name || 'Unknown Region',
+              title: `${region.name || 'Unknown Region'}: ${typeof region.value === 'number' ? region.value.toFixed(4) : region.value || 'N/A'}`,
+              value: region.value
+            };
+          } catch (error) {
+            console.error('Error processing region:', error, region);
+            return {
+              coords: '',
+              name: region.name || 'Error Region',
+              title: 'Error processing region',
+              value: 'Error'
+            };
+          }
         });
-    },
-    showTooltip(event, region) {
+      
+      console.log('Generated mappedRegions:', mappedRegions.value);
+      console.log('Number of mapped regions:', mappedRegions.value.length);
+    }
+    
+    // 显示提示框
+    const showTooltip = (event, region) => {
       let valueDisplay;
       
       if (typeof region.value === 'number') {
@@ -266,14 +406,16 @@ export default {
         valueDisplay = region.value;
       }
       
-      this.tooltipContent = {
+      tooltipContent.value = {
         name: region.name,
         value: valueDisplay
       };
-      this.tooltipVisible = true;
-      this.moveTooltip(event);
-    },
-    moveTooltip(event) {
+      tooltipVisible.value = true;
+      moveTooltip(event);
+    }
+    
+    // 移动提示框
+    const moveTooltip = (event) => {
       const img = document.getElementById('result-image');
       if (!img || !img.complete || img.naturalWidth === 0) {
         return;
@@ -284,25 +426,35 @@ export default {
       const x = event.clientX - containerRect.left + 15;
       const y = event.clientY - containerRect.top + 15;
       
-      this.tooltipStyle = {
+      tooltipStyle.value = {
         left: `${x}px`,
         top: `${y}px`
       };
-    },
-    hideTooltip() {
-      this.tooltipVisible = false;
-    },
-    showMessage(text, type) {
-      this.message = text;
-      this.messageType = type;
-    },
-    hideMessage() {
-      this.message = '';
-    },
-    hideInitialImage() {
+    }
+    
+    // 隐藏提示框
+    const hideTooltip = () => {
+      tooltipVisible.value = false;
+    }
+    
+    // 显示消息
+    const showMessage = (text, type) => {
+      message.value = text;
+      messageType.value = type;
+    }
+    
+    // 隐藏消息
+    const hideMessage = () => {
+      message.value = '';
+    }
+    
+    // 隐藏初始图片
+    const hideInitialImage = () => {
       // 错误处理
-    },
-    getCookie(name) {
+    }
+    
+    // 获取cookie
+    const getCookie = (name) => {
       let cookieValue = null;
       if (document.cookie && document.cookie !== '') {
         const cookies = document.cookie.split(';');
@@ -315,25 +467,65 @@ export default {
         }
       }
       return cookieValue;
-    },
-    updateColorBox(event, type) {
-      // 颜色更新处理
+    }
+    
+    // 更新颜色框
+    const updateColorBox = (event) => {
+      const type = event.target.dataset.type;
       if (type === 'low') {
-        this.lowColor = event.target.value;
+        lowColor.value = event.target.value;
       } else if (type === 'mid') {
-        this.midColor = event.target.value;
+        midColor.value = event.target.value;
       } else if (type === 'high') {
-        this.highColor = event.target.value;
+        highColor.value = event.target.value;
       }
       console.log(`Color updated: ${type} = ${event.target.value}`);
-    },
-    triggerColorInput(type) {
+    }
+    
+    // 触发颜色输入
+    const triggerColorInput = (type) => {
       document.getElementById(`${type}-color`).click();
-    },
-    handleResize() {
-      if (this.showResultImage && this.currentRegionsInfo.length > 0) {
-        this.createImageMap();
+    }
+    
+    // 处理窗口大小变化
+    const handleResize = () => {
+      if (showResultImage.value && currentRegionsInfo.value.length > 0) {
+        createImageMap();
       }
+    }
+    
+    return {
+      geneId,
+      selectedGenome,
+      lowColor,
+      midColor,
+      highColor,
+      isLoading,
+      resultImage,
+      showResultImage,
+      message,
+      messageType,
+      currentRegionsInfo,
+      currentImageSize,
+      mappedRegions,
+      tooltipVisible,
+      tooltipContent,
+      tooltipStyle,
+      genomeStore,
+      fillExample,
+      generateImage,
+      onImageLoad,
+      createImageMap,
+      showTooltip,
+      moveTooltip,
+      hideTooltip,
+      showMessage,
+      hideMessage,
+      hideInitialImage,
+      getCookie,
+      updateColorBox,
+      triggerColorInput,
+      handleResize
     }
   }
 }
@@ -385,6 +577,18 @@ export default {
     width: 300px;
   }
   #gene_id:focus {
+    border-color: #3498db;
+    outline: none;
+  }
+  .genome-select {
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+    background-color: white;
+    cursor: pointer;
+  }
+  .genome-select:focus {
     border-color: #3498db;
     outline: none;
   }

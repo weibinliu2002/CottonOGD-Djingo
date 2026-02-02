@@ -313,18 +313,11 @@ const loadResults = async () => {
   } else if (storeResults && typeof storeResults === 'object') {
     // 如果 storeResults 是一个对象，尝试解析它
     try {
-      // 根据后端返回的数据结构进行处理
-      if (storeResults.expression) {
-        const apiResults = storeResults.expression.map((item: any) => {
-          return {
-            gene_id: item.geneid_id || item.id_id,
-            gene_name: item.geneid_id || item.id_id,
-            expression: item
-          }
-        })
-        
-        total.value = apiResults.length
-        console.log('处理后的结果数据:', apiResults)
+      // 检查是否已经是数组
+      if (Array.isArray(storeResults)) {
+        // 直接使用数组
+        total.value = storeResults.length
+        console.log('直接使用数组作为结果:', storeResults)
       } else {
         console.error('无效的结果数据格式:', storeResults)
         total.value = 0

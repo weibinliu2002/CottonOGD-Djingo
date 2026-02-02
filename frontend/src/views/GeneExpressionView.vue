@@ -183,14 +183,17 @@ const handleSubmit = async () => {
     
     // 处理响应数据
     if (response) {
+      // 添加类型断言，告诉 TypeScript 响应是任意类型
+      const data = response as any
+      
       // 检查响应是否包含 expression 属性
-      if (response.expression) {
+      if (data.expression) {
         // 存储结果到 store
-        geneExpressionStore.setResults(response.expression)
+        geneExpressionStore.setResults(data.expression)
         
         // 检查并存储热图图像
-        if (response.heatmap_image) {
-          geneExpressionStore.setHeatmapImage(response.heatmap_image)
+        if (data.heatmap_image) {
+          geneExpressionStore.setHeatmapImage(data.heatmap_image)
         }
         
         // 跳转到结果页面
@@ -199,11 +202,11 @@ const handleSubmit = async () => {
         })
       } else {
         // 如果响应不包含 expression 属性，尝试直接使用响应
-        geneExpressionStore.setResults(Array.isArray(response) ? response : [response])
+        geneExpressionStore.setResults(Array.isArray(data) ? data : [data])
         
         // 检查并存储热图图像
-        if (response.heatmap_image) {
-          geneExpressionStore.setHeatmapImage(response.heatmap_image)
+        if (data.heatmap_image) {
+          geneExpressionStore.setHeatmapImage(data.heatmap_image)
         }
         
         // 跳转到结果页面
