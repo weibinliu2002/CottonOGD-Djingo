@@ -119,11 +119,12 @@ export const useGeneSearchStore = defineStore('geneSearch', () => {
 
   // 序列相关方法
   async function fetchSequence(geneId: string, transcriptId: string, type: string, upstreamLength: number = 500, downstreamLength: number = 500) {
-    const lengthPart = (type === 'upstream' || type === 'downstream') ? `|${type === 'upstream' ? upstreamLength : downstreamLength}` : ''
-    const cacheKey = `${geneId}|${type}|${transcriptId}${lengthPart}`
+    // 使用与 IdSearchSummaryView.vue 一致的缓存键格式
+    const cacheKey = `${geneId}|${type}|${transcriptId}|${upstreamLength}|${downstreamLength}`
 
     // 检查缓存
     if (sequenceCache.value[cacheKey]) {
+      console.log('从缓存获取序列:', cacheKey)
       return sequenceCache.value[cacheKey]
     }
 
@@ -140,152 +141,10 @@ export const useGeneSearchStore = defineStore('geneSearch', () => {
       })
     }
 
-    // 开始加载
-    sequenceLoading.value[cacheKey] = true
-
-    try {
-      // 从 searchResults 中查找 db_id
-      let dbId = null
-      if (searchResults.value && searchResults.value.search_map) {
-        for (const [originalId, info] of Object.entries(searchResults.value.search_map)) {
-          if (info.geneid === geneId) {
-            dbId = info.db_id
-            break
-          }
-        }
-      }
-
-      if (!dbId) {
-        console.error('Cannot find db_id for gene:', geneId)
-        return '未找到基因对应的数据库ID'
-      }
-
-      // 对于上下游序列，使用 extract_seq_gff API 动态提取
-      if (type === 'upstream' || type === 'downstream') {
-        // 从 searchResults 中查找基因位置信息
-        let geneInfo = null
-        if (searchResults.value && searchResults.value.geneid_result) {
-          const geneItem = searchResults.value.geneid_result.find((item: any) => item.db_id === dbId && item.type === 'gene')
-          if (geneItem) {
-            geneInfo = {
-              start: geneItem.start,
-              end: geneItem.end,
-              strand: geneItem.strand,
-              species: geneItem.species,
-              chromosome: geneItem.seqid
-            }
-          }
-        }
-        
-        if (geneInfo) {
-          // 计算上下游序列的位置
-          let start, end
-          if (type === 'upstream') {
-            if (geneInfo.strand === '+') {
-              start = geneInfo.start - upstreamLength
-              end = geneInfo.start - 1
-            } else {
-              start = geneInfo.end + 1
-              end = geneInfo.end + upstreamLength
-            }
-          } else { // downstream
-            if (geneInfo.strand === '+') {
-              start = geneInfo.end + 1
-              end = geneInfo.end + downstreamLength
-            } else {
-              start = geneInfo.start - downstreamLength
-              end = geneInfo.start - 1
-            }
-          }
-          
-          // 确保位置为正数
-          start = Math.max(1, start)
-          
-          // 调用 extract_seq_gff API 提取序列
-          try {
-            const gffRes = await httpInstance.post('/CottonOGD_api/extract_seq_gff/', {
-              genome_id: geneInfo.species,
-              seqid: geneInfo.chromosome || 'unknown',
-              start: start,
-              end: end,
-              strand: geneInfo.strand
-            })
-            
-            if (gffRes.data && gffRes.data.sequence) {
-              const sequence = gffRes.data.sequence
-              sequenceCache.value[cacheKey] = sequence
-              return sequence
-            }
-          } catch (gffError) {
-            console.error('Error fetching sequence from gff:', gffError)
-          }
-        }
-      }
-
-      // 使用 db_id 参数调用后端 API
-      const params = {
-        db_id: dbId
-      }
-
-      console.log('Fetching sequence with db_id:', dbId)
-
-      const response = await httpInstance.post('/CottonOGD_api/extract_seq/', params)
-      const data = response as any
-      const seqData = data.seq || {}
-
-      // 根据类型获取对应的序列
-      let sequence = '未找到序列'
-      switch (type) {
-        case 'genomic':
-          if (seqData.genome_seq && seqData.genome_seq.length > 0) {
-            sequence = seqData.genome_seq[0].seq
-          }
-          break
-        case 'mrna':
-          if (seqData.mrna_seq && seqData.mrna_seq.length > 0) {
-            // 尝试找到匹配的转录本
-            const mrnaSeq = seqData.mrna_seq.find((item: any) => 
-              item.mrna_id === transcriptId
-            )
-            sequence = mrnaSeq ? mrnaSeq.seq : seqData.mrna_seq[0].seq
-          }
-          break
-        case 'upstream':
-          if (seqData.upstream_seq && seqData.upstream_seq.length > 0) {
-            sequence = seqData.upstream_seq[0].seq
-          }
-          break
-        case 'downstream':
-          if (seqData.downstream_seq && seqData.downstream_seq.length > 0) {
-            sequence = seqData.downstream_seq[0].seq
-          }
-          break
-        case 'cdna':
-          if (seqData.cdna_seq && seqData.cdna_seq.length > 0) {
-            sequence = seqData.cdna_seq[0].seq
-          }
-          break
-        case 'cds':
-          if (seqData.cds_seq && seqData.cds_seq.length > 0) {
-            sequence = seqData.cds_seq[0].seq
-          }
-          break
-        case 'protein':
-          if (seqData.protein_seq && seqData.protein_seq.length > 0) {
-            sequence = seqData.protein_seq[0].seq
-          }
-          break
-      }
-
-      // 缓存序列
-      sequenceCache.value[cacheKey] = sequence
-      return sequence
-    } catch (error: any) {
-      console.error('Error fetching sequence:', error)
-      return '序列获取失败'
-    } finally {
-      sequenceLoading.value[cacheKey] = false
-    }
+    // 如果缓存中没有数据，返回默认值，不再发送 API 请求
+    // 因为 IdSearchSummaryView.vue 已经预加载了所有序列数据
+    console.log('缓存中没有找到序列:', cacheKey, '返回默认值')
+    return '未找到序列'
   }
 
   function clearSequenceCache() {

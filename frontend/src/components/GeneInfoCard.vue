@@ -81,13 +81,13 @@ const props = defineProps({
 
 const basicInfoList = computed(() => {
   if (!props.geneData) return []
-  
+  console.log(props.geneData)
   return [
     { label: 'Gene ID', value: props.geneData.IDs },
     { label: 'Chromosome', value: props.geneData.seqid || 'N/A' },
-    { label: 'Start Position', value: props.geneData.gene_search_start || 'N/A' },
-    { label: 'End Position', value: props.geneData.gene_search_end || 'N/A' },
-    { label: 'Strand', value: props.geneData.gene_search_strand || 'N/A' }
+    { label: 'Start Position', value: props.geneData.start || 'N/A' },
+    { label: 'End Position', value: props.geneData.end || 'N/A' },
+    { label: 'Strand', value: props.geneData.strand || 'N/A' }
   ]
 })
 </script>

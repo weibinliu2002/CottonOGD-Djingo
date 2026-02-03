@@ -28,20 +28,12 @@
     <!-- 结果展示 -->
     <div v-else-if="result">
       
-      <!-- 基本信息卡片 -->
-      <el-card class="mb-4">
-        <template #header>
-          <div class="d-flex justify-content-between align-items-center">
-            <h3>Gene Basic Information</h3>
-          </div>
-        </template>
-        <div class="card-body">
-          <el-table :data="basicInfoList" border>
-            <el-table-column prop="label" label="Attribute" width="200" />
-            <el-table-column prop="value" label="Value" />
-          </el-table>
-        </div>
-      </el-card>
+      <!-- 基本信息卡片 - 使用 GeneInfoCard 组件 -->
+      <gene-info-card 
+        :gene-data="result" 
+        title="Gene Basic Information"
+        class="mb-4"
+      />
       
       <!-- JBrowse View -->
       <el-card v-if="jbrowse_url" class="mb-4">
@@ -376,9 +368,11 @@ import { useRouter, useRoute } from 'vue-router'
 import httpInstance from '@/utils/http'
 import SequenceDisplay from '@/components/SequenceDisplay.vue'
 import SequenceModal from '@/components/SequenceModal.vue'
+import GeneInfoCard from '@/components/GeneInfoCard.vue'
 import { v4 as uuidv4 } from 'uuid'
 import { ElMessage } from 'element-plus'
 import { useGeneSearchStore } from '@/stores/geneSearch.ts'
+import { useNavigationStore } from '@/stores/navigationStore.ts'
 
 // 定义类型
 interface Annotation {
@@ -433,6 +427,7 @@ const route = useRoute()
 
 // 获取store
 const geneSearchStore = useGeneSearchStore()
+const navigationStore = useNavigationStore()
 
 // 状态管理
 const result = ref<Result | null>(null)
@@ -449,7 +444,9 @@ const has_sequences = computed(() => {
   const hasDirectSequences = !!(result.value.gene_seq || result.value.mrna_seq || result.value.upstream_seq || result.value.downstream_seq || result.value.cdna_seq || result.value.cds_seq || result.value.protein_seq)
   // 检查是否有转录本序列
   const hasTranscriptSequences = !!(result.value.mrna_transcripts && result.value.mrna_transcripts.length > 0)
-  return hasDirectSequences || hasTranscriptSequences
+  // 检查是否有基因ID（确保至少有基因信息）
+  const hasGeneId = !!(result.value.IDs)
+  return hasDirectSequences || hasTranscriptSequences || hasGeneId
 })
 
 // 转录本选择相关
@@ -600,7 +597,7 @@ const scale = computed(() => {
   const availableWidth = svgWidth.value - 40
   return availableWidth / Math.max(geneLength.value, 1)
 })
-
+console.log('result.value:', result.value)
 // 基本信息列表
 const basicInfoList = computed(() => {
   if (!result.value) return []
@@ -656,41 +653,41 @@ const fetchGeneData = async (db_id: string) => {
   selectedTranscriptIndex.value = 0 // 重置为默认选择第一个转录本
   
   try {
-    // 首先检查URL参数中是否有geneData
-    const geneDataStr = route.query.geneData as string
-    if (geneDataStr) {
-      try {
-        // 从URL参数中解析geneData
-        const geneData = JSON.parse(geneDataStr)
-        console.log('从URL参数获取基因数据:', geneData)
-        
-        // 直接使用解析后的数据
-        result.value = geneData
-        
-        // 处理注释数据（如果有的话）
-        processAnnotations([]) // 暂时为空，因为我们没有从后端获取注释数据
-        
-        // 设置jbrowse_url（如果有的话）
-        jbrowse_url.value = geneData.jbrowse_url || ''
-        
-        // 设置GFF数据（如果有的话）
-        gffData.value = geneData.gff_data || []
-        hasGffData.value = gffData.value.length > 0
-        // 重置页码到第一页
-        currentPage.value = 1
-        
-        // 清除加载超时定时器
-        clearTimeout(loadingTimeout)
-        isLoading.value = false
-        return
-      } catch (parseError) {
-        console.error('解析geneData失败:', parseError)
-        // 解析失败，继续从后端获取数据
-      }
+    // 首先检查 navigationStore 中是否有基因数据（从上一个组件传递过来）
+    const navigationData = navigationStore.getNavigationData('geneSearch')
+    
+    // 检查是否需要从后端获取数据
+    // 即使有导航数据，也需要检查是否包含 jbrowse_url 和 gff_data
+    const needFetchFromBackend = !navigationData || !navigationData.results || 
+                               !navigationData.results.jbrowse_url || 
+                               !navigationData.results.gff_data
+    
+    if (navigationData && navigationData.results && !needFetchFromBackend) {
+      console.log('从 navigationStore 获取完整基因数据:', navigationData.results)
+      
+      // 直接使用 navigationStore 中的数据
+      result.value = navigationData.results
+      
+      // 处理注释数据（如果有的话）
+      processAnnotations([]) // 暂时为空，因为我们没有从后端获取注释数据
+      
+      // 设置jbrowse_url
+      jbrowse_url.value = navigationData.results.jbrowse_url || ''
+      
+      // 设置GFF数据
+      gffData.value = navigationData.results.gff_data || []
+      hasGffData.value = gffData.value.length > 0
+      // 重置页码到第一页
+      currentPage.value = 1
+      
+      // 清除加载超时定时器
+      clearTimeout(loadingTimeout)
+      isLoading.value = false
+      return
     }
     
-    // 如果URL参数中没有geneData，从后端获取数据
-    // 修改为使用现有的批量查询API，传递单个基因ID
+    // 从后端获取数据
+    console.log('从后端获取基因数据，db_id:', db_id)
     const formData = {
       db_id: db_id
     }
@@ -724,9 +721,22 @@ const fetchGeneData = async (db_id: string) => {
       throw new Error(data.error || '基因信息不存在')
     }
     
-    // 更新数据 - 从results数组中获取第一个元素
+    // 更新数据 - 从results数组中获取type为gene的数据
     if (data.gene_info_result && data.gene_info_result.length > 0) {
-      result.value = data.gene_info_result[0]
+      // 查找 type 为 gene 的基因信息
+      const geneInfo = data.gene_info_result.find((item: any) => item.type === 'gene') || data.gene_info_result[0]
+      
+      // 如果有导航数据，合并导航数据和后端数据，确保所有字段都存在
+      if (navigationData && navigationData.results) {
+        result.value = {
+          ...navigationData.results,
+          ...geneInfo,
+          jbrowse_url: data.jbrowse_url || '',
+          gff_data: data.gff_data || []
+        }
+      } else {
+        result.value = geneInfo
+      }
       
       // 处理注释数据
       processAnnotations(data.geneid_result || [])
@@ -747,6 +757,20 @@ const fetchGeneData = async (db_id: string) => {
     hasGffData.value = gffData.value.length > 0
     // 重置页码到第一页
     currentPage.value = 1
+    
+    // 更新 navigationStore 中的数据，添加 jbrowse_url 和 gff_data
+    if (navigationData && navigationData.results) {
+      // 查找 type 为 gene 的基因信息
+      const geneInfo = data.gene_info_result.find((item: any) => item.type === 'gene') || data.gene_info_result[0]
+      navigationStore.setNavigationData('geneSearch', {
+        results: {
+          ...navigationData.results,
+          ...geneInfo,
+          jbrowse_url: jbrowse_url.value,
+          gff_data: gffData.value
+        }
+      })
+    }
                                 
   } catch (error: any) {
     // 清除加载超时定时器
@@ -1148,10 +1172,10 @@ const downloadGff = (format: string) => {
 // 生命周期钩子
 onMounted(() => {
   const db_id = route.query.db_id as string
-  if (db_id && !hasFetched.value) {
+  if (db_id) {
     hasFetched.value = true
     fetchGeneData(db_id)
-  } else if (!db_id) {
+  } else {
     errorMessage.value = '未提供数据库ID'
   }
 })

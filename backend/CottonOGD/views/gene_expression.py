@@ -105,7 +105,7 @@ def extract_expression(request):
         sample_id = request.data.get('sample_id') or request.query_params.get('sample_id')
         gene_expr=gene_expression.objects.filter(id_id__in=db_id).values('id_id','geneid_id','stage','tissue','value')
         df = pd.DataFrame(list(gene_expr))
-        df['sample'] = df['stage'] + '_' + df['tissue']
+        df['sample'] = df['stage'] + '' + df['tissue']
         result = df.pivot_table(
             index=['id_id', 'geneid_id'],  # 保持不变的ID列
             columns='sample',               # stage_tissue 组合成列名
