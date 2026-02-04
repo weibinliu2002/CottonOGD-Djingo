@@ -7,6 +7,7 @@ cds=""
 cdna=""
 protein=""
 gff=""
+annoation=""
 workdir=""
 
 # 解析命名参数
@@ -40,13 +41,17 @@ while [[ $# -gt 0 ]]; do
             gff="$2"
             shift 2
             ;;
+        -a|--annoation)
+            annoation="$2"
+            shift 2
+            ;;
         -w|--workdir)
             workdir="$2"
             shift 2
             ;;
         *)
             echo "Unknown option: $1"
-            echo "Usage: $0 -n <name> [-g <genome_file>] [-m <mrna_file>] [-c <cds_file>] [-d <cdna_file>] [-p <protein_file>] [-f <gff_file>] -w <workdir>"
+            echo "Usage: $0 -n <name> [-g <genome_file>] [-m <mrna_file>] [-c <cds_file>] [-d <cdna_file>] [-p <protein_file>] [-f <gff_file>] [-a <annoation_file>] -w <workdir>"
             echo "Note: All file parameters except name and workdir are optional and can be empty"
             exit 1
             ;;
@@ -55,7 +60,7 @@ done
 
 # 检查必填参数是否完整
 if [ -z "$name" ] || [ -z "$workdir" ]; then
-    echo "Usage: $0 -n <name> [-g <genome_file>] [-m <mrna_file>] [-c <cds_file>] [-d <cdna_file>] [-p <protein_file>] [-f <gff_file>] -w <workdir>"
+    echo "Usage: $0 -n <name> [-g <genome_file>] [-m <mrna_file>] [-c <cds_file>] [-d <cdna_file>] [-p <protein_file>] [-f <gff_file>] [-a <annoation_file>] -w <workdir>"
     echo "Note: All file parameters except name and workdir are optional and can be empty"
     exit 1
 fi
@@ -112,20 +117,33 @@ if [ -n "$gff" ]; then
     gff_file=$genome_path/$gff
 fi
 
+annoation_file=""
+if [ -n "$annoation" ]; then
+    annoation_file=$genome_path/$annoation
+fi
+
+
 
 #prepare genemaster
-if [ -n "$genome" ] && [ -n "$gff" ]; then
+if  [ -n "$gff" ]; then
     echo '1 准备genemaster'
     echo "Rscript $Script_path/genemaster.R "$name" "$gff_file""
     Rscript $Script_path/genemaster.R "$name" "$gff_file"
+    
     echo '1 genemaster准备完成'
 fi
 
+if  [ -n "$annoation" ]; then
+#add annotation
+    echo '1.2 添加注释'
+    echo "$Script_path/add_annoation.R "$name" "$annoation_file""
+    Rscript $Script_path/add_annoation.R "$name" "$annoation_file"
+fi
 #add jbrowes
 if [ -n "$genome" ] && [ -n "$gff" ]; then
     echo '2 添加jbrowes'
     echo "$Script_path/add_jbrowes.sh "$name" "$genome" "$gff" "$genome_path" "$jbrowse_path" "$Script_path""
-    bash $Script_path/add_jbrowes.sh "$name" "$genome" "$gff" "$genome_path" "$jbrowse_path" "$Script_path"
+    #bash $Script_path/add_jbrowes.sh "$name" "$genome" "$gff" "$genome_path" "$jbrowse_path" "$Script_path"
     echo '2 jbrowes添加完成'
     new_gff_file=$genome_path/${name}.gff.gz
     new_genome_file=$genome_path/${name}.genome.fa.gz
@@ -168,7 +186,7 @@ if [ -n "$protein_file" ] && [ -f "$protein_file" ]; then
 fi
 
 echo "$extract_cmd"
-eval $extract_cmd
+#eval $extract_cmd
 echo '3 gene_seq数据库准备完成'
 
 #prepare longest protein sequence
@@ -224,7 +242,7 @@ echo '4 最长序列准备完成'
 #prepare blastdb genome ,longest_mrna,longest_cds,longest_protein
 echo '5 准备blastdb'
 echo "$Script_path/add_blast_db.sh "$name" "$genome_file" "$mran_longest_files" "$cds_longest_files" "$pro_longest_files" "$blast_path" "$blastdb_path""
-bash $Script_path/add_blast_db.sh "$name" "$genome_file" "$mran_longest_files" "$cds_longest_files" "$pro_longest_files" "$blast_path" "$blastdb_path"
+#bash $Script_path/add_blast_db.sh "$name" "$genome_file" "$mran_longest_files" "$cds_longest_files" "$pro_longest_files" "$blast_path" "$blastdb_path"
 echo '5 blastdb准备完成'
 
 #preapre TF_gene_family
@@ -232,6 +250,6 @@ if [ -n "$protein" ] && [ -n "$gff" ]; then
     echo '6 鉴定转录因子和转录响应因子家族 '
     pro_longest_blast=$blastdb_path/protein/${name}
     echo "Rscript $Script_path/TF.R "$protein_file" "$new_gff_file" "$name" "$TF_gene_family" "$pro_longest_blast" "$Script_path" "
-    Rscript $Script_path/TF.R "$protein_file" "$new_gff_file" "$name" "$TF_gene_family" "$pro_longest_blast" "$Script_path"
+    #Rscript $Script_path/TF.R "$protein_file" "$new_gff_file" "$name" "$TF_gene_family" "$pro_longest_blast" "$Script_path"
     echo '6 转录因子和转录响应因子家族鉴定完成'
 fi
