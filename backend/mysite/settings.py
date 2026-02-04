@@ -118,8 +118,8 @@ DATABASES = {
         "NAME": "cottonogd-ortho",
         "USER": "root",
         "PASSWORD": "1234",
-        "HOST": "localhost",
-        #"HOST": "172.28.226.114",
+        #"HOST": "localhost",
+        "HOST": "172.28.226.114",
         "PORT": "3306",
          'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",

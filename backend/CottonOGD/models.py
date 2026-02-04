@@ -1,6 +1,4 @@
 #from backend.apps.Browse.models import Species
-from cmath import phase
-from typing import Sequence
 from django.db import models
 
 # Create your models here.
@@ -36,7 +34,7 @@ class Species_info(models.Model):
     def __str__(self):
         # 如果name为空，使用Cotton_Species作为显示名称
         return self.name if self.name else self.alias
-
+'''
 class blastdb_path(models.Model):
     db_type=models.CharField(max_length=100, blank=True, null=True)
     db_name=models.CharField(max_length=100, blank=True, null=False,primary_key=True)
@@ -46,7 +44,7 @@ class blastdb_path(models.Model):
         db_table = 'blastdb'
         indexes = [
             models.Index(fields=['db_name']),
-        ]
+        ]'''
 
 class GeneMaster(models.Model):
     id = models.BigAutoField(primary_key=True)
@@ -101,6 +99,7 @@ class gene_expression(models.Model):
         #managed = True
         indexes = [
             models.Index(fields=['geneid','genome']),
+            models.Index(fields=['id_id']),
         ]
         db_table = 'expression'
 
@@ -123,6 +122,9 @@ class gene_info(models.Model):
     attributes = models.TextField(blank=True, null=True)
     class Meta:
         db_table = 'gene_assembly'
+        indexes = [
+            models.Index(fields=['id_id']),
+        ]
     def __str__(self):
         return self.geneid.geneid
 
@@ -137,6 +139,9 @@ class gene_annotation(models.Model):
         return self.geneid
     class Meta:
         db_table = 'gene_annotation'
+        indexes = [
+            models.Index(fields=['id_id']),
+        ]
 
 class gene_seq(models.Model):
     id = models.BigAutoField(primary_key=True)
@@ -150,3 +155,6 @@ class gene_seq(models.Model):
         return str(self.geneid)
     class Meta:
         db_table = 'gene_seq'
+        indexes = [
+            models.Index(fields=['id_id']),
+        ]

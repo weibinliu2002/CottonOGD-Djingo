@@ -2,10 +2,11 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import status
 from CottonOGD.views.base import UuidManager
-from CottonOGD.views.location_ID import Id_map
+from django.conf import settings
 import logging
 import os
-import re
+# 使用 pyfastx 提取序列
+import pyfaidx
 
 logger = logging.getLogger(__name__)
 
@@ -22,37 +23,38 @@ def extract_sequence_from_genome_file(genome_id, seqid, start, end, strand):
     """
     try:
         # 基因组文件路径（根据实际情况调整）
-        genome_dir = os.path.join('d:\\科研\\CottonOGD\\python\\OGD\\backend\\data\\genome', genome_id)
-        genome_file = os.path.join(genome_dir, f'{genome_id}.fasta')
+        genome_dir = os.path.join(settings.BASE_DIR, 'data', 'genome', genome_id)
+        genome_file = os.path.join(genome_dir, f'{genome_id}.genome.fa.gz')
         
+        # 尝试不同的文件扩展名
         if not os.path.exists(genome_file):
-            logger.warning(f"Genome file not found: {genome_file}")
+            # 尝试 .genome.fa.gz
+            genome_file_gz = os.path.join(genome_dir, f'{genome_id}.genome.fa.gz')
+            if os.path.exists(genome_file_gz):
+                genome_file = genome_file_gz
+            else:
+                # 尝试 .fa
+                genome_file_fa = os.path.join(genome_dir, f'{genome_id}.fa')
+                if os.path.exists(genome_file_fa):
+                    genome_file = genome_file_fa
+                else:
+                    logger.warning(f"Genome file not found: {genome_file}")
+                    return None
+        
+        # 使用 pyfaidx 加载 FASTA 文件
+        try:
+            fa = pyfaidx.Fasta(genome_file)
+        except Exception as e:
+            logger.error(f"Error loading FASTA file with pyfaidx: {e}")
             return None
         
-        # 读取基因组文件，找到对应的序列
-        sequence = ''
-        current_seqid = ''
-        with open(genome_file, 'r') as f:
-            for line in f:
-                line = line.strip()
-                if line.startswith('>'):
-                    # 新的序列
-                    header = line[1:]
-                    # 提取 seqid（假设格式为 ">seqid ..."）
-                    current_seqid = header.split()[0]
-                    if current_seqid == seqid:
-                        # 找到目标序列，开始读取
-                        sequence = ''
-                    elif sequence:
-                        # 已经找到并读取了目标序列，退出循环
-                        break
-                elif current_seqid == seqid:
-                    # 读取序列部分
-                    sequence += line
-        
-        if not sequence:
+        # 检查 seqid 是否存在
+        if seqid not in fa:
             logger.warning(f"Sequence not found for seqid: {seqid} in genome: {genome_id}")
             return None
+        
+        # 获取序列
+        sequence = fa[seqid]
         
         # 提取指定位置的序列（注意：生物序列通常从1开始计数）
         # 确保位置有效
@@ -60,17 +62,14 @@ def extract_sequence_from_genome_file(genome_id, seqid, start, end, strand):
             logger.warning(f"Invalid position: start={start}, end={end}, sequence length={len(sequence)}")
             return None
         
-        # Python 字符串索引从0开始，所以需要调整
-        extract_start = start - 1
-        extract_end = end
-        extracted_seq = sequence[extract_start:extract_end]
+        # 提取序列（pyfaidx 支持直接通过切片提取，从0开始计数）
+        extracted_seq = sequence[start-1:end]
         
         # 如果是负链，需要反转互补
         if strand == '-':
-            complement = {'A': 'T', 'T': 'A', 'C': 'G', 'G': 'C', 'a': 't', 't': 'a', 'c': 'g', 'g': 'c'}
-            extracted_seq = ''.join([complement.get(base, base) for base in extracted_seq[::-1]])
+            extracted_seq = extracted_seq.reverse.complement
         
-        return extracted_seq
+        return str(extracted_seq)
         
     except Exception as e:
         logger.error(f"Error extracting sequence from file: {e}")

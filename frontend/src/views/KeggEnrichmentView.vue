@@ -80,7 +80,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from '../utils/http'
+import axios from '@/utils/http'
 import { ElMessage } from 'element-plus'
 
 const geneList = ref('')

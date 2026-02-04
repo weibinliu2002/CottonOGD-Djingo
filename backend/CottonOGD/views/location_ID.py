@@ -28,21 +28,18 @@ def attach_db_id(genome_gene_id: dict, map_ids: dict) -> dict:
 
 #@api_view(['POST'])
 #def Id_map(request):
-def Id_map(gene_id: str,genome_id: str):
-    '''
-    uuid=request.headers.get('uuid')
-    if not uuid:
-        return Response({'error': 'uuid is required'}, status=400)'''
-    '''
-    gene_id = request.data.get('gene_id') or request.query_params.get('gene_id')
-    genome_id = request.data.get('genome_id') or request.query_params.get('genome_id')
-    if not gene_id or not genome_id:
-        return Response({'error': 'gene_id and genome_id are required'}, status=400)'''
+def Id_map(gene_id: str, genome_id: str):
+    # uuid=request.headers.get('uuid')
+    # if not uuid:
+    #     return Response({'error': 'uuid is required'}, status=400)
+    # gene_id = request.data.get('gene_id') or request.query_params.get('gene_id')
+    # genome_id = request.data.get('genome_id') or request.query_params.get('genome_id')
+    # if not gene_id or not genome_id:
+    #     return Response({'error': 'gene_id and genome_id are required'}, status=400)
     # 以逗号或换行符分割输入，过滤空字符串
     
     gene_ids = [gid.strip() for gid in re.split(r'[,|\n]+', gene_id) if gid.strip()]
-    #genome_ids = [gid.strip() for gid in re.split(r'[,|\n]+', genome_id) if gid.strip()]
-    genome_ids = ['G.hirsutumAD1_TM-1_HAU_v1.1']
+    genome_ids = [gid.strip() for gid in re.split(r'[,|\n]+', genome_id) if gid.strip()]
     # 检查基因 ID 和基因组 ID 列表长度是否相同
     '''
     if len(gene_ids) != len(genome_ids):
