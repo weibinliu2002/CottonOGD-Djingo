@@ -17,7 +17,6 @@ import os
 BASE_DIR = Path(__file__).resolve().parent.parent
 TEMP_DIR = os.path.join(BASE_DIR, 'temp')
 GO_OBO_FILE = os.path.join(BASE_DIR, 'data', 'go_ontology', 'go-basic.obo')
-GENOME_DATA_DIR = os.path.join(BASE_DIR, 'data', 'genome')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -209,6 +208,7 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),  # 主static目录，包含jbrowse
     os.path.join(BASE_DIR, 'dist', 'assets'),  # 前端构建的静态资源
     os.path.join(os.path.dirname(BASE_DIR), 'frontend', 'dist', 'assets'),
+    os.path.join(BASE_DIR, 'data', 'genome'),  # 基因组数据目录
 ]
 
 #STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
