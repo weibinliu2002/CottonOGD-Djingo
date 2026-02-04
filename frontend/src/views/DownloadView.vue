@@ -18,6 +18,17 @@ const downloadTypes = [
   { value: 'gff3', label: 'GFF3', icon: 'File' }
 ]
 
+// Type映射定义（用户可自行填写映射内容）
+const typeMapping: Record<string, string> = {
+  // 示例：'genome': '基因组',
+  // 请根据需要添加映射内容
+  'genome': '.genome.fa.gz',
+  'cds': '.cds.fa.gz',
+  'protein': '.pro.fa.gz',
+  'upstream2000': '.upstream.fa.gz',
+  'gff3': '.gff.gz'
+}
+
 // 计算属性：按基因组类型分组的数据
 const groupedGenomes = computed(() => {
   return genomeStore.genomeOptions
@@ -53,21 +64,17 @@ const loadGenomes = async () => {
 // 下载文件
 const downloadFile = async (genomeId: string, type: string) => {
   try {
-    // 调用后端API获取文件路径
-    const response = await axios.get('/api/download', {
-      params: {
-        genome_id: genomeId,
-        type: type
-      }
-    }) as { file_url: string }
+    // 使用type映射获取文件扩展名
+    const fileExtension = typeMapping[type] || type
     
-    // 假设后端返回 { file_url: 'path/to/file' }
-    const fileUrl = response.file_url
+    // 构建文件路径（根据实际文件路径格式）
+    const fileUrl = `/data/genome/${genomeId}/${genomeId}${fileExtension}`
+    console.log('Download URL:', fileUrl)
     
     // 创建下载链接
     const link = document.createElement('a')
     link.href = fileUrl
-    link.download = `${genomeId}.${type}`
+    link.download = `${genomeId}${fileExtension}`
     link.click()
   } catch (error: any) {
     errorMessage.value = `下载失败: ${error.message || '未知错误'}`

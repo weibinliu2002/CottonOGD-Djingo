@@ -44,6 +44,13 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         cookieDomainRewrite: 'localhost'
+      },
+      // 匹配 data/genome 路径
+      '^/data/genome': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+        secure: false,
+        cookieDomainRewrite: 'localhost'
       }
     }
   },
