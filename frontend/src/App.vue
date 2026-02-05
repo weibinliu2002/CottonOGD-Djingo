@@ -123,13 +123,14 @@
               <div class="footer-column">
                 <h4>Resources</h4>
                 <ul>
-                  <li><a href="#" target="_blank">Cotton Genome Database</a></li>
-                  <li><a href="#" target="_blank">PlantGDB</a></li>
-                  <li><a href="#" target="_blank">NCBI</a></li>
-                  <li><a href="#" target="_blank">Ensembl Plants</a></li>
-                  <li><a href="#" target="_blank">Phytozome</a></li>
+                  <li><a href="https://cotton.hzau.edu.cn/index.htm" target="_blank">GCGI</a></li>
+                  <li><a href="https://planttfdb.gao-lab.org/" target="_blank">PlantTFDB</a></li>
+                  <li><a href="https://static.pubmed.gov/portal/portal.fcgi/" target="_blank">NCBI</a></li>
+                  <li><a href="https://plants.ensembl.org/index.html" target="_blank">Ensembl Plants</a></li>
+                  <!--<li><a href="#" target="_blank">Phytozome</a></li>-->
                 </ul>
               </div>
+              <!--
               <div class="footer-column">
                 <h4>Related Links</h4>
                 <ul>
@@ -139,7 +140,7 @@
                   <li><a href="#" target="_blank">Plant Science Database</a></li>
                   <li><a href="#" target="_blank">Bioinformatics Resources</a></li>
                 </ul>
-              </div>
+              </div>-->
             </div>
             <!-- 右侧访问统计 -->
             <div class="footer-column visitor-map-container">
@@ -147,7 +148,7 @@
             </div>
           </div>
           <div class="footer-bottom">
-            <p class="mb-0">© 2025 CottonOGD. All rights reserved.</p>
+            <p class="mb-0">© 2026 CottonOGD. All rights reserved.</p>
           </div>
         </div>
       </footer>
