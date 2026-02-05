@@ -60,14 +60,16 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { Search } from '@element-plus/icons-vue'
 
 const router = useRouter()
+const { t } = useI18n()
 
-// 表单数据
 const geneList = ref('')
-const perPage = ref(10)
+const perPage = ref(20)
 const error = ref('')
+const isLoading = ref(false)
 
 // 填充示例数据
 const fillExample = () => {

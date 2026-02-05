@@ -5,7 +5,7 @@
       <div class="container">
         <div class="top-info-content">
           <div class="info-left">
-            <span class="database-status">Database version: v1.0 | Last updated: 2025-01-29</span>
+            <!--<span class="database-status">Database version: v1.0 | Last updated: 2025-01-29</span>-->
           </div>
           <div class="info-right">
             <!-- 语言切换 -->
@@ -118,36 +118,32 @@
       <footer>
         <div class="container">
           <div class="footer-content">
-            <div class="footer-column">
-              <h4>Quick Links</h4>
-              <ul>
-                <li><router-link to="/">Home</router-link></li>
-                <li><router-link to="/jbrowse">JBrowse</router-link></li>
-                <li><router-link to="/download">Download</router-link></li>
-                <li><router-link to="/about-us">About Us</router-link></li>
-              </ul>
+            <!-- 左侧两列链接 -->
+            <div class="footer-links-container">
+              <div class="footer-column">
+                <h4>Resources</h4>
+                <ul>
+                  <li><a href="#" target="_blank">Cotton Genome Database</a></li>
+                  <li><a href="#" target="_blank">PlantGDB</a></li>
+                  <li><a href="#" target="_blank">NCBI</a></li>
+                  <li><a href="#" target="_blank">Ensembl Plants</a></li>
+                  <li><a href="#" target="_blank">Phytozome</a></li>
+                </ul>
+              </div>
+              <div class="footer-column">
+                <h4>Related Links</h4>
+                <ul>
+                  <li><a href="#" target="_blank">Cotton Research Institute</a></li>
+                  <li><a href="#" target="_blank">Chinese Academy of Agricultural Sciences</a></li>
+                  <li><a href="#" target="_blank">International Cotton Genome Initiative</a></li>
+                  <li><a href="#" target="_blank">Plant Science Database</a></li>
+                  <li><a href="#" target="_blank">Bioinformatics Resources</a></li>
+                </ul>
+              </div>
             </div>
-            <div class="footer-column">
-              <h4>Tools</h4>
-              <ul>
-                <li><router-link to="/tools/id-search">Gene ID Search</router-link></li>
-                <li><router-link to="/tools/blastp">BLASTP</router-link></li>
-                <li><router-link to="/tools/go-enrichment">GO Enrichment</router-link></li>
-                <li><router-link to="/tools/primer-design">Primer Design</router-link></li>
-              </ul>
-            </div>
-            <div class="footer-column">
-              <h4>Contact</h4>
-              <!--
-              <ul>
-                <li><i class="fas fa-envelope"></i> cottonogd@example.com</li>
-                <li><i class="fas fa-phone"></i> +86 123 4567 8910</li>
-                <li><i class="fas fa-map-marker-alt"></i> Cotton Research Institute</li>
-              </ul>-->
-            </div>
-            <div class="footer-column">
-              <h4>About CottonOGD</h4>
-              <p>CottonOGD is a comprehensive database for cotton orthogroups, providing researchers with valuable resources for cotton genomics research.</p>
+            <!-- 右侧访问统计 -->
+            <div class="footer-column visitor-map-container">
+              <div id="visitor-map-placeholder"></div>
             </div>
           </div>
           <div class="footer-bottom">
@@ -226,9 +222,42 @@ const performSearch = () => {
   }
 }
 
-// 组件挂载时自动登录
+// 添加访问统计脚本
+const addVisitorMapScript = () => {
+  // 检查脚本是否已存在
+  if (document.getElementById('mapmyvisitors')) {
+    return
+  }
+  
+  // 创建脚本标签
+  const script = document.createElement('script')
+  script.id = 'mapmyvisitors'
+  script.type = 'text/javascript'
+  script.src = '//mapmyvisitors.com/map.js?d=NEeGKeJYzuEK_tzwYqYTyDNOAHaX0_9xt6Z6e5wQyBo&cl=ffffff&w=a'
+  
+  // 添加错误处理
+  script.onerror = () => {
+    console.warn('Failed to load visitor map script, this will not affect other functionality')
+    const placeholder = document.getElementById('visitor-map-placeholder')
+    if (placeholder) {
+      placeholder.innerHTML = '<p class="text-muted">Visitor statistics unavailable</p>'
+    }
+  }
+  
+  // 添加到页脚容器
+  const placeholder = document.getElementById('visitor-map-placeholder')
+  if (placeholder) {
+    placeholder.appendChild(script)
+  } else {
+    // 如果容器不存在，添加到body
+    document.body.appendChild(script)
+  }
+}
+
+// 组件挂载时自动登录并添加访问统计脚本
 onMounted(() => {
   httpInstance.post('/CottonOGD_api/login/')
+  addVisitorMapScript()
 })
 </script>
 
@@ -539,10 +568,38 @@ footer {
 }
 
 .footer-content {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  display: flex;
   gap: 30px;
   margin-bottom: 30px;
+}
+
+.footer-links-container {
+  display: flex;
+  gap: 40px;
+  width: 66.67%; /* 左侧占三分之二 */
+  flex-wrap: wrap;
+}
+
+.footer-links-container .footer-column {
+  flex: 1;
+  min-width: 200px;
+}
+
+.visitor-map-container {
+  width: 33.33%; /* 右侧占三分之一 */
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px; /* 确保有足够的高度显示完整内容 */
+}
+
+#visitor-map-placeholder {
+  width: 100%;
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .footer-column h4 {

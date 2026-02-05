@@ -2,11 +2,11 @@
   <div class="container mt-4">
     <el-row :gutter="20" class="mb-4">
       <el-col :span="18">
-        <h2>{{ t('search_results') }}</h2>
+        <h2>Search Results</h2>
       </el-col>
       <el-col :span="6" class="text-right">
         <router-link to="/tools/id-search">
-          <el-button type="default">{{ t('return_to_search') }}</el-button>
+          <el-button type="default">Return to Search</el-button>
         </router-link>
       </el-col>
     </el-row>
@@ -31,15 +31,15 @@
       <!-- 基本信息卡片 - 使用 GeneInfoCard 组件 -->
       <gene-info-card 
         :gene-data="result" 
-        title="{{ t('gene_basic_information') }}"
+        title="Gene Basic Information"
         class="mb-4"
       />
       
-      <!-- {{ t('jbrowse_view') }} -->
+      <!-- JBrowse View -->
       <el-card v-if="jbrowse_url" class="mb-4">
         <template #header>
           <div class="d-flex justify-content-between align-items-center">
-            <h3>{{ t('jbrowse_view') }}</h3>
+            <h3>JBrowse View</h3>
           </div>
         </template>
         <div class="card-body">

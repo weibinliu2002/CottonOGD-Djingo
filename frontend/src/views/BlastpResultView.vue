@@ -148,6 +148,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import * as d3 from 'd3'
 import { View, Download } from '@element-plus/icons-vue'
 import { useNavigationStore } from '@/stores/navigationStore'
@@ -156,6 +157,7 @@ import { useBlastStore } from '@/stores/blastStore'
 const route = useRoute()
 const navigationStore = useNavigationStore()
 const blastStore = useBlastStore()
+const { t } = useI18n()
 
 // 页面数据
 const perPage = ref(10)
