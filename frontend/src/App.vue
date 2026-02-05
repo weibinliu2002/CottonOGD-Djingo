@@ -178,6 +178,7 @@ import { ref, provide, onMounted, computed } from 'vue'
 import { ArrowUp } from '@element-plus/icons-vue'
 import httpInstance from './utils/http.js'
 import { useRouter } from 'vue-router'
+import { setLocale, getLocale } from './locales/i18n-config'
 
 const router = useRouter()
 
@@ -188,7 +189,12 @@ const isLoading = ref(false)
 const searchQuery = ref('')
 
 // 当前语言
-const currentLanguage = ref(localStorage.getItem('language') || 'en-US')
+const currentLanguage = computed({
+  get: () => getLocale(),
+  set: (value) => {
+    handleLanguageChange(value)
+  }
+})
 
 // 定义加载状态管理方法
 const showLoading = () => {
@@ -206,9 +212,7 @@ provide('hideLoading', hideLoading)
 
 // 语言切换方法
 const handleLanguageChange = (lang) => {
-  currentLanguage.value = lang
-  localStorage.setItem('language', lang)
-  // 这里可以添加实际的语言切换逻辑
+  setLocale(lang)
   console.log('Switched to language:', lang)
 }
 

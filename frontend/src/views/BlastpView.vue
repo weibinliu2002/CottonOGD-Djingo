@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
 import { onMounted, computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { ElMessage } from 'element-plus'
-import { Search, Refresh, DocumentCopy, Delete, ArrowUp, ArrowDown, Upload } from '@element-plus/icons-vue'
+import { Search } from '@element-plus/icons-vue'
 import { useGenomeStore } from '@/stores/genome_info'
 import { useBlastStore } from '@/stores/blastStore'
 
@@ -82,9 +84,9 @@ onMounted(() => {
   <div class="blastp-view">
     <!-- 页面标题和简介 -->
     <div class="page-header">
-      <h1>BLAST Search</h1>
+      <h1>{{ t('blast_search') }}</h1>
       <p class="page-description">
-        Perform sequence similarity searches against cotton genome databases using BLAST algorithms.
+        {{ t('blast_description') }} using BLAST algorithms.
         Choose from different BLAST types and customize your search parameters.
       </p>
     </div>
@@ -113,7 +115,7 @@ onMounted(() => {
       <!-- Blast类型介绍 -->
       <el-card type="info" shadow="never" class="blast-info-card">
         <div class="blast-info-content">
-          <h3 class="info-title">{{ blastTypes.find(type => type.value === selectedBlastType)?.label }} Description</h3>
+          <h3 class="info-title">{{ blastTypes.find(type => type.value === selectedBlastType)?.label }} {{ t('description') }}</h3>
           <p>{{ currentBlastDescription }}</p>
         </div>
       </el-card>
@@ -131,33 +133,33 @@ onMounted(() => {
             :disabled="loading"
             @click="submitBlast"
           >
-            <el-icon><Search /></el-icon>
-            Run BLAST Search
+            <el-icon><{{ t('search') }} /></el-icon>
+            Run {{ t('blast_search') }}
           </el-button>
           <el-button type="default" @click="resetForm" size="large" class="reset-button">
             <el-icon><Refresh /></el-icon>
-            Reset Form
+            {{ t('reset') }} Form
           </el-button>
         </div>
         
         <div class="form-layout">
           <!-- 序列输入区域 -->
           <div class="form-section">
-            <h3 class="section-title">Sequence Input</h3>
+            <h3 class="section-title">{{ t('sequence') }} Input</h3>
             
             <!-- 序列输入 -->
-            <el-form-item label="Query Sequence">
+            <el-form-item label="{{ t('query_sequence') }}">
               <el-input
                 type="textarea"
                 :rows="10"
                 v-model="sequence"
-                :placeholder="selectedBlastType === 'blastp' || selectedBlastType === 'blastx' ? 'Please enter a protein sequence in FASTA or plain text format' : 'Please enter a nucleotide sequence in FASTA or plain text format'"
+                :placeholder="selectedBlastType === 'blastp' || selectedBlastType === 'blastx' ? t('please_enter') + ' a protein sequence in FASTA or plain text format' : t('please_enter') + ' a nucleotide sequence in FASTA or plain text format'"
                 class="sequence-textarea"
               />
               <div class="form-actions mt-2">
                 <el-button type="info" size="small" @click="fillExample">
                   <el-icon><DocumentCopy /></el-icon>
-                  Load Example Sequence
+                  Load {{ t('example') }} {{ t('sequence') }}
                 </el-button>
                 <el-upload
                   action="#"
@@ -170,13 +172,13 @@ onMounted(() => {
                   <template #default>
                     <el-button type="success" size="small">
                       <el-icon><Upload /></el-icon>
-                      Upload File
+                     {{ t('upload_file') }}
                     </el-button>
                   </template>
                 </el-upload>
                 <el-button type="warning" size="small" @click="sequence = ''">
-                  <el-icon><Delete /></el-icon>
-                  Clear Sequence
+                  <el-icon><{{ t('delete') }} /></el-icon>
+                  {{ t('clear') }} {{ t('sequence') }}
                 </el-button>
               </div>
               <div class="help-text mt-2">
@@ -188,7 +190,7 @@ onMounted(() => {
           
           <!-- 搜索参数区域 -->
           <div class="form-section">
-            <h3 class="section-title">Search Parameters</h3>
+            <h3 class="section-title">{{ t('search') }} Parameters</h3>
             
             <!-- 基因组选择 -->
             <el-form-item label="Select Genomes">
@@ -226,7 +228,7 @@ onMounted(() => {
             </el-form-item>
             
             <!-- 数据库类型选择 -->
-            <el-form-item label="Database Type">
+            <el-form-item label="{{ t('database_type') }}">
               <el-select
                 v-model="selectedDatabaseType"
                 placeholder="Select database type"
@@ -247,14 +249,14 @@ onMounted(() => {
             
             <!-- 参数设置 -->
             <div class="parameter-grid">
-              <!-- E-value阈值 -->
-              <el-form-item label="E-value Threshold">
+              <!-- {{ t('e_value') }}阈值 -->
+              <el-form-item label="{{ t('e_value') }} Threshold">
                 <el-input
                   type="number"
                   v-model.number="evalue"
                   :step="0.01"
                   :min="0"
-                  placeholder="E-value"
+                  placeholder="{{ t('e_value') }}"
                   class="w-full"
                 />
                 <div class="help-text mt-1">
@@ -377,30 +379,30 @@ onMounted(() => {
     <el-card class="help-card">
       <template #header>
         <div class="help-header">
-          <h3><i class="fas fa-question-circle"></i> BLAST Search Help</h3>
+          <h3><i class="fas fa-question-circle"></i> {{ t('blast_search') }} {{ t('help') }}</h3>
         </div>
       </template>
       <div class="help-content">
         <div class="help-section">
           <h4>What is BLAST?</h4>
-          <p>BLAST (Basic Local Alignment Search Tool) is an algorithm for comparing primary biological sequence information, such as the amino-acid sequences of proteins or the nucleotides of DNA and/or RNA sequences.</p>
+          <p>BLAST (Basic Local Alignment {{ t('search') }} Tool) is an algorithm for comparing primary biological sequence information, such as the amino-acid sequences of proteins or the nucleotides of DNA and/or RNA sequences.</p>
         </div>
         <div class="help-section">
           <h4>BLAST Types Available</h4>
           <ul>
-            <li><strong>BLASTP</strong>: Protein-protein BLAST</li>
+            <li><strong>{{ t('blastp') }}</strong>: {{ t('protein') }}-protein BLAST</li>
             <li><strong>BLASTN</strong>: Nucleotide-nucleotide BLAST</li>
             <li><strong>BLASTX</strong>: Translated nucleotide-protein BLAST</li>
-            <li><strong>TBLASTN</strong>: Protein-translated nucleotide BLAST</li>
+            <li><strong>TBLASTN</strong>: {{ t('protein') }}-translated nucleotide BLAST</li>
             <li><strong>TBLASTX</strong>: Translated nucleotide-translated nucleotide BLAST</li>
           </ul>
         </div>
         <div class="help-section">
-          <h4>Tips for Better Results</h4>
+          <h4>Tips for Better {{ t('results') }}</h4>
           <ul>
             <li>Use FASTA format for best results</li>
             <li>Keep sequences between 50-10,000 characters</li>
-            <li>Adjust E-value based on your sequence length and complexity</li>
+            <li>Adjust {{ t('e_value') }} based on your sequence length and complexity</li>
             <li>Select appropriate databases for your research question</li>
           </ul>
         </div>

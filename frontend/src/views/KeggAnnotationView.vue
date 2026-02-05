@@ -1,11 +1,11 @@
 <template>
   <div class="container mt-4">
-    <h2>KEGG Annotation Search</h2>
+    <h2>{{ t('kegg_annotation') }} {{ t('search') }}</h2>
     
     <el-card class="mb-4">
       <template #header>
         <div class="card-header">
-          <span>KEGG Annotation Search</span>
+          <span>{{ t('kegg_annotation') }} {{ t('search') }}</span>
         </div>
       </template>
       
@@ -15,7 +15,7 @@
             type="textarea"
             :rows="5"
             v-model="geneIds"
-            placeholder="Please enter gene IDs"
+            placeholder="{{ t('please_enter') }} gene IDs"
             :disabled="isLoading"
           />
           <div class="mt-2">
@@ -25,7 +25,7 @@
               @click="fillExample"
               :disabled="isLoading"
             >
-              load example
+              {{ t('load_example') }}
             </el-button>
           </div>
         </el-form-item>
@@ -37,7 +37,7 @@
               native-type="submit"
               :loading="isLoading"
             >
-              Search
+              {{ t('search') }}
             </el-button>
           </div>
         </el-form-item>
@@ -47,6 +47,8 @@
 </template>
 
 <script setup>
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from '../utils/http'
@@ -85,7 +87,7 @@ Kirkii_Juiced.00g000230`;
 
 const submitForm = async () => {
   if (!geneIds.value.trim()) {
-    ElMessage.error('Please enter gene IDs');
+    ElMessage.error(t('please_enter') + ' gene IDs');
     return;
   }
 
@@ -105,11 +107,11 @@ const submitForm = async () => {
           }
         })
       } else {
-        ElMessage.error('Error: ' + (responseData.error || 'Failed to get task ID'));
+        ElMessage.error(t('error') + ': ' + (responseData.error || 'Failed to get task ID'));
       }
   } catch (error) {
-    console.error('Error submitting form:', error)
-    ElMessage.error('Error submitting form: ' + (error.message || 'Unknown error'));
+    console.error(t('error') + ' submitting form:', error)
+    ElMessage.error(t('error') + ' submitting form: ' + (error.message || 'Unknown error'));
   } finally {
     isLoading.value = false
   }

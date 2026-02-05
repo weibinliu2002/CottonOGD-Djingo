@@ -23,7 +23,7 @@
       <!-- 主内容区域 -->
       <div class="col-md-9">
         <div class="main-content">
-          <h2>Annotated transcription factors</h2>
+          <h2>{{ t('annotated_transcription_factors') }}</h2>
           
           <!-- 转录因子家族复选框 -->
           <div class="tf-families mt-4">
@@ -38,7 +38,7 @@
 
           <!-- 表格 -->
           <div class="tf-table mt-4">
-            <h4 class="table-title">Click on a row to check the details of the selected gene</h4>
+            <h4 class="table-title">{{ t('click_row_details') }}</h4>
             <div class="d-flex justify-content-between align-items-center mb-3">
               <div class="table-pagination">
                 <el-pagination
@@ -55,8 +55,8 @@
               <div class="table-search">
                 <el-input
                   v-model="searchQuery"
-                  placeholder="Search"
-                  prefix-icon="Search"
+                  placeholder="{{ t('search') }}"
+                  prefix-icon="{{ t('search') }}"
                   size="small"
                   class="w-100"
                   @input="handleSearch"
@@ -77,8 +77,8 @@
               stripe
               border
             >
-              <el-table-column prop="TF_name" label="TF Name" min-width="50" />
-              <el-table-column prop="TF_class" label="TF Class" min-width="50" />
+              <el-table-column prop="TF_name" label="{{ t('tf_name') }}" min-width="50" />
+              <el-table-column prop="TF_class" label="{{ t('tf_class') }}" min-width="50" />
               <el-table-column prop="TF_gene" label="Gene" min-width="120">
                 <template #default="scope">
                   <el-link type="primary" :underline="false" @click="handleGeneClick(scope.row.db_id)" class="gene-link">
@@ -122,8 +122,8 @@ import { useFamilyStore } from '@/stores/familyInfo'
 export default {
   name: 'TFView',
   components: {
-    QuestionFilled,
-    VideoPlay,
+    //QuestionFilled,
+    //VideoPlay,
     Search
   },
   setup() {

@@ -6,12 +6,12 @@
     <el-card class="mb-4" v-if="chart">
       <template #header>
         <div class="card-header">
-          <span>GO注释分布</span>
+          <span>{{ t('go') }}</span>
         </div>
       </template>
       <el-image
         :src="`data:image/png;base64,${chart}`"
-        alt="GO Annotation Chart"
+        alt="{{ t('go_annotation') }} Chart"
         fit="contain"
         class="w-full"
       />
@@ -48,8 +48,8 @@
             <el-table-column prop="Start" label="Start" width="100"></el-table-column>
             <el-table-column prop="End" label="End" width="100"></el-table-column>
             <el-table-column prop="ID" label="ID" width="150"></el-table-column>
-            <el-table-column prop="GO_ID" label="GO ID" width="150"></el-table-column>
-            <el-table-column prop="Description" label="Description"></el-table-column>
+            <el-table-column prop="GO_ID" label="{{ t('go_id') }}" width="150"></el-table-column>
+            <el-table-column prop="{{ t('description') }}" label="{{ t('description') }}"></el-table-column>
             <el-table-column prop="Gene_Ontology" label="Gene Ontology" width="150"></el-table-column>
           </el-table>
         </el-card>
@@ -85,6 +85,8 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from '../utils/http'

@@ -1,43 +1,45 @@
 <template>
   <div class="container mt-4">
-    <h1>引物设计</h1>
-    <el-row :gutter="20">
+    <h1>{{ t('primer_design') }}</h1>
+    <el-row :gutter="10">
       <el-col :span="6">
-        <!-- 引物设计表单 -->
+        <!-- {{ t('primer_design') }} Form -->
         <el-card class="mb-4">
           <template #header>
             <div class="card-header">
-              <h3>设计参数</h3>
+              <h3>{{ t('design_parameters') }}</h3>
             </div>
           </template>
           <el-form @submit.prevent="designPrimers">
-            <!-- 序列输入方式选择框 -->
-            <el-form-item label="序列输入方式">
+            <!-- {{ t('sequence') }} Input Method Selection -->
+            <el-form-item label="{{ t('sequence') }} Input Method">
+              <br>
               <el-select v-model="inputMethod" style="width: 100%">
-                <el-option value="geneId" label="基因ID" />
-                <el-option value="genomePosition" label="基因组位置" />
-                <el-option value="directSequence" label="直接输入序列" />
+                <br>
+                <el-option value="geneId" label="{{ t('gene_id') }}" />
+                <el-option value="genomePosition" label="{{ t('genome') }} Position" />
+                <el-option value="directSequence" label="Direct {{ t('sequence') }} Input" />
               </el-select>
             </el-form-item>
             
-            <!-- 根据选择的输入方式动态显示对应的表单 -->
+            <!-- Dynamic Form Based on Input Method -->
             <el-form-item>
-              <!-- 基因ID输入方式 -->
+              <!-- {{ t('gene_id') }} Input Method -->
               <div v-if="inputMethod === 'geneId'">
                 <el-row :gutter="10">
                   <el-col :span="12">
                     <el-form-item>
                       <el-input
                         v-model="sequenceId"
-                        placeholder="输入基因ID或转录本ID"
+                        placeholder="Enter {{ t('gene_id') }} or Transcript ID"
                       />
                     </el-form-item>
                   </el-col>
                   <el-col :span="6">
                     <el-form-item>
                       <el-select v-model="sequenceType" style="width: 100%">
-                        <el-option value="mrna" label="mRNA" />
-                        <el-option value="cds" label="CDS" />
+                        <el-option value="mrna" label="{{ t('mrna') }}" />
+                        <el-option value="cds" label="{{ t('cds') }}" />
                       </el-select>
                     </el-form-item>
                   </el-col>
@@ -49,47 +51,47 @@
                         :loading="isFetching"
                         :disabled="!sequenceId.trim()"
                       >
-                        获取序列
+                        Fetch {{ t('sequence') }}
                       </el-button>
                     </el-form-item>
                   </el-col>
                 </el-row>
               </div>
               
-              <!-- 基因组位置输入方式 -->
+              <!-- {{ t('genome') }} Position Input Method -->
               <div v-if="inputMethod === 'genomePosition'">
-                <el-form-item label="选择基因组">
+                <el-form-item label="Select {{ t('genome') }}">
                   <el-select v-model="genomeAssembly" style="width: 100%">
-                    <el-option value="" label="请选择基因组" />
-                    <el-option value="G.hirsutum(AD1)TM-1_HAU_v1.1" label="陆地棉 (G. hirsutum)" />
-                    <el-option value="G.arboreum(A2)Shixiya1_HAU_v1.0" label="亚洲棉 (G. arboreum)" />
-                    <el-option value="G.raimondii(D5)JGI_v2.0" label="雷蒙德氏棉 (G. raimondii)" />
+                    <el-option value="" label="{{ t('please_select') }} genome" />
+                    <el-option value="G.hirsutum(AD1)TM-1_HAU_v1.1" label="Upland cotton (G. hirsutum)" />
+                    <el-option value="G.arboreum(A2)Shixiya1_HAU_v1.0" label="Asian cotton (G. arboreum)" />
+                    <el-option value="G.raimondii(D5)JGI_v2.0" label="Raymond's cotton (G. raimondii)" />
                   </el-select>
                 </el-form-item>
                 <el-row :gutter="10">
                   <el-col :span="8">
-                    <el-form-item label="染色体">
+                    <el-form-item label="{{ t('chromosome') }}">
                       <el-input
                         v-model="genomePosition.chromosome"
-                        placeholder="染色体名称 (如: A01)"
+                        placeholder="{{ t('chromosome') }} name (e.g: A01)"
                       />
                     </el-form-item>
                   </el-col>
                   <el-col :span="8">
-                    <el-form-item label="起始位置">
+                    <el-form-item label="{{ t('start_position') }}">
                       <el-input
                         type="number"
                         v-model.number="genomePosition.start"
-                        placeholder="起始位置"
+                        placeholder="Start position"
                       />
                     </el-form-item>
                   </el-col>
                   <el-col :span="8">
-                    <el-form-item label="结束位置">
+                    <el-form-item label="{{ t('end_position') }}">
                       <el-input
                         type="number"
                         v-model.number="genomePosition.end"
-                        placeholder="结束位置"
+                        placeholder="End position"
                       />
                     </el-form-item>
                   </el-col>
@@ -102,19 +104,19 @@
                     :disabled="!genomeAssembly || !genomePosition.chromosome.trim() || !genomePosition.start || !genomePosition.end"
                     style="width: 100%"
                   >
-                    获取序列
+                    Fetch {{ t('sequence') }}
                   </el-button>
                 </el-form-item>
               </div>
               
-              <!-- 直接输入序列方式 -->
+              <!-- Direct {{ t('sequence') }} Input Method -->
               <div v-if="inputMethod === 'directSequence'">
-                <el-form-item label="直接输入序列">
+                <el-form-item label="Direct {{ t('sequence') }} Input">
                   <el-input
                     type="textarea"
                     :rows="4"
                     v-model="directSequence"
-                    placeholder="直接输入DNA序列 (5'→3')"
+                    placeholder="Direct input DNA sequence (5'→3')"
                   />
                 </el-form-item>
                 <el-form-item>
@@ -123,24 +125,24 @@
                     @click="useDirectSequence"
                     style="width: 100%"
                   >
-                    使用该序列
+                    Use This {{ t('sequence') }}
                   </el-button>
                 </el-form-item>
               </div>
             </el-form-item>
             
-            <!-- 序列显示区域 -->
-            <el-form-item label="DNA序列" v-if="sequenceTemplate.trim()">
+            <!-- {{ t('sequence') }} Display Area -->
+            <el-form-item label="DNA {{ t('sequence') }}" v-if="sequenceTemplate.trim()">
               <el-input
                 type="textarea"
                 :rows="5"
                 v-model="sequenceTemplate"
-                placeholder="序列将显示在这里"
+                placeholder="{{ t('sequence') }} will be displayed here"
               />
             </el-form-item>
             
-            <!-- 产物大小范围 -->
-            <el-form-item label="产物大小范围 (bp)">
+            <!-- Product Size Range -->
+            <el-form-item label="Product Size Range (bp)">
               <el-row :gutter="10">
                 <el-col :span="10">
                   <el-input
@@ -164,8 +166,8 @@
               </el-row>
             </el-form-item>
             
-            <!-- 引物长度范围 -->
-            <el-form-item label="引物长度范围 (bp)">
+            <!-- {{ t('primer_length') }} Range -->
+            <el-form-item label="{{ t('primer_length') }} Range (bp)">
               <el-row :gutter="10">
                 <el-col :span="10">
                   <el-input
@@ -189,8 +191,8 @@
               </el-row>
             </el-form-item>
             
-            <!-- 引物Tm范围 -->
-            <el-form-item label="引物Tm范围 (°C)">
+            <!-- Primer Tm Range -->
+            <el-form-item label="Primer Tm Range (°C)">
               <el-row :gutter="10">
                 <el-col :span="10">
                   <el-input
@@ -216,8 +218,8 @@
               </el-row>
             </el-form-item>
             
-            <!-- 引物GC含量范围 -->
-            <el-form-item label="引物GC含量范围 (%)">
+            <!-- Primer {{ t('gc_content') }} Range -->
+            <el-form-item label="Primer {{ t('gc_content') }} Range (%)">
               <el-row :gutter="10">
                 <el-col :span="10">
                   <el-input
@@ -241,7 +243,7 @@
               </el-row>
             </el-form-item>
             
-            <!-- 提交按钮 -->
+            <!-- {{ t('submit') }} Button -->
             <el-form-item>
               <el-button 
                 type="primary" 
@@ -251,24 +253,24 @@
                 style="width: 100%"
                 size="large"
               >
-                设计引物
+                Design Primers
               </el-button>
             </el-form-item>
           </el-form>
         </el-card>
       </el-col>
       
-      <!-- 结果显示 -->
+      <!-- {{ t('results') }} Display -->
       <el-col :span="18">
         <el-card class="mb-4">
           <template #header>
             <div class="card-header">
-              <h3>设计结果</h3>
+              <h3>Design {{ t('results') }}</h3>
             </div>
           </template>
           <div v-if="isLoading" class="text-center py-4">
             <el-icon class="is-loading"><Loading /></el-icon>
-            <p class="mt-2">正在设计引物...</p>
+            <p class="mt-2">Designing primers...</p>
           </div>
           
           <el-alert
@@ -280,7 +282,7 @@
           />
           
           <div v-else-if="designResults.length > 0">
-            <h5>引物设计结果</h5>
+            <h5>{{ t('primer_design') }} {{ t('results') }}</h5>
             <el-table :data="designTableData" style="width: 100%" border>
               <el-table-column prop="oligos" label="Oligos" width="120" />
               <el-table-column prop="startPosition" label="Start position" width="120" />
@@ -289,14 +291,14 @@
               <el-table-column prop="gcPercent" label="GC percent" width="100" />
               <el-table-column prop="selfAny" label="Self any" width="80" />
               <el-table-column prop="selfEnd" label="Self end" width="80" />
-              <el-table-column prop="hairpin" label="Hairpin" width="80" />
-              <el-table-column prop="sequence" label="Sequence" min-width="200" />
+              <el-table-column prop="hairpin" label="{{ t('hairpin') }}" width="80" />
+              <el-table-column prop="sequence" label="{{ t('sequence') }}" min-width="200" />
               <el-table-column prop="penalty" label="Penalty" width="80" />
             </el-table>
           </div>
           
           <div v-else class="text-center py-4">
-            <p>请输入DNA序列并设置参数，然后点击"设计引物"按钮</p>
+            <p>Please input DNA sequence and set parameters, then click "Design Primers" button</p>
           </div>
         </el-card>
       </el-col>
@@ -305,6 +307,8 @@
 </template>
 
 <script setup>
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
 import { ref, reactive, computed } from 'vue'
 import axios from '../utils/http'
 import { usePrimerDesignStore } from '../stores/primerDesign'
@@ -315,7 +319,7 @@ const primerDesignStore = usePrimerDesignStore()
 
 // 表单数据
 const sequenceId = ref('')
-const sequenceType = ref('mrna') // 默认mRNA
+const sequenceType = ref('mrna') // 默认t('mrna')
 const inputMethod = ref('geneId') // 默认使用基因ID输入方式
 const genomeAssembly = ref('') // 选择的基因组
 const genomePosition = reactive({
@@ -376,10 +380,10 @@ const designTableData = computed(() => {
   return tableData
 })
 
-// 通过基因ID获取序列
+// Fetch sequence by gene ID
 const fetchSequence = async () => {
   if (!sequenceId.value.trim()) {
-    error.value = '请输入序列ID'
+    error.value = t('please_enter') + ' sequence ID'
     return
   }
   
@@ -387,7 +391,7 @@ const fetchSequence = async () => {
   error.value = null
   
   try {
-    // 调用序列获取API
+    // Call sequence fetch API
     const response = await axios.get('/tools/id-search/api/sequence/', {
       params: {
         gene_id: sequenceId.value.trim(),
@@ -396,26 +400,26 @@ const fetchSequence = async () => {
     })
     
     if (response.status === 'success' && response.sequence) {
-      // 填充序列到模板中
+      // Fill sequence into template
       sequenceTemplate.value = response.sequence
-      // 直接更新store的state
+      // Directly update store state
       primerDesignStore.sequenceId = sequenceId.value.trim()
       primerDesignStore.sequenceTemplate = response.sequence
     } else {
-      error.value = '未找到该序列或序列为空'
+      error.value = t('sequence') + ' not found or empty'
     }
   } catch (err) {
-    error.value = '获取序列失败: ' + (err.message || '未知错误')
-    console.error('获取序列失败:', err)
+    error.value = 'Failed to fetch sequence: ' + (err.message || 'Unknown error')
+    console.error('Failed to fetch sequence:', err)
   } finally {
     isFetching.value = false
   }
 }
 
-// 通过基因组位置获取序列
+// Fetch sequence by genome position
 const fetchSequenceByPosition = async () => {
   if (!genomeAssembly.value || !genomePosition.chromosome.trim() || !genomePosition.start || !genomePosition.end) {
-    error.value = '请填写完整的基因组位置信息'
+    error.value = 'Please fill in complete genome position information'
     return
   }
   
@@ -423,7 +427,7 @@ const fetchSequenceByPosition = async () => {
   error.value = null
   
   try {
-    // 调用基因组位置获取序列API
+    // Call genome position sequence fetch API
     const response = await axios.get('/tools/id-search/api/sequence/position/', {
       params: {
         genome: genomeAssembly.value,
@@ -434,68 +438,68 @@ const fetchSequenceByPosition = async () => {
     })
     
     if (response.status === 'success' && response.sequence) {
-      // 填充序列到模板中
+      // Fill sequence into template
       sequenceTemplate.value = response.sequence
-      // 更新store
+      // t('update') store
       primerDesignStore.sequenceTemplate = response.sequence
     } else {
-      error.value = '未找到该位置的序列或序列为空'
+      error.value = t('sequence') + ' not found at this position or empty'
     }
   } catch (err) {
-    error.value = '获取序列失败: ' + (err.message || '未知错误')
-    console.error('通过基因组位置获取序列失败:', err)
+    error.value = 'Failed to fetch sequence: ' + (err.message || 'Unknown error')
+    console.error('Failed to fetch sequence by genome position:', err)
   } finally {
     isFetching.value = false
   }
 }
 
-// 使用直接输入的序列
+// Use directly input sequence
 const useDirectSequence = () => {
   if (!directSequence.value.trim()) {
-    error.value = '请输入序列'
+    error.value = t('please_enter') + ' sequence'
     return
   }
   
-  // 去除可能的空格
+  // Remove possible spaces
   sequenceTemplate.value = directSequence.value.trim().replace(/\s/g, '')
-  // 更新store
+  // t('update') store
   primerDesignStore.sequenceTemplate = sequenceTemplate.value
 }
 
-// 设计引物函数
+// Design primers function
 const designPrimers = async () => {
-  // 验证表单
+  // Validate form
   if (!sequenceTemplate.value.trim()) {
-    error.value = '请输入DNA序列'
+    error.value = t('please_enter') + ' DNA sequence'
     return
   }
   
-  // 设置加载状态
+  // Set loading state
   isLoading.value = true
   error.value = null
   designResults.value = []
   
   try {
-    // 构建请求数据
+    // Build request data
     const requestData = {
       sequence_id: sequenceId.value.trim(),
-      sequence_template: sequenceTemplate.value.trim().replace(/\s/g, ''), // 去除空格
+      sequence_template: sequenceTemplate.value.trim().replace(/\s/g, ''), // Remove spaces
       parameters: parameters
     }
     
-    // 调用API
+    // Call API
     const response = await axios.post('/tools/primer_design/api/primers/', requestData)
     
     if (response.status === 'success') {
-      // 保存结果到store
+      // t('save') results to store
       primerDesignStore.setDesignResults(response.results)
       designResults.value = response.results
     } else {
-      error.value = response.error || '设计失败'
+      error.value = response.error || 'Design failed'
     }
   } catch (err) {
-    error.value = 'API请求失败: ' + (err.message || '未知错误')
-    console.error('设计引物失败:', err)
+    error.value = 'API request failed: ' + (err.message || 'Unknown error')
+    console.error('Failed to design primers:', err)
   } finally {
     isLoading.value = false
   }

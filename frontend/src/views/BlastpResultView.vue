@@ -2,7 +2,7 @@
   <div class="container mt-4">
     <el-row :gutter="20" class="mb-4">
       <el-col :span="18">
-        <h2>BLASTP Results</h2>
+        <h2>{{ t('blast_results') }}</h2>
       </el-col>
       <el-col :span="6" class="text-right">
         <el-tag type="info" v-if="executionTime">Executed in {{ executionTime }} seconds</el-tag>
@@ -16,7 +16,7 @@
     <el-form @submit.prevent="handlePerPageChange" class="mb-3">
       <el-row :gutter="20" align="middle">
         <el-col :span="4">
-          <el-form-item label="每页显示:" label-width="80px">
+          <el-form-item label="Show:" label-width="80px">
             <el-select v-model.number="perPage" class="w-32" @change="handlePerPageChange">
               <el-option value="5" label="5"></el-option>
               <el-option value="10" label="10"></el-option>
@@ -41,7 +41,7 @@
         <el-card class="mb-4" v-if="rawBlastResults">
           
           <el-table :data="formattedRawResults" style="width: 100%">
-            <el-table-column label="Query ID" width="150">
+            <el-table-column label="{{ t('query_id') }}" width="150">
               <template #default="scope">
                 <code>{{ scope.row.query_id }}</code>
               </template>

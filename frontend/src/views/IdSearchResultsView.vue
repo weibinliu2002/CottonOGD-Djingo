@@ -2,11 +2,11 @@
   <div class="container mt-4">
     <el-row :gutter="20" class="mb-4">
       <el-col :span="18">
-        <h2>Search Results</h2>
+        <h2>{{ t('search_results') }}</h2>
       </el-col>
       <el-col :span="6" class="text-right">
         <router-link to="/tools/id-search">
-          <el-button type="default">Return to Search</el-button>
+          <el-button type="default">{{ t('return_to_search') }}</el-button>
         </router-link>
       </el-col>
     </el-row>
@@ -31,15 +31,15 @@
       <!-- 基本信息卡片 - 使用 GeneInfoCard 组件 -->
       <gene-info-card 
         :gene-data="result" 
-        title="Gene Basic Information"
+        title="{{ t('gene_basic_information') }}"
         class="mb-4"
       />
       
-      <!-- JBrowse View -->
+      <!-- {{ t('jbrowse_view') }} -->
       <el-card v-if="jbrowse_url" class="mb-4">
         <template #header>
           <div class="d-flex justify-content-between align-items-center">
-            <h3>JBrowse View</h3>
+            <h3>{{ t('jbrowse_view') }}</h3>
           </div>
         </template>
         <div class="card-body">
@@ -62,7 +62,7 @@
                 <el-option
                   v-for="(transcript, index) in result.mrna_transcripts"
                   :key="index"
-                  :label="`${transcript.id} (Protein Length: ${transcript.protein_seq && transcript.protein_seq !== 'N/A' && transcript.protein_seq !== 'unavailable' && transcript.protein_seq !== '未找到蛋白序列' ? transcript.protein_seq.length : 'N/A'} aa)`"
+                  :label="`${transcript.id} (Protein Length: ${transcript.protein_seq && transcript.protein_seq !== 'N/A' && transcript.protein_seq !== 'unavailable' && transcript.protein_seq !== 'Protein sequence not found' ? transcript.protein_seq.length : 'N/A'} aa)`"
                   :value="index"
                 />
               </el-select>
@@ -371,7 +371,7 @@ import SequenceModal from '@/components/SequenceModal.vue'
 import GeneInfoCard from '@/components/GeneInfoCard.vue'
 import { v4 as uuidv4 } from 'uuid'
 import { ElMessage } from 'element-plus'
-import { useGeneSearchStore } from '@/stores/geneSearch.ts'
+import { useGeneSearchStore } from '@/stores/geneSearch'
 import { useNavigationStore } from '@/stores/navigationStore.ts'
 
 // 定义类型
@@ -597,7 +597,7 @@ const scale = computed(() => {
   const availableWidth = svgWidth.value - 40
   return availableWidth / Math.max(geneLength.value, 1)
 })
-console.log('result.value:', result.value)
+//console.log('result.value:', result.IDs)
 // 基本信息列表
 const basicInfoList = computed(() => {
   if (!result.value) return []
@@ -718,7 +718,7 @@ const fetchGeneData = async (db_id: string) => {
     const data = response as any
     
     if (data.status === 'error' || data.status === 'not_found') {
-      throw new Error(data.error || '基因信息不存在')
+      throw new Error(data.error || 'Gene information not found')
     }
     
     // 更新数据 - 从results数组中获取type为gene的数据
@@ -749,7 +749,7 @@ const fetchGeneData = async (db_id: string) => {
       }
       */
     } else {
-      throw new Error('未找到基因信息')
+      throw new Error('No gene information found')
     }
     
     // 设置GFF数据 - 检查是否有专门的gff数据字段
@@ -820,7 +820,7 @@ const handleShowSequence = async (eventData: { type: string; title: string; cont
     }
     
     // 如果返回的是有效序列，添加FASTA格式头部
-    if (seq && seq !== '未找到序列' && seq !== 'N/A') {
+    if (seq && seq !== 'Sequence not found' && seq !== 'N/A') {
       // 构建FASTA头部，基因组序列使用realGeneId，其他使用mrnaid
       const headerId = type === 'genomic' ? realGeneId : mrnaid
       
@@ -849,7 +849,7 @@ const handleShowSequence = async (eventData: { type: string; title: string; cont
   } catch (err) {
     showSequenceModal(
       title,
-      '序列加载失败',
+      'Sequence loading failed',
       type,
       realGeneId
     )
@@ -947,13 +947,13 @@ const downloadCurrentTranscriptSequences = () => {
   transcriptSequenceTypes.forEach(item => {
     // @ts-ignore
     const sequence = currentTranscript.value[item.key]
-    if (sequence && sequence !== 'N/A' && sequence !== 'unavailable' && sequence !== '未找到CDS序列' && sequence !== '未找到蛋白序列') {
+    if (sequence && sequence !== 'N/A' && sequence !== 'unavailable' && sequence !== 'CDS sequence not found' && sequence !== 'Protein sequence not found') {
       transcriptSequences += `>${transcriptId} ${item.type}\n${formatSequence(sequence)}\n\n`
     }
   })
   
   if (!transcriptSequences) {
-    ElMessage.error('没有找到可用的序列数据')
+    ElMessage.error('No sequence data available')
     return
   }
   
@@ -974,13 +974,13 @@ const downloadCurrentTranscriptSequences = () => {
   document.body.removeChild(a)
   URL.revokeObjectURL(url)
   
-  ElMessage.success('当前转录本的所有序列已下载')
+  ElMessage.success('All sequences for the current transcript have been downloaded')
 }
 
 // 下载所有序列
 const downloadAllSequences = async () => {
   if (!result.value) {
-    ElMessage.error('无法获取基因序列数据')
+    ElMessage.error('Cannot retrieve gene sequence data')
     return
   }
   
@@ -1041,13 +1041,13 @@ const downloadAllSequences = async () => {
             }
             break
           case 'cds':
-            if (transcript.cds_seq && transcript.cds_seq !== 'N/A' && transcript.cds_seq !== 'unavailable' && transcript.cds_seq !== '未找到CDS序列') {
+            if (transcript.cds_seq && transcript.cds_seq !== 'N/A' && transcript.cds_seq !== 'unavailable' && transcript.cds_seq !== 'CDS sequence not found') {
               seqContent = transcript.cds_seq
               foundInResult = true
             }
             break
           case 'protein':
-            if (transcript.protein_seq && transcript.protein_seq !== 'N/A' && transcript.protein_seq !== 'unavailable' && transcript.protein_seq !== '未找到蛋白序列') {
+            if (transcript.protein_seq && transcript.protein_seq !== 'N/A' && transcript.protein_seq !== 'unavailable' && transcript.protein_seq !== 'Protein sequence not found') {
               seqContent = transcript.protein_seq
               foundInResult = true
             }
@@ -1061,7 +1061,7 @@ const downloadAllSequences = async () => {
         }
         
         // 如果获取到了序列，添加到结果中
-        if (seqContent && seqContent !== '未找到序列' && seqContent !== 'N/A') {
+        if (seqContent && seqContent !== 'Sequence not found' && seqContent !== 'N/A') {
           const formattedSeq = formatSequence(seqContent)
           // 基因组序列使用gene_id，其他使用transcriptId
           const headerId = seqType === 'genomic' ? geneId : transcriptId
@@ -1072,7 +1072,7 @@ const downloadAllSequences = async () => {
     
     // 如果没有获取到任何序列
     if (!allSequences) {
-      ElMessage.error('没有找到可用的序列数据')
+      ElMessage.error('No sequence data available')
       return
     }
     
@@ -1093,10 +1093,10 @@ const downloadAllSequences = async () => {
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
     
-    ElMessage.success('所有序列已下载完成')
+    ElMessage.success('All sequences downloaded successfully')
   } catch (error) {
-    console.error('下载序列失败:', error)
-    ElMessage.error('下载序列失败，请重试')
+    console.error('Failed to download sequences:', error)
+    ElMessage.error('Failed to download sequences, please try again')
   } finally {
     isLoading.value = false
   }
@@ -1135,7 +1135,7 @@ const downloadGff = (format: string) => {
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
     
-    ElMessage.success('GFF数据已下载为TXT格式')
+    ElMessage.success('GFF data has been downloaded as TXT format')
   } else if (format === 'gff') {
     // 生成标准GFF格式文本
     let gffContent = ''
@@ -1165,18 +1165,18 @@ const downloadGff = (format: string) => {
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
     
-    ElMessage.success('GFF数据已下载为GFF格式')
+    ElMessage.success('GFF data has been downloaded as GFF format')
   }
 }
 
 // 生命周期钩子
 onMounted(() => {
   const db_id = route.query.db_id as string
-  if (db_id) {
+  if (db_id && !hasFetched.value) {
     hasFetched.value = true
     fetchGeneData(db_id)
   } else {
-    errorMessage.value = '未提供数据库ID'
+    errorMessage.value = 'Database ID not provided'
   }
 })
 </script>

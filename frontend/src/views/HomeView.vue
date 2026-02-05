@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Search } from '@element-plus/icons-vue'
@@ -27,8 +29,8 @@ const fillExample = () => {
     <section class="hero-section">
       <div class="container">
         <div class="hero-content">
-          <h1>Welcome to CottonOGD</h1>
-          <p class="hero-subtitle">A Comprehensive Cotton Orthogroups Database</p>
+          <h1>{{ t('welcome_to_cottonogd') }}</h1>
+          <p class="hero-subtitle">{{ t('a_comprehensive_cotton_orthogroups_database') }}</p>
           <p class="hero-description">
             CottonOGD provides integrated genomic, transcriptomic, and functional annotation resources for cotton research, 
             enabling researchers to explore orthogroups, gene families, and evolutionary relationships across cotton species.
@@ -38,7 +40,7 @@ const fillExample = () => {
           <div class="search-box-container">
             <el-input
               v-model="searchQuery"
-              placeholder="Enter gene ID, symbol, keyword or sequence..."
+              placeholder="enter_gene_id_symbol_keyword_or_sequence"
               clearable
               size="large"
               @keyup.enter="performSearch"
@@ -46,13 +48,13 @@ const fillExample = () => {
             >
               <template #append>
                 <el-button type="primary" size="large" @click="performSearch">
-                  <el-icon><Search /></el-icon>
-                  Search
+                  <el-icon><{{ t('search') }} /></el-icon>
+                  {{ t('search') }}
                 </el-button>
               </template>
             </el-input>
             <div class="search-tips">
-              <span class="tip-label">Example:</span>
+              <span class="tip-label">{{ t('example') }}:</span>
               <el-tag size="small" class="tip-tag" @click="fillExample">Ghir_A01G000100</el-tag>
               <el-tag size="small" class="tip-tag" @click="fillExample">Transcription Factor</el-tag>
               <el-tag size="small" class="tip-tag" @click="fillExample">ABC transporter</el-tag>
@@ -65,7 +67,7 @@ const fillExample = () => {
     <!-- 核心功能区域 -->
     <section class="features-section">
       <div class="container">
-        <h2 class="section-title">Core Features</h2>
+        <h2 class="section-title">{{ t('core_features') }}</h2>
         <el-row :gutter="24">
           <!-- 浏览功能 -->
           <el-col :span="8">
@@ -73,7 +75,7 @@ const fillExample = () => {
               <div class="feature-icon">
                 <i class="fas fa-database"></i>
               </div>
-              <h3 class="feature-title">Browse</h3>
+              <h3 class="feature-title">{{ t('browse') }}</h3>
               <p class="feature-description">
                 Explore cotton genome data, species information, transcription factors, and transposable elements 
                 through intuitive browsing interfaces.
@@ -95,7 +97,7 @@ const fillExample = () => {
               <div class="feature-icon">
                 <i class="fas fa-tools"></i>
               </div>
-              <h3 class="feature-title">Analysis Tools</h3>
+              <h3 class="feature-title">Analysis {{ t('tools') }}</h3>
               <p class="feature-description">
                 Utilize a suite of powerful tools for sequence analysis, functional annotation, 
                 expression analysis, and pathway enrichment.
@@ -105,7 +107,7 @@ const fillExample = () => {
                   <el-button type="primary" plain size="medium">BLAST</el-button>
                 </router-link>
                 <router-link to="/tools/go-enrichment">
-                  <el-button type="primary" plain size="medium" class="ml-2">GO Enrichment</el-button>
+                  <el-button type="primary" plain size="medium" class="ml-2">{{ t('go_enrichment') }}</el-button>
                 </router-link>
               </div>
             </el-card>
@@ -119,12 +121,12 @@ const fillExample = () => {
               </div>
               <h3 class="feature-title">Visualization</h3>
               <p class="feature-description">
-                View genomic data interactively with JBrowse, explore gene expression patterns, 
+                {{ t('view') }} genomic data interactively with {{ t('jbrowse') }}, explore gene expression patterns, 
                 and visualize pathway networks.
               </p>
               <div class="feature-actions">
                 <router-link to="/jbrowse">
-                  <el-button type="primary" plain size="medium">JBrowse</el-button>
+                  <el-button type="primary" plain size="medium">{{ t('jbrowse') }}</el-button>
                 </router-link>
                 <router-link to="/tools/gene-expression">
                   <el-button type="primary" plain size="medium" class="ml-2">Expression</el-button>
@@ -139,7 +141,7 @@ const fillExample = () => {
     <!-- 数据库统计区域 -->
     <section class="stats-section bg-light">
       <div class="container">
-        <h2 class="section-title">Database Statistics</h2>
+        <h2 class="section-title">{{ t('database_statistics') }}</h2>
         <el-row :gutter="30">
           <el-col :span="6">
             <div class="stats-card">
@@ -192,7 +194,7 @@ const fillExample = () => {
     <!-- 快速访问区域 -->
     <section class="quick-access-section">
       <div class="container">
-        <h2 class="section-title">Quick Access</h2>
+        <h2 class="section-title">{{ t('quick_access') }}</h2>
         <el-row :gutter="24">
           <el-col :span="6">
             <router-link to="/jbrowse" class="quick-link">
@@ -200,8 +202,8 @@ const fillExample = () => {
                 <div class="quick-link-icon">
                   <i class="fas fa-chromosome"></i>
                 </div>
-                <h4 class="quick-link-title">Genome Browser</h4>
-                <p class="quick-link-description">Interactive genome visualization with JBrowse</p>
+                <h4 class="quick-link-title">{{ t('genome') }} Browser</h4>
+                <p class="quick-link-description">Interactive genome visualization with {{ t('jbrowse') }}</p>
               </el-card>
             </router-link>
           </el-col>
@@ -211,8 +213,8 @@ const fillExample = () => {
                 <div class="quick-link-icon">
                   <i class="fas fa-search"></i>
                 </div>
-                <h4 class="quick-link-title">BLAST Search</h4>
-                <p class="quick-link-description">Sequence similarity search across genomes</p>
+                <h4 class="quick-link-title">{{ t('blast_search') }}</h4>
+                <p class="quick-link-description">{{ t('sequence') }} similarity search across genomes</p>
               </el-card>
             </router-link>
           </el-col>
@@ -222,7 +224,7 @@ const fillExample = () => {
                 <div class="quick-link-icon">
                   <i class="fas fa-project-diagram"></i>
                 </div>
-                <h4 class="quick-link-title">GO Enrichment</h4>
+                <h4 class="quick-link-title">{{ t('go_enrichment') }}</h4>
                 <p class="quick-link-description">Gene ontology enrichment analysis</p>
               </el-card>
             </router-link>
@@ -233,7 +235,7 @@ const fillExample = () => {
                 <div class="quick-link-icon">
                   <i class="fas fa-chart-line"></i>
                 </div>
-                <h4 class="quick-link-title">Gene Expression</h4>
+                <h4 class="quick-link-title">{{ t('gene_expression') }}</h4>
                 <p class="quick-link-description">Explore gene expression patterns</p>
               </el-card>
             </router-link>
@@ -244,8 +246,8 @@ const fillExample = () => {
                 <div class="quick-link-icon">
                   <i class="fas fa-download"></i>
                 </div>
-                <h4 class="quick-link-title">Data Download</h4>
-                <p class="quick-link-description">Download genome assemblies and annotations</p>
+                <h4 class="quick-link-title">Data {{ t('download') }}</h4>
+                <p class="quick-link-description">{{ t('download') }} genome assemblies and annotations</p>
               </el-card>
             </router-link>
           </el-col>
@@ -255,7 +257,7 @@ const fillExample = () => {
                 <div class="quick-link-icon">
                   <i class="fas fa-dna"></i>
                 </div>
-                <h4 class="quick-link-title">Primer Design</h4>
+                <h4 class="quick-link-title">{{ t('primer_design') }}</h4>
                 <p class="quick-link-description">Design PCR primers for gene amplification</p>
               </el-card>
             </router-link>
@@ -277,8 +279,8 @@ const fillExample = () => {
                 <div class="quick-link-icon">
                   <i class="fas fa-id-card"></i>
                 </div>
-                <h4 class="quick-link-title">ID Search</h4>
-                <p class="quick-link-description">Search genes by ID or symbol</p>
+                <h4 class="quick-link-title">ID {{ t('search') }}</h4>
+                <p class="quick-link-description">{{ t('search') }} genes by ID or symbol</p>
               </el-card>
             </router-link>
           </el-col>
@@ -292,12 +294,12 @@ const fillExample = () => {
         <div class="row">
           <!-- 最新研究 -->
           <div class="col-md-6">
-            <h2 class="section-title">Latest Research</h2>
+            <h2 class="section-title">{{ t('latest') }} Research</h2>
             <el-card shadow="hover" class="research-card">
               <template #header>
                 <div class="card-header">
-                  <span>Genome-Wide Analysis of Cotton Transcription Factors</span>
-                  <el-tag type="success" size="small">Featured</el-tag>
+                  <span>{{ t('genome') }}-Wide Analysis of Cotton Transcription Factors</span>
+                  <el-tag type="success" size="small">{{ t('featured') }}</el-tag>
                 </div>
               </template>
               <div class="research-content">
@@ -322,11 +324,11 @@ const fillExample = () => {
           
           <!-- 新闻公告 -->
           <div class="col-md-6">
-            <h2 class="section-title">News & Updates</h2>
+            <h2 class="section-title">{{ t('news') }} & Updates</h2>
             <el-timeline>
               <el-timeline-item timestamp="2025-01-20" placement="top">
                 <div class="timeline-content">
-                  <h4 class="timeline-title">Database Update v1.2 Released</h4>
+                  <h4 class="timeline-title">Database {{ t('update') }} v1.2 Released</h4>
                   <p>Updated with latest cotton genome annotations and new analysis tools.</p>
                   <el-button type="text" size="small">Read more</el-button>
                 </div>
@@ -354,7 +356,7 @@ const fillExample = () => {
     <!-- 合作伙伴与引用区域 -->
     <section class="partners-section">
       <div class="container">
-        <h2 class="section-title">Partners & Citations</h2>
+        <h2 class="section-title">{{ t('partners_citations') }}</h2>
         <div class="partners-content">
           <div class="citation-info">
             <div class="citation-icon">

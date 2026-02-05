@@ -2,7 +2,7 @@
   <div class="container mt-4">
     <el-row :gutter="20" class="mb-4">
       <el-col :span="18">
-        <h2>KEGG Annotation Results</h2>
+        <h2>{{ t('kegg_annotation') }} {{ t('results') }}</h2>
       </el-col>
       <el-col :span="6" class="text-right">
         <el-tag type="info" v-if="executionTime">Executed in {{ executionTime }} seconds</el-tag>
@@ -32,7 +32,7 @@
     <el-alert
       v-else-if="!hasResults"
       type="warning"
-      title="No results found. Please try with different gene IDs."
+      title="{{ t('no_results') }}. Please try with different gene IDs."
       show-icon
       class="mb-4"
     />
@@ -43,7 +43,7 @@
       <el-card class="mt-5" v-if="chartData.labels && chartData.labels.length > 0">
         <template #header>
           <div class="card-header">
-            <span>KEGG Pathway</span>
+            <span>{{ t('kegg_pathway') }}</span>
           </div>
         </template>
         <div class="chart-container" style="height: 400px;">
@@ -74,7 +74,7 @@
       <el-card class="mb-4">
         <template #header>
           <div class="d-flex justify-content-between align-items-center">
-            <span>Annotation Results</span>
+            <span>Annotation {{ t('results') }}</span>
             <el-tag type="primary">{{ totalItems }} results</el-tag>
           </div>
         </template>
@@ -84,7 +84,7 @@
           <el-table-column prop="End" label="End" width="100"></el-table-column>
           <el-table-column prop="ID" label="ID" width="150"></el-table-column>
           <el-table-column prop="match" label="KO" width="120"></el-table-column>
-          <el-table-column prop="Description" label="Pathway Name"></el-table-column>
+          <el-table-column prop="{{ t('description') }}" label="{{ t('pathway_name') }}"></el-table-column>
         </el-table>
         
         <!-- 分页控件 -->
@@ -105,6 +105,8 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 
@@ -240,7 +242,7 @@ const fetchResults = async () => {
     }
   } catch (error: any) {
     errorMessage.value = '获取结果失败: ' + (error.message || error)
-    console.error('Error fetching results:', error)
+    console.error(t('error') + ' fetching results:', error)
     hasResults.value = false
   } finally {
     isLoading.value = false

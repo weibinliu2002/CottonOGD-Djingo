@@ -1,10 +1,10 @@
 <template>
   <div class="container mt-4">
-    <h2 class="mb-4">GO富集分析结果</h2>
+    <h2 class="mb-4">{{ t('go_enrichment_analysis_results') }}</h2>
     
     <!-- 返回按钮 -->
     <router-link to="/tools/go-enrichment" class="mb-4">
-      <el-button type="default">返回</el-button>
+      <el-button type="default">Back</el-button>
     </router-link>
     
     <!-- 加载状态 -->
@@ -25,7 +25,7 @@
     <el-alert
       v-else-if="!hasResults"
       type="warning"
-      title="暂无富集结果"
+      title="{{ t('no_enrichment_results_found') }}"
       show-icon
       class="mb-4"
     />
@@ -36,7 +36,7 @@
       <el-form @submit.prevent="handlePerPageChange" class="mb-3">
         <el-row :gutter="20" align="middle">
           <el-col :span="6">
-            <el-form-item label="每页显示:" label-width="80px">
+            <el-form-item label="{{ t('results') }} per page:" label-width="120px">
               <el-select v-model.number="perPage" class="w-32" @change="handlePerPageChange">
                 <el-option value="5" label="5"></el-option>
                 <el-option value="10" label="10"></el-option>
@@ -46,7 +46,7 @@
             </el-form-item>
           </el-col>
           <el-col :span="4">
-            <span class="text-gray-500">条记录</span>
+            <span class="text-gray-500">{{ t('records') }}</span>
           </el-col>
         </el-row>
       </el-form>
@@ -59,19 +59,19 @@
         >
           <h4 class="text-danger mb-3">
             <!-- 类别名称 -->
-            <span v-if="category === 'MF'">Molecular Function</span>
-            <span v-else-if="category === 'BP'">Biological Process</span>
-            <span v-else-if="category === 'CC'">Cellular Component</span>
+            <span v-if="category === 'MF'">{{ t('molecular_function') }}</span>
+            <span v-else-if="category === 'BP'">{{ t('biological_process') }}</span>
+            <span v-else-if="category === 'CC'">{{ t('cellular_component') }}</span>
             <small class="text-muted">
-              (共 {{ categoryData.total }} 条)
+              (Total {{ categoryData.total }} {{ t('records') }})
             </small>
           </h4>
           
           <!-- 结果表格 -->
           <el-card class="mb-4">
             <el-table :data="categoryData.results" style="width: 100%">
-              <el-table-column prop="go_id" label="GO ID" width="150"></el-table-column>
-              <el-table-column prop="description" label="Description">
+              <el-table-column prop="go_id" label="{{ t('go_id') }}" width="150"></el-table-column>
+              <el-table-column prop="description" label="{{ t('description') }}">
                 <template #default="scope">
                   {{ getDescriptionName(scope.row.description) }}
                 </template>
@@ -106,7 +106,7 @@
           <el-card class="mb-4" v-if="plotImages && (plotImages[category] || plotImages[category.toLowerCase()] || plotImages[category.toUpperCase()])">
             <template #header>
               <div class="card-header">
-                <span>可视化结果</span>
+                <span>Visualization Results</span>
               </div>
             </template>
             <el-image
@@ -218,7 +218,7 @@ const fetchResults = async () => {
     // 从URL参数获取task_id
     const taskId = route.query.task_id
     if (!taskId) {
-      errorMessage.value = '缺少任务ID'
+      errorMessage.value = 'Task ID missing'
       hasResults.value = false
       return
     }
@@ -315,14 +315,14 @@ const fetchResults = async () => {
       // 设置执行时间
       executionTime.value = response.execution_time || response.elapsed_time || response.time || 0
     } else if (response.status === 'processing') {
-      // 如果任务仍在处理中，等待一段时间后重试
+      // If task is still processing, retry after a short delay
       setTimeout(() => fetchResults(), 1000)
     } else {
-      errorMessage.value = response.error || '获取结果失败'
+      errorMessage.value = response.error || 'Failed to get results'
       hasResults.value = false
     }
   } catch (error: any) {
-    errorMessage.value = '获取结果失败: ' + (error.message || error)
+    errorMessage.value = 'Failed to get results: ' + (error.message || error)
     console.error('Error fetching results:', error)
     hasResults.value = false
   } finally {

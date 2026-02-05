@@ -73,7 +73,7 @@ Gh_D01G0005`;
 
   const runEnrichment = async (type: 'go' | 'kegg') => {
     if (!geneList.value.trim()) {
-      error.value = '请输入基因ID';
+      error.value = 'Please enter gene IDs';
       return;
     }
 
@@ -102,7 +102,7 @@ Gh_D01G0005`;
       }
     } catch (e) {
       console.error('Enrichment submission failed:', e);
-      error.value = `提交失败: ${e}`;
+      error.value = `Submission failed: ${e}`;
       return null;
     }
   };
@@ -122,7 +122,7 @@ Gh_D01G0005`;
       }
     } catch (e) {
       console.error('Failed to poll enrichment results:', e);
-      error.value = `获取结果失败: ${e}`;
+      error.value = `Failed to get results: ${e}`;
     }
   };
 

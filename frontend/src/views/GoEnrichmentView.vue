@@ -1,25 +1,25 @@
 <template>
   <div class="container mt-4">
-    <h2 class="mb-4">GO富集分析</h2>
+    <h2 class="mb-4">{{ t('go_enrichment_analysis') }}</h2>
     
     <el-card class="mb-4">
       <template #header>
         <div class="card-header">
-          <span>GO富集分析</span>
+          <span>{{ t('go_enrichment_analysis') }}</span>
         </div>
       </template>
       
       <el-form @submit.prevent="handleSubmit" label-width="250px">
-        <el-form-item label="输入基因列表 (每行一个基因或空格分隔)">
+        <el-form-item label="Input gene list (one gene per line or space-separated)">
           <el-input
             type="textarea"
             :rows="10"
             v-model="geneList"
-            placeholder="请输入基因列表"
+            placeholder="Please enter gene list"
           />
           <div class="mt-2">
             <el-button type="info" size="small" @click="fillExample">
-              load example
+              Load example
             </el-button>
           </div>
         </el-form-item>
@@ -27,36 +27,36 @@
         <el-form-item>
           <el-row :gutter="20">
             <el-col :span="12">
-              <el-form-item label="P值阈值">
+              <el-form-item label="P-value Threshold">
                 <el-input
                   type="number"
                   v-model.number="pValue"
                   :min="0.0001"
                   :max="1"
                   :step="0.0001"
-                  placeholder="P值阈值"
+                  placeholder="P-value threshold"
                 />
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="Q值阈值">
+              <el-form-item label="Q-value Threshold">
                 <el-input
                   type="number"
                   v-model.number="qValue"
                   :min="0.0001"
                   :max="1"
                   :step="0.0001"
-                  placeholder="Q值阈值"
+                  placeholder="Q-value threshold"
                 />
               </el-form-item>
             </el-col>
           </el-row>
         </el-form-item>
         
-        <el-form-item label="每页显示结果数">
+        <el-form-item label="Results per page">
           <el-select
             v-model="perPage"
-            placeholder="每页结果数"
+            placeholder="Results per page"
             style="width: 120px"
           >
             <el-option value="5" label="5" />
@@ -69,7 +69,7 @@
         <el-form-item>
           <el-button type="primary" native-type="submit">
             <el-icon><Search /></el-icon>
-            提交分析
+            Submit Analysis
           </el-button>
         </el-form-item>
         
@@ -138,13 +138,13 @@ const handleSubmit = async () => {
   
   // 验证表单
   if (!geneList.value.trim()) {
-    error.value = '请输入基因列表'
+    error.value = 'Please enter gene list'
     return
   }
   
   try {
     if (!$http) {
-      throw new Error('未找到全局axios实例')
+      throw new Error('Global axios instance not found')
     }
     
     // 使用全局的axios实例提交数据到正确的API端点
@@ -164,11 +164,11 @@ const handleSubmit = async () => {
         query: { task_id: data.task_id }
       })
     } else {
-      error.value = data.error || '提交失败'
+      error.value = data.error || 'Submission failed'
     }
   } catch (err: any) {
-    error.value = '提交失败，请重试'
-    console.error('提交失败:', err)
+    error.value = 'Submission failed, please try again'
+    console.error('Submission failed:', err)
   }
 }
 </script>

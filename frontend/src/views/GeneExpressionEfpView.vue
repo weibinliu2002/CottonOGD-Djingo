@@ -1,13 +1,13 @@
 <template>
   <div class="container">
-    <h1>gene_expression_in_eFP</h1>
+    <h1>Gene Expression in eFP</h1>
 
     <div class="input-group">
       <input 
         type="text" 
         id="gene_id" 
         v-model="geneId"
-        placeholder="请输入基因ID，例如: Gh_A01G0001" 
+        placeholder="Please enter gene ID, e.g.: Gh_A01G0001" 
         autocomplete="off"
       >
       <select 
@@ -42,15 +42,15 @@
         id="generate-btn"
         :disabled="isLoading"
       >
-        生成热图
+        Generate Heatmap
       </button>
-      <span class="loading" id="loading" v-if="isLoading">正在生成热图...</span>
+      <span class="loading" id="loading" v-if="isLoading">Generating heatmap...</span>
     </div>
- 
-    <!-- 颜色选择器 -->
+
+    <!-- Color Picker -->
     <div class="color-picker-group">
       <div class="color-picker">
-        <label for="low-color">低值:</label>
+        <label for="low-color">Low value:</label>
         <input 
           type="color" 
           id="low-color" 
@@ -66,7 +66,7 @@
         ></div>
       </div>
       <div class="color-picker">
-        <label for="mid-color">中值:</label>
+        <label for="mid-color">Middle value:</label>
         <input 
           type="color" 
           id="mid-color" 
@@ -82,7 +82,7 @@
         ></div>
       </div>
       <div class="color-picker">
-        <label for="high-color">高值:</label>
+        <label for="high-color">High value:</label>
         <input 
           type="color" 
           id="high-color" 
@@ -99,11 +99,11 @@
       </div>
     </div>
     
-    <!-- 初始图片 -->
+    <!-- Initial Image -->
     <img 
       id="initial-image" 
       src="../assets/images/egg.jpg" 
-      alt="初始热图模板" 
+      alt="Initial heatmap template" 
       v-if="!showResultImage"
       @error="hideInitialImage"
     >
@@ -114,7 +114,7 @@
         <img 
           id="result-image" 
           :src="resultImage" 
-          alt="热图结果" 
+          alt="Heatmap result" 
           usemap="#regionMap"
           v-if="showResultImage"
           @load="onImageLoad"
@@ -139,7 +139,7 @@
           :style="tooltipStyle"
         >
           <strong>{{ tooltipContent.name }}</strong><br>
-          表达值: {{ tooltipContent.value }}
+          Expression value: {{ tooltipContent.value }}
         </div>
       </div>
     </div>
@@ -258,10 +258,10 @@ export default {
       geneId.value = exampleIDs;
     }
     
-    // 生成热图
+    // Generate heatmap
     const generateImage = () => {
       if (!geneId.value.trim()) {
-        showMessage('请输入基因ID', 'error');
+        showMessage('Please enter gene ID', 'error');
         return;
       }
       
@@ -291,7 +291,7 @@ export default {
       .then(response => {
         if (!response.ok) {
           return response.text().then(text => {
-            throw new Error(`HTTP错误 ${response.status}`);
+            throw new Error(`HTTP error ${response.status}`);
           });
         }
         return response.json();
@@ -299,7 +299,7 @@ export default {
       .then(data => {
         console.log('Response data:', data);
         console.log('typeof data:', typeof data);
-        // 尝试直接获取 image 字段，不依赖 success 字段
+        // Try to get image field directly, not dependent on success field
         if (data.image) {
           console.log('Found image in response:', data.image);
           currentRegionsInfo.value = data.regions_info || [];
@@ -312,14 +312,14 @@ export default {
           showResultImage.value = true;
         } else if (data.error) {
           console.log('Error response:', data.error);
-          showMessage('错误: ' + data.error, 'error');
+          showMessage('Error: ' + data.error, 'error');
         } else {
           console.log('Unexpected response format:', data);
-          showMessage('错误: 响应格式不正确', 'error');
+          showMessage('Error: Invalid response format', 'error');
         }
       })
       .catch(error => {
-        showMessage('请求失败: ' + error.message, 'error');
+        showMessage('Request failed: ' + error.message, 'error');
       })
       .finally(() => {
         isLoading.value = false;

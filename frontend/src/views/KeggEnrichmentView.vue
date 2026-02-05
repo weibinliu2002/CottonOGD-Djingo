@@ -1,21 +1,21 @@
 <template>
   <div class="container mt-4">
-    <h2>KEGG通路富集分析</h2>
+    <h2>KEGG Pathway Enrichment Analysis</h2>
     
     <el-card class="mb-4">
       <template #header>
         <div class="card-header">
-          <span>KEGG通路富集分析</span>
+          <span>KEGG Pathway Enrichment Analysis</span>
         </div>
       </template>
       
       <el-form @submit.prevent="submitForm" label-width="250px">
-        <el-form-item label="输入基因ID（每行一个或空格/逗号分隔）">
+        <el-form-item label="Input Gene IDs (one per line or separated by spaces/commas)">
           <el-input
             type="textarea"
             :rows="10"
             v-model="geneList"
-            placeholder="请在此输入基因ID..."
+            placeholder="Please enter gene IDs here..."
             :disabled="isLoading"
           />
           <div class="mt-2">
@@ -25,7 +25,7 @@
               @click="fillExample"
               :disabled="isLoading"
             >
-              加载示例
+              Load Example
             </el-button>
           </div>
         </el-form-item>
@@ -33,27 +33,27 @@
         <el-form-item>
           <el-row :gutter="20">
             <el-col :span="12">
-              <el-form-item label="P值阈值">
+              <el-form-item label="P-value Threshold">
                 <el-input
                   type="number"
                   v-model.number="pValueThreshold"
                   :min="0"
                   :max="1"
                   :step="0.001"
-                  placeholder="P值阈值"
+                  placeholder="P-value threshold"
                   :disabled="isLoading"
                 />
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="Q值阈值">
+              <el-form-item label="Q-value Threshold">
                 <el-input
                   type="number"
                   v-model.number="qValueThreshold"
                   :min="0"
                   :max="1"
                   :step="0.001"
-                  placeholder="Q值阈值"
+                  placeholder="Q-value threshold"
                   :disabled="isLoading"
                 />
               </el-form-item>
@@ -68,7 +68,7 @@
               native-type="submit"
               :loading="isLoading"
             >
-              提交
+              Submit
             </el-button>
           </div>
         </el-form-item>
@@ -125,17 +125,17 @@ Kirkii_Juiced.00g000300`;
 
 const submitForm = async () => {
   if (!geneList.value.trim()) {
-    ElMessage.error('请输入基因ID');
+    ElMessage.error('Please enter gene IDs');
     return;
   }
 
   if (pValueThreshold.value < 0 || pValueThreshold.value > 1) {
-    ElMessage.error('P值阈值必须在0到1之间');
+    ElMessage.error('P-value threshold must be between 0 and 1');
     return;
   }
 
   if (qValueThreshold.value < 0 || qValueThreshold.value > 1) {
-    ElMessage.error('Q值阈值必须在0到1之间');
+    ElMessage.error('Q-value threshold must be between 0 and 1');
     return;
   }
 
@@ -158,8 +158,8 @@ const submitForm = async () => {
       })
     } 
   } catch (error: any) {
-    console.error('提交表单时出错:', error)
-    ElMessage.error('提交表单时出错: ' + (error.message || '未知错误'));
+    console.error('Error submitting form:', error)
+    ElMessage.error('Error submitting form: ' + (error.message || 'Unknown error'));
   } finally {
     isLoading.value = false
   }

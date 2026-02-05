@@ -1,11 +1,11 @@
 <template>
   <div class="container mt-4">
     <div class="page-header">
-      <h1 class="page-title">Contact Us</h1>
-      <p class="page-description">Get in touch with the CottonOGD team</p>
+      <h1 class="page-title">{{ t('contact_us') }}</h1>
+      <p class="page-description">{{ t('get_in_touch') }}</p>
     </div>
     <el-card>
-      <p>此页面正在开发中...</p>
+      <p>This page is under development...</p>
     </el-card>
   </div>
 </template>

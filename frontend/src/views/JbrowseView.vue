@@ -11,7 +11,7 @@
               v-model="selectedGenome"
               :options="genomeOptions"
               :props="cascaderProps"
-              placeholder="选择基因组"
+              placeholder="Select Genome"
               class="w-100 mt-2"
               @change="handleGenomeChange"
               :loading="genomeLoading"
@@ -35,7 +35,7 @@
       <!-- 主内容区域 - 展示JBrowse -->
       <div class="col-md-9">
         <div class="main-content">
-          <h2>JBrowse 可视化</h2>
+          <h2>JBrowse Visualization</h2>
           <div v-if="selectedGenomeInfo" class="genome-info">
               <p><strong>Genome:</strong> {{ selectedGenomeInfo.name }}</p>
               <p><strong>Version:</strong> {{ selectedGenomeInfo.assembly }}</p>

@@ -49,7 +49,7 @@ const getTranscriptLabel = (transcript) => {
   if (!transcript) return 'Unknown Transcript'
   
   const transcriptId = transcript.mrna_id || transcript.id || 'Unknown'
-  const proteinLength = transcript.protein_seq && transcript.protein_seq !== 'N/A' && transcript.protein_seq !== 'unavailable' && transcript.protein_seq !== '未找到蛋白序列' 
+  const proteinLength = transcript.protein_seq && transcript.protein_seq !== 'N/A' && transcript.protein_seq !== 'unavailable' && transcript.protein_seq !== 'Protein sequence not found' 
     ? transcript.protein_seq.length 
     : 'N/A'
   

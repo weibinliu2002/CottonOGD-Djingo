@@ -48,7 +48,7 @@ const routes = [
   {
     path: '/browse/species',
     name: 'BrowseSpecies',
-    component: () => ({ ...SimpleView, propsData: { title: '浏览物种' } })
+    component: () => ({ ...SimpleView, propsData: { title: 'Browse Species' } })
   },
   {
     path: '/browse/tf',
@@ -127,7 +127,7 @@ const routes = [
   {
     path: '/tools/heatmap',
     name: 'Heatmap',
-    component: () => ({ ...SimpleView, propsData: { title: '热图分析' } })
+    component: () => ({ ...SimpleView, propsData: { title: 'Heatmap Analysis' } })
   },
   {    path: '/tools/gene-expression',
     name: 'GeneExpression',
@@ -149,22 +149,22 @@ const routes = [
   {
     path: '/tools/ks-calculator',
     name: 'KsCalculator',
-    component: () => ({ ...SimpleView, propsData: { title: 'KS计算器' } })
+    component: () => ({ ...SimpleView, propsData: { title: 'KS Calculator' } })
   },
   {
     path: '/tools/ks-calculator/results',
     name: 'KsCalculatorResults',
-    component: () => ({ ...SimpleView, propsData: { title: 'KS计算器结果' } })
+    component: () => ({ ...SimpleView, propsData: { title: 'KS Calculator Results' } })
   },
   {
     path: '/tools/orthogroup',
     name: 'Orthogroup',
-    component: () => ({ ...SimpleView, propsData: { title: 'Orthogroup分析' } })
+    component: () => ({ ...SimpleView, propsData: { title: 'Orthogroup Analysis' } })
   },
   {
     path: '/tools/orthogroup/results',
     name: 'OrthogroupResults',
-    component: () => ({ ...SimpleView, propsData: { title: 'Orthogroup分析结果' } })
+    component: () => ({ ...SimpleView, propsData: { title: 'Orthogroup Analysis Results' } })
   },
   {
     path: '/tools/msa',

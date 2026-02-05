@@ -55,7 +55,7 @@ const loadGenomes = async () => {
   try {
     await genomeStore.fetchGenomes()
   } catch (error: any) {
-    errorMessage.value = error.message || '加载基因组数据失败'
+    errorMessage.value = error.message || 'Failed to load genome data'
   } finally {
     isLoading.value = false
   }
@@ -77,11 +77,11 @@ const downloadFile = async (genomeId: string, type: string) => {
     link.download = `${genomeId}${fileExtension}`
     link.click()
   } catch (error: any) {
-    errorMessage.value = `下载失败: ${error.message || '未知错误'}`
+    errorMessage.value = `Download failed: ${error.message || 'Unknown error'}`
   }
 }
 
-// 展开项
+// Expanded Items
 const activeNames = ref<string[]>([])
 </script>
 
@@ -103,7 +103,7 @@ const activeNames = ref<string[]>([])
           <el-col :span="8">
             <el-select
               v-model="selectedCategory"
-              placeholder="选择基因组分类"
+              placeholder="Select Genome Category"
               clearable
               class="w-full"
             >
@@ -123,7 +123,7 @@ const activeNames = ref<string[]>([])
               class="w-full"
             >
               <el-icon><RefreshLeft /></el-icon>
-              刷新数据
+              Refresh Data
             </el-button>
           </el-col>
         </el-row>
@@ -145,16 +145,16 @@ const activeNames = ref<string[]>([])
         <el-skeleton :rows="10" animated />
       </div>
       
-      <!-- 无数据提示 -->
+      <!-- No Data Alert -->
       <el-alert
         v-else-if="groupedGenomes.length === 0"
         type="warning"
-        title="暂无基因组数据"
+        title="No Genome Data Available"
         show-icon
         class="mb-6"
       />
       
-      <!-- 基因组数据展示 -->
+      <!-- Genome Data Display -->
       <div v-else class="genome-cards">
         <el-collapse v-model="activeNames" class="collapse-container">
           <el-collapse-item
@@ -167,7 +167,7 @@ const activeNames = ref<string[]>([])
               <div class="card-header">
                 <el-icon class="mr-2"><Folder /></el-icon>
                 <span class="category-name">{{ genomeGroup.label }}</span>
-                <el-tag type="info" size="small" class="ml-2">{{ genomeGroup.children?.length || 0 }} 个基因组</el-tag>
+                <el-tag type="info" size="small" class="ml-2">{{ genomeGroup.children?.length || 0 }} Genomes</el-tag>
               </div>
             </template>
             
@@ -184,7 +184,7 @@ const activeNames = ref<string[]>([])
                 </div>
                 
                 <div class="download-options">
-                  <el-divider content-position="center">下载选项</el-divider>
+                  <el-divider content-position="center">Download Options</el-divider>
                   <el-row :gutter="15" class="download-buttons">
                     <el-col :xs="24" :sm="12" :md="8" :lg="6" v-for="type in downloadTypes" :key="type.value">
                       <el-button

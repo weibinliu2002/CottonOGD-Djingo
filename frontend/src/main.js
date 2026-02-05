@@ -8,20 +8,21 @@ import httpInstance from './utils/http.js'
 import { useGenomeStore } from './stores/genome_info.ts'
 import { useFamilyStore } from './stores/familyInfo.ts'
 import ElementPlus from 'element-plus'
-import zhCn from 'element-plus/es/locale/lang/zh-cn'
+import { i18n } from './locales/i18n-config'
 
 const pinia = createPinia()
 const app = createApp(App)
 
-app.use(ElementPlus, {
-  locale: zhCn,
-})
+app.use(ElementPlus)
 
 // 使用Vue 3的方式设置全局属性 - 挂载完整的uuid对象
 app.config.globalProperties.$uuid = { v4: uuidv4 }
 
 // 挂载axios实例到全局属性
 app.config.globalProperties.$http = httpInstance
+
+// 注册i18n
+app.use(i18n)
 
 app.use(pinia).use(router).mount('#app')
 

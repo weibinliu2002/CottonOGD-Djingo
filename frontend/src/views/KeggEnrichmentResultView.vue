@@ -1,10 +1,10 @@
 <template>
   <div class="container mt-4">
-    <h2 class="mb-4">KEGG通路富集分析结果</h2>
+    <h2 class="mb-4">KEGG Pathway Enrichment Analysis Results</h2>
     
     <!-- 返回按钮 -->
     <router-link to="/tools/kegg-enrichment" class="mb-3">
-      <el-button type="default">返回</el-button>
+      <el-button type="default">Back</el-button>
     </router-link>
     
     <!-- 加载状态 -->
@@ -27,7 +27,7 @@
       <el-alert
         v-if="!hasResults"
         type="warning"
-        title="未找到显著的KEGG通路富集结果"
+        title="No significant KEGG pathway enrichment results found"
         show-icon
         class="mb-4"
       />
@@ -55,7 +55,7 @@
         <el-form @submit.prevent="handlePerPageChange" class="mb-3" id="per-page-form">
           <el-row :gutter="20" align="middle">
             <el-col :span="6">
-              <el-form-item label="每页显示:" label-width="80px">
+              <el-form-item label="Results per page:" label-width="120px">
                 <el-select 
                   v-model.number="pageSize"
                   class="w-40" 
@@ -69,23 +69,23 @@
               </el-form-item>
             </el-col>
             <el-col :span="4">
-              <span class="text-gray-500">条记录</span>
-            </el-col>
+            <span class="text-gray-500">records</span>
+          </el-col>
           </el-row>
         </el-form>
         
         <el-card class="mb-5">
           <template #header>
             <div class="d-flex justify-content-between align-items-center">
-              <h4 class="text-danger m-0">KEGG通路</h4>
-              <el-tag type="info">(共 {{ totalItems }} 条)</el-tag>
+              <h4 class="text-danger m-0">KEGG Pathways</h4>
+            <el-tag type="info">(Total {{ totalItems }} records)</el-tag>
             </div>
           </template>
           
           <!-- 表格区域 -->
           <el-table :data="paginatedResults" style="width: 100%">
-            <el-table-column prop="pathway_id" label="通路ID" width="120"></el-table-column>
-            <el-table-column prop="description.name" label="描述">
+            <el-table-column prop="pathway_id" label="Pathway ID" width="120"></el-table-column>
+            <el-table-column prop="description.name" label="Description">
               <template #default="scope">
                 <div>
                   {{ scope.row.description.name || '' }}
@@ -191,7 +191,7 @@ const fetchResults = async () => {
     // 从URL参数获取task_id
     const taskId = route.query.task_id
     if (!taskId) {
-      errorMessage.value = '缺少任务ID'
+      errorMessage.value = 'Task ID missing'
       hasResults.value = false
       return
     }
@@ -217,18 +217,18 @@ const fetchResults = async () => {
         executionTime.value = data.execution_time || 0
         plotImage.value = data.plot_image || null
       } else if (data.status === 'processing') {
-        // 如果任务仍在处理中，等待一段时间后重试
+        // If task is still processing, retry after a short delay
         setTimeout(() => fetchResults(), 1000)
       } else {
-        errorMessage.value = data.error || '获取结果失败'
+        errorMessage.value = data.error || 'Failed to get results'
         hasResults.value = false
       }
     } else {
-      errorMessage.value = '无效的API响应'
+      errorMessage.value = 'Invalid API response'
       hasResults.value = false
     }
   } catch (error: any) {
-    errorMessage.value = '获取结果失败: ' + (error.message || error)
+    errorMessage.value = 'Failed to get results: ' + (error.message || error)
     console.error('Error fetching results:', error)
     hasResults.value = false
   } finally {

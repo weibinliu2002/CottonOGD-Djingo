@@ -1,33 +1,33 @@
 <template>
   <div class="container mt-4">
-    <h2 class="mb-4">GO注释</h2>
+    <h2 class="mb-4">{{ t('go_annotation') }}</h2>
     
     <el-card class="mb-4">
       <template #header>
         <div class="card-header">
-          <span>GO注释分析</span>
+          <span>{{ t('go_annotation_analysis') }}</span>
         </div>
       </template>
       
       <el-form @submit.prevent="handleSubmit" label-width="250px">
-        <el-form-item label="输入基因列表 (每行一个基因或空格分隔)">
+        <el-form-item label="Input gene list (one gene per line or space-separated)">
           <el-input
             type="textarea"
             :rows="10"
             v-model="geneList"
-            placeholder="请输入基因列表"
+            placeholder="Please enter gene list"
           />
           <div class="mt-2">
             <el-button type="info" size="small" @click="fillExample">
-              load example
+              Load Example
             </el-button>
           </div>
         </el-form-item>
         
-        <el-form-item label="每页显示结果数">
+        <el-form-item label="Results per page">
           <el-select
             v-model="perPage"
-            placeholder="每页结果数"
+            placeholder="Results per page"
             style="width: 120px"
           >
             <el-option value="5" label="5" />
@@ -40,7 +40,7 @@
         <el-form-item>
           <el-button type="primary" native-type="submit">
             <el-icon><Search /></el-icon>
-            提交分析
+            Submit Analysis
           </el-button>
         </el-form-item>
         
@@ -90,7 +90,7 @@ const handleSubmit = async () => {
   
   // 验证表单
   if (!geneList.value.trim()) {
-    error.value = '请输入基因列表'
+    error.value = 'Please enter gene list'
     return
   }
   
@@ -108,8 +108,8 @@ const handleSubmit = async () => {
       query: params
     })
   } catch (err) {
-    error.value = '提交失败，请重试'
-    console.error('提交失败:', err)
+    error.value = 'Submission failed, please try again'
+    console.error('Submission failed:', err)
   }
 }
 </script>

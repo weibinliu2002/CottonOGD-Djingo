@@ -56,13 +56,13 @@ const props = defineProps({
 const emit = defineEmits(['show-sequence', 'download-all', 'copy-all', 'length-change'])
 
 const sequenceTypes = [
-  { key: 'genomic', title: '基因组序列' },
-  { key: 'mrna', title: 'mRNA序列' },
-  { key: 'upstream', title: '上游序列' },
-  { key: 'downstream', title: '下游序列' },
-  { key: 'cdna', title: 'cDNA序列' },
-  { key: 'cds', title: 'CDS序列' },
-  { key: 'protein', title: '蛋白序列' }
+  { key: 'genomic', title: 'Genomic Sequence' },
+  { key: 'mrna', title: 'mRNA Sequence' },
+  { key: 'upstream', title: 'Upstream Sequence' },
+  { key: 'downstream', title: 'Downstream Sequence' },
+  { key: 'cdna', title: 'cDNA Sequence' },
+  { key: 'cds', title: 'CDS Sequence' },
+  { key: 'protein', title: 'Protein Sequence' }
 ]
 
 const lengthOptions = [500, 1000, 2000, 3000, 4000, 5000, 10000]
@@ -85,7 +85,7 @@ const getGeneId = () => {
 
 const hasSequences = (seqType) => {
   // 检查直接属性、currentTranscript和results
-  const checkSeq = (seq) => seq && seq !== '' && seq !== 'N/A' && seq !== 'unavailable' && seq !== '未找到CDS序列' && seq !== '未找到蛋白序列'
+  const checkSeq = (seq) => seq && seq !== '' && seq !== 'N/A' && seq !== 'unavailable' && seq !== 'CDS sequence not found' && seq !== 'Protein sequence not found'
   if (seqType === 'genomic') return checkSeq(props.gene_seq) || (props.results && props.results.some(r => checkSeq(r.gene_seq)))
   if (seqType === 'mrna') return checkSeq(props.mrna_seq) || (props.currentTranscript && checkSeq(props.currentTranscript.mrna_seq)) || (props.results && props.results.some(r => checkSeq(r.mrna_seq) || (r.mrna_transcripts && r.mrna_transcripts.some(t => checkSeq(t.mrna_seq)))))
   if (seqType === 'upstream') return checkSeq(props.upstream_seq) || (props.currentTranscript && checkSeq(props.currentTranscript.upstream_seq)) || (props.results && props.results.some(r => checkSeq(r.upstream_seq) || (r.mrna_transcripts && r.mrna_transcripts.some(t => checkSeq(t.upstream_seq)))))
@@ -125,10 +125,10 @@ const formatSequence = (seq) => {
 
 const getSequenceTypeContent = (seqType, result, geneIndex) => {
   if (!result) return ''
-  const geneId = result.IDs || `基因 ${geneIndex + 1}`
+  const geneId = result.IDs || `Gene ${geneIndex + 1}`
   const upLen = selectedUpstreamLength.value || 500
   const downLen = selectedDownstreamLength.value || 500
-  const checkSeq = (seq) => seq && seq !== '' && seq !== 'N/A' && seq !== 'unavailable' && seq !== '未找到CDS序列' && seq !== '未找到蛋白序列'
+  const checkSeq = (seq) => seq && seq !== '' && seq !== 'N/A' && seq !== 'unavailable' && seq !== 'CDS sequence not found' && seq !== 'Protein sequence not found'
 
   let content = ''
 

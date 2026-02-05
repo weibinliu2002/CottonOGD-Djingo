@@ -7,7 +7,7 @@
           <el-input
             type="textarea"
             :rows="6"
-            placeholder="请输入基因ID，一行一个"
+            placeholder="Please enter gene IDs, one per line"
             v-model="geneSearchStore.searchInput"
             ref="gene_ids"
           />
@@ -46,9 +46,9 @@
             <template #default>
               <el-button type="primary">
                 <el-icon><Upload /></el-icon>
-                <span>选择文件</span>
+                <span>Select File</span>
               </el-button>
-              <span class="ml-2">{{ fileName || '未选择文件' }}</span>
+              <span class="ml-2">{{ fileName || 'No file selected' }}</span>
             </template>
           </el-upload>
           <div class="text-muted mt-1">support .txt or .csv file</div>
@@ -75,7 +75,7 @@
 <script setup>
 import { ref, onMounted, inject } from 'vue';
 import { useGenomeStore } from '@/stores/genome_info';
-import { useGeneSearchStore } from '@/stores/geneSearch.js';
+import { useGeneSearchStore } from '@/stores/geneSearch';
 import { Upload } from '@element-plus/icons-vue';
 
 // 注入全局加载方法
@@ -118,15 +118,15 @@ const handleFileSelect = (file) => {
       try {
         geneSearchStore.searchInput = e.target.result.trim();
         fileName.value = selectedFile.name;
-        console.log('已从文件中读取基因ID:', geneSearchStore.searchInput);
+        console.log('Gene IDs loaded from file:', geneSearchStore.searchInput);
       } catch (error) {
-        geneSearchStore.setError('文件读取失败: ' + error.message);
-        console.error('文件读取错误:', error);
+        geneSearchStore.setError('File read failed: ' + error.message);
+        console.error('File read error:', error);
       }
     };
     reader.onerror = () => {
-      geneSearchStore.setError('文件读取错误');
-      console.error('文件读取器错误:', reader.error);
+        geneSearchStore.setError('File read error');
+        console.error('File reader error:', reader.error);
     };
     reader.readAsText(selectedFile);
   } else {
