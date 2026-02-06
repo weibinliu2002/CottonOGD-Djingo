@@ -48,7 +48,7 @@ const fillExample = () => {
             >
               <template #append>
                 <el-button type="primary" size="large" @click="performSearch">
-                  <el-icon><{{ t('search') }} /></el-icon>
+                  <el-icon><Search /></el-icon>
                   {{ t('search') }}
                 </el-button>
               </template>
@@ -287,12 +287,12 @@ const fillExample = () => {
         </el-row>
       </div>
     </section>
+    <!--
     
-    <!-- 最新研究与新闻区域 -->
     <section class="news-research-section bg-light">
       <div class="container">
         <div class="row">
-          <!-- 最新研究 -->
+         
           <div class="col-md-6">
             <h2 class="section-title">{{ t('latest') }} Research</h2>
             <el-card shadow="hover" class="research-card">
@@ -322,7 +322,7 @@ const fillExample = () => {
             </el-card>
           </div>
           
-          <!-- 新闻公告 -->
+      
           <div class="col-md-6">
             <h2 class="section-title">{{ t('news') }} & Updates</h2>
             <el-timeline>
@@ -351,9 +351,10 @@ const fillExample = () => {
           </div>
         </div>
       </div>
-    </section>
+    </section>-->
     
     <!-- 合作伙伴与引用区域 -->
+     <!--
     <section class="partners-section">
       <div class="container">
         <h2 class="section-title">{{ t('partners_citations') }}</h2>
@@ -389,7 +390,7 @@ const fillExample = () => {
           </div>
         </div>
       </div>
-    </section>
+    </section>-->
   </div>
 </template>
 

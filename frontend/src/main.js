@@ -8,7 +8,7 @@ import httpInstance from './utils/http.js'
 import { useGenomeStore } from './stores/genome_info.ts'
 import { useFamilyStore } from './stores/familyInfo.ts'
 import ElementPlus from 'element-plus'
-import { i18n } from './locales/i18n-config'
+import { i18n, initLocale } from './locales/i18n-config'
 
 const pinia = createPinia()
 const app = createApp(App)
@@ -23,6 +23,9 @@ app.config.globalProperties.$http = httpInstance
 
 // 注册i18n
 app.use(i18n)
+
+// 初始化语言设置
+initLocale()
 
 app.use(pinia).use(router).mount('#app')
 

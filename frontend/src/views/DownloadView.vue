@@ -67,17 +67,14 @@ const loadGenomes = async () => {
 // 下载文件
 const downloadFile = async (genomeId: string, type: string) => {
   try {
-    // 使用type映射获取文件扩展名
-    const fileExtension = typeMapping[type] || type
-    
-    // 构建文件路径（根据实际文件路径格式）
-    const fileUrl = `/data/genome/${genomeId}/${genomeId}${fileExtension}`
-    console.log('Download URL:', fileUrl)
+    // 使用后端 API 下载文件
+    const apiUrl = `/CottonOGD_api/download_genome/${genomeId}/${type}`
+    console.log('Download API URL:', apiUrl)
     
     // 创建下载链接
     const link = document.createElement('a')
-    link.href = fileUrl
-    link.download = `${genomeId}${fileExtension}`
+    link.href = apiUrl
+    link.download = `${genomeId}${typeMapping[type] || type}`
     link.click()
   } catch (error: any) {
     errorMessage.value = `Download failed: ${error.message || 'Unknown error'}`

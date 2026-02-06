@@ -23,15 +23,20 @@ def get_species_info(request):
         logger.error(f"Error fetching species info: {e}")
         return Response({'error': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-@api_view(['GET'])
+@api_view(['POST'])
 def get_family_info(request):
-    
+
     uuid=request.headers.get('uuid')
     if uuid not in UuidManager.uuid_storage:
         return Response({'error': 'uuid is required'}, status=status.HTTP_400_BAD_REQUEST)
-    #species=request.GET.get('species')
+    selectedGenome=request.data.get('selectedGenome') or ''
+    selectedClass=request.data.get('Class') or ''
+    logger.info(f"selectedGenome: {selectedGenome}, selectedClass: {selectedClass}")
     try:
-        family_list = list(Family.objects.all().values())
+        if selectedGenome and selectedClass:
+            family_list = list(Family.objects.filter(genome_id=selectedGenome,TF_class=selectedClass).values())
+        else:
+            family_list = list(Family.objects.all().values())
         #logger.info(f"family_list: {family_list}")
         
         # 计算每个家族的基因数量

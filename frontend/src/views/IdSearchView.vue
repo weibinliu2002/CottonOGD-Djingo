@@ -1,24 +1,24 @@
 <template>
   <div class="container mt-4">
-    <h1>Search by ID</h1>
+    <h1>{{ t('search_by_id') }}</h1>
     <el-card class="mt-4">
       <el-form @submit.prevent="handleSubmit" label-width="120px">
-        <el-form-item label="Input Gene IDs">
+        <el-form-item :label="t('input_gene_ids')">
           <el-input
             type="textarea"
             :rows="6"
-            placeholder="Please enter gene IDs, one per line"
+            :placeholder="t('please_enter_gene_ids_one_per_line')"
             v-model="geneSearchStore.searchInput"
             ref="gene_ids"
           />
           <div class="mt-2">
-            <el-button type="info" @click="loadExample">load example</el-button>
-            <el-button type="default" @click="reset" class="ml-2">Reset</el-button>
+            <el-button type="info" @click="loadExample">{{ t('load_example') }}</el-button>
+            <el-button type="default" @click="reset" class="ml-2">{{ t('reset') }}</el-button>
           </div>
-          <div class="text-muted mt-1">one gene ID per line</div>
+          <div class="text-muted mt-1">{{ t('one_gene_id_per_line') }}</div>
         </el-form-item>
         
-        <el-form-item label="Select Genome">
+        <el-form-item :label="t('select_genome')">
           <el-tree-select
             v-model="geneSearchStore.selectedGenome"
             :data="genomeStore.genomeOptions"
@@ -27,14 +27,14 @@
               label: 'label',
               children: 'children'
             }"
-            placeholder="Select Genome"
+            :placeholder="t('select_genome')"
             style="width: 100%"
             :loading="genomeStore.loading"
             multiple
           />
         </el-form-item>
         
-        <el-form-item label="select file">
+        <el-form-item :label="t('select_file')">
           <el-upload
             class="upload-demo"
             action="#"
@@ -46,16 +46,16 @@
             <template #default>
               <el-button type="primary">
                 <el-icon><Upload /></el-icon>
-                <span>Select File</span>
+                <span>{{ t('select_file') }}</span>
               </el-button>
-              <span class="ml-2">{{ fileName || 'No file selected' }}</span>
+              <span class="ml-2">{{ fileName || t('no_file_selected') }}</span>
             </template>
           </el-upload>
-          <div class="text-muted mt-1">support .txt or .csv file</div>
+          <div class="text-muted mt-1">{{ t('support_txt_or_csv_file') }}</div>
         </el-form-item>
         
         <el-form-item>
-          <el-button type="primary" native-type="submit" :loading="geneSearchStore.loading">Search</el-button>
+          <el-button type="primary" native-type="submit" :loading="geneSearchStore.loading">{{ t('search') }}</el-button>
         </el-form-item>
       </el-form>
       
@@ -74,9 +74,12 @@
 
 <script setup>
 import { ref, onMounted, inject } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useGenomeStore } from '@/stores/genome_info';
 import { useGeneSearchStore } from '@/stores/geneSearch';
 import { Upload } from '@element-plus/icons-vue';
+
+const { t } = useI18n();
 
 // 注入全局加载方法
 const showLoading = inject('showLoading');
@@ -120,7 +123,7 @@ const handleFileSelect = (file) => {
         fileName.value = selectedFile.name;
         console.log('Gene IDs loaded from file:', geneSearchStore.searchInput);
       } catch (error) {
-        geneSearchStore.setError('File read failed: ' + error.message);
+        geneSearchStore.setError(t('file_read_failed') + ': ' + error.message);
         console.error('File read error:', error);
       }
     };

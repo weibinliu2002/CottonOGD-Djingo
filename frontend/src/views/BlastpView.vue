@@ -4,7 +4,7 @@ const { t } = useI18n()
 import { onMounted, computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { ElMessage } from 'element-plus'
-import { Search } from '@element-plus/icons-vue'
+import { Delete, Search } from '@element-plus/icons-vue'
 import { useGenomeStore } from '@/stores/genome_info'
 import { useBlastStore } from '@/stores/blastStore'
 
@@ -133,7 +133,7 @@ onMounted(() => {
             :disabled="loading"
             @click="submitBlast"
           >
-            <el-icon><{{ t('search') }} /></el-icon>
+            <el-icon><Search /></el-icon>
             Run {{ t('blast_search') }}
           </el-button>
           <el-button type="default" @click="resetForm" size="large" class="reset-button">
@@ -148,7 +148,7 @@ onMounted(() => {
             <h3 class="section-title">{{ t('sequence') }} Input</h3>
             
             <!-- 序列输入 -->
-            <el-form-item label="{{ t('query_sequence') }}">
+            <el-form-item :label="t('query_sequence')">
               <el-input
                 type="textarea"
                 :rows="10"
@@ -159,7 +159,7 @@ onMounted(() => {
               <div class="form-actions mt-2">
                 <el-button type="info" size="small" @click="fillExample">
                   <el-icon><DocumentCopy /></el-icon>
-                  Load {{ t('example') }} {{ t('sequence') }}
+                  {{ t('load_example_sequence') }}
                 </el-button>
                 <el-upload
                   action="#"
@@ -177,13 +177,13 @@ onMounted(() => {
                   </template>
                 </el-upload>
                 <el-button type="warning" size="small" @click="sequence = ''">
-                  <el-icon><{{ t('delete') }} /></el-icon>
+                  <el-icon><Delete /></el-icon>
                   {{ t('clear') }} {{ t('sequence') }}
                 </el-button>
               </div>
               <div class="help-text mt-2">
                 <i class="fas fa-info-circle"></i>
-                <span>Enter your sequence in FASTA or plain text format. The example will be loaded based on the selected BLAST type.</span>
+                <span>{{ t('enter_your_sequence_in_fasta_or_plain_text_format') }}</span>
               </div>
             </el-form-item>
           </div>
@@ -193,13 +193,13 @@ onMounted(() => {
             <h3 class="section-title">{{ t('search') }} Parameters</h3>
             
             <!-- 基因组选择 -->
-            <el-form-item label="Select Genomes">
+            <el-form-item :label="t('select_genomes')">
               <el-select
                 v-model="selectedGenomes"
                 filterable
                 allow-create
                 default-first-option
-                placeholder="Select genome or genome category"
+                :placeholder="t('select_genome_or_genome_category')"
                 :loading="genomeStore.loading"
                 class="w-full genome-select"
               >
@@ -223,15 +223,15 @@ onMounted(() => {
               </el-select>
               <div class="help-text mt-2">
                 <i class="fas fa-info-circle"></i>
-                <span>Select one or more genomes to search against. You can also select entire genome categories.</span>
+                <span>{{ t('select_one_or_more_genomes_to_search_against') }}</span>
               </div>
             </el-form-item>
             
             <!-- 数据库类型选择 -->
-            <el-form-item label="{{ t('database_type') }}">
+            <el-form-item :label="t('database_type')">
               <el-select
                 v-model="selectedDatabaseType"
-                placeholder="Select database type"
+                :placeholder="t('select_database_type')"
                 class="w-full"
               >
                 <el-option
@@ -243,41 +243,41 @@ onMounted(() => {
               </el-select>
               <div class="help-text mt-2">
                 <i class="fas fa-info-circle"></i>
-                <span>Choose the type of sequence database to search against.</span>
+                <span>{{ t('choose_the_type_of_sequence_database_to_search_against') }}</span>
               </div>
             </el-form-item>
             
             <!-- 参数设置 -->
             <div class="parameter-grid">
               <!-- {{ t('e_value') }}阈值 -->
-              <el-form-item label="{{ t('e_value') }} Threshold">
+              <el-form-item :label="t('e_value') + ' Threshold'">
                 <el-input
                   type="number"
                   v-model.number="evalue"
                   :step="0.01"
                   :min="0"
-                  placeholder="{{ t('e_value') }}"
+                  :placeholder="t('e_value')"
                   class="w-full"
                 />
                 <div class="help-text mt-1">
                   <i class="fas fa-info-circle"></i>
-                  <span>The expectation value threshold for saving hits (default: 0.01)</span>
+                  <span>{{ t('the_expectation_value_threshold_for_saving_hits') }}</span>
                 </div>
               </el-form-item>
               
               <!-- 最大目标序列数 -->
-              <el-form-item label="Max Target Sequences">
+              <el-form-item :label="t('max_target_sequences')">
                 <el-input
                   type="number"
                   v-model.number="maxTargetSeqs"
                   :min="1"
                   :max="50"
-                  placeholder="Max sequences"
+                  :placeholder="t('max_sequences')"
                   class="w-full"
                 />
                 <div class="help-text mt-1">
                   <i class="fas fa-info-circle"></i>
-                  <span>Maximum number of aligned sequences to keep (default: 30)</span>
+                  <span>{{ t('maximum_number_of_aligned_sequences_to_keep') }}</span>
                 </div>
               </el-form-item>
             </div>
@@ -293,79 +293,79 @@ onMounted(() => {
             class="advanced-toggle-button"
           >
             <el-icon><component :is="showAdvancedParams ? 'ArrowUp' : 'ArrowDown'" /></el-icon>
-            {{ showAdvancedParams ? 'Hide Advanced Parameters' : 'Show Advanced Parameters' }}
+            {{ showAdvancedParams ? t('hide_advanced_parameters') : t('show_advanced_parameters') }}
           </el-button>
           
           <el-collapse-transition>
             <div v-show="showAdvancedParams" class="advanced-params-content">
               <div class="advanced-params-grid">
                 <!-- Word Size -->
-                <el-form-item label="Word Size">
+                <el-form-item :label="t('word_size')">
                   <el-input
                     type="number"
                     v-model.number="wordSize"
                     :min="3"
                     :max="28"
-                    placeholder="Word size"
+                    :placeholder="t('word_size')"
                     class="w-full"
                   />
                   <div class="help-text mt-1">
                     <i class="fas fa-info-circle"></i>
-                    <span>Word size for wordfinder algorithm (default: 11)</span>
+                    <span>{{ t('word_size_description') }}</span>
                   </div>
                 </el-form-item>
                 
                 <!-- Match Score -->
-                <el-form-item label="Match Score">
+                <el-form-item :label="t('match_score')">
                   <el-input
                     type="number"
                     v-model.number="matchScore"
                     :min="0"
-                    placeholder="Match score"
+                    :placeholder="t('match_score')"
                     class="w-full"
                   />
                   <div class="help-text mt-1">
                     <i class="fas fa-info-circle"></i>
-                    <span>Match score threshold (default: 0)</span>
+                    <span>{{ t('match_score_description') }}</span>
                   </div>
                 </el-form-item>
                 
                 <!-- Gap Open -->
-                <el-form-item label="Gap Open">
+                <el-form-item :label="t('gap_open')">
                   <el-input
                     type="number"
                     v-model.number="gapOpen"
                     :min="0"
-                    placeholder="Gap open penalty"
+                    :placeholder="t('gap_open_penalty')"
                     class="w-full"
                   />
                   <div class="help-text mt-1">
                     <i class="fas fa-info-circle"></i>
-                    <span>Gap open penalty (default: 11)</span>
+                    <span>{{ t('gap_open_description') }}</span>
                   </div>
                 </el-form-item>
                 
                 <!-- Gap Extend -->
-                <el-form-item label="Gap Extend">
+                <el-form-item :label="t('gap_extend')">
                   <el-input
                     type="number"
                     v-model.number="gapExtend"
                     :min="0"
-                    placeholder="Gap extend penalty"
+                    :placeholder="t('gap_extend_penalty')"
                     class="w-full"
                   />
                   <div class="help-text mt-1">
                     <i class="fas fa-info-circle"></i>
-                    <span>Gap extend penalty (default: 1)</span>
+                    <span>{{ t('gap_extend_description') }}</span>
                   </div>
                 </el-form-item>
                 
                 <!-- Low Complexity Filter -->
-                <el-form-item label="Low Complexity Filter">
+                <el-form-item :label="t('low_complexity_filter')">
                   <el-switch v-model="lowComplexityFilter" />
                   <div class="help-text mt-1">
                     <i class="fas fa-info-circle"></i>
-                    <span>Filter out low complexity regions (default: true)</span>
+                    <span>{{ t('low_complexity_filter_description') }}</span>
                   </div>
                 </el-form-item>
               </div>
@@ -384,11 +384,11 @@ onMounted(() => {
       </template>
       <div class="help-content">
         <div class="help-section">
-          <h4>What is BLAST?</h4>
-          <p>BLAST (Basic Local Alignment {{ t('search') }} Tool) is an algorithm for comparing primary biological sequence information, such as the amino-acid sequences of proteins or the nucleotides of DNA and/or RNA sequences.</p>
+          <h4>{{ t('what_is_blast') }}</h4>
+          <p>{{ t('blast_description_long') }}</p>
         </div>
         <div class="help-section">
-          <h4>BLAST Types Available</h4>
+          <h4>{{ t('blast_types_available') }}</h4>
           <ul>
             <li><strong>{{ t('blastp') }}</strong>: {{ t('protein') }}-protein BLAST</li>
             <li><strong>BLASTN</strong>: Nucleotide-nucleotide BLAST</li>
@@ -398,12 +398,12 @@ onMounted(() => {
           </ul>
         </div>
         <div class="help-section">
-          <h4>Tips for Better {{ t('results') }}</h4>
+          <h4>{{ t('tips_for_better_results') }}</h4>
           <ul>
-            <li>Use FASTA format for best results</li>
-            <li>Keep sequences between 50-10,000 characters</li>
-            <li>Adjust {{ t('e_value') }} based on your sequence length and complexity</li>
-            <li>Select appropriate databases for your research question</li>
+            <li>{{ t('use_fasta_format_for_best_results') }}</li>
+            <li>{{ t('keep_sequences_between_50_10000_characters') }}</li>
+            <li>{{ t('adjust_e_value_based_on_sequence_length') }}</li>
+            <li>{{ t('select_appropriate_databases_for_research') }}</li>
           </ul>
         </div>
       </div>

@@ -2,7 +2,7 @@
   <el-card class="overview-card">
     <template #header>
       <div class="card-header">
-        <h2>{{ title }}</h2>
+        <h2>{{ t(title) }}</h2>
         <div class="gene-id-badge" v-if="geneData.IDs">
           <el-tag type="primary" size="large">{{ geneData.IDs }}</el-tag>
         </div>
@@ -16,7 +16,7 @@
             <i class="fas fa-chromosome"></i>
           </div>
           <div class="info-content">
-            <div class="info-label">Chromosome</div>
+            <div class="info-label">{{ t('chromosome') }}</div>
             <div class="info-value">{{ geneData.seqid || 'N/A' }}</div>
           </div>
         </div>
@@ -25,7 +25,7 @@
             <i class="fas fa-map-marker-alt"></i>
           </div>
           <div class="info-content">
-            <div class="info-label">Location</div>
+            <div class="info-label">{{ t('location') }}</div>
             <div class="info-value">{{ geneData.gene_search_start }} - {{ geneData.gene_search_end }}</div>
           </div>
         </div>
@@ -34,7 +34,7 @@
             <i class="fas fa-arrows-alt-h"></i>
           </div>
           <div class="info-content">
-            <div class="info-label">Strand</div>
+            <div class="info-label">{{ t('strand') }}</div>
             <div class="info-value">{{ geneData.gene_search_strand || 'N/A' }}</div>
           </div>
         </div>
@@ -43,7 +43,7 @@
             <i class="fas fa-transcript"></i>
           </div>
           <div class="info-content">
-            <div class="info-label">Transcripts</div>
+            <div class="info-label">{{ t('transcripts') }}</div>
             <div class="info-value">{{ geneData.mrna_transcripts?.length || 0 }}</div>
           </div>
         </div>
@@ -51,7 +51,7 @@
       
       <!-- 基本信息表格 -->
       <!--<div class="basic-info-section" v-if="showBasicInfoTable">
-        <h3 class="section-title">Basic Information</h3>
+        <h3 class="section-title">{{ t('basic_information') }}</h3>
         <el-table :data="basicInfoList" border class="basic-info-table">
           <el-table-column prop="label" label="Attribute" width="180" align="center" />
           <el-table-column prop="value" label="Value" />
@@ -63,6 +63,9 @@
 
 <script setup>
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps({
   geneData: {
@@ -71,7 +74,7 @@ const props = defineProps({
   },
   title: {
     type: String,
-    default: 'Gene Overview'
+    default: 'gene_overview'
   },
   showBasicInfoTable: {
     type: Boolean,
@@ -83,11 +86,11 @@ const basicInfoList = computed(() => {
   if (!props.geneData) return []
   console.log(props.geneData)
   return [
-    { label: 'Gene ID', value: props.geneData.IDs },
-    { label: 'Chromosome', value: props.geneData.seqid || 'N/A' },
-    { label: 'Start Position', value: props.geneData.start || 'N/A' },
-    { label: 'End Position', value: props.geneData.end || 'N/A' },
-    { label: 'Strand', value: props.geneData.strand || 'N/A' }
+    { label: 'gene_id', value: props.geneData.IDs },
+    { label: 'chromosome', value: props.geneData.seqid || 'N/A' },
+    { label: 'start_position', value: props.geneData.start || 'N/A' },
+    { label: 'end_position', value: props.geneData.end || 'N/A' },
+    { label: 'strand', value: props.geneData.strand || 'N/A' }
   ]
 })
 </script>

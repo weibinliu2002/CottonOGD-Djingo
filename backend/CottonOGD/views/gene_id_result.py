@@ -20,36 +20,38 @@ def geneid_summary(request):
     if not uuid or uuid not in UuidManager.uuid_storage:
         return Response({'error': 'uuid is required'}, status=status.HTTP_400_BAD_REQUEST)
     # 从多个来源获取 gene_id：请求体、查询参数
-    gene_id = request.data.get('gene_id') or request.query_params.get('gene_id')
-    genome_id = request.data.get('genome_id') or request.query_params.get('genome_id')
-    genome_gene_id = Id_map(gene_id,genome_id)
+   
+    db_id = request.data.get('db_id') or request.query_params.get('db_id')
+    db_ids = []
+    if db_id:
+        db_ids=db_ids+[db_id]
+        genome_gene_id = []
     #logger.info(f"get_gene_id_result gene_id: {genome_gene_id}")
-    try:
+    else:
         # 从 Id_map 返回的字典中提取所有 db_id
-        db_ids = []
+        gene_id = request.data.get('gene_id') or request.query_params.get('gene_id')
+        genome_id = request.data.get('genome_id') or request.query_params.get('genome_id')
+        genome_gene_id = Id_map(gene_id,genome_id)
         if isinstance(genome_gene_id, dict):
             for key, value in genome_gene_id.items():
                 if isinstance(value, dict) and 'db_id' in value:
                     db_ids.append(value['db_id'])
         
         # 去重
-        db_ids = list(set(db_ids))
-        logger.info(f"get_gene_id_result db_ids: {db_ids}")
+    db_ids = list(set(db_ids))
+    logger.info(f"get_gene_id_result db_ids: {db_ids}")
         
-        # 使用 db_id 过滤基因注释
-        gene_annotation_result = gene_annotation.objects.filter(id_id__in=db_ids).values()
-        gene_info_result = gene_info.objects.filter(id_id__in=db_ids).values()
-        # 构建 JBrowse URL
-        geneid_result=json.dumps(list(gene_annotation_result))
-        gene_info_result=json.dumps(list(gene_info_result))
-        search_map=json.dumps(genome_gene_id)
-        return Response({'geneid_result': geneid_result,
-                         'gene_info_result': gene_info_result,
-                         'search_map': search_map,
-                         }, status=status.HTTP_200_OK)
-    except Exception as e:
-        logger.error(f"get_gene_id_result error: {e}")
-        return Response({'error': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    # 使用 db_id 过滤基因注释
+    gene_annotation_result = gene_annotation.objects.filter(id_id__in=db_ids).values()
+    gene_info_result = gene_info.objects.filter(id_id__in=db_ids).values()
+    # 构建 JBrowse URL
+    geneid_result=json.dumps(list(gene_annotation_result))
+    gene_info_result=json.dumps(list(gene_info_result))
+    search_map=json.dumps(genome_gene_id)
+    return Response({'geneid_result': geneid_result,
+                     'gene_info_result': gene_info_result,
+                     'search_map': search_map,
+                     }, status=status.HTTP_200_OK)
 
 
 

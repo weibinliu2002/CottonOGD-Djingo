@@ -292,9 +292,23 @@ export default {
     }
     
     // 处理基因组选择变化
-    const handleGenomeChange = () => {
+    const handleGenomeChange = async () => {
       currentPage.value = 1 // 重置页码
-      fetchTFDataByGenome() // 仅在基因组改变时重新获取数据
+      // 清空所有本地数据
+      originalTFData.value = []
+      tfData.value = []
+      totalCount.value = 0
+      // 更新familyStore中的selectedGenome
+      const genome = selectedGenome.value[selectedGenome.value.length - 1]
+      familyStore.selectedGenome = genome
+      familyStore.selectedClass = 'TF' // 固定为TF
+      // 清空familyInfo数据，确保重新获取
+      familyStore.familyInfo = []
+      familyStore.familyList = []
+      // 重新获取家族数据
+      await familyStore.fetchFamilies()
+      // 仅在基因组改变时重新获取数据
+      fetchTFDataByGenome()
     }
     
     // 处理家族选择变化
@@ -329,12 +343,12 @@ export default {
     }
     
     // 处理基因链接点击
-    const handleGeneClick = (row) => {
-      console.log('Gene link clicked:', row)
+    const handleGeneClick = (geneId) => {
+      console.log('Gene link clicked:', geneId)
       // 导航到ID搜索结果页面，并将基因ID作为参数传递
       router.push({
         name: 'idSearchResults',
-        query: { db_id: row.db_id }
+        query: { db_id: geneId }
       })
     }
     
@@ -348,12 +362,14 @@ export default {
       await fetchGenomes() // 获取基因组列表
       await fetchFamilies() // 获取家族列表
       
-      // 自动选择第一个基因组
-      if (genomeOptions.value && genomeOptions.value.length > 0) {
-        const firstGenome = genomeOptions.value[0]
-        selectedGenome.value = [firstGenome.value]
-        console.log('Auto-selected first genome:', firstGenome.label)
-      }
+      // 设置初始选中的基因组为G.hirsutumAD1_TM-1_HAU_v1.1
+      setTimeout(() => {
+        const targetGenome = 'G.hirsutumAD1_TM-1_HAU_v1.1'
+        selectedGenome.value = [targetGenome]
+        console.log('初始选中的基因组:', targetGenome)
+        // 触发基因组选择变化
+        handleGenomeChange()
+      }, 100)
     })
     
     return {

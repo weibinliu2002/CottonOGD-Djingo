@@ -1,10 +1,10 @@
 <template>
   <div class="container mt-4">
-    <h2 class="mb-4">KEGG Pathway Enrichment Analysis Results</h2>
+    <h2 class="mb-4">{{ t('kegg_pathway_enrichment_analysis_results') }}</h2>
     
     <!-- 返回按钮 -->
     <router-link to="/tools/kegg-enrichment" class="mb-3">
-      <el-button type="default">Back</el-button>
+      <el-button type="default">{{ t('back') }}</el-button>
     </router-link>
     
     <!-- 加载状态 -->
@@ -27,7 +27,7 @@
       <el-alert
         v-if="!hasResults"
         type="warning"
-        title="No significant KEGG pathway enrichment results found"
+        :title="t('no_kegg_enrichment_results')"
         show-icon
         class="mb-4"
       />
@@ -36,13 +36,13 @@
       <el-card v-if="plotImage" class="mb-4">
         <template #header>
           <div class="card-header">
-            <span>KEGG Enrichment Plot</span>
+            <span>{{ t('kegg_enrichment_plot') }}</span>
           </div>
         </template>
         <div class="text-center">
           <el-image
             :src="'data:image/png;base64,' + plotImage"
-            alt="KEGG Enrichment Plot"
+            :alt="t('kegg_enrichment_plot')"
             fit="contain"
             class="w-full"
           />
@@ -55,7 +55,7 @@
         <el-form @submit.prevent="handlePerPageChange" class="mb-3" id="per-page-form">
           <el-row :gutter="20" align="middle">
             <el-col :span="6">
-              <el-form-item label="Results per page:" label-width="120px">
+              <el-form-item :label="t('results_per_page')" label-width="120px">
                 <el-select 
                   v-model.number="pageSize"
                   class="w-40" 
@@ -69,7 +69,7 @@
               </el-form-item>
             </el-col>
             <el-col :span="4">
-            <span class="text-gray-500">records</span>
+            <span class="text-gray-500">{{ t('records') }}</span>
           </el-col>
           </el-row>
         </el-form>
@@ -77,15 +77,15 @@
         <el-card class="mb-5">
           <template #header>
             <div class="d-flex justify-content-between align-items-center">
-              <h4 class="text-danger m-0">KEGG Pathways</h4>
-            <el-tag type="info">(Total {{ totalItems }} records)</el-tag>
+              <h4 class="text-danger m-0">{{ t('kegg_pathways') }}</h4>
+            <el-tag type="info">({{ t('total') }} {{ totalItems }} {{ t('records') }})</el-tag>
             </div>
           </template>
           
           <!-- 表格区域 -->
           <el-table :data="paginatedResults" style="width: 100%">
-            <el-table-column prop="pathway_id" label="Pathway ID" width="120"></el-table-column>
-            <el-table-column prop="description.name" label="Description">
+            <el-table-column prop="pathway_id" :label="t('pathway_id')" width="120"></el-table-column>
+            <el-table-column prop="description.name" :label="t('description')">
               <template #default="scope">
                 <div>
                   {{ scope.row.description.name || '' }}
@@ -95,24 +95,24 @@
                 </div>
               </template>
             </el-table-column>
-            <el-table-column prop="gene_ratio" label="GeneRatio" width="120"></el-table-column>
-            <el-table-column prop="bg_ratio" label="BgRatio" width="120"></el-table-column>
-            <el-table-column label="RichFactor" width="120">
+            <el-table-column prop="gene_ratio" :label="t('gene_ratio')" width="120"></el-table-column>
+            <el-table-column prop="bg_ratio" :label="t('bg_ratio')" width="120"></el-table-column>
+            <el-table-column :label="t('rich_factor')" width="120">
               <template #default="scope">
                 {{ scope.row.rich_factor.toFixed(4) }}
               </template>
             </el-table-column>
-            <el-table-column label="FoldEnrichment" width="150">
+            <el-table-column :label="t('fold_enrichment')" width="150">
               <template #default="scope">
                 {{ scope.row.fold_enrichment.toFixed(4) }}
               </template>
             </el-table-column>
-            <el-table-column label="zScore" width="100">
+            <el-table-column :label="t('z_score')" width="100">
               <template #default="scope">
                 {{ scope.row.z_score.toFixed(4) }}
               </template>
             </el-table-column>
-            <el-table-column label="pvalue" width="150">
+            <el-table-column :label="t('pvalue')" width="150">
               <template #default="scope">
                 {{ scope.row.p_value.toFixed(6) }}
               </template>
@@ -140,7 +140,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const route = useRoute()
 
 // 页面数据
@@ -191,7 +193,7 @@ const fetchResults = async () => {
     // 从URL参数获取task_id
     const taskId = route.query.task_id
     if (!taskId) {
-      errorMessage.value = 'Task ID missing'
+      errorMessage.value = t('task_id_missing')
       hasResults.value = false
       return
     }

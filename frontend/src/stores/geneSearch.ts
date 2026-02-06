@@ -119,8 +119,10 @@ export const useGeneSearchStore = defineStore('geneSearch', () => {
 
   // 序列相关方法
   async function fetchSequence(geneId: string, transcriptId: string, type: string, upstreamLength: number = 500, downstreamLength: number = 500) {
-    // 使用与 IdSearchSummaryView.vue 一致的缓存键格式
-    const cacheKey = `${geneId}|${type}|${transcriptId}|${upstreamLength}|${downstreamLength}`
+    // 对于上游和下游序列，缓存键不包含长度参数，以便在不同长度下都能获取完整序列
+    const cacheKey = (type === 'upstream' || type === 'downstream')
+      ? `${geneId}|${type}|${transcriptId}`
+      : `${geneId}|${type}|${transcriptId}|${upstreamLength}|${downstreamLength}`
 
     // 检查缓存
     if (sequenceCache.value[cacheKey]) {

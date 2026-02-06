@@ -292,9 +292,23 @@ export default {
     }
     
     // 处理基因组选择变化
-    const handleGenomeChange = () => {
+    const handleGenomeChange = async () => {
       currentPage.value = 1 // 重置页码
-      fetchTFDataByGenome() // 仅在基因组改变时重新获取数据
+      // 清空所有本地数据
+      originalTFData.value = []
+      tfData.value = []
+      totalCount.value = 0
+      // 更新familyStore中的selectedGenome
+      const genome = selectedGenome.value[selectedGenome.value.length - 1]
+      familyStore.selectedGenome = genome
+      familyStore.selectedClass = 'TR' // 固定为TR
+      // 清空familyInfo数据，确保重新获取
+      familyStore.familyInfo = []
+      familyStore.familyList = []
+      // 重新获取家族数据
+      await familyStore.fetchFamilies()
+      // 仅在基因组改变时重新获取数据
+      fetchTFDataByGenome()
     }
     
     // 处理家族选择变化
@@ -329,12 +343,12 @@ export default {
     }
     
     // 处理基因链接点击
-    const handleGeneClick = (row) => {
-      console.log('Gene link clicked:', row)
+    const handleGeneClick = (geneId) => {
+      console.log('Gene link clicked:', geneId)
       // 导航到ID搜索结果页面，并将基因ID作为参数传递
       router.push({
         name: 'idSearchResults',
-        query: { db_id: row.db_id }
+        query: { db_id: geneId }
       })
     }
     
@@ -353,6 +367,8 @@ export default {
         const firstGenome = genomeOptions.value[0]
         selectedGenome.value = [firstGenome.value]
         console.log('Auto-selected first genome:', firstGenome.label)
+        // 触发基因组选择变化
+        await handleGenomeChange()
       }
     })
     

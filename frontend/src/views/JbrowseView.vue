@@ -58,7 +58,7 @@ import { useGenomeStore } from '@/stores/genome_info'
 // 获取第一个染色体名称的函数
 const getFirstChromosome = async (genomeName) => {
   try {
-    const faiUrl = `/assets/jbrowse/data/${genomeName}/${genomeName}.genome.fa.gz.fai`
+    const faiUrl = `/data/genome/${genomeName}/${genomeName}.genome.fa.gz.fai`
     console.log('尝试获取.fai文件:', faiUrl)
     const response = await fetch(faiUrl)
     
@@ -169,8 +169,18 @@ export default {
     }
     
     // 组件挂载时初始化
-    onMounted(() => {
-      fetchGenomes()
+    onMounted(async () => {
+      await fetchGenomes()
+      
+      // 设置初始选中的基因组为G.hirsutumAD1_TM-1_HAU_v1.1
+      setTimeout(() => {
+        // 找到G.hirsutumAD1_TM-1_HAU_v1.1对应的选项
+        const targetGenome = 'G.hirsutumAD1_TM-1_HAU_v1.1'
+        selectedGenome.value = [targetGenome]
+        console.log('初始选中的基因组:', targetGenome)
+        // 触发基因组选择变化
+        handleGenomeChange([targetGenome])
+      }, 100)
     })
     
     return {

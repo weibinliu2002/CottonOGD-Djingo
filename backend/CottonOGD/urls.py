@@ -10,6 +10,7 @@ from CottonOGD.views.extract_seq_from_gff import *
 from CottonOGD.views.primer_design import *
 from CottonOGD.views.blast import *
 from CottonOGD.views.expression_EFP import *
+from CottonOGD.views.DownloadGenome import download_genome_file
 
 
 
@@ -29,5 +30,6 @@ urlpatterns = [
     path('primer_design/', primer_design, name='primer_design'),
     path('blast_cmd/', blast_cmd, name='blast_cmd'),
     path('expression_EFP_image/', expression_EFP_image, name='expression_EFP_image'),
+    path('download_genome/<str:genome_id>/<str:file_type>', download_genome_file, name='download_genome_file'),
 
 ]

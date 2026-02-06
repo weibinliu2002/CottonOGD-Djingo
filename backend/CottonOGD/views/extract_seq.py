@@ -52,11 +52,11 @@ def extract_seq(request):
         seq_data={
             'genome_seq': [{'db_id': item.id_id, 'seq': item.sequence,'gene_type':item.gene_type,'mrna_id':item.mrna_id} for item in gene_seqs.filter(gene_type='genome')],
             'mrna_seq': [{'db_id': item.id_id, 'seq': item.sequence,'gene_type':item.gene_type,'mrna_id':item.mrna_id} for item in gene_seqs.filter(gene_type='mRNA')],
-            'upstream_seq': [{'db_id': item.id_id, 'seq': item.sequence,'gene_type':item.gene_type} for item in gene_seqs.filter(gene_type='upstream')],
-            'downstream_seq': [{'db_id': item.id_id, 'seq': item.sequence,'gene_type':item.gene_type} for item in gene_seqs.filter(gene_type='downstream')],
-            'cdna_seq': [{'db_id': item.id_id, 'seq': item.sequence,'gene_type':item.gene_type} for item in gene_seqs.filter(gene_type='cdna')],
-            'cds_seq': [{'db_id': item.id_id, 'seq': item.sequence,'gene_type':item.gene_type} for item in gene_seqs.filter(gene_type='cds')],
-            'protein_seq': [{'db_id': item.id_id, 'seq': item.sequence,'gene_type':item.gene_type} for item in gene_seqs.filter(gene_type='pro')]
+            'upstream_seq': [{'db_id': item.id_id, 'seq': item.sequence,'gene_type':item.gene_type,'mrna_id':item.mrna_id} for item in gene_seqs.filter(gene_type='upstream')],
+            'downstream_seq': [{'db_id': item.id_id, 'seq': item.sequence,'gene_type':item.gene_type,'mrna_id':item.mrna_id} for item in gene_seqs.filter(gene_type='downstream')],
+            'cdna_seq': [{'db_id': item.id_id, 'seq': item.sequence,'gene_type':item.gene_type,'mrna_id':item.mrna_id} for item in gene_seqs.filter(gene_type='cdna')],
+            'cds_seq': [{'db_id': item.id_id, 'seq': item.sequence,'gene_type':item.gene_type,'mrna_id':item.mrna_id} for item in gene_seqs.filter(gene_type='cds')],
+            'protein_seq': [{'db_id': item.id_id, 'seq': item.sequence,'gene_type':item.gene_type,'mrna_id':item.mrna_id} for item in gene_seqs.filter(gene_type='pro')]
         }
         
         return Response({'seq': seq_data}, status=status.HTTP_200_OK)

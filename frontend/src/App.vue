@@ -11,8 +11,7 @@
             <!-- 语言切换 -->
             <div class="language-selector">
               <select 
-                :value="currentLanguage" 
-                @change="(e) => handleLanguageChange(e.target.value)"
+                v-model="currentLanguage"
                 class="language-select"
               >
                 <option value="en-US">English</option>
@@ -49,48 +48,48 @@
           <!-- 导航链接 -->
           <ul class="nav-menu">
             <li class="nav-item">
-              <router-link class="nav-link" to="/" exact-active-class="active">Home</router-link>
+              <router-link class="nav-link" to="/" exact-active-class="active">{{ t('home') }}</router-link>
             </li>
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                Browse
+                {{ t('browse') }}
               </a>
               <ul class="dropdown-menu">
-                <li><router-link class="dropdown-item" to="/browse/tf">Transcription Factors</router-link></li>
-                <li><router-link class="dropdown-item" to="/browse/tr">Transposons</router-link></li>
+                <li><router-link class="dropdown-item" to="/browse/tf">{{ t('transcription_factors_') }}</router-link></li>
+                <li><router-link class="dropdown-item" to="/browse/tr">{{ t('transposons') }}</router-link></li>
               </ul>
             </li>
             <li class="nav-item">
-              <router-link class="nav-link" to="/jbrowse">JBrowser</router-link>
+              <router-link class="nav-link" to="/jbrowse">{{ t('jbrowse_view') }}</router-link>
             </li>
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                Tools
+                {{ t('tools') }}
               </a>
               <ul class="dropdown-menu">
-                <li><router-link class="dropdown-item" to="/tools/id-search">Gene ID Search</router-link></li>
+                <li><router-link class="dropdown-item" to="/tools/id-search">{{ t('id_search') }}</router-link></li>
                 <li><router-link class="dropdown-item" to="/tools/blastp">BLASTP</router-link></li>
 
-                <li><router-link class="dropdown-item" to="/tools/go-annotation">GO Annotation</router-link></li>
-                <li><router-link class="dropdown-item" to="/tools/kegg-annotation">KEGG Annotation</router-link></li>
+                <li><router-link class="dropdown-item" to="/tools/go-annotation">{{ t('go_annotation') }}</router-link></li>
+                <li><router-link class="dropdown-item" to="/tools/kegg-annotation">{{ t('kegg_annotation') }}</router-link></li>
 
-                <li><router-link class="dropdown-item" to="/tools/go-enrichment">GO Enrichment</router-link></li>
-                <li><router-link class="dropdown-item" to="/tools/kegg-enrichment">KEGG Enrichment</router-link></li>
-    
-                <li><router-link class="dropdown-item" to="/tools/gene-expression">Gene Expression</router-link></li>
-                <li><router-link class="dropdown-item" to="/tools/gene-expression-efp">Gene Expression (eFP)</router-link></li>
-      
-                <li><router-link class="dropdown-item" to="/tools/primer-design">Primer Design</router-link></li>
+                <li><router-link class="dropdown-item" to="/tools/go-enrichment">{{ t('go_enrichment') }}</router-link></li>
+                <li><router-link class="dropdown-item" to="/tools/kegg-enrichment">{{ t('kegg_enrichment') }}</router-link></li>
+
+                <li><router-link class="dropdown-item" to="/tools/gene-expression">{{ t('gene_expression') }}</router-link></li>
+                <li><router-link class="dropdown-item" to="/tools/gene-expression-efp">{{ t('gene_expression_in_efp') }}</router-link></li>
+
+                <li><router-link class="dropdown-item" to="/tools/primer-design">{{ t('primer_design') }}</router-link></li>
               </ul>
             </li>
             <li class="nav-item">
-              <router-link class="nav-link" to="/download">Download</router-link>
+              <router-link class="nav-link" to="/download">{{ t('download') }}</router-link>
             </li>
             <li class="nav-item">
-              <router-link class="nav-link" to="/about-us">About</router-link>
+              <router-link class="nav-link" to="/about-us">{{ t('about') }}</router-link>
             </li>
             <li class="nav-item">
-              <router-link class="nav-link" to="/contact-us">Contact</router-link>
+              <router-link class="nav-link" to="/contact-us">{{ t('contact_us') }}</router-link>
             </li>
           </ul>
         </div>
@@ -106,9 +105,9 @@
     <div v-if="isLoading" class="loading-overlay">
       <div class="loading-content">
         <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">Loading...</span>
+          <span class="visually-hidden">{{ t('loading') }}</span>
         </div>
-        <div class="mt-3">Searching...</div>
+        <div class="mt-3">{{ t('loading') }}</div>
       </div>
     </div>
     
@@ -121,7 +120,7 @@
             <!-- 左侧两列链接 -->
             <div class="footer-links-container">
               <div class="footer-column">
-                <h4>Resources</h4>
+                <h4>{{ t('resources') }}</h4>
                 <ul>
                   <li><a href="https://cotton.hzau.edu.cn/index.htm" target="_blank">GCGI</a></li>
                   <li><a href="https://planttfdb.gao-lab.org/" target="_blank">PlantTFDB</a></li>
@@ -176,8 +175,10 @@ import { ArrowUp } from '@element-plus/icons-vue'
 import httpInstance from './utils/http.js'
 import { useRouter } from 'vue-router'
 import { setLocale, getLocale } from './locales/i18n-config'
+import { useI18n } from 'vue-i18n'
 
 const router = useRouter()
+const { t } = useI18n()
 
 // 定义全局加载状态
 const isLoading = ref(false)
@@ -189,7 +190,8 @@ const searchQuery = ref('')
 const currentLanguage = computed({
   get: () => getLocale(),
   set: (value) => {
-    handleLanguageChange(value)
+    setLocale(value)
+    console.log('Switched to language:', value)
   }
 })
 
@@ -206,12 +208,6 @@ const hideLoading = () => {
 provide('isLoading', isLoading)
 provide('showLoading', showLoading)
 provide('hideLoading', hideLoading)
-
-// 语言切换方法
-const handleLanguageChange = (lang) => {
-  setLocale(lang)
-  console.log('Switched to language:', lang)
-}
 
 // 搜索方法
 const performSearch = () => {

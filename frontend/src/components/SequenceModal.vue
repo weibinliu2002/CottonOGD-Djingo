@@ -11,9 +11,9 @@
     </el-scrollbar>
     <template #footer>
       <span class="dialog-footer">
-        <el-button @click="closeModal">Close</el-button>
-        <el-button type="primary" @click="downloadFasta">Download FASTA</el-button>
-        <el-button type="success" @click="copySequence">Copy Sequence</el-button>
+        <el-button @click="closeModal">{{ t('close') }}</el-button>
+        <el-button type="primary" @click="downloadFasta">{{ t('download_fasta') }}</el-button>
+        <el-button type="success" @click="copySequence">{{ t('copy_sequence') }}</el-button>
       </span>
     </template>
   </el-dialog>
@@ -22,6 +22,9 @@
 <script setup>
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps({
   showModal: {

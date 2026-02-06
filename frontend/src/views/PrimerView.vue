@@ -1,19 +1,19 @@
 <template>
-  <div class="container mt-4">
-    <h1>{{ t('primer_design') }}</h1>
-    <el-row :gutter="10">
-      <el-col :span="6">
+  <div class="container mt-6">
+    <h1 class="page-title">{{ t('primer_design') }}</h1>
+    <el-row :gutter="20">
+      <el-col :span="8">
         <!-- Primer Design Form -->
-        <el-card class="mb-4">
+        <el-card class="mb-6">
           <template #header>
             <div class="card-header">
               <h3>{{ t('design_parameters') }}</h3>
             </div>
           </template>
-          <el-form @submit.prevent="designPrimers">
+          <el-form @submit.prevent="designPrimers" label-width="180px">
             <!-- Sequence Input Method Selection -->
-            <el-form-item :label="t('sequence_input_method')">
-             
+            <el-form-item :label="t('sequence_input_method')" class="form-item-spacing">
+              
               <el-select v-model="inputMethod" style="width: 100%">
                 <el-option value="geneId" :label="t('gene_id')" />
                 <el-option value="genomePosition" :label="t('genome_position')" />
@@ -22,7 +22,7 @@
             </el-form-item>
             
             <!-- Dynamic Form Based on Input Method -->
-            <el-form-item>
+            <div class="form-item-spacing">
               <!-- Gene ID Input Method -->
               <div v-if="inputMethod === 'geneId'">
                 <el-row :gutter="10">
@@ -49,6 +49,7 @@
                         @click="fetchSequence" 
                         :loading="isFetching"
                         :disabled="!sequenceId.trim()"
+                        style="width: 100%"
                       >
                         {{ t('fetch_sequence') }}
                       </el-button>
@@ -62,21 +63,34 @@
                 <el-form-item :label="t('select_genome')">
                   <el-select v-model="genomeAssembly" style="width: 100%">
                     <el-option value="" :label="t('please_select_genome')" />
-                    <el-option value="G.hirsutum(AD1)TM-1_HAU_v1.1" :label="t('upland_cotton')" />
-                    <el-option value="G.arboreum(A2)Shixiya1_HAU_v1.0" :label="t('asian_cotton')" />
-                    <el-option value="G.raimondii(D5)JGI_v2.0" :label="t('raymonds_cotton')" />
+                    <el-option
+                      v-for="option in computedGenomeOptions"
+                      :key="option.value"
+                      :value="option.value"
+                      :label="option.label"
+                    />
                   </el-select>
                 </el-form-item>
                 <el-row :gutter="10">
-                  <el-col :span="8">
+                  <el-col :span="24">
                     <el-form-item :label="t('chromosome')">
-                      <el-input
+                      <el-select
                         v-model="genomePosition.chromosome"
-                        :placeholder="t('chromosome_name_eg_a01')"
-                      />
+                        :placeholder="t('select_chromosome')"
+                        style="width: 100%"
+                      >
+                        <el-option
+                          v-for="chromosome in chromosomeList"
+                          :key="chromosome"
+                          :value="chromosome"
+                          :label="chromosome"
+                        />
+                      </el-select>
                     </el-form-item>
                   </el-col>
-                  <el-col :span="8">
+                </el-row>
+                <el-row :gutter="10" class="mt-2">
+                  <el-col :span="24">
                     <el-form-item :label="t('start_position')">
                       <el-input
                         type="number"
@@ -85,7 +99,9 @@
                       />
                     </el-form-item>
                   </el-col>
-                  <el-col :span="8">
+                </el-row>
+                <el-row :gutter="10" class="mt-2">
+                  <el-col :span="24">
                     <el-form-item :label="t('end_position')">
                       <el-input
                         type="number"
@@ -113,7 +129,7 @@
                 <el-form-item :label="t('direct_sequence_input')">
                   <el-input
                     type="textarea"
-                    :rows="4"
+                    :rows="6"
                     v-model="directSequence"
                     :placeholder="t('direct_input_dna_sequence_5_3')"
                   />
@@ -128,20 +144,20 @@
                   </el-button>
                 </el-form-item>
               </div>
-            </el-form-item>
+            </div>
             
             <!-- Sequence Display Area -->
-            <el-form-item :label="t('dna_sequence')" v-if="sequenceTemplate.trim()">
+            <el-form-item :label="t('dna_sequence')" v-if="sequenceTemplate.trim()" class="form-item-spacing">
               <el-input
                 type="textarea"
-                :rows="5"
+                :rows="6"
                 v-model="sequenceTemplate"
                 :placeholder="t('sequence_will_be_displayed_here')"
               />
             </el-form-item>
             
             <!-- Product Size Range -->
-            <el-form-item :label="t('product_size_range_bp')">
+            <el-form-item :label="t('product_size_range_bp')" class="form-item-spacing">
               <el-row :gutter="10">
                 <el-col :span="10">
                   <el-input
@@ -166,7 +182,7 @@
             </el-form-item>
             
             <!-- Primer Length Range -->
-            <el-form-item :label="t('primer_length_range_bp')">
+            <el-form-item :label="t('primer_length_range_bp')" class="form-item-spacing">
               <el-row :gutter="10">
                 <el-col :span="10">
                   <el-input
@@ -191,7 +207,7 @@
             </el-form-item>
             
             <!-- Primer Tm Range -->
-            <el-form-item :label="t('primer_tm_range_c')">
+            <el-form-item :label="t('primer_tm_range_c')" class="form-item-spacing">
               <el-row :gutter="10">
                 <el-col :span="10">
                   <el-input
@@ -218,7 +234,7 @@
             </el-form-item>
             
             <!-- Primer GC Content Range -->
-            <el-form-item :label="t('primer_gc_content_range')">
+            <el-form-item :label="t('primer_gc_content_range')" class="form-item-spacing">
               <el-row :gutter="10">
                 <el-col :span="10">
                   <el-input
@@ -243,7 +259,7 @@
             </el-form-item>
             
             <!-- Submit Button -->
-            <el-form-item>
+            <el-form-item class="form-item-spacing">
               <el-button 
                 type="primary" 
                 native-type="submit"
@@ -260,16 +276,16 @@
       </el-col>
       
       <!-- Results Display -->
-      <el-col :span="18">
-        <el-card class="mb-4">
+      <el-col :span="16">
+        <el-card class="mb-6">
           <template #header>
             <div class="card-header">
               <h3>{{ t('design_results') }}</h3>
             </div>
           </template>
-          <div v-if="isLoading" class="text-center py-4">
+          <div v-if="isLoading" class="loading-container">
             <el-icon class="is-loading"><Loading /></el-icon>
-            <p class="mt-2">{{ t('designing_primers') }}...</p>
+            <p class="mt-3">{{ t('designing_primers') }}...</p>
           </div>
           
           <el-alert
@@ -277,26 +293,26 @@
             type="error"
             :title="error"
             show-icon
-            class="mb-4"
+            class="mb-6"
           />
           
-          <div v-else-if="designResults.length > 0">
-            <h5>{{ t('primer_design_results') }}</h5>
-            <el-table :data="designTableData" style="width: 100%" border>
-              <el-table-column prop="oligos" :label="t('oligos')" width="120" />
-              <el-table-column prop="startPosition" :label="t('start_position')" width="120" />
-              <el-table-column prop="length" :label="t('length')" width="80" />
-              <el-table-column prop="tm" label="Tm" width="80" />
-              <el-table-column prop="gcPercent" :label="t('gc_percent')" width="100" />
-              <el-table-column prop="selfAny" :label="t('self_any')" width="80" />
-              <el-table-column prop="selfEnd" :label="t('self_end')" width="80" />
-              <el-table-column prop="hairpin" :label="t('hairpin')" width="80" />
-              <el-table-column prop="sequence" :label="t('sequence')" min-width="200" />
-              <el-table-column prop="penalty" :label="t('penalty')" width="80" />
+          <div v-else-if="designResults.length > 0" class="results-container">
+            <h5 class="results-title">{{ t('primer_design_results') }}</h5>
+            <el-table :data="designTableData" style="width: 100%" border size="medium">
+              <el-table-column prop="oligos" :label="t('oligos')" width="140" />
+              <el-table-column prop="startPosition" :label="t('start_position')" width="140" />
+              <el-table-column prop="length" :label="t('length')" width="100" />
+              <el-table-column prop="tm" label="Tm" width="100" />
+              <el-table-column prop="gcPercent" :label="t('gc_percent')" width="120" />
+              <el-table-column prop="selfAny" :label="t('self_any')" width="100" />
+              <el-table-column prop="selfEnd" :label="t('self_end')" width="100" />
+              <el-table-column prop="hairpin" :label="t('hairpin')" width="100" />
+              <el-table-column prop="sequence" :label="t('sequence')" min-width="250" />
+              <el-table-column prop="penalty" :label="t('penalty')" width="100" />
             </el-table>
           </div>
           
-          <div v-else class="text-center py-4">
+          <div v-else class="empty-container">
             <p>{{ t('please_input_dna_sequence_and_set_parameters') }}</p>
           </div>
         </el-card>
@@ -306,27 +322,34 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import axios from '../utils/http'
 import { usePrimerDesignStore } from '../stores/primerDesign'
+import { useGenomeStore } from '../stores/genome_info'
 import { Loading } from '@element-plus/icons-vue'
 
 const { t } = useI18n()
 
 // 初始化store
 const primerDesignStore = usePrimerDesignStore()
+const genomeStore = useGenomeStore()
+
+// 基因组选项
+const genomeOptions = ref([])
 
 // 表单数据
 const sequenceId = ref('')
 const sequenceType = ref('mrna') // 默认mRNA
 const inputMethod = ref('geneId') // 默认使用基因ID输入方式
-const genomeAssembly = ref('') // 选择的基因组
+const genomeAssembly = ref('G.hirsutum(AD1)TM-1_HAU_v1.1') // 选择的基因组，默认选中陆地棉
 const genomePosition = reactive({
   chromosome: '',
   start: null,
   end: null
 })
+const chromosomeList = ref([]) // 染色体列表
+const isLoadingChromosomes = ref(false) // 染色体加载状态
 const directSequence = ref('')
 const sequenceTemplate = ref('')
 const parameters = reactive({
@@ -378,6 +401,64 @@ const designTableData = computed(() => {
     })
   })
   return tableData
+})
+
+// 计算基因组选项
+const computedGenomeOptions = computed(() => {
+  // 从genomeStore获取所有基因组选项
+  const allGenomes = genomeStore.genomeOptions.flatMap(option => 
+    option.children?.map(child => ({
+      value: child.value,
+      label: child.label
+    })) || []
+  )
+  return allGenomes
+})
+
+// 获取染色体列表
+const fetchChromosomes = async (genome) => {
+  if (!genome) {
+    chromosomeList.value = []
+    return
+  }
+  
+  isLoadingChromosomes.value = true
+  
+  try {
+    // 调用后端API获取染色体列表
+    const response = await axios.get('/api/genome/chromosomes/', {
+      params: {
+        genome: genome
+      }
+    })
+    
+    if (response.data && response.data.chromosomes) {
+      chromosomeList.value = response.data.chromosomes
+    } else {
+      chromosomeList.value = []
+    }
+  } catch (error) {
+    console.error('Failed to fetch chromosomes:', error)
+    chromosomeList.value = []
+  } finally {
+    isLoadingChromosomes.value = false
+  }
+}
+
+// 监听基因组变化
+watch(genomeAssembly, async (newGenome) => {
+  await fetchChromosomes(newGenome)
+  // 重置染色体选择
+  genomePosition.chromosome = ''
+})
+
+// 组件挂载时获取基因组数据
+onMounted(async () => {
+  await genomeStore.fetchGenomes()
+  // 如果有默认基因组，获取其染色体列表
+  if (genomeAssembly.value) {
+    await fetchChromosomes(genomeAssembly.value)
+  }
 })
 
 // Fetch sequence by gene ID
@@ -508,21 +589,76 @@ const designPrimers = async () => {
 
 <style scoped>
 .container {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
+  padding: 0 20px;
 }
 
-.mt-4 {
-  margin-top: 1.5rem;
+.mt-6 {
+  margin-top: 2.5rem;
 }
 
-.mb-4 {
-  margin-bottom: 1.5rem;
+.mb-6 {
+  margin-bottom: 2.5rem;
+}
+
+.page-title {
+  font-size: 32px;
+  font-weight: 600;
+  color: #3a6ea5;
+  margin-bottom: 30px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #e9ecef;
 }
 
 .card-header {
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+  padding: 15px 0;
+}
+
+.form-item-spacing {
+  margin-bottom: 20px;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  min-height: 300px;
+}
+
+.results-container {
+  padding: 20px 0;
+}
+
+.results-title {
   font-size: 18px;
-  font-weight: 500;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.empty-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  min-height: 300px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px dashed #dee2e6;
+}
+
+.empty-container p {
+  font-size: 16px;
+  color: #666;
+  text-align: center;
+  max-width: 500px;
 }
 
 .text-center {
@@ -538,8 +674,12 @@ const designPrimers = async () => {
   padding-top: 0.5rem;
 }
 
+.mt-3 {
+  margin-top: 1rem;
+}
+
 .is-loading {
-  font-size: 24px;
+  font-size: 32px;
   color: #409EFF;
   animation: rotate 1s linear infinite;
 }
@@ -550,6 +690,57 @@ const designPrimers = async () => {
   }
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* 响应式设计 */
+@media (max-width: 1200px) {
+  .container {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 992px) {
+  .el-row {
+    flex-direction: column;
+  }
+  
+  .el-col {
+    width: 100% !important;
+    margin-bottom: 20px;
+  }
+  
+  .page-title {
+    font-size: 28px;
+  }
+}
+
+@media (max-width: 768px) {
+  .mt-6 {
+    margin-top: 1.5rem;
+  }
+  
+  .mb-6 {
+    margin-bottom: 1.5rem;
+  }
+  
+  .page-title {
+    font-size: 24px;
+    margin-bottom: 20px;
+  }
+  
+  .card-header {
+    font-size: 18px;
+  }
+  
+  .form-item-spacing {
+    margin-bottom: 15px;
+  }
+  
+  .loading-container,
+  .empty-container {
+    padding: 40px 15px;
+    min-height: 200px;
   }
 }
 </style>

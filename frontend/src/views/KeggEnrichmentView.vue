@@ -1,21 +1,21 @@
 <template>
   <div class="container mt-4">
-    <h2>KEGG Pathway Enrichment Analysis</h2>
+    <h2>{{ t('kegg_pathway_enrichment_analysis') }}</h2>
     
     <el-card class="mb-4">
       <template #header>
         <div class="card-header">
-          <span>KEGG Pathway Enrichment Analysis</span>
+          <span>{{ t('kegg_pathway_enrichment_analysis') }}</span>
         </div>
       </template>
       
       <el-form @submit.prevent="submitForm" label-width="250px">
-        <el-form-item label="Input Gene IDs (one per line or separated by spaces/commas)">
+        <el-form-item :label="t('input_gene_ids_one_per_line_or_separated_by_spaces_commas')">
           <el-input
             type="textarea"
             :rows="10"
             v-model="geneList"
-            placeholder="Please enter gene IDs here..."
+            :placeholder="t('please_enter_gene_ids_here')"
             :disabled="isLoading"
           />
           <div class="mt-2">
@@ -25,7 +25,7 @@
               @click="fillExample"
               :disabled="isLoading"
             >
-              Load Example
+              {{ t('load_example') }}
             </el-button>
           </div>
         </el-form-item>
@@ -33,27 +33,27 @@
         <el-form-item>
           <el-row :gutter="20">
             <el-col :span="12">
-              <el-form-item label="P-value Threshold">
+              <el-form-item :label="t('p_value_threshold')">
                 <el-input
                   type="number"
                   v-model.number="pValueThreshold"
                   :min="0"
                   :max="1"
                   :step="0.001"
-                  placeholder="P-value threshold"
+                  :placeholder="t('p_value_threshold')"
                   :disabled="isLoading"
                 />
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="Q-value Threshold">
+              <el-form-item :label="t('q_value_threshold')">
                 <el-input
                   type="number"
                   v-model.number="qValueThreshold"
                   :min="0"
                   :max="1"
                   :step="0.001"
-                  placeholder="Q-value threshold"
+                  :placeholder="t('q_value_threshold')"
                   :disabled="isLoading"
                 />
               </el-form-item>
@@ -68,7 +68,7 @@
               native-type="submit"
               :loading="isLoading"
             >
-              Submit
+              {{ t('submit') }}
             </el-button>
           </div>
         </el-form-item>
@@ -80,9 +80,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import axios from '@/utils/http'
 import { ElMessage } from 'element-plus'
 
+const { t } = useI18n()
 const geneList = ref('')
 const pValueThreshold = ref(0.05)
 const qValueThreshold = ref(0.05)
@@ -125,17 +127,17 @@ Kirkii_Juiced.00g000300`;
 
 const submitForm = async () => {
   if (!geneList.value.trim()) {
-    ElMessage.error('Please enter gene IDs');
+    ElMessage.error(t('please_enter_gene_ids'));
     return;
   }
 
   if (pValueThreshold.value < 0 || pValueThreshold.value > 1) {
-    ElMessage.error('P-value threshold must be between 0 and 1');
+    ElMessage.error(t('p_value_threshold_must_be_between_0_and_1'));
     return;
   }
 
   if (qValueThreshold.value < 0 || qValueThreshold.value > 1) {
-    ElMessage.error('Q-value threshold must be between 0 and 1');
+    ElMessage.error(t('q_value_threshold_must_be_between_0_and_1'));
     return;
   }
 
@@ -159,7 +161,7 @@ const submitForm = async () => {
     } 
   } catch (error: any) {
     console.error('Error submitting form:', error)
-    ElMessage.error('Error submitting form: ' + (error.message || 'Unknown error'));
+    ElMessage.error(t('error_submitting_form') + ': ' + (error.message || t('unknown_error')));
   } finally {
     isLoading.value = false
   }

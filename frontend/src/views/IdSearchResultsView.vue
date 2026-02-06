@@ -5,7 +5,7 @@
         <h2>{{ t('search_results') }}</h2>
       </el-col>
       <el-col :span="6" class="text-right">
-        <router-link to="/tools/id-search">
+        <router-link to="/tools/id-search/id-search-summary/">
           <el-button type="default">{{ t('return_to_search') }}</el-button>
         </router-link>
       </el-col>
@@ -48,7 +48,7 @@
       </el-card>
       
       <!-- 序列信息卡片 -->
-      <el-card v-if="has_sequences" class="mb-4">
+      <el-card  class="mb-4">
         <template #header>
           <div class="d-flex justify-content-between align-items-center">
             <h3>{{ t('sequence') }}</h3>
@@ -657,16 +657,14 @@ const fetchGeneData = async (db_id: string) => {
   
   try {
     // 首先检查 navigationStore 中是否有基因数据（从上一个组件传递过来）
-    const navigationData = navigationStore.getNavigationData('geneSearch')
+    const navigationData = navigationStore.getNavigationData('geneDetail')
     
     // 检查是否需要从后端获取数据
-    // 即使有导航数据，也需要检查是否包含 jbrowse_url 和 gff_data
-    const needFetchFromBackend = !navigationData || !navigationData.results || 
-                               !navigationData.results.jbrowse_url || 
-                               !navigationData.results.gff_data
+    // 只有当存在 db_id 但是 geneInfoResult 为空的时候才重新从后端获取数据以及 sequence
+    const needFetchFromBackend = !navigationData || !navigationData.results
     
     if (navigationData && navigationData.results && !needFetchFromBackend) {
-      console.log('从 navigationStore 获取完整基因数据:', navigationData.results)
+      console.log('从 navigationStore 获取基因数据:', navigationData.results)
       
       // 直接使用 navigationStore 中的数据
       result.value = navigationData.results
@@ -746,11 +744,6 @@ const fetchGeneData = async (db_id: string) => {
       
       jbrowse_url.value = data.jbrowse_url || ''
       
-      // 检查是否有序列信息：包括直接序列属性和转录本中的序列
-      /*if (result.value) {
-        has_sequences.value = !!(result.value.gene_seq || result.value.mrna_seq || (result.value.cds_seq && result.value.cds_seq !== '未找到CDS序列') || (result.value.protein_seq && result.value.protein_seq !== '未找到蛋白序列') || (result.value.mrna_transcripts && result.value.mrna_transcripts.length > 0))
-      }
-      */
     } else {
       throw new Error('No gene information found')
     }
@@ -761,18 +754,17 @@ const fetchGeneData = async (db_id: string) => {
     // 重置页码到第一页
     currentPage.value = 1
     
-    // 更新 navigationStore 中的数据，添加 jbrowse_url 和 gff_data
-    if (navigationData && navigationData.results) {
-      // 查找 type 为 gene 的基因信息
-      const geneInfo = data.gene_info_result.find((item: any) => item.type === 'gene') || data.gene_info_result[0]
-      navigationStore.setNavigationData('geneSearch', {
+    // 存储基因详细信息到 navigationStore 的 geneDetail 中，确保返回时数据不丢失
+    if (result.value) {
+      navigationStore.setNavigationData('geneDetail', {
         results: {
-          ...navigationData.results,
-          ...geneInfo,
+          ...result.value,
           jbrowse_url: jbrowse_url.value,
           gff_data: gffData.value
-        }
+        },
+        dbId: db_id
       })
+      console.log('基因数据已存储到 navigationStore:', result.value.IDs)
     }
                                 
   } catch (error: any) {
@@ -1174,11 +1166,42 @@ const downloadGff = (format: string) => {
 
 // 生命周期钩子
 onMounted(() => {
+  // 首先检查 URL 参数
   const db_id = route.query.db_id as string
+  console.log('URL db_id:', db_id)
+  
+  // 然后检查 navigationStore 中的基因详细信息
+  const geneDetailData = navigationStore.getNavigationData('geneDetail')
+  console.log('从 navigationStore 获取基因详细信息:', geneDetailData)
+  
   if (db_id && !hasFetched.value) {
+    // 如果有 URL 参数，使用参数获取数据
     hasFetched.value = true
     fetchGeneData(db_id)
+  } else if (geneDetailData && geneDetailData.results) {
+    // 如果没有 URL 参数但有导航数据，使用导航数据
+    console.log('从 navigationStore 加载基因数据:', geneDetailData.results.IDs)
+    
+    // 直接使用导航数据
+    result.value = geneDetailData.results
+    
+    // 处理注释数据
+    processAnnotations([])
+    
+    // 设置 jbrowse_url
+    jbrowse_url.value = geneDetailData.results.jbrowse_url || ''
+    
+    // 设置 GFF 数据
+    gffData.value = geneDetailData.results.gff_data || []
+    hasGffData.value = gffData.value.length > 0
+    
+    // 重置页码到第一页
+    currentPage.value = 1
+    
+    // 标记为已获取
+    hasFetched.value = true
   } else {
+    // 既没有 URL 参数也没有导航数据
     errorMessage.value = 'Database ID not provided'
   }
 })

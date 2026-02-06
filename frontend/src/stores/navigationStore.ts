@@ -27,6 +27,11 @@ export const useNavigationStore = defineStore('navigation', {
         dbIds: null,
         requestId: null
       },
+      // 单个基因详细信息
+      geneDetail: {
+        results: null,
+        dbId: null
+      },
       // 基因表达相关数据
       geneExpression: {
         results: null,
