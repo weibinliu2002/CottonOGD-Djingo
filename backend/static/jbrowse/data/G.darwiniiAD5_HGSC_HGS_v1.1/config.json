@@ -1,0 +1,55 @@
+{
+  "assemblies": [
+    {
+      "name": "G.darwiniiAD5_HGSC_HGS_v1.1",
+      "sequence": {
+        "type": "ReferenceSequenceTrack",
+        "trackId": "G.darwiniiAD5_HGSC_HGS_v1.1-ReferenceSequenceTrack",
+        "adapter": {
+          "type": "BgzipFastaAdapter",
+          "fastaLocation": {
+            "uri": "/jbrowse/large/G.darwiniiAD5_HGSC_HGS_v1.1/G.darwiniiAD5_HGSC_HGS_v1.1.genome.fa.gz",
+            "locationType": "UriLocation"
+          },
+          "faiLocation": {
+            "uri": "/jbrowse/large/G.darwiniiAD5_HGSC_HGS_v1.1/G.darwiniiAD5_HGSC_HGS_v1.1.genome.fa.gz.fai",
+            "locationType": "UriLocation"
+          },
+          "gziLocation": {
+            "uri": "/jbrowse/large/G.darwiniiAD5_HGSC_HGS_v1.1/G.darwiniiAD5_HGSC_HGS_v1.1.genome.fa.gz.gzi",
+            "locationType": "UriLocation"
+          }
+        }
+      }
+    }
+  ],
+  "configuration": {},
+  "connections": [],
+  "defaultSession": {
+    "name": "New Session"
+  },
+  "tracks": [
+    {
+      "type": "FeatureTrack",
+      "trackId": "GFF",
+      "name": "G.darwiniiAD5_HGSC_HGS_v1.1",
+      "adapter": {
+        "type": "Gff3TabixAdapter",
+        "gffGzLocation": {
+          "uri": "/jbrowse/large/G.darwiniiAD5_HGSC_HGS_v1.1/G.darwiniiAD5_HGSC_HGS_v1.1.gff.gz",
+          "locationType": "UriLocation"
+        },
+        "index": {
+          "location": {
+            "uri": "/jbrowse/large/G.darwiniiAD5_HGSC_HGS_v1.1/G.darwiniiAD5_HGSC_HGS_v1.1.gff.gz.tbi",
+            "locationType": "UriLocation"
+          },
+          "indexType": "TBI"
+        }
+      },
+      "assemblyNames": [
+        "G.darwiniiAD5_HGSC_HGS_v1.1"
+      ]
+    }
+  ]
+}

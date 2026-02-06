@@ -1,0 +1,55 @@
+{
+  "assemblies": [
+    {
+      "name": "G.raimondiiD5-3_PKU_v1T2T",
+      "sequence": {
+        "type": "ReferenceSequenceTrack",
+        "trackId": "G.raimondiiD5-3_PKU_v1T2T-ReferenceSequenceTrack",
+        "adapter": {
+          "type": "BgzipFastaAdapter",
+          "fastaLocation": {
+            "uri": "/jbrowse/large/G.raimondiiD5-3_PKU_v1T2T/G.raimondiiD5-3_PKU_v1T2T.genome.fa.gz",
+            "locationType": "UriLocation"
+          },
+          "faiLocation": {
+            "uri": "/jbrowse/large/G.raimondiiD5-3_PKU_v1T2T/G.raimondiiD5-3_PKU_v1T2T.genome.fa.gz.fai",
+            "locationType": "UriLocation"
+          },
+          "gziLocation": {
+            "uri": "/jbrowse/large/G.raimondiiD5-3_PKU_v1T2T/G.raimondiiD5-3_PKU_v1T2T.genome.fa.gz.gzi",
+            "locationType": "UriLocation"
+          }
+        }
+      }
+    }
+  ],
+  "configuration": {},
+  "connections": [],
+  "defaultSession": {
+    "name": "New Session"
+  },
+  "tracks": [
+    {
+      "type": "FeatureTrack",
+      "trackId": "GFF",
+      "name": "G.raimondiiD5-3_PKU_v1T2T",
+      "adapter": {
+        "type": "Gff3TabixAdapter",
+        "gffGzLocation": {
+          "uri": "/jbrowse/large/G.raimondiiD5-3_PKU_v1T2T/G.raimondiiD5-3_PKU_v1T2T.gff.gz",
+          "locationType": "UriLocation"
+        },
+        "index": {
+          "location": {
+            "uri": "/jbrowse/large/G.raimondiiD5-3_PKU_v1T2T/G.raimondiiD5-3_PKU_v1T2T.gff.gz.tbi",
+            "locationType": "UriLocation"
+          },
+          "indexType": "TBI"
+        }
+      },
+      "assemblyNames": [
+        "G.raimondiiD5-3_PKU_v1T2T"
+      ]
+    }
+  ]
+}
