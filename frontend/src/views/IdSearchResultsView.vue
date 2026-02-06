@@ -120,9 +120,9 @@
                           <!-- 绘制与下一个元素的连接线 -->
                           <line
                             v-if="index < validTranscriptGffData.length - 1"
-                            :x1="20 + (item.end - geneStart) * scale"
+                            :x1="20 + (Number(item.end) - geneStart) * scale"
                             y1="60"
-                            :x2="20 + (validTranscriptGffData[index + 1]!.start - geneStart) * scale"
+                            :x2="20 + (Number(validTranscriptGffData[index + 1]!.start) - geneStart) * scale"
                             y2="60"
                             stroke="#333"
                             stroke-width="2"
@@ -131,9 +131,9 @@
                           <!-- 绘制内含子（窄方框） -->
                           <rect
                             v-if="index < validTranscriptGffData.length - 1"
-                            :x="20 + (item.end - geneStart) * scale"
+                            :x="20 + (Number(item.end) - geneStart) * scale"
                             y="55"
-                            :width="(validTranscriptGffData[index + 1]!.start - item.end - 1) * scale"
+                            :width="(Number(validTranscriptGffData[index + 1]!.start) - Number(item.end) - 1) * scale"
                             height="10"
                             fill="#E0E0E0"
                             stroke="#BDBDBD"
@@ -286,7 +286,7 @@
             
             <!-- 其他注释类型使用简单列表展示 -->
             <div v-else-if="annotationList.length > 0">
-              <h4>{{ annotationType.replace('_', ' ') }}</h4>
+              <h4>{{ String(annotationType).replace('_', ' ') }}</h4>
               <div class="annotation-list">
                 <div 
                   v-for="(item, index) in annotationList" 
@@ -479,12 +479,12 @@ const parsedGoAnnotations = computed(() => {
   const goAnnotations = annotations.value.GO_annotation || []
   const parsed: { type: string; term: string; id: string }[] = []
   
-  goAnnotations.forEach(item => {
+  goAnnotations.forEach((item: { annotation: string }) => {
     if (item && item.annotation) {
       const cleanAnnotation = item.annotation.replace(/;;+\s*$/, '')
       const goTerms = cleanAnnotation.split(';; ')
       
-      goTerms.forEach(term => {
+      goTerms.forEach((term: string) => {
         const match = term.match(/^(\w+\s+\w+):\s*([^(]+)\s*\((GO:\d+)\)$/)
         if (match && match[1] && match[2] && match[3]) {
           parsed.push({
@@ -537,19 +537,19 @@ const currentTranscriptGffData = computed(() => {
   }
   
   if (!currentId) {
-    return gffData.value.sort((a, b) => {
-      return (a.start || 0) - (b.start || 0)
+    return gffData.value.sort((a: GffItem, b: GffItem) => {
+      return (Number(a.start) || 0) - (Number(b.start) || 0)
     })
   }
   
   // 过滤当前转录本的GFF数据
-  return gffData.value.filter(item => {
+  return gffData.value.filter((item: GffItem) => {
     if (item.attributes) {
       return item.attributes.includes(currentId)
     }
     return true
-  }).sort((a, b) => {
-    return (a.start || 0) - (b.start || 0)
+  }).sort((a: GffItem, b: GffItem) => {
+    return (Number(a.start) || 0) - (Number(b.start) || 0)
   })
 })
 
@@ -568,7 +568,7 @@ interface ValidGffItem {
 
 const validTranscriptGffData = computed(() => {
   return currentTranscriptGffData.value
-    .filter(item => item.start !== undefined && item.end !== undefined) as ValidGffItem[]
+    .filter((item: GffItem) => item.start !== undefined && item.end !== undefined) as ValidGffItem[]
 })
 
 // 基因起始位置
@@ -576,7 +576,7 @@ const geneStart = computed(() => {
   if (!validTranscriptGffData.value || validTranscriptGffData.value.length === 0) {
     return 0
   }
-  return Math.min(...validTranscriptGffData.value.map(item => item.start))
+  return Math.min(...validTranscriptGffData.value.map((item: ValidGffItem) => Number(item.start)))
 })
 
 // 基因结束位置
@@ -584,7 +584,7 @@ const geneEnd = computed(() => {
   if (!validTranscriptGffData.value || validTranscriptGffData.value.length === 0) {
     return 0
   }
-  return Math.max(...validTranscriptGffData.value.map(item => item.end))
+  return Math.max(...validTranscriptGffData.value.map((item: ValidGffItem) => Number(item.end)))
 })
 
 // 基因长度
@@ -1110,7 +1110,7 @@ const downloadGff = (format: string) => {
     // 生成TXT格式文本
     let txtContent = ''
     
-    gffData.value.forEach(item => {
+    gffData.value.forEach((item: GffItem) => {
       const fields = [
         item.seqid || '',
         item.source || '',
@@ -1140,7 +1140,7 @@ const downloadGff = (format: string) => {
     // 生成标准GFF格式文本
     let gffContent = ''
     
-    gffData.value.forEach(item => {
+    gffData.value.forEach((item: GffItem) => {
       const fields = [
         item.seqid || '',
         item.source || '.',

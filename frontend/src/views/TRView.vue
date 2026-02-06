@@ -4,9 +4,9 @@
       <!-- 左侧边栏 -->
       <div class="col-md-3">
         <div class="sidebar">
-          <h3>Transcription factors <el-icon class="info-icon"><QuestionFilled /></el-icon></h3>
+          <h3>Transcription regulators <el-icon class="info-icon"><QuestionFilled /></el-icon></h3>
           <div class="mt-4">
-            <h4 class="sidebar-title"><el-icon class="play-icon"><VideoPlay /></el-icon> Select a genome</h4>
+            <h4 class="sidebar-title"><el-icon class="play-icon"><VideoPlay /></el-icon> {{ t('select_genome') }}</h4>
             <el-cascader
               v-model="selectedGenome"
               :options="genomeOptions"
@@ -23,7 +23,7 @@
       <!-- 主内容区域 -->
       <div class="col-md-9">
         <div class="main-content">
-          <h2>{{ t('annotated_transcription_factors') }}</h2>
+          <h2>Annotated transcription regulators</h2>
           
           <!-- 转录因子家族复选框 -->
           <div class="tf-families mt-4">
@@ -55,8 +55,8 @@
               <div class="table-search">
                 <el-input
                   v-model="searchQuery"
-                  placeholder="{{ t('search') }}"
-                  prefix-icon="{{ t('search') }}"
+                  placeholder="search"
+                  prefix-icon="el-icon-search"
                   size="small"
                   class="w-100"
                   @input="handleSearch"
@@ -114,19 +114,21 @@
 <script>
 import { ref, onMounted, computed, watch } from 'vue'
 import { QuestionFilled, VideoPlay, Search } from '@element-plus/icons-vue'
+import { useI18n } from 'vue-i18n'
 import router from '@/router'
 import httpInstance from '@/utils/http.js'
 import { useGenomeStore } from '@/stores/genome_info'
 import { useFamilyStore } from '@/stores/familyInfo'
 
 export default {
-  name: 'TFView',
+  name: 'TRView',
   components: {
     //QuestionFilled,
     //VideoPlay,
     Search
   },
   setup() {
+    const { t } = useI18n()
     // 获取基因组store
     const genomeStore = useGenomeStore()
     // 获取家族store
@@ -342,14 +344,20 @@ export default {
     })
     
     // 组件挂载时加载数据
-    onMounted(() => {
-      fetchGenomes() // 获取基因组列表
-      fetchFamilies() // 获取家族列表
-      // 注意：这里不再自动调用fetchTFDataByGenome，
-      // 而是等待用户选择基因组后再调用
+    onMounted(async () => {
+      await fetchGenomes() // 获取基因组列表
+      await fetchFamilies() // 获取家族列表
+      
+      // 自动选择第一个基因组
+      if (genomeOptions.value && genomeOptions.value.length > 0) {
+        const firstGenome = genomeOptions.value[0]
+        selectedGenome.value = [firstGenome.value]
+        console.log('Auto-selected first genome:', firstGenome.label)
+      }
     })
     
     return {
+      t,
       selectedGenome,
       genomeOptions,
       genomeLoading,

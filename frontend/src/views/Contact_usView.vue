@@ -11,8 +11,16 @@
 </template>
 
 <script>
+import { useI18n } from 'vue-i18n'
+
 export default {
-  name: 'Contact_usView'
+  name: 'Contact_usView',
+  setup() {
+    const { t } = useI18n()
+    return {
+      t
+    }
+  }
 }
 </script>
 

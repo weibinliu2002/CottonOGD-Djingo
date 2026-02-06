@@ -19,14 +19,14 @@
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",
     "@fortawesome/fontawesome-free": "^7.1.0",
-    "axios": "^1.13.2",
+    "axios": "^1.13.4",
     "chart.js": "^4.5.1",
     "d3": "^7.9.0",
-    "element-plus": "^2.12.0",
+    "element-plus": "^2.13.2",
     "heatmap.js": "^2.0.5",
     "pinia": "^3.0.4",
     "uuid": "^13.0.0",
-    "vue": "^3.5.25",
+    "vue": "^3.5.27",
     "vue-i18n": "^11.2.8",
     "vue-router": "^4.6.4"
   },
