@@ -1,37 +1,37 @@
 <template>
   <div class="container mt-4">
-    <h2 class="mb-4">Gene Expression Analysis</h2>
+    <h2 class="mb-4">{{ t('gene_expression_analysis') }}</h2>
     
     <el-card class="mb-4">
       <template #header>
         <div class="card-header">
-          <span>Gene Expression Analysis</span>
+          <span>{{ t('gene_expression_analysis') }}</span>
         </div>
       </template>
       
       <el-form @submit.prevent="handleSubmit" label-width="300px">
-        <el-form-item label="Enter gene list (one gene per line or separated by spaces)">
+        <el-form-item :label="t('enter_gene_list')">
           <el-input
             type="textarea"
             :rows="10"
             v-model="geneList"
-            placeholder="Please enter gene list"
+            :placeholder="t('please_enter_gene_list')"
           />
           <div class="mt-2">
             <el-button type="info" size="small" @click="fillExample">
-              Load Example
+              {{ t('load_example') }}
             </el-button>
           </div>
         </el-form-item>
         
-        <el-form-item label="Select Genome">
+        <el-form-item :label="t('select_genome')">
           <el-select
             v-model="selectedGenome"
-            placeholder="-- Select Genome --"
+            :placeholder="t('select_genome_placeholder')"
             style="width: 100%"
             :loading="genomeStore.loading"
           >
-            <el-option value="" label="-- All Genomes --" />
+            <el-option value="" :label="t('all_genomes')" />
             <!-- 直接显示所有选项，包括大类和单个基因组 -->
             <template v-for="group in genomeStore.genomeOptions" :key="group.value">
               <!-- 基因组大类作为可选择选项 -->
@@ -50,13 +50,13 @@
           </el-select>
         </el-form-item>
         
-        <el-form-item label="Select Tissue">
+        <el-form-item :label="t('select_tissue')">
           <el-select
             v-model="selectedTissue"
-            placeholder="-- All Tissues --"
+            :placeholder="t('select_tissue_placeholder')"
             style="width: 100%"
           >
-            <el-option value="" label="-- All Tissues --" />
+            <el-option value="" :label="t('all_tissues')" />
             <!-- Top tissues -->
             <el-option value="Root" label="Root" />
             <el-option value="Stem" label="Stem" />
@@ -90,7 +90,7 @@
         <el-form-item>
           <el-button type="primary" native-type="submit">
             <el-icon><Search /></el-icon>
-            Submit Analysis
+            {{ t('submit_analysis') }}
           </el-button>
         </el-form-item>
         
@@ -110,10 +110,13 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import httpInstance from '../utils/http'
 import { Search } from '@element-plus/icons-vue'
 import { useGenomeStore } from '@/stores/genome_info'
 import { useGeneExpressionStore } from '@/stores/geneExpressionStore'
+
+const { t } = useI18n()
 
 const router = useRouter()
 const genomeStore = useGenomeStore()
@@ -153,7 +156,7 @@ const handleSubmit = async () => {
   
   // 验证表单
   if (!geneList.value.trim()) {
-    error.value = 'Please enter gene list'
+    error.value = t('please_enter_gene_list')
     return
   }
   
@@ -215,14 +218,14 @@ const handleSubmit = async () => {
         })
       }
     } else {
-      error.value = 'Invalid response from server'
+      error.value = t('invalid_response_from_server')
       console.error('Invalid response:', response)
-      geneExpressionStore.setError('Invalid response from server')
+      geneExpressionStore.setError(t('invalid_response_from_server'))
     }
   } catch (err: any) {
-    error.value = 'Submission failed, please try again'
+    error.value = t('submission_failed_please_try_again')
     console.error('Submission failed:', err)
-    geneExpressionStore.setError('Submission failed, please try again')
+    geneExpressionStore.setError(t('submission_failed_please_try_again'))
   } finally {
     geneExpressionStore.setLoading(false)
   }

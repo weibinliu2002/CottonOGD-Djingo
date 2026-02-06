@@ -1,11 +1,11 @@
 <template>
   <div class="container mt-4">
-    <h2 class="mb-4">Gene Expression Analysis Results</h2>
+    <h2 class="mb-4">{{ t('gene_expression_analysis_results') }}</h2>
     
     <el-form @submit.prevent="handlePerPageChange" class="mb-3">
       <el-row :gutter="20" align="middle">
         <el-col :span="6">
-          <el-form-item label="Results per page:" label-width="120px">
+          <el-form-item :label="t('results_per_page')" label-width="120px">
             <el-select v-model.number="perPage" class="w-32" @change="handlePerPageChange">
               <el-option value="5" label="5"></el-option>
               <el-option value="10" label="10"></el-option>
@@ -15,7 +15,7 @@
           </el-form-item>
         </el-col>
         <el-col :span="4">
-          <span class="text-gray-500">records</span>
+          <span class="text-gray-500">{{ t('records') }}</span>
         </el-col>
       </el-row>
     </el-form>
@@ -25,19 +25,19 @@
         <el-card class="mb-4">
           <template #header>
             <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-              <span>Expression Data</span>
+              <span>{{ t('expression_data') }}</span>
               <el-button 
                 type="primary" 
                 size="small" 
                 @click="downloadExpressionData"
                 icon="el-icon-download"
               >
-                Download Data
+                {{ t('download_data') }}
               </el-button>
             </div>
           </template>
           <el-table :data="results" style="width: 100%">
-            <el-table-column prop="geneid_id" label="Gene ID" width="180"></el-table-column>
+            <el-table-column prop="geneid_id" :label="t('gene_id')" width="180"></el-table-column>
             <el-table-column 
               v-for="tissue in tissues" 
               :key="tissue.value"
@@ -57,16 +57,16 @@
         <el-card class="mb-4">
           <template #header>
             <div class="d-flex justify-content-between align-items-center">
-              <span>Expression Level Visualization</span>
+              <span>{{ t('expression_level_visualization') }}</span>
               <el-button type="primary" size="small" @click="downloadHeatmap" v-if="heatmapImage">
-                <el-icon><Download /></el-icon> Download Image
+                <el-icon><Download /></el-icon> {{ t('download_image') }}
               </el-button>
             </div>
           </template>
           <div v-if="heatmapImage" class="heatmap-container mt-3 text-center">
             <el-image
               :src="`data:image/png;base64,${heatmapImage}`"
-              alt="Gene Expression Heatmap"
+              :alt="t('gene_expression_heatmap')"
               fit="contain"
               class="w-full"
             />
@@ -74,7 +74,7 @@
           <el-alert
             v-else-if="visualizationData.length > 0"
             type="info"
-            title="No heatmap image available"
+            :title="t('no_heatmap_image_available')"
             show-icon
             class="mt-3"
           />
@@ -96,7 +96,7 @@
       <el-alert
         v-else
         type="info"
-        title="No expression data available"
+        :title="t('no_expression_data_available')"
         show-icon
         class="mb-4"
       />
@@ -104,7 +104,7 @@
     
     <div class="mt-3">
       <router-link to="/tools/gene-expression">
-        <el-button type="default">Back</el-button>
+        <el-button type="default">{{ t('back') }}</el-button>
       </router-link>
     </div>
   </div>
@@ -113,11 +113,14 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import httpInstance from '../utils/http'
 import { Download } from '@element-plus/icons-vue'
 // @ts-ignore - heatmap.js doesn't have proper type definitions
 import heatmap from 'heatmap.js'
 import { useGeneExpressionStore } from '@/stores/geneExpressionStore'
+
+const { t } = useI18n()
 
 const route = useRoute()
 const router = useRouter()
@@ -216,7 +219,7 @@ const changePage = (page: number) => {
 // 下载热图
 const downloadHeatmap = () => {
   if (!heatmapImage.value) {
-    alert('No heatmap available for download')
+    alert(t('no_heatmap_available_for_download'))
     return
   }
 
@@ -234,7 +237,7 @@ const downloadHeatmap = () => {
 // 下载表达量数据
 const downloadExpressionData = () => {
   if (!Array.isArray(results.value) || results.value.length === 0) {
-    alert('No expression data available for download')
+    alert(t('no_expression_data_available_for_download'))
     return
   }
 

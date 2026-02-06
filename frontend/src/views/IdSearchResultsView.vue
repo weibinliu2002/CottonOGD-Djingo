@@ -2,11 +2,11 @@
   <div class="container mt-4">
     <el-row :gutter="20" class="mb-4">
       <el-col :span="18">
-        <h2>Search Results</h2>
+        <h2>{{ t('search_results') }}</h2>
       </el-col>
       <el-col :span="6" class="text-right">
         <router-link to="/tools/id-search">
-          <el-button type="default">Return to Search</el-button>
+          <el-button type="default">{{ t('return_to_search') }}</el-button>
         </router-link>
       </el-col>
     </el-row>
@@ -31,7 +31,7 @@
       <!-- 基本信息卡片 - 使用 GeneInfoCard 组件 -->
       <gene-info-card 
         :gene-data="result" 
-        title="Gene Basic Information"
+        :title="t('gene_basic_information')"
         class="mb-4"
       />
       
@@ -39,7 +39,7 @@
       <el-card v-if="jbrowse_url" class="mb-4">
         <template #header>
           <div class="d-flex justify-content-between align-items-center">
-            <h3>JBrowse View</h3>
+            <h3>{{ t('jbrowse_view') }}</h3>
           </div>
         </template>
         <div class="card-body">
@@ -51,13 +51,13 @@
       <el-card v-if="has_sequences" class="mb-4">
         <template #header>
           <div class="d-flex justify-content-between align-items-center">
-            <h3>Sequence</h3>
+            <h3>{{ t('sequence') }}</h3>
           </div>
         </template>
         <div class="card-body">
             <!-- 转录本选择器 -->
             <div v-if="hasMultipleTranscripts" class="mb-4">
-              <h4 class="h6 mb-2">Transcript Selector</h4>
+              <h4 class="h6 mb-2">{{ t('transcript_selector') }}</h4>
               <el-select v-model="selectedTranscriptIndex" @change="switchTranscript" class="w-auto">
                 <el-option
                   v-for="(transcript, index) in result.mrna_transcripts"
@@ -70,7 +70,7 @@
             
             <!-- 转录本基因结构图 -->
             <div v-if="gffData.length > 0" class="mb-4">
-              <h4 class="h6 mb-2">Transcript Structure</h4>
+              <h4 class="h6 mb-2">{{ t('transcript_structure') }}</h4>
               <div class="gene-structure-container">
                 <svg :width="svgWidth" height="150" class="gene-structure-svg">
                   <!-- 转录本名称 -->
@@ -365,6 +365,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import httpInstance from '@/utils/http'
 import SequenceDisplay from '@/components/SequenceDisplay.vue'
 import SequenceModal from '@/components/SequenceModal.vue'
@@ -373,6 +374,8 @@ import { v4 as uuidv4 } from 'uuid'
 import { ElMessage } from 'element-plus'
 import { useGeneSearchStore } from '@/stores/geneSearch'
 import { useNavigationStore } from '@/stores/navigationStore.ts'
+
+const { t } = useI18n()
 
 // 定义类型
 interface Annotation {

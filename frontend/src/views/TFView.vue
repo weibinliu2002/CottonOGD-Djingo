@@ -77,16 +77,16 @@
               stripe
               border
             >
-              <el-table-column prop="TF_name" label="{{ t('tf_name') }}" min-width="50" />
-              <el-table-column prop="TF_class" label="{{ t('tf_class') }}" min-width="50" />
-              <el-table-column prop="TF_gene" label="Gene" min-width="120">
+              <el-table-column prop="TF_name" :label="t('tf_name')" min-width="50" />
+              <el-table-column prop="TF_class" :label="t('tf_class')" min-width="50" />
+              <el-table-column prop="TF_gene" :label="t('gene')" min-width="120">
                 <template #default="scope">
                   <el-link type="primary" :underline="false" @click="handleGeneClick(scope.row.db_id)" class="gene-link">
                     {{ scope.row.TF_gene }}
                   </el-link>
                 </template>
               </el-table-column>
-              <el-table-column prop="TF_genome" label="Genome" min-width="120" />
+              <el-table-column prop="TF_genome" :label="t('genome')" min-width="120" />
             </el-table>
 
             <!-- 分页 -->

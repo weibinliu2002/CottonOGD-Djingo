@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useGenomeStore } from '../stores/genome_info'
 import { Download, RefreshLeft, Folder, Files, Loading } from '@element-plus/icons-vue'
 import axios from '../utils/http'
+
+const { t } = useI18n()
 
 const genomeStore = useGenomeStore()
 const isLoading = ref(false)
@@ -90,8 +93,8 @@ const activeNames = ref<string[]>([])
     <!-- 页面头部 -->
     <div class="page-header">
       <div class="container">
-        <h1 class="page-title">Download Data</h1>
-        <p class="page-subtitle">Download genome-related files for cotton research</p>
+        <h1 class="page-title">{{ t('download_data') }}</h1>
+        <p class="page-subtitle">{{ t('download_genome_files') }}</p>
       </div>
     </div>
     
@@ -103,7 +106,7 @@ const activeNames = ref<string[]>([])
           <el-col :span="8">
             <el-select
               v-model="selectedCategory"
-              placeholder="Select Genome Category"
+              :placeholder="t('select_genome_category')"
               clearable
               class="w-full"
             >
@@ -123,7 +126,7 @@ const activeNames = ref<string[]>([])
               class="w-full"
             >
               <el-icon><RefreshLeft /></el-icon>
-              Refresh Data
+              {{ t('refresh_data') }}
             </el-button>
           </el-col>
         </el-row>
@@ -149,7 +152,7 @@ const activeNames = ref<string[]>([])
       <el-alert
         v-else-if="groupedGenomes.length === 0"
         type="warning"
-        title="No Genome Data Available"
+        :title="t('no_genome_data_available')"
         show-icon
         class="mb-6"
       />
@@ -167,7 +170,7 @@ const activeNames = ref<string[]>([])
               <div class="card-header">
                 <el-icon class="mr-2"><Folder /></el-icon>
                 <span class="category-name">{{ genomeGroup.label }}</span>
-                <el-tag type="info" size="small" class="ml-2">{{ genomeGroup.children?.length || 0 }} Genomes</el-tag>
+                <el-tag type="info" size="small" class="ml-2">{{ genomeGroup.children?.length || 0 }} {{ t('genome') }}</el-tag>
               </div>
             </template>
             
@@ -184,7 +187,7 @@ const activeNames = ref<string[]>([])
                 </div>
                 
                 <div class="download-options">
-                  <el-divider content-position="center">Download Options</el-divider>
+                  <el-divider content-position="center">{{ t('download_options') }}</el-divider>
                   <el-row :gutter="15" class="download-buttons">
                     <el-col :xs="24" :sm="12" :md="8" :lg="6" v-for="type in downloadTypes" :key="type.value">
                       <el-button

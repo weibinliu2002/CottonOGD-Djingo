@@ -4,28 +4,28 @@
       <!-- 左侧边栏 - 选择基因组 -->
       <div class="col-md-3">
         <div class="sidebar">
-          <h3>JBrowse Views <el-icon class="info-icon"><QuestionFilled /></el-icon></h3>
+          <h3>{{ t('jbrowse_views') }} <el-icon class="info-icon"><QuestionFilled /></el-icon></h3>
           <div class="mt-4">
-            <h4 class="sidebar-title"><el-icon class="play-icon"><VideoPlay /></el-icon> Genome</h4>
+            <h4 class="sidebar-title"><el-icon class="play-icon"><VideoPlay /></el-icon> {{ t('genome') }}</h4>
             <el-cascader
               v-model="selectedGenome"
               :options="genomeOptions"
               :props="cascaderProps"
-              placeholder="Select Genome"
+              :placeholder="t('select_genome')"
               class="w-100 mt-2"
               @change="handleGenomeChange"
               :loading="genomeLoading"
             />
           </div>
         
-            <div class="text-muted">Please select a genomic</div>
+            <div class="text-muted">{{ t('please_select_a_genomic') }}</div>
           
           <!-- 操作按钮 -->
           <div class="mt-4">
             
             <div class="d-grid gap-2">
               <button @click="refreshIframe" class="btn btn-secondary">
-                Refresh View
+                {{ t('refresh_view') }}
               </button>
             </div>
           </div>
@@ -35,10 +35,10 @@
       <!-- 主内容区域 - 展示JBrowse -->
       <div class="col-md-9">
         <div class="main-content">
-          <h2>JBrowse Visualization</h2>
+          <h2>{{ t('jbrowse_visualization') }}</h2>
           <div v-if="selectedGenomeInfo" class="genome-info">
-              <p><strong>Genome:</strong> {{ selectedGenomeInfo.name }}</p>
-              <p><strong>Version:</strong> {{ selectedGenomeInfo.assembly }}</p>
+              <p><strong>{{ t('genome') }}:</strong> {{ selectedGenomeInfo.name }}</p>
+              <p><strong>{{ t('version') }}:</strong> {{ selectedGenomeInfo.assembly }}</p>
             </div>
           <div class="embed-container">
             <iframe :key="iframeKey" :src="currentIframeUrl" width="100%" height="800px" frameborder="0"></iframe>
@@ -52,6 +52,7 @@
 <script>
 import { ref, onMounted, computed } from 'vue'
 import { QuestionFilled, VideoPlay } from '@element-plus/icons-vue'
+import { useI18n } from 'vue-i18n'
 import { useGenomeStore } from '@/stores/genome_info'
 
 // 获取第一个染色体名称的函数
@@ -96,6 +97,9 @@ export default {
     VideoPlay
   },
   setup() {
+    // 获取i18n实例
+    const { t } = useI18n()
+    
     // 获取基因组store
     const genomeStore = useGenomeStore()
     
@@ -170,6 +174,7 @@ export default {
     })
     
     return {
+      t,
       selectedGenome,
       genomeOptions,
       genomeLoading,

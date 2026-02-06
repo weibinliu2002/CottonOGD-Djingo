@@ -1,13 +1,13 @@
 <template>
   <div class="container">
-    <h1>Gene Expression in eFP</h1>
+    <h1>{{ t('gene_expression_in_efp') }}</h1>
 
     <div class="input-group">
       <input 
         type="text" 
         id="gene_id" 
         v-model="geneId"
-        placeholder="Please enter gene ID, e.g.: Gh_A01G0001" 
+        :placeholder="t('please_enter_gene_id')" 
         autocomplete="off"
       >
       <select 
@@ -35,22 +35,22 @@
         id="fillExample"
         @click="fillExample"
       >
-        load example
+        {{ t('load_example') }}
       </button>
       <button 
         @click="generateImage" 
         id="generate-btn"
         :disabled="isLoading"
       >
-        Generate Heatmap
+        {{ t('generate_heatmap') }}
       </button>
-      <span class="loading" id="loading" v-if="isLoading">Generating heatmap...</span>
+      <span class="loading" id="loading" v-if="isLoading">{{ t('generating_heatmap') }}</span>
     </div>
 
     <!-- Color Picker -->
     <div class="color-picker-group">
       <div class="color-picker">
-        <label for="low-color">Low value:</label>
+        <label for="low-color">{{ t('low_value') }}:</label>
         <input 
           type="color" 
           id="low-color" 
@@ -66,7 +66,7 @@
         ></div>
       </div>
       <div class="color-picker">
-        <label for="mid-color">Middle value:</label>
+        <label for="mid-color">{{ t('middle_value') }}:</label>
         <input 
           type="color" 
           id="mid-color" 
@@ -82,7 +82,7 @@
         ></div>
       </div>
       <div class="color-picker">
-        <label for="high-color">High value:</label>
+        <label for="high-color">{{ t('high_value') }}:</label>
         <input 
           type="color" 
           id="high-color" 
@@ -103,7 +103,7 @@
     <img 
       id="initial-image" 
       src="../assets/images/egg.jpg" 
-      alt="Initial heatmap template" 
+      :alt="t('initial_heatmap_template')" 
       v-if="!showResultImage"
       @error="hideInitialImage"
     >
@@ -114,7 +114,7 @@
         <img 
           id="result-image" 
           :src="resultImage" 
-          alt="Heatmap result" 
+          :alt="t('heatmap_result')" 
           usemap="#regionMap"
           v-if="showResultImage"
           @load="onImageLoad"
@@ -139,7 +139,7 @@
           :style="tooltipStyle"
         >
           <strong>{{ tooltipContent.name }}</strong><br>
-          Expression value: {{ tooltipContent.value }}
+          {{ t('expression_value') }}: {{ tooltipContent.value }}
         </div>
       </div>
     </div>
@@ -148,11 +148,13 @@
 
 <script>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useGenomeStore } from '@/stores/genome_info'
 
 export default {
   name: 'GeneExpressionEfpView',
   setup() {
+    const { t } = useI18n()
     const genomeStore = useGenomeStore()
     const geneId = ref('')
     const selectedGenome = ref('G.hirsutumAD1_Jin668_HAU_v1T2T')
@@ -495,6 +497,7 @@ export default {
     }
     
     return {
+      t,
       geneId,
       selectedGenome,
       lowColor,

@@ -3,7 +3,7 @@
     <h1>{{ t('primer_design') }}</h1>
     <el-row :gutter="10">
       <el-col :span="6">
-        <!-- {{ t('primer_design') }} Form -->
+        <!-- Primer Design Form -->
         <el-card class="mb-4">
           <template #header>
             <div class="card-header">
@@ -11,35 +11,34 @@
             </div>
           </template>
           <el-form @submit.prevent="designPrimers">
-            <!-- {{ t('sequence') }} Input Method Selection -->
-            <el-form-item label="{{ t('sequence') }} Input Method">
-              <br>
+            <!-- Sequence Input Method Selection -->
+            <el-form-item :label="t('sequence_input_method')">
+             
               <el-select v-model="inputMethod" style="width: 100%">
-                <br>
-                <el-option value="geneId" label="{{ t('gene_id') }}" />
-                <el-option value="genomePosition" label="{{ t('genome') }} Position" />
-                <el-option value="directSequence" label="Direct {{ t('sequence') }} Input" />
+                <el-option value="geneId" :label="t('gene_id')" />
+                <el-option value="genomePosition" :label="t('genome_position')" />
+                <el-option value="directSequence" :label="t('direct_sequence_input')" />
               </el-select>
             </el-form-item>
             
             <!-- Dynamic Form Based on Input Method -->
             <el-form-item>
-              <!-- {{ t('gene_id') }} Input Method -->
+              <!-- Gene ID Input Method -->
               <div v-if="inputMethod === 'geneId'">
                 <el-row :gutter="10">
                   <el-col :span="12">
                     <el-form-item>
                       <el-input
                         v-model="sequenceId"
-                        placeholder="Enter {{ t('gene_id') }} or Transcript ID"
+                        :placeholder="t('enter_gene_id_or_transcript_id')"
                       />
                     </el-form-item>
                   </el-col>
                   <el-col :span="6">
                     <el-form-item>
                       <el-select v-model="sequenceType" style="width: 100%">
-                        <el-option value="mrna" label="{{ t('mrna') }}" />
-                        <el-option value="cds" label="{{ t('cds') }}" />
+                        <el-option value="mrna" label="mRNA" />
+                        <el-option value="cds" label="CDS" />
                       </el-select>
                     </el-form-item>
                   </el-col>
@@ -51,47 +50,47 @@
                         :loading="isFetching"
                         :disabled="!sequenceId.trim()"
                       >
-                        Fetch {{ t('sequence') }}
+                        {{ t('fetch_sequence') }}
                       </el-button>
                     </el-form-item>
                   </el-col>
                 </el-row>
               </div>
               
-              <!-- {{ t('genome') }} Position Input Method -->
+              <!-- Genome Position Input Method -->
               <div v-if="inputMethod === 'genomePosition'">
-                <el-form-item label="Select {{ t('genome') }}">
+                <el-form-item :label="t('select_genome')">
                   <el-select v-model="genomeAssembly" style="width: 100%">
-                    <el-option value="" label="{{ t('please_select') }} genome" />
-                    <el-option value="G.hirsutum(AD1)TM-1_HAU_v1.1" label="Upland cotton (G. hirsutum)" />
-                    <el-option value="G.arboreum(A2)Shixiya1_HAU_v1.0" label="Asian cotton (G. arboreum)" />
-                    <el-option value="G.raimondii(D5)JGI_v2.0" label="Raymond's cotton (G. raimondii)" />
+                    <el-option value="" :label="t('please_select_genome')" />
+                    <el-option value="G.hirsutum(AD1)TM-1_HAU_v1.1" :label="t('upland_cotton')" />
+                    <el-option value="G.arboreum(A2)Shixiya1_HAU_v1.0" :label="t('asian_cotton')" />
+                    <el-option value="G.raimondii(D5)JGI_v2.0" :label="t('raymonds_cotton')" />
                   </el-select>
                 </el-form-item>
                 <el-row :gutter="10">
                   <el-col :span="8">
-                    <el-form-item label="{{ t('chromosome') }}">
+                    <el-form-item :label="t('chromosome')">
                       <el-input
                         v-model="genomePosition.chromosome"
-                        placeholder="{{ t('chromosome') }} name (e.g: A01)"
+                        :placeholder="t('chromosome_name_eg_a01')"
                       />
                     </el-form-item>
                   </el-col>
                   <el-col :span="8">
-                    <el-form-item label="{{ t('start_position') }}">
+                    <el-form-item :label="t('start_position')">
                       <el-input
                         type="number"
                         v-model.number="genomePosition.start"
-                        placeholder="Start position"
+                        :placeholder="t('start_position')"
                       />
                     </el-form-item>
                   </el-col>
                   <el-col :span="8">
-                    <el-form-item label="{{ t('end_position') }}">
+                    <el-form-item :label="t('end_position')">
                       <el-input
                         type="number"
                         v-model.number="genomePosition.end"
-                        placeholder="End position"
+                        :placeholder="t('end_position')"
                       />
                     </el-form-item>
                   </el-col>
@@ -104,19 +103,19 @@
                     :disabled="!genomeAssembly || !genomePosition.chromosome.trim() || !genomePosition.start || !genomePosition.end"
                     style="width: 100%"
                   >
-                    Fetch {{ t('sequence') }}
+                    {{ t('fetch_sequence') }}
                   </el-button>
                 </el-form-item>
               </div>
               
-              <!-- Direct {{ t('sequence') }} Input Method -->
+              <!-- Direct Sequence Input Method -->
               <div v-if="inputMethod === 'directSequence'">
-                <el-form-item label="Direct {{ t('sequence') }} Input">
+                <el-form-item :label="t('direct_sequence_input')">
                   <el-input
                     type="textarea"
                     :rows="4"
                     v-model="directSequence"
-                    placeholder="Direct input DNA sequence (5'→3')"
+                    :placeholder="t('direct_input_dna_sequence_5_3')"
                   />
                 </el-form-item>
                 <el-form-item>
@@ -125,24 +124,24 @@
                     @click="useDirectSequence"
                     style="width: 100%"
                   >
-                    Use This {{ t('sequence') }}
+                    {{ t('use_this_sequence') }}
                   </el-button>
                 </el-form-item>
               </div>
             </el-form-item>
             
-            <!-- {{ t('sequence') }} Display Area -->
-            <el-form-item label="DNA {{ t('sequence') }}" v-if="sequenceTemplate.trim()">
+            <!-- Sequence Display Area -->
+            <el-form-item :label="t('dna_sequence')" v-if="sequenceTemplate.trim()">
               <el-input
                 type="textarea"
                 :rows="5"
                 v-model="sequenceTemplate"
-                placeholder="{{ t('sequence') }} will be displayed here"
+                :placeholder="t('sequence_will_be_displayed_here')"
               />
             </el-form-item>
             
             <!-- Product Size Range -->
-            <el-form-item label="Product Size Range (bp)">
+            <el-form-item :label="t('product_size_range_bp')">
               <el-row :gutter="10">
                 <el-col :span="10">
                   <el-input
@@ -166,8 +165,8 @@
               </el-row>
             </el-form-item>
             
-            <!-- {{ t('primer_length') }} Range -->
-            <el-form-item label="{{ t('primer_length') }} Range (bp)">
+            <!-- Primer Length Range -->
+            <el-form-item :label="t('primer_length_range_bp')">
               <el-row :gutter="10">
                 <el-col :span="10">
                   <el-input
@@ -192,7 +191,7 @@
             </el-form-item>
             
             <!-- Primer Tm Range -->
-            <el-form-item label="Primer Tm Range (°C)">
+            <el-form-item :label="t('primer_tm_range_c')">
               <el-row :gutter="10">
                 <el-col :span="10">
                   <el-input
@@ -218,8 +217,8 @@
               </el-row>
             </el-form-item>
             
-            <!-- Primer {{ t('gc_content') }} Range -->
-            <el-form-item label="Primer {{ t('gc_content') }} Range (%)">
+            <!-- Primer GC Content Range -->
+            <el-form-item :label="t('primer_gc_content_range')">
               <el-row :gutter="10">
                 <el-col :span="10">
                   <el-input
@@ -243,7 +242,7 @@
               </el-row>
             </el-form-item>
             
-            <!-- {{ t('submit') }} Button -->
+            <!-- Submit Button -->
             <el-form-item>
               <el-button 
                 type="primary" 
@@ -253,24 +252,24 @@
                 style="width: 100%"
                 size="large"
               >
-                Design Primers
+                {{ t('design_primers') }}
               </el-button>
             </el-form-item>
           </el-form>
         </el-card>
       </el-col>
       
-      <!-- {{ t('results') }} Display -->
+      <!-- Results Display -->
       <el-col :span="18">
         <el-card class="mb-4">
           <template #header>
             <div class="card-header">
-              <h3>Design {{ t('results') }}</h3>
+              <h3>{{ t('design_results') }}</h3>
             </div>
           </template>
           <div v-if="isLoading" class="text-center py-4">
             <el-icon class="is-loading"><Loading /></el-icon>
-            <p class="mt-2">Designing primers...</p>
+            <p class="mt-2">{{ t('designing_primers') }}...</p>
           </div>
           
           <el-alert
@@ -282,23 +281,23 @@
           />
           
           <div v-else-if="designResults.length > 0">
-            <h5>{{ t('primer_design') }} {{ t('results') }}</h5>
+            <h5>{{ t('primer_design_results') }}</h5>
             <el-table :data="designTableData" style="width: 100%" border>
-              <el-table-column prop="oligos" label="Oligos" width="120" />
-              <el-table-column prop="startPosition" label="Start position" width="120" />
-              <el-table-column prop="length" label="Length" width="80" />
+              <el-table-column prop="oligos" :label="t('oligos')" width="120" />
+              <el-table-column prop="startPosition" :label="t('start_position')" width="120" />
+              <el-table-column prop="length" :label="t('length')" width="80" />
               <el-table-column prop="tm" label="Tm" width="80" />
-              <el-table-column prop="gcPercent" label="GC percent" width="100" />
-              <el-table-column prop="selfAny" label="Self any" width="80" />
-              <el-table-column prop="selfEnd" label="Self end" width="80" />
-              <el-table-column prop="hairpin" label="{{ t('hairpin') }}" width="80" />
-              <el-table-column prop="sequence" label="{{ t('sequence') }}" min-width="200" />
-              <el-table-column prop="penalty" label="Penalty" width="80" />
+              <el-table-column prop="gcPercent" :label="t('gc_percent')" width="100" />
+              <el-table-column prop="selfAny" :label="t('self_any')" width="80" />
+              <el-table-column prop="selfEnd" :label="t('self_end')" width="80" />
+              <el-table-column prop="hairpin" :label="t('hairpin')" width="80" />
+              <el-table-column prop="sequence" :label="t('sequence')" min-width="200" />
+              <el-table-column prop="penalty" :label="t('penalty')" width="80" />
             </el-table>
           </div>
           
           <div v-else class="text-center py-4">
-            <p>Please input DNA sequence and set parameters, then click "Design Primers" button</p>
+            <p>{{ t('please_input_dna_sequence_and_set_parameters') }}</p>
           </div>
         </el-card>
       </el-col>
@@ -307,19 +306,20 @@
 </template>
 
 <script setup>
-import { useI18n } from 'vue-i18n'
-const { t } = useI18n()
 import { ref, reactive, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import axios from '../utils/http'
 import { usePrimerDesignStore } from '../stores/primerDesign'
 import { Loading } from '@element-plus/icons-vue'
+
+const { t } = useI18n()
 
 // 初始化store
 const primerDesignStore = usePrimerDesignStore()
 
 // 表单数据
 const sequenceId = ref('')
-const sequenceType = ref('mrna') // 默认t('mrna')
+const sequenceType = ref('mrna') // 默认mRNA
 const inputMethod = ref('geneId') // 默认使用基因ID输入方式
 const genomeAssembly = ref('') // 选择的基因组
 const genomePosition = reactive({
@@ -352,7 +352,7 @@ const designTableData = computed(() => {
   designResults.value.forEach((result, index) => {
     // 上游引物
     tableData.push({
-      oligos: 'Forward primer',
+      oligos: t('forward_primer'),
       startPosition: result.forward.START,
       length: result.forward.SIZE,
       tm: result.forward.TM,
@@ -365,7 +365,7 @@ const designTableData = computed(() => {
     })
     // 下游引物
     tableData.push({
-      oligos: 'Reverse primer',
+      oligos: t('reverse_primer'),
       startPosition: result.reverse.START,
       length: result.reverse.SIZE,
       tm: result.reverse.TM,
@@ -383,7 +383,7 @@ const designTableData = computed(() => {
 // Fetch sequence by gene ID
 const fetchSequence = async () => {
   if (!sequenceId.value.trim()) {
-    error.value = t('please_enter') + ' sequence ID'
+    error.value = t('please_enter_sequence_id')
     return
   }
   
@@ -406,10 +406,10 @@ const fetchSequence = async () => {
       primerDesignStore.sequenceId = sequenceId.value.trim()
       primerDesignStore.sequenceTemplate = response.sequence
     } else {
-      error.value = t('sequence') + ' not found or empty'
+      error.value = t('sequence_not_found_or_empty')
     }
   } catch (err) {
-    error.value = 'Failed to fetch sequence: ' + (err.message || 'Unknown error')
+    error.value = t('failed_to_fetch_sequence') + ': ' + (err.message || t('unknown_error'))
     console.error('Failed to fetch sequence:', err)
   } finally {
     isFetching.value = false
@@ -419,7 +419,7 @@ const fetchSequence = async () => {
 // Fetch sequence by genome position
 const fetchSequenceByPosition = async () => {
   if (!genomeAssembly.value || !genomePosition.chromosome.trim() || !genomePosition.start || !genomePosition.end) {
-    error.value = 'Please fill in complete genome position information'
+    error.value = t('please_fill_in_complete_genome_position_information')
     return
   }
   
@@ -440,13 +440,13 @@ const fetchSequenceByPosition = async () => {
     if (response.status === 'success' && response.sequence) {
       // Fill sequence into template
       sequenceTemplate.value = response.sequence
-      // t('update') store
+      // Update store
       primerDesignStore.sequenceTemplate = response.sequence
     } else {
-      error.value = t('sequence') + ' not found at this position or empty'
+      error.value = t('sequence_not_found_at_this_position_or_empty')
     }
   } catch (err) {
-    error.value = 'Failed to fetch sequence: ' + (err.message || 'Unknown error')
+    error.value = t('failed_to_fetch_sequence') + ': ' + (err.message || t('unknown_error'))
     console.error('Failed to fetch sequence by genome position:', err)
   } finally {
     isFetching.value = false
@@ -456,13 +456,13 @@ const fetchSequenceByPosition = async () => {
 // Use directly input sequence
 const useDirectSequence = () => {
   if (!directSequence.value.trim()) {
-    error.value = t('please_enter') + ' sequence'
+    error.value = t('please_enter_sequence')
     return
   }
   
   // Remove possible spaces
   sequenceTemplate.value = directSequence.value.trim().replace(/\s/g, '')
-  // t('update') store
+  // Update store
   primerDesignStore.sequenceTemplate = sequenceTemplate.value
 }
 
@@ -470,7 +470,7 @@ const useDirectSequence = () => {
 const designPrimers = async () => {
   // Validate form
   if (!sequenceTemplate.value.trim()) {
-    error.value = t('please_enter') + ' DNA sequence'
+    error.value = t('please_enter_dna_sequence')
     return
   }
   
@@ -491,14 +491,14 @@ const designPrimers = async () => {
     const response = await axios.post('/tools/primer_design/api/primers/', requestData)
     
     if (response.status === 'success') {
-      // t('save') results to store
+      // Save results to store
       primerDesignStore.setDesignResults(response.results)
       designResults.value = response.results
     } else {
-      error.value = response.error || 'Design failed'
+      error.value = response.error || t('design_failed')
     }
   } catch (err) {
-    error.value = 'API request failed: ' + (err.message || 'Unknown error')
+    error.value = t('api_request_failed') + ': ' + (err.message || t('unknown_error'))
     console.error('Failed to design primers:', err)
   } finally {
     isLoading.value = false

@@ -1,12 +1,20 @@
 <template>
   <div class="container mt-4">
-    <h1>浏览基因组</h1>
-    <p>此页面正在开发中...</p>
+    <h1>{{ t('browse_genomes') }}</h1>
+    <p>{{ t('page_under_development') }}</p>
   </div>
 </template>
 
 <script>
+import { useI18n } from 'vue-i18n'
+
 export default {
-  name: 'BrowseGenomeView'
+  name: 'BrowseGenomeView',
+  setup() {
+    const { t } = useI18n()
+    return {
+      t
+    }
+  }
 }
 </script>
