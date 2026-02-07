@@ -26,7 +26,7 @@
           </div>
           <div class="info-content">
             <div class="info-label">{{ t('location') }}</div>
-            <div class="info-value">{{ geneData.gene_search_start }} - {{ geneData.gene_search_end }}</div>
+            <div class="info-value">{{ geneData.start }} - {{ geneData.end }}</div>
           </div>
         </div>
         <div class="info-card">
@@ -35,7 +35,7 @@
           </div>
           <div class="info-content">
             <div class="info-label">{{ t('strand') }}</div>
-            <div class="info-value">{{ geneData.gene_search_strand || 'N/A' }}</div>
+            <div class="info-value">{{ geneData.strand || 'N/A' }}</div>
           </div>
         </div>
         <div class="info-card">

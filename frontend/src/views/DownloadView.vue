@@ -98,7 +98,7 @@ const activeNames = ref<string[]>([])
     <!-- 主要内容 -->
     <div class="container">
       <!-- 操作栏 -->
-      <div class="action-bar mb-6">
+      <!--<div class="action-bar mb-6">
         <el-row :gutter="20" align="middle">
           <el-col :span="8">
             <el-select
@@ -127,7 +127,7 @@ const activeNames = ref<string[]>([])
             </el-button>
           </el-col>
         </el-row>
-      </div>
+      </div>-->
       
       <!-- 错误信息 -->
       <el-alert
@@ -186,7 +186,7 @@ const activeNames = ref<string[]>([])
                 <div class="download-options">
                   <el-divider content-position="center">{{ t('download_options') }}</el-divider>
                   <el-row :gutter="15" class="download-buttons">
-                    <el-col :xs="24" :sm="12" :md="8" :lg="6" v-for="type in downloadTypes" :key="type.value">
+                    <el-col :xs="24" :sm="12" :md="8" :lg="4" v-for="type in downloadTypes" :key="type.value">
                       <el-button
                         type="primary"
                         @click="downloadFile(genome.value, type.value)"

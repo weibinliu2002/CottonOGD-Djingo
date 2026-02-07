@@ -286,7 +286,7 @@
             
             <!-- 其他注释类型使用简单列表展示 -->
             <div v-else-if="annotationList.length > 0">
-              <h4>{{ String(annotationType).replace('_', ' ') }}</h4>
+              <!--<h4>{{ String(annotationType).replace('_', ' ') }}</h4>-->
               <div class="annotation-list">
                 <div 
                   v-for="(item, index) in annotationList" 
@@ -342,7 +342,7 @@
               v-model:page-size="pageSize"
               :page-sizes="[10, 20, 50, 100]"
               layout="total, sizes, prev, pager, next, jumper"
-              :total="gffData.length"
+              :total="currentTranscriptGffData.length"
             />
           </div>
         </div>
@@ -508,9 +508,10 @@ const currentTranscript = computed(() => {
   if (!result.value || !result.value.mrna_transcripts || result.value.mrna_transcripts.length === 0) {
     return null
   }
+  //console.log('selectedTranscriptIndex.value:', selectedTranscriptIndex.value)
   return result.value.mrna_transcripts[selectedTranscriptIndex.value]
 })
-
+console.log('currentTranscript:', currentTranscript)
 // 转录本数量
 const hasMultipleTranscripts = computed(() => {
   return result.value && result.value.mrna_transcripts && result.value.mrna_transcripts.length > 1
@@ -520,7 +521,7 @@ const hasMultipleTranscripts = computed(() => {
 const currentPageGffData = computed(() => {
   const start = (currentPage.value - 1) * pageSize.value
   const end = start + pageSize.value
-  return gffData.value.slice(start, end)
+  return currentTranscriptGffData.value.slice(start, end)
 })
 
 // 当前转录本的GFF数据
@@ -546,15 +547,22 @@ const currentTranscriptGffData = computed(() => {
   }
   
   // 过滤当前转录本的GFF数据
-  return gffData.value.filter((item: GffItem) => {
-    if (item.attributes) {
-      return item.attributes.includes(currentId)
+  const filtered = gffData.value.filter((item: GffItem) => {
+    if (item.attributes && currentId) {
+      const matches = item.attributes.indexOf(currentId) !== -1
+      console.log(`GFF item attributes: ${item.attributes}, currentId: ${currentId}, matches: ${matches}`)
+      return matches
     }
-    return true
-  }).sort((a: GffItem, b: GffItem) => {
+    return false
+  })
+  
+  console.log('currentTranscriptGffData - filtered count:', filtered.length)
+  
+  return filtered.sort((a: GffItem, b: GffItem) => {
     return (Number(a.start) || 0) - (Number(b.start) || 0)
   })
 })
+console.log('currentTranscriptGffData',currentTranscriptGffData)
 
 // 有效转录本GFF数据（确保所有必要属性都存在）
 interface ValidGffItem {
@@ -660,17 +668,23 @@ const fetchGeneData = async (db_id: string) => {
     const navigationData = navigationStore.getNavigationData('geneDetail')
     
     // 检查是否需要从后端获取数据
-    // 只有当存在 db_id 但是 geneInfoResult 为空的时候才重新从后端获取数据以及 sequence
-    const needFetchFromBackend = !navigationData || !navigationData.results
+    // 根据 jbrowse_url 是否为空来决定是否从后端获取数据
+    // 如果 jbrowse_url 不为空，说明是从 summary 继承的数据，直接使用
+    // 如果 jbrowse_url 为空，说明需要从后端获取数据
+    const needFetchFromBackend = !navigationData || !navigationData.results || !navigationData.results.jbrowse_url
     
     if (navigationData && navigationData.results && !needFetchFromBackend) {
-      console.log('从 navigationStore 获取基因数据:', navigationData.results)
+      console.log('从 navigationStore 获取基因数据（从 summary 继承）:', navigationData.results)
       
       // 直接使用 navigationStore 中的数据
       result.value = navigationData.results
       
       // 处理注释数据（如果有的话）
-      processAnnotations([]) // 暂时为空，因为我们没有从后端获取注释数据
+      if (navigationData.results.geneid_result && Array.isArray(navigationData.results.geneid_result)) {
+        processAnnotations(navigationData.results.geneid_result)
+      } else {
+        processAnnotations([])
+      }
       
       // 设置jbrowse_url
       jbrowse_url.value = navigationData.results.jbrowse_url || ''
@@ -716,27 +730,39 @@ const fetchGeneData = async (db_id: string) => {
     clearTimeout(loadingTimeout)
     
     // 注意：axios interceptor returns response.data directly
-    const data = response as any
-    
+    const responseData = response as any
+    const data = JSON.parse(responseData.results) as any
+    console.log('从后端获取基因数据，响应数据:', data)
+    console.log('从后端获取基因数据，mrna_transcripts:', data.mrna_transcripts)
     if (data.status === 'error' || data.status === 'not_found') {
       throw new Error(data.error || 'Gene information not found')
     }
     
     // 更新数据 - 从results数组中获取type为gene的数据
-    if (data.gene_info_result && data.gene_info_result.length > 0) {
+    if (data.gff_data && data.gff_data.length > 0) {
       // 查找 type 为 gene 的基因信息
-      const geneInfo = data.gene_info_result.find((item: any) => item.type === 'gene') || data.gene_info_result[0]
+      const geneInfo = data.gff_data.find((item: any) => item.type === 'gene') || data.gff_data[0]
       
       // 如果有导航数据，合并导航数据和后端数据，确保所有字段都存在
       if (navigationData && navigationData.results) {
         result.value = {
           ...navigationData.results,
           ...geneInfo,
+          gene_seq: data.gene_seq || '',
+          IDs: data.IDs || geneInfo.IDs || '',
           jbrowse_url: data.jbrowse_url || '',
-          gff_data: data.gff_data || []
+          gff_data: data.gff_data || [],
+          mrna_transcripts: data.mrna_transcripts || []
         }
       } else {
-        result.value = geneInfo
+        result.value = {
+          ...geneInfo,
+          gene_seq: data.gene_seq || '',
+          IDs: data.IDs || geneInfo.IDs || '',
+          jbrowse_url: data.jbrowse_url || '',
+          gff_data: data.gff_data || [],
+          mrna_transcripts: data.mrna_transcripts || []
+        }
       }
       
       // 处理注释数据

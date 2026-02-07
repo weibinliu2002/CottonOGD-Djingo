@@ -69,7 +69,13 @@ export const usePrimerDesignStore = defineStore('primerDesign', {
       this.error = error
     },
     
-    // 清空状态
+    // 清空设计结果
+    clearDesignResults() {
+      this.designResults = []
+      this.error = null
+    },
+    
+    // 清空所有状态
     clearState() {
       this.sequenceId = ''
       this.sequenceType = 'mrna'

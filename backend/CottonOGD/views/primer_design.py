@@ -4,7 +4,7 @@ from rest_framework import status
 from django.http import JsonResponse
 from CottonOGD.views.base import UuidManager
 from CottonOGD.views.location_ID import Id_map
-import os
+import os, json
 import subprocess
 import re
 import platform
@@ -15,33 +15,86 @@ logger = logging.getLogger(__name__)
 
 def parse_primer3_output(output):
     """
-    解析primer3的输出
+    解析primer3的输出，转换为前端期望的结构化格式
     :param output: primer3的输出字符串
-    :return: 解析后的结果字典
+    :return: 解析后的结果列表
     """
-    results = {}
-    current_id = None
-    current_primer = {}
+    results = []
+    primer_data = {}
     
     for line in output.strip().split('\n'):
         line = line.strip()
         if not line:
             continue
-        if line == '=':
-            if current_id and current_primer:
-                results[current_id] = current_primer
-            current_id = None
-            current_primer = {}
-            continue
         if '=' in line:
             key, value = line.split('=', 1)
-            if key == 'SEQUENCE_ID':
-                current_id = value
-            else:
-                current_primer[key] = value
+            primer_data[key] = value
     
-    if current_id and current_primer:
-        results[current_id] = current_primer
+    # 查找引物对的数量
+    pair_count = 0
+    while f'PRIMER_PAIR_{pair_count + 1}_PENALTY' in primer_data:
+        pair_count += 1
+    
+    # 解析每个引物对
+    for i in range(1, pair_count + 1):
+        prefix = f'PRIMER_LEFT_{i}_'
+        forward = {
+            'SEQUENCE': primer_data.get(f'{prefix}SEQUENCE', ''),
+            'TM': float(primer_data.get(f'{prefix}TM', 0)),
+            'GC_PERCENT': float(primer_data.get(f'{prefix}GC_PERCENT', 0)),
+            'SELF_ANY': float(primer_data.get(f'{prefix}SELF_ANY_TH', 0)),
+            'SELF_END': float(primer_data.get(f'{prefix}SELF_END_TH', 0)),
+            'HAIRPIN': float(primer_data.get(f'{prefix}HAIRPIN_TH', 0)),
+            'END_STABILITY': float(primer_data.get(f'{prefix}END_STABILITY', 0))
+        }
+        
+        # 解析位置和长度 (格式: "1349,20")
+        pos_str = primer_data.get(f'{prefix}POS', '0,0')
+        if ',' in pos_str:
+            start, size = pos_str.split(',')
+            forward['START'] = int(start)
+            forward['SIZE'] = int(size)
+        else:
+            forward['START'] = 0
+            forward['SIZE'] = 0
+        
+        prefix = f'PRIMER_RIGHT_{i}_'
+        reverse = {
+            'SEQUENCE': primer_data.get(f'{prefix}SEQUENCE', ''),
+            'TM': float(primer_data.get(f'{prefix}TM', 0)),
+            'GC_PERCENT': float(primer_data.get(f'{prefix}GC_PERCENT', 0)),
+            'SELF_ANY': float(primer_data.get(f'{prefix}SELF_ANY_TH', 0)),
+            'SELF_END': float(primer_data.get(f'{prefix}SELF_END_TH', 0)),
+            'HAIRPIN': float(primer_data.get(f'{prefix}HAIRPIN_TH', 0)),
+            'END_STABILITY': float(primer_data.get(f'{prefix}END_STABILITY', 0))
+        }
+        
+        # 解析位置和长度
+        pos_str = primer_data.get(f'{prefix}POS', '0,0')
+        if ',' in pos_str:
+            start, size = pos_str.split(',')
+            reverse['START'] = int(start)
+            reverse['SIZE'] = int(size)
+        else:
+            reverse['START'] = 0
+            reverse['SIZE'] = 0
+        
+        # 获取引物对信息
+        penalty = float(primer_data.get(f'PRIMER_PAIR_{i}_PENALTY', 0))
+        product_size = int(primer_data.get(f'PRIMER_PAIR_{i}_PRODUCT_SIZE', 0))
+        product_tm = float(primer_data.get(f'PRIMER_PAIR_{i}_PRODUCT_TM', 0))
+        compl_any = float(primer_data.get(f'PRIMER_PAIR_{i}_COMPL_ANY_TH', 0))
+        compl_end = float(primer_data.get(f'PRIMER_PAIR_{i}_COMPL_END_TH', 0))
+        
+        results.append({
+            'forward': forward,
+            'reverse': reverse,
+            'penalty': penalty,
+            'productSize': product_size,
+            'productTm': product_tm,
+            'complAny': compl_any,
+            'complEnd': compl_end
+        })
     
     return results
 
@@ -49,10 +102,11 @@ def parse_primer3_output(output):
 @api_view(['POST'])
 def primer_design(request):
     if request.method == 'POST':
+        '''
         uuid = request.headers.get('uuid')
         if not uuid or uuid not in UuidManager.uuid_storage:
             return Response({'error': 'uuid is required'}, status=status.HTTP_400_BAD_REQUEST)
-        
+        '''
         # 获取序列和参数
         sequence = request.data.get('sequence') or request.query_params.get('sequence')
         sequence_id = request.data.get('sequence_id', 'default_id')
@@ -100,7 +154,8 @@ def primer_design(request):
             primer3_exec = 'primer3_core'
         
         # 使用BASE_DIR构建路径，更可靠
-        primer3_path = os.path.join(settings.BASE_DIR, 'soft', primer3_dir, 'primer3', 'src', primer3_exec)
+        primer3_dir = os.path.join(settings.BASE_DIR, 'soft', primer3_dir, 'primer3', 'src')
+        primer3_path = os.path.join(primer3_dir, primer3_exec)
         logger.debug(f"Primer3 path: {primer3_path}")
         logger.debug(f"Full Primer3 path: {os.path.abspath(primer3_path)}")
         
@@ -113,12 +168,18 @@ def primer_design(request):
         logger.debug("Calling primer3_core...")
         
         try:
-            # 调用primer3_core工具
+            # 设置环境变量，指向配置文件目录
+            env = os.environ.copy()
+            env['PRIMER3_CONFIG'] = primer3_dir
+            
+            # 调用primer3_core工具，设置工作目录
             process = subprocess.Popen(
                 [primer3_path],
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
+                stderr=subprocess.PIPE,
+                cwd=primer3_dir,
+                env=env
             )
             
             # 使用\n作为行分隔符，编码为字节流

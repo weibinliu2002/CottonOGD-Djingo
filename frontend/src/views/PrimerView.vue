@@ -25,8 +25,19 @@
             <div class="form-item-spacing">
               <!-- Gene ID Input Method -->
               <div v-if="inputMethod === 'geneId'">
+                <el-form-item :label="t('select_genome')">
+                  <el-select v-model="genomeAssembly" style="width: 100%">
+                    <el-option value="" :label="t('please_select_genome')" />
+                    <el-option
+                      v-for="option in computedGenomeOptions"
+                      :key="option.value"
+                      :value="option.value"
+                      :label="option.label"
+                    />
+                  </el-select>
+                </el-form-item>
                 <el-row :gutter="10">
-                  <el-col :span="12">
+                  <el-col :span="24">
                     <el-form-item>
                       <el-input
                         v-model="sequenceId"
@@ -34,7 +45,7 @@
                       />
                     </el-form-item>
                   </el-col>
-                  <el-col :span="6">
+                  <el-col :span="18">
                     <el-form-item>
                       <el-select v-model="sequenceType" style="width: 100%">
                         <el-option value="mrna" label="mRNA" />
@@ -42,13 +53,13 @@
                       </el-select>
                     </el-form-item>
                   </el-col>
-                  <el-col :span="6">
+                  <el-col :span="18">
                     <el-form-item>
                       <el-button 
                         type="primary" 
                         @click="fetchSequence" 
                         :loading="isFetching"
-                        :disabled="!sequenceId.trim()"
+                        :disabled="!sequenceId.trim() || !genomeAssembly"
                         style="width: 100%"
                       >
                         {{ t('fetch_sequence') }}
@@ -264,7 +275,8 @@
                 type="primary" 
                 native-type="submit"
                 :loading="isLoading"
-                :disabled="!sequenceTemplate.trim()"
+                :disabled="isSequenceEmpty"
+                @click="console.log('Button clicked, isSequenceEmpty:', isSequenceEmpty, 'sequenceTemplate:', sequenceTemplate)"
                 style="width: 100%"
                 size="large"
               >
@@ -324,10 +336,11 @@
 <script setup>
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import axios from '../utils/http'
-import { usePrimerDesignStore } from '../stores/primerDesign'
+import { usePrimerDesignStore } from '@/stores/primerDesign'
 import { useGenomeStore } from '../stores/genome_info'
 import { Loading } from '@element-plus/icons-vue'
+import httpInstance from '@/utils/http'
+import { treemapResquarify } from 'd3'
 
 const { t } = useI18n()
 
@@ -338,11 +351,17 @@ const genomeStore = useGenomeStore()
 // 基因组选项
 const genomeOptions = ref([])
 
-// 表单数据
-const sequenceId = ref('')
-const sequenceType = ref('mrna') // 默认mRNA
+// 表单数据 - 使用 store 中的状态
+const sequenceId = computed({
+  get: () => primerDesignStore.sequenceId,
+  set: (val) => primerDesignStore.setSequence(val, primerDesignStore.sequenceTemplate)
+})
+const sequenceType = computed({
+  get: () => primerDesignStore.sequenceType,
+  set: (val) => primerDesignStore.setSequenceType(val)
+})
 const inputMethod = ref('geneId') // 默认使用基因ID输入方式
-const genomeAssembly = ref('G.hirsutum(AD1)TM-1_HAU_v1.1') // 选择的基因组，默认选中陆地棉
+const genomeAssembly = ref('G.hirsutumAD1_TM-1_HAU_v1.1') // 选择的基因组，默认选中陆地棉
 const genomePosition = reactive({
   chromosome: '',
   start: null,
@@ -351,23 +370,37 @@ const genomePosition = reactive({
 const chromosomeList = ref([]) // 染色体列表
 const isLoadingChromosomes = ref(false) // 染色体加载状态
 const directSequence = ref('')
-const sequenceTemplate = ref('')
-const parameters = reactive({
-  productSizeMin: 100,
-  productSizeMax: 250,
-  primerSizeMin: 18,
-  primerSizeMax: 27,
-  primerTmMin: 57,
-  primerTmMax: 63,
-  primerGCMin: 20,
-  primerGCMax: 80
+const sequenceTemplate = computed({
+  get: () => primerDesignStore.sequenceTemplate,
+  set: (val) => primerDesignStore.setSequence(primerDesignStore.sequenceId, val)
+})
+const parameters = computed({
+  get: () => primerDesignStore.parameters,
+  set: (val) => primerDesignStore.setParameters(val)
 })
 
-// 状态
-const isLoading = ref(false)
-const isFetching = ref(false)
-const error = ref(null)
-const designResults = ref([])
+// 状态 - 使用 store 中的状态
+const isLoading = computed({
+  get: () => primerDesignStore.isLoading,
+  set: (val) => primerDesignStore.setLoading(val)
+})
+const isFetching = computed({
+  get: () => primerDesignStore.isFetching,
+  set: (val) => primerDesignStore.setFetching(val)
+})
+const error = computed({
+  get: () => primerDesignStore.error,
+  set: (val) => primerDesignStore.setError(val)
+})
+const designResults = computed({
+  get: () => primerDesignStore.designResults,
+  set: (val) => primerDesignStore.setDesignResults(val)
+})
+
+// 检查序列是否为空
+const isSequenceEmpty = computed(() => {
+  return !sequenceTemplate.value || sequenceTemplate.value.trim() === ''
+})
 
 // 计算表格数据
 const designTableData = computed(() => {
@@ -425,18 +458,30 @@ const fetchChromosomes = async (genome) => {
   isLoadingChromosomes.value = true
   
   try {
-    // 调用后端API获取染色体列表
-    const response = await axios.get('/api/genome/chromosomes/', {
-      params: {
-        genome: genome
-      }
-    })
+    const faiUrl = `/data/genome/${genome}/${genome}.genome.fa.gz.fai`
+    console.log('Fetching .fai file:', faiUrl)
     
-    if (response.data && response.data.chromosomes) {
-      chromosomeList.value = response.data.chromosomes
-    } else {
-      chromosomeList.value = []
+    const response = await fetch(faiUrl)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch .fai file: ${response.statusText}`)
     }
+    
+    const text = await response.text()
+    const lines = text.trim().split('\n')
+    const chromosomes = []
+    
+    for (const line of lines) {
+      const parts = line.split('\t')
+      if (parts.length > 0) {
+        const chromosomeName = parts[0]
+        if (chromosomeName) {
+          chromosomes.push(chromosomeName)
+        }
+      }
+    }
+    
+    chromosomeList.value = chromosomes
+    console.log('Extracted chromosomes:', chromosomes)
   } catch (error) {
     console.error('Failed to fetch chromosomes:', error)
     chromosomeList.value = []
@@ -468,26 +513,38 @@ const fetchSequence = async () => {
     return
   }
   
+  if (!genomeAssembly.value) {
+    error.value = t('please_select_genome')
+    return
+  }
+  
   isFetching.value = true
   error.value = null
   
   try {
-    // Call sequence fetch API
-    const response = await axios.get('/tools/id-search/api/sequence/', {
-      params: {
-        gene_id: sequenceId.value.trim(),
-        type: sequenceType.value
-      }
+    // 直接调用 extract_seq，传递 gene_id 和 genome_id
+    const seqResponse = await httpInstance.post('/CottonOGD_api/extract_seq/', {
+      gene_id: sequenceId.value.trim(),
+      genome_id: genomeAssembly.value
     })
     
-    if (response.status === 'success' && response.sequence) {
-      // Fill sequence into template
-      sequenceTemplate.value = response.sequence
-      // Directly update store state
-      primerDesignStore.sequenceId = sequenceId.value.trim()
-      primerDesignStore.sequenceTemplate = response.sequence
+    if (seqResponse.seq) {
+      // 根据类型选择对应的序列
+      let sequence = ''
+      if (sequenceType.value === 'mrna') {
+        sequence = seqResponse.seq.mrna_seq?.[0]?.seq || ''
+      } else if (sequenceType.value === 'cds') {
+        sequence = seqResponse.seq.cds_seq?.[0]?.seq || ''
+      }
+      
+      if (sequence) {
+        sequenceTemplate.value = sequence
+        primerDesignStore.setSequence(sequenceId.value.trim(), sequence)
+      } else {
+        error.value = t('sequence_not_found_or_empty')
+      }
     } else {
-      error.value = t('sequence_not_found_or_empty')
+      error.value = seqResponse.error || t('sequence_not_found_or_empty')
     }
   } catch (err) {
     error.value = t('failed_to_fetch_sequence') + ': ' + (err.message || t('unknown_error'))
@@ -508,23 +565,22 @@ const fetchSequenceByPosition = async () => {
   error.value = null
   
   try {
-    // Call genome position sequence fetch API
-    const response = await axios.get('/tools/id-search/api/sequence/position/', {
-      params: {
-        genome: genomeAssembly.value,
-        chromosome: genomePosition.chromosome.trim(),
-        start: genomePosition.start,
-        end: genomePosition.end
-      }
+    // Call genome position sequence fetch API - 使用已有的 extract_seq_gff API
+    const response = await httpInstance.post('/CottonOGD_api/extract_seq_gff/', {
+      genome_id: genomeAssembly.value,
+      seqid: genomePosition.chromosome.trim(),
+      start: genomePosition.start,
+      end: genomePosition.end,
+      strand: '+' // 默认为正链
     })
     
-    if (response.status === 'success' && response.sequence) {
+    if (response.sequence) {
       // Fill sequence into template
       sequenceTemplate.value = response.sequence
       // Update store
-      primerDesignStore.sequenceTemplate = response.sequence
+      primerDesignStore.setSequence('', response.sequence)
     } else {
-      error.value = t('sequence_not_found_at_this_position_or_empty')
+      error.value = response.error || t('sequence_not_found_at_this_position_or_empty')
     }
   } catch (err) {
     error.value = t('failed_to_fetch_sequence') + ': ' + (err.message || t('unknown_error'))
@@ -549,28 +605,47 @@ const useDirectSequence = () => {
 
 // Design primers function
 const designPrimers = async () => {
+  console.log('designPrimers called')
+  console.log('sequenceTemplate.value:', sequenceTemplate.value)
+  console.log('sequenceTemplate.value.trim():', sequenceTemplate.value.trim())
+  
   // Validate form
   if (!sequenceTemplate.value.trim()) {
+    console.log('Sequence is empty, showing error')
     error.value = t('please_enter_dna_sequence')
     return
   }
   
+  console.log('Starting primer design...')
+  
+  // Clear previous results before starting new design
+  designResults.value = []
+  error.value = null
+  
   // Set loading state
   isLoading.value = true
-  error.value = null
-  designResults.value = []
   
   try {
-    // Build request data
+    // Build request data - 使用正确的参数名称
     const requestData = {
-      sequence_id: sequenceId.value.trim(),
-      sequence_template: sequenceTemplate.value.trim().replace(/\s/g, ''), // Remove spaces
-      parameters: parameters
+      sequence_id: sequenceId.value.trim() || 'default_id',
+      sequence: sequenceTemplate.value.trim().replace(/\s/g, '').toUpperCase().replace(/[^ACTG]/g, ''),
+      parameters: {
+        productSizeMin: parameters.value.productSizeMin,
+        productSizeMax: parameters.value.productSizeMax,
+        primerSizeMin: parameters.value.primerSizeMin,
+        primerSizeMax: parameters.value.primerSizeMax,
+        primerTmMin: parameters.value.primerTmMin,
+        primerTmMax: parameters.value.primerTmMax,
+        primerGCMin: parameters.value.primerGCMin,
+        primerGCMax: parameters.value.primerGCMax
+      }
     }
     
-    // Call API
-    const response = await axios.post('/tools/primer_design/api/primers/', requestData)
-    
+    // Call API - 使用正确的路径
+    console.log('requestData:', requestData)
+    const response = await httpInstance.post('/CottonOGD_api/primer_design/', requestData)
+    console.log('response:', response)
     if (response.status === 'success') {
       // Save results to store
       primerDesignStore.setDesignResults(response.results)

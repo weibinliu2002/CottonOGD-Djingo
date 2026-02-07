@@ -16,10 +16,33 @@ def extract_seq(request):
         uuid = request.headers.get('uuid')
         if not uuid or uuid not in UuidManager.uuid_storage:
             return Response({'error': 'uuid is required'}, status=status.HTTP_400_BAD_REQUEST)'''
+        # 支持两种方式：直接使用 db_id，或者通过 gene_id 和 genome_id 获取
         db_id = request.data.get('db_id')
-        logger.info(f"extract_seq db_id: {db_id}")
+        gene_id = request.data.get('gene_id')
+        genome_id = request.data.get('genome_id')
+        
+        # 如果没有提供 db_id，则使用 gene_id 和 genome_id
         if not db_id:
-            return Response({'error': 'db_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+            if not gene_id or not genome_id:
+                return Response({'error': 'db_id or (gene_id and genome_id) are required'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # 使用 Id_map 获取 db_id
+            db_map = Id_map(gene_id, genome_id)
+            logger.info(f"extract_seq db_map: {db_map}")
+            
+            # 从 db_map 中提取 db_id
+            db_ids = []
+            if isinstance(db_map, dict):
+                for key, value in db_map.items():
+                    if isinstance(value, dict) and 'db_id' in value:
+                        db_ids.append(value['db_id'])
+            
+            if not db_ids:
+                return Response({'error': 'Gene not found'}, status=status.HTTP_404_NOT_FOUND)
+            
+            db_id = db_ids
+        
+        logger.info(f"extract_seq db_id: {db_id}")
         
         # 处理 db_id 参数
         if isinstance(db_id, str):
@@ -29,6 +52,7 @@ def extract_seq(request):
         # 确保 db_id 是一个列表
         if not isinstance(db_id, list):
             db_id = [db_id]
+        
         
         # 尝试将每个值转换为整数
         converted_db_id = []

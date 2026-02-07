@@ -155,11 +155,155 @@ export default {
     },
 
     // 导航到结果详情页
-    navigateToResults(geneData) {
-      // 将单个基因数据存储到 navigationStore 的 geneDetail 键中，不覆盖 geneSearch 数据
-      this.navigationStore.setNavigationData('geneDetail', {
-        results: geneData
+    async navigateToResults(geneData) {
+      // 从 navigationStore 获取完整的搜索结果数据
+      const navigationData = this.navigationStore.getNavigationData('geneSearch')
+      
+      if (!navigationData || !navigationData.results) {
+        console.error('没有找到搜索结果数据')
+        return
+      }
+
+      const searchResults = navigationData.results
+      const geneInfoResult = searchResults.gene_info_result || []
+      const geneidResult = searchResults.geneid_result || []
+      
+      // 根据当前基因的 db_id 过滤出对应的 geneInfoResult 和 geneidResult
+      const currentGeneInfoResult = geneInfoResult.filter(item => item.id_id === geneData.db_id)
+      const currentGeneidResult = geneidResult.filter(item => item.id_id === geneData.db_id)
+      
+      // 获取序列缓存中的数据
+      const geneId = geneData.IDs
+      const transcriptID = geneData.mrna_transcripts?.length ? geneData.mrna_transcripts[0].id : geneId
+      console.log('te',transcriptID)
+      const upLen = this.selectedUpstreamLength || 500
+      const downLen = this.selectedDownstreamLength || 500
+      
+      // 获取所有序列数据
+      const sequenceCache = this.geneSearchStore.sequenceCache
+      
+      // 获取基因组序列
+      const genomicCacheKey = `${geneId}|genomic|${geneId}|${upLen}|${downLen}`
+      const genomicSequence = sequenceCache[genomicCacheKey] || ''
+      
+      
+      
+      console.log('缓存键列表:', Object.keys(sequenceCache))
+      console.log('genomicCacheKey:', genomicCacheKey, '序列长度:', genomicSequence.length)
+     
+      
+      // 获取所有转录本序列
+      const transcriptTypes = ['upstream','downstream','mrna', 'cdna', 'cds', 'protein']
+      const mrnaTranscripts = []
+      
+      // 使用 geneData.mrna_transcripts 中的转录本 ID
+      const transcripts = geneData.mrna_transcripts?.length ? geneData.mrna_transcripts : [{ id: geneId }]
+      
+      console.log('geneData.mrna_transcripts:', geneData.mrna_transcripts)
+      console.log('transcripts:', transcripts)
+      
+      // 为每个转录本构建序列数据
+      transcripts.forEach(t => {
+        const transcriptId = t.id || t.transcript_id || geneId
+        console.log('处理转录本:', transcriptId)
+        
+        // 缓存键必须与 scheduleSequencePreload 方法中的缓存键一致
+        const mrnaCacheKey = `${geneId}|mrna|${transcriptId}|${upLen}|${downLen}`
+        const cdnaCacheKey = `${geneId}|cdna|${transcriptId}|${upLen}|${downLen}`
+        const cdsCacheKey = `${geneId}|cds|${transcriptId}|${upLen}|${downLen}`
+        const proteinCacheKey = `${geneId}|protein|${transcriptId}|${upLen}|${downLen}`
+        const upstreamCacheKey = `${geneId}|upstream|${transcriptId}`
+        const downstreamCacheKey = `${geneId}|downstream|${transcriptId}`
+        
+        console.log('upstreamCacheKey:', upstreamCacheKey, '序列长度:', (sequenceCache[upstreamCacheKey] || '').length)
+        console.log('downstreamCacheKey:', downstreamCacheKey, '序列长度:', (sequenceCache[downstreamCacheKey] || '').length)
+        console.log('mrnaCacheKey:', mrnaCacheKey, '序列长度:', (sequenceCache[mrnaCacheKey] || '').length)
+        console.log('cdnaCacheKey:', cdnaCacheKey, '序列长度:', (sequenceCache[cdnaCacheKey] || '').length)
+        console.log('cdsCacheKey:', cdsCacheKey, '序列长度:', (sequenceCache[cdsCacheKey] || '').length)
+        console.log('proteinCacheKey:', proteinCacheKey, '序列长度:', (sequenceCache[proteinCacheKey] || '').length)
+        
+        const transcriptData = {
+          id: transcriptId,
+          mrna_seq: sequenceCache[mrnaCacheKey] || '',
+          cdna_seq: sequenceCache[cdnaCacheKey] || '',
+          cds_seq: sequenceCache[cdsCacheKey] || '',
+          protein_seq: sequenceCache[proteinCacheKey] || '',
+          upstream_seq: sequenceCache[upstreamCacheKey] || '',
+          downstream_seq: sequenceCache[downstreamCacheKey] || ''
+        }
+        mrnaTranscripts.push(transcriptData)
       })
+      
+      // 获取主转录本序列（第一个转录本）
+      const mainTranscript = mrnaTranscripts.length > 0 ? mrnaTranscripts[0] : {}
+      const mrnaSequence = mainTranscript.mrna_seq || ''
+      const cdnaSequence = mainTranscript.cdna_seq || ''
+      const cdsSequence = mainTranscript.cds_seq || ''
+      const proteinSequence = mainTranscript.protein_seq || ''
+      const upstreamSequence = mainTranscript.upstream_seq || ''
+      const downstreamSequence = mainTranscript.downstream_seq || ''
+      
+      console.log('获取到的序列数据:', {
+        genomicSequence: genomicSequence.length,
+        upstreamSequence: upstreamSequence.length,
+        downstreamSequence: downstreamSequence.length,
+        mrnaSequence: mrnaSequence.length,
+        cdnaSequence: cdnaSequence.length,
+        cdsSequence: cdsSequence.length,
+        proteinSequence: proteinSequence.length,
+        transcriptCount: mrnaTranscripts.length
+      })
+      
+      // 根据已有的 gene_info_result 数据生成 jbrowse_url 和 gff_data
+      let jbrowseUrl = ''
+      let gffData = []
+      
+      // 从 currentGeneInfoResult 中获取基因信息
+      if (currentGeneInfoResult && currentGeneInfoResult.length > 0) {
+        const geneInfo = currentGeneInfoResult.find(item => item.type === 'gene')
+        console.log('geneInfo:', geneInfo)
+        const seqid = geneInfo?.seqid || 'Ghir_A01'
+        const start = geneInfo?.start || 0
+        const end = geneInfo?.end || 0
+        const genomeId = geneInfo?.genome_id || geneInfo?.genome || ''
+        
+        // 构建 JBrowse URL
+        if (seqid && start && end && genomeId) {
+          const gffName = 'GFF'
+          const loc = `${seqid}:${Math.max(0, start - 1000)}-${end + 1000}`
+          jbrowseUrl = `/assets/jbrowse/index.html?config=data/${genomeId}/config.json&assembly=${genomeId}&loc=${loc}&tracks=${gffName}`
+          console.log('生成 jbrowse_url:', jbrowseUrl)
+        }
+        
+        // 提取 GFF 数据
+        gffData = currentGeneInfoResult.filter(item => item.type !== 'gene')
+        console.log('提取 gff_data:', gffData)
+      }
+      
+      // 构建完整的数据对象
+      const fullGeneData = {
+        ...geneData,
+        seqid: gffData[0]?.seqid || '',
+        gene_seq: genomicSequence,
+        mrna_seq: mrnaSequence,
+        cdna_seq: cdnaSequence,
+        cds_seq: cdsSequence,
+        protein_seq: proteinSequence,
+        upstream_seq: upstreamSequence,
+        downstream_seq: downstreamSequence,
+        mrna_transcripts: mrnaTranscripts,
+        gene_info_result: currentGeneInfoResult,
+        geneid_result: currentGeneidResult,
+        jbrowse_url: jbrowseUrl,
+        gff_data: gffData
+      }
+      
+      // 将完整的基因数据存储到 navigationStore 的 geneDetail 键中
+      this.navigationStore.setNavigationData('geneDetail', {
+        results: fullGeneData
+      })
+      
+      console.log('传递到详情页的数据:', fullGeneData)
       
       // 导航到结果详情页
       this.$router.push({
@@ -200,16 +344,16 @@ export default {
         const mrnaInfoMap = {}
         
         if (geneInfoResult && Array.isArray(geneInfoResult)) {
-          console.log('开始处理 geneInfoResult，长度:', geneInfoResult.length)
+          //console.log('开始处理 geneInfoResult，长度:', geneInfoResult.length)
           geneInfoResult.forEach((item, index) => {
             try {
-              console.log(`处理 geneInfoResult[${index}]:`, item)
+              //console.log(`处理 geneInfoResult[${index}]:`, item)
               if (!item) {
-                console.warn(`跳过无效条目 (undefined/null):`, index)
+                //console.warn(`跳过无效条目 (undefined/null):`, index)
                 return
               }
               if (!item.id_id) {
-                console.warn(`跳过没有 db_id 的条目:`, item)
+                //console.warn(`跳过没有 db_id 的条目:`, item)
                 return
               }
               if (item.type === 'gene') {
@@ -219,11 +363,11 @@ export default {
                   strand: item.strand,
                   species: item.genome_id
                 }
-                console.log(`添加基因信息到 geneInfoMap: ${item.db_id}`, geneInfoMap[item.db_id])
+                //console.log(`添加基因信息到 geneInfoMap: ${item.id_id}`, geneInfoMap[item.id_id])
               } else if (item.type === 'mRNA') {
                 let transcriptId = ''
                 if (item.attributes) {
-                  console.log(`  处理 mRNA attributes: ${item.attributes}`)
+                  //console.log(`  处理 mRNA attributes: ${item.attributes}`)
                   // 尝试从 attributes 中提取 ID，支持多种格式
                   // 格式1: ID=xxx
                   // 格式2: type=mRNA;ID=xxx
@@ -231,7 +375,7 @@ export default {
                     const idMatch = item.attributes.match(/(?:^|;)ID=([^;]+)/)
                     if (idMatch) {
                       transcriptId = idMatch[1]
-                      console.log(`  提取到转录本 ID: ${transcriptId}`)
+                      //console.log(`  提取到转录本 ID: ${transcriptId}`)
                     } else {
                       console.log(`  无法从 attributes 中提取转录本 ID: ${item.attributes}`)
                     }
@@ -239,9 +383,9 @@ export default {
                     console.error(`  解析 attributes 时出错:`, e)
                   }
                 } else {
-                  console.log(`  mRNA 条目没有 attributes 字段:`, item)
+                  //console.log(`  mRNA 条目没有 attributes 字段:`, item)
                 }
-                console.log(`处理 mRNA 条目: db_id=${item.id_id}, transcriptId=${transcriptId}, attributes=${item.attributes || 'undefined'}`)
+                //console.log(`处理 mRNA 条目: db_id=${item.id_id}, transcriptId=${transcriptId}, attributes=${item.attributes || 'undefined'}`)
                 if (transcriptId) {
                   mrnaInfoMap[transcriptId] = {
                     start: item.start,
@@ -252,7 +396,7 @@ export default {
                   }
                 } else {
                   // 如果没有提取到转录本 ID，使用 db_id 作为键
-                  console.log(`  使用 db_id 作为转录本键: ${item.db_id}`)
+                  //console.log(`  使用 db_id 作为转录本键: ${item.db_id}`)
                   mrnaInfoMap[item.db_id] = {
                     start: item.start,
                     end: item.end,
@@ -262,7 +406,7 @@ export default {
                   }
                 }
               } else {
-                console.log(`跳过未知类型的条目:`, item.type, item)
+                //console.log(`跳过未知类型的条目:`, item.type, item)
               }
             } catch (e) {
               console.error(`处理 geneInfoResult[${index}] 时出错:`, e)
@@ -279,12 +423,12 @@ export default {
         this.results = []
         if (searchMap && typeof searchMap === 'object') {
           for (const [originalId, info] of Object.entries(searchMap)) {
-            console.log(`处理 searchMap 条目: originalId=${originalId}, info=`, info)
+            //console.log(`处理 searchMap 条目: originalId=${originalId}, info=`, info)
             if (info && typeof info === 'object') {
-              console.log(`  info.db_id: ${info.db_id}, info.geneid: ${info.geneid}`)
-              console.log(`  geneInfoMap 中是否存在 info.db_id (${info.db_id}):`, !!geneInfoMap[info.db_id])
+              //console.log(`  info.db_id: ${info.db_id}, info.geneid: ${info.geneid}`)
+              //console.log(`  geneInfoMap 中是否存在 info.db_id (${info.db_id}):`, !!geneInfoMap[info.db_id])
               if (geneInfoMap[info.db_id]) {
-                console.log(`  geneInfoMap[${info.db_id}]:`, geneInfoMap[info.db_id])
+                //console.log(`  geneInfoMap[${info.db_id}]:`, geneInfoMap[info.db_id])
               }
               
               let speciesInfo = this.t('unknown_species')
@@ -309,19 +453,20 @@ export default {
               const geneInfo = geneInfoMap[info.db_id] || {}
               const mrnaTranscripts = []
               
-              console.log(`  开始匹配转录本，info.db_id=${info.db_id}`)
-              console.log(`  mrnaInfoMap keys:`, Object.keys(mrnaInfoMap))
+              //console.log(`  开始匹配转录本，info.db_id=${info.db_id}`)
+              //console.log(`  mrnaInfoMap keys:`, Object.keys(mrnaInfoMap))
               
               for (const [transcriptId, mrnaInfo] of Object.entries(mrnaInfoMap)) {
-                console.log(`    检查转录本: transcriptId=${transcriptId}, mrnaInfo.db_id=${mrnaInfo.db_id}, 是否匹配=${mrnaInfo.db_id === info.db_id}`)
+                //console.log(`    检查转录本: transcriptId=${transcriptId}, mrnaInfo.db_id=${mrnaInfo.db_id}, 是否匹配=${mrnaInfo.db_id === info.db_id}`)
                 if (mrnaInfo.db_id === info.db_id) {
                   mrnaTranscripts.push({
                     id: transcriptId,
+                    seqid: mrnaInfo.db_id,
                     start: mrnaInfo.start,
                     end: mrnaInfo.end,
                     strand: mrnaInfo.strand
                   })
-                  console.log(`      添加转录本:`, transcriptId)
+                  //console.log(`      添加转录本:`, transcriptId)
                 }
               }
               
@@ -340,7 +485,9 @@ export default {
                 start: geneInfo.start,
                 end: geneInfo.end,
                 strand: geneInfo.strand,
-                mrna_transcripts: mrnaTranscripts
+                mrna_transcripts: mrnaTranscripts,
+                jbrowse_url: '',
+                gff_data: []
               })
             }
           }
@@ -410,9 +557,9 @@ export default {
             let genomicSequence = this.t('sequence_not_found')
             if (seqData.genome_seq && seqData.genome_seq.length > 0) {
               genomicSequence = seqData.genome_seq[0].seq
-              console.log('获取到基因组序列，长度:', genomicSequence.length)
+              //console.log('获取到基因组序列，长度:', genomicSequence.length)
             }
-            console.log('缓存基因组序列:', genomicCacheKey, '序列长度:', genomicSequence.length)
+            //console.log('缓存基因组序列:', genomicCacheKey, '序列长度:', genomicSequence.length)
             this.geneSearchStore.sequenceCache[genomicCacheKey] = genomicSequence
           } else {
             console.log('基因组序列已缓存，跳过:', genomicCacheKey)
@@ -450,43 +597,55 @@ export default {
                       item.mrna_id === transcriptId
                     )
                     sequence = mrnaSeq ? mrnaSeq.seq : seqData.mrna_seq[0].seq
-                    console.log('获取到mRNA序列，长度:', sequence.length)
+                    //console.log('获取到mRNA序列，长度:', sequence.length, 'transcriptId:', transcriptId, 'mrnaSeq:', mrnaSeq)
                   }
                   break
                 case 'upstream':
                   if (seqData.upstream_seq && seqData.upstream_seq.length > 0) {
                     sequence = seqData.upstream_seq[0].seq
-                    console.log('获取到上游序列，长度:', sequence.length)
+                    //console.log('获取到上游序列，长度:', sequence.length)
                   }
                   break
                 case 'downstream':
                   if (seqData.downstream_seq && seqData.downstream_seq.length > 0) {
                     sequence = seqData.downstream_seq[0].seq
-                    console.log('获取到下游序列，长度:', sequence.length)
+                    //console.log('获取到下游序列，长度:', sequence.length)
                   }
                   break
                 case 'cdna':
                   if (seqData.cdna_seq && seqData.cdna_seq.length > 0) {
-                    sequence = seqData.cdna_seq[0].seq
-                    console.log('获取到cDNA序列，长度:', sequence.length)
+                    // 尝试找到匹配的转录本
+                    const cdnaSeq = seqData.cdna_seq.find(item =>
+                      item.mrna_id === transcriptId
+                    )
+                    sequence = cdnaSeq ? cdnaSeq.seq : seqData.cdna_seq[0].seq
+                    //console.log('获取到cDNA序列，长度:', sequence.length, 'transcriptId:', transcriptId)
                   }
                   break
                 case 'cds':
                   if (seqData.cds_seq && seqData.cds_seq.length > 0) {
-                    sequence = seqData.cds_seq[0].seq
-                    console.log('获取到CDS序列，长度:', sequence.length)
+                    // 尝试找到匹配的转录本
+                    const cdsSeq = seqData.cds_seq.find(item =>
+                      item.mrna_id === transcriptId
+                    )
+                    sequence = cdsSeq ? cdsSeq.seq : seqData.cds_seq[0].seq
+                    //console.log('获取到CDS序列，长度:', sequence.length, 'transcriptId:', transcriptId)
                   }
                   break
                 case 'protein':
                   if (seqData.protein_seq && seqData.protein_seq.length > 0) {
-                    sequence = seqData.protein_seq[0].seq
-                    console.log('获取到蛋白序列，长度:', sequence.length)
+                    // 尝试找到匹配的转录本
+                    const proteinSeq = seqData.protein_seq.find(item =>
+                      item.mrna_id === transcriptId
+                    )
+                    sequence = proteinSeq ? proteinSeq.seq : seqData.protein_seq[0].seq
+                    //console.log('获取到蛋白序列，长度:', sequence.length, 'transcriptId:', transcriptId)
                   }
                   break
               }
 
               // 缓存序列
-              console.log('缓存序列:', cacheKey, '序列长度:', sequence.length)
+              //console.log('缓存序列:', cacheKey, '序列长度:', sequence.length)
               this.geneSearchStore.sequenceCache[cacheKey] = sequence
             })
           })
@@ -547,14 +706,7 @@ export default {
           try {
             const sequence = await this.geneSearchStore.fetchSequence(geneId, transcriptId, type, upLen, downLen)
             if (sequence && sequence !== '未找到序列' && sequence !== 'N/A') {
-              // 对于上游和下游序列，根据用户选择的长度进行截断
-              let displaySequence = sequence
-              if (type === 'upstream' && sequence.length > upLen) {
-                displaySequence = sequence.slice(0, upLen)
-              } else if (type === 'downstream' && sequence.length > downLen) {
-                displaySequence = sequence.slice(0, downLen)
-              }
-              allFastaContent += `>${transcriptId} ${type}\n${this.formatSequence(displaySequence)}\n\n`
+              allFastaContent += `>${transcriptId} ${type}\n${this.formatSequence(sequence)}\n\n`
             } else {
               allFastaContent += `>${transcriptId} ${type}\n${sequence}\n\n`
             }
@@ -630,14 +782,7 @@ export default {
             try {
               const sequence = await this.geneSearchStore.fetchSequence(geneId, transcriptId, type, upLen, downLen)
               if (sequence && sequence !== this.t('sequence_not_found') && sequence !== 'N/A') {
-                // 对于上游和下游序列，根据用户选择的长度进行截断
-                let displaySequence = sequence
-                if (type === 'upstream' && sequence.length > upLen) {
-                  displaySequence = sequence.slice(0, upLen)
-                } else if (type === 'downstream' && sequence.length > downLen) {
-                  displaySequence = sequence.slice(0, downLen)
-                }
-                allContent += `>${transcriptId} ${type}\n${this.formatSequence(displaySequence)}\n\n`
+                allContent += `>${transcriptId} ${type}\n${this.formatSequence(sequence)}\n\n`
               } else {
                 allContent += `>${transcriptId} ${type}\n${sequence}\n\n`
               }

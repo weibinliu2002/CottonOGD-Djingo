@@ -119,6 +119,7 @@ import router from '@/router'
 import httpInstance from '@/utils/http.js'
 import { useGenomeStore } from '@/stores/genome_info'
 import { useFamilyStore } from '@/stores/familyInfo'
+import { useNavigationStore } from '@/stores/navigationStore'
 
 export default {
   name: 'TFView',
@@ -131,7 +132,7 @@ export default {
     const { t } = useI18n()
     // 获取基因组store
     const genomeStore = useGenomeStore()
-    // 获取家族store
+    const navigationStore = useNavigationStore()
     const familyStore = useFamilyStore()
     
     // 选中的基因组（级联选择器使用数组格式）
@@ -345,6 +346,8 @@ export default {
     // 处理基因链接点击
     const handleGeneClick = (geneId) => {
       console.log('Gene link clicked:', geneId)
+      // 清除 navigationStore 中的 geneDetail 数据，确保从后端重新获取
+      navigationStore.clearNavigationData('geneDetail')
       // 导航到ID搜索结果页面，并将基因ID作为参数传递
       router.push({
         name: 'idSearchResults',
