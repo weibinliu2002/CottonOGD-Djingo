@@ -82,16 +82,17 @@ export const useNavigationStore = defineStore('navigation', {
     clearNavigationData(key?: string) {
       const navData = this.navigationData as any
       if (key) {
+        // 完全重置指定的键，不保留任何旧属性
         navData[key] = {
           results: null,
-          ...navData[key]
+          dbId: null
         }
       } else {
         // 重置所有导航数据
         Object.keys(navData).forEach(k => {
           navData[k] = {
             results: null,
-            ...navData[k]
+            dbId: null
           }
         })
       }

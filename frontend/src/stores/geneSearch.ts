@@ -127,7 +127,18 @@ export const useGeneSearchStore = defineStore('geneSearch', () => {
     // 检查缓存
     if (sequenceCache.value[cacheKey]) {
       console.log('从缓存获取序列:', cacheKey)
-      return sequenceCache.value[cacheKey]
+      let sequence = sequenceCache.value[cacheKey]
+      
+      // 对于上游和下游序列，根据用户选择的长度进行截断
+      if (type === 'upstream' && sequence.length > upstreamLength) {
+        sequence = sequence.slice(0, upstreamLength)
+        console.log('上游序列截断到长度:', upstreamLength)
+      } else if (type === 'downstream' && sequence.length > downstreamLength) {
+        sequence = sequence.slice(0, downstreamLength)
+        console.log('下游序列截断到长度:', downstreamLength)
+      }
+      
+      return sequence
     }
 
     // 检查是否正在加载
@@ -137,7 +148,16 @@ export const useGeneSearchStore = defineStore('geneSearch', () => {
         const checkLoading = setInterval(() => {
           if (!sequenceLoading.value[cacheKey]) {
             clearInterval(checkLoading)
-            resolve(sequenceCache.value[cacheKey] || '')
+            let sequence = sequenceCache.value[cacheKey] || ''
+            
+            // 对于上游和下游序列，根据用户选择的长度进行截断
+            if (type === 'upstream' && sequence.length > upstreamLength) {
+              sequence = sequence.slice(0, upstreamLength)
+            } else if (type === 'downstream' && sequence.length > downstreamLength) {
+              sequence = sequence.slice(0, downstreamLength)
+            }
+            
+            resolve(sequence)
           }
         }, 100)
       })

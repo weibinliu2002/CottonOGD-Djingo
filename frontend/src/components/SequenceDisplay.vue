@@ -86,29 +86,49 @@ const getGeneId = () => {
 const hasSequences = (seqType) => {
   // 检查直接属性、currentTranscript和results
   const checkSeq = (seq) => seq && seq !== '' && seq !== 'N/A' && seq !== 'unavailable' && seq !== 'CDS sequence not found' && seq !== 'Protein sequence not found'
-  if (seqType === 'genomic') return checkSeq(props.gene_seq) || (props.results && props.results.some(r => checkSeq(r.gene_seq)))
-  if (seqType === 'mrna') return checkSeq(props.mrna_seq) || (props.currentTranscript && checkSeq(props.currentTranscript.mrna_seq)) || (props.results && props.results.some(r => checkSeq(r.mrna_seq) || (r.mrna_transcripts && r.mrna_transcripts.some(t => checkSeq(t.mrna_seq)))))
-  if (seqType === 'upstream') return checkSeq(props.upstream_seq) || (props.currentTranscript && checkSeq(props.currentTranscript.upstream_seq)) || (props.results && props.results.some(r => checkSeq(r.upstream_seq) || (r.mrna_transcripts && r.mrna_transcripts.some(t => checkSeq(t.upstream_seq)))))
-  if (seqType === 'downstream') return checkSeq(props.downstream_seq) || (props.currentTranscript && checkSeq(props.currentTranscript.downstream_seq)) || (props.results && props.results.some(r => checkSeq(r.downstream_seq) || (r.mrna_transcripts && r.mrna_transcripts.some(t => checkSeq(t.downstream_seq)))))
-  if (seqType === 'cdna') return checkSeq(props.cdna_seq) || (props.currentTranscript && checkSeq(props.currentTranscript.cdna_seq)) || (props.results && props.results.some(r => checkSeq(r.cdna_seq) || (r.mrna_transcripts && r.mrna_transcripts.some(t => checkSeq(t.cdna_seq)))))
-  if (seqType === 'cds') return checkSeq(props.cds_seq) || (props.currentTranscript && checkSeq(props.currentTranscript.cds_seq)) || (props.results && props.results.some(r => checkSeq(r.cds_seq) || (r.mrna_transcripts && r.mrna_transcripts.some(t => checkSeq(t.cds_seq)))))
-  if (seqType === 'protein') return checkSeq(props.protein_seq) || (props.currentTranscript && checkSeq(props.currentTranscript.protein_seq)) || (props.results && props.results.some(r => checkSeq(r.protein_seq) || (r.mrna_transcripts && r.mrna_transcripts.some(t => checkSeq(t.protein_seq)))))
+  if (seqType === 'genomic') return checkSeq(props.gene_seq)
+  if (seqType === 'mrna') return checkSeq(props.mrna_seq) || (props.currentTranscript && checkSeq(props.currentTranscript.mrna_seq))
+  if (seqType === 'upstream') return checkSeq(props.upstream_seq) || (props.currentTranscript && checkSeq(props.currentTranscript.upstream_seq))
+  if (seqType === 'downstream') return checkSeq(props.downstream_seq) || (props.currentTranscript && checkSeq(props.currentTranscript.downstream_seq))
+  if (seqType === 'cdna') return checkSeq(props.cdna_seq) || (props.currentTranscript && checkSeq(props.currentTranscript.cdna_seq))
+  if (seqType === 'cds') return checkSeq(props.cds_seq) || (props.currentTranscript && checkSeq(props.currentTranscript.cds_seq))
+  if (seqType === 'protein') return checkSeq(props.protein_seq) || (props.currentTranscript && checkSeq(props.currentTranscript.protein_seq))
   return false
 }
 
 const getSequence = (seqType) => {
   const ct = props.currentTranscript
 
-  // 1. 检查top-level props（单个基因情况）- 优先检查，确保genomic序列能被正确获取
+  // 1. 检查top-level props（单个基因情况）- 优先检查
   if (seqType === 'genomic' && props.gene_seq) return props.gene_seq
+  if (seqType === 'mrna' && props.mrna_seq) return props.mrna_seq
+  if (seqType === 'upstream' && props.upstream_seq) return props.upstream_seq
+  if (seqType === 'downstream' && props.downstream_seq) return props.downstream_seq
+  if (seqType === 'cdna' && props.cdna_seq) return props.cdna_seq
+  if (seqType === 'cds' && props.cds_seq) return props.cds_seq
+  if (seqType === 'protein' && props.protein_seq) return props.protein_seq
   
   // 2. 检查currentTranscript（单个转录本情况）
-  if (ct && seqType === 'genomic' && ct.gene_seq) return ct.gene_seq
+  if (ct) {
+    if (seqType === 'genomic' && ct.gene_seq) return ct.gene_seq
+    if (seqType === 'mrna' && ct.mrna_seq) return ct.mrna_seq
+    if (seqType === 'upstream' && ct.upstream_seq) return ct.upstream_seq
+    if (seqType === 'downstream' && ct.downstream_seq) return ct.downstream_seq
+    if (seqType === 'cdna' && ct.cdna_seq) return ct.cdna_seq
+    if (seqType === 'cds' && ct.cds_seq) return ct.cds_seq
+    if (seqType === 'protein' && ct.protein_seq) return ct.protein_seq
+  }
 
   // 3. 检查props.results（多个基因情况）
-  if (seqType === 'genomic' && props.results && props.results.length > 0) {
+  if (props.results && props.results.length > 0) {
     for (const result of props.results) {
-      if (result.gene_seq) return result.gene_seq
+      if (seqType === 'genomic' && result.gene_seq) return result.gene_seq
+      if (seqType === 'mrna' && result.mrna_seq) return result.mrna_seq
+      if (seqType === 'upstream' && result.upstream_seq) return result.upstream_seq
+      if (seqType === 'downstream' && result.downstream_seq) return result.downstream_seq
+      if (seqType === 'cdna' && result.cdna_seq) return result.cdna_seq
+      if (seqType === 'cds' && result.cds_seq) return result.cds_seq
+      if (seqType === 'protein' && result.protein_seq) return result.protein_seq
     }
   }
 
