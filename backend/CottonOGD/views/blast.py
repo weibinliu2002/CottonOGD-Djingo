@@ -104,7 +104,7 @@ class blast:
             raise OSError(f"不支持的BLAST类型: {type}")
         
         # 构建数据库路径
-        db_path = os.path.join(settings.BASE_DIR, 'data','blast_db', genome_id, f"{genome_id}_{data_type}")
+        db_path = os.path.join(settings.BASE_DIR, 'data','blast_db','CottonOGD', genome_id, data_type,genome_id)
         
         # 构建BLAST命令
         cmd = [
