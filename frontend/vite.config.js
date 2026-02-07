@@ -40,14 +40,16 @@ export default defineConfig({
     proxy: {
       // 匹配 CottonOGD_api 路径
       '^/CottonOGD_api': {
-        target: 'http://127.0.0.1:8000',
+        target: 'http://172.28.226.114:8000',
+        //target: 'http://127.0.0.1:8000',
         changeOrigin: true,
         secure: false,
         cookieDomainRewrite: 'localhost'
       },
       // 匹配 data/genome 路径
       '^/data/genome': {
-        target: 'http://127.0.0.1:8000',
+        target: 'http://172.28.226.114:8000',
+        //target: 'http://127.0.0.1:8000',
         changeOrigin: true,
         secure: false,
         cookieDomainRewrite: 'localhost'

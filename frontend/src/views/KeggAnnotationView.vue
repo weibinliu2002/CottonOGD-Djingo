@@ -15,7 +15,7 @@
             type="textarea"
             :rows="5"
             v-model="geneIds"
-            placeholder="{{ t('please_enter') }} gene IDs"
+            placeholder="please_enter gene IDs"
             :disabled="isLoading"
           />
           <div class="mt-2">
@@ -93,22 +93,13 @@ const submitForm = async () => {
 
   isLoading.value = true
   try {
-      // 使用全局axios实例调用后端API
-      const responseData = await axios.post('/tools/kegg_annotation/api/start/', {
+    // 直接跳转到结果页面，并传递参数
+    router.push({
+      path: '/tools/kegg-annotation/results',
+      query: {
         gene_id: geneIds.value
-      })
-
-      if (responseData.status === 'success' && responseData.task_id) {
-        // 使用任务ID跳转到结果页面
-        router.push({
-          path: '/tools/kegg-annotation/results',
-          query: {
-            task_id: responseData.task_id
-          }
-        })
-      } else {
-        ElMessage.error(t('error') + ': ' + (responseData.error || 'Failed to get task ID'));
       }
+    })
   } catch (error) {
     console.error(t('error') + ' submitting form:', error)
     ElMessage.error(t('error') + ' submitting form: ' + (error.message || 'Unknown error'));

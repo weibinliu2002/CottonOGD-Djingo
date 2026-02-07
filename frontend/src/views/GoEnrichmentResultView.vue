@@ -25,37 +25,27 @@
     <el-alert
       v-else-if="!hasResults"
       type="warning"
-      title="{{ t('no_enrichment_results_found') }}"
+      :title="t('no_enrichment_results_found')"
       show-icon
       class="mb-4"
     />
     
     <!-- 结果显示 -->
-    <div v-else class="mb-4">
-      <!-- 每页显示控制 -->
-      <el-form @submit.prevent="handlePerPageChange" class="mb-3">
-        <el-row :gutter="20" align="middle">
-          <el-col :span="6">
-            <el-form-item label="{{ t('results') }} per page:" label-width="120px">
-              <el-select v-model.number="perPage" class="w-32" @change="handlePerPageChange">
-                <el-option value="5" label="5"></el-option>
-                <el-option value="10" label="10"></el-option>
-                <el-option value="25" label="25"></el-option>
-                <el-option value="50" label="50"></el-option>
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="4">
-            <span class="text-gray-500">{{ t('records') }}</span>
-          </el-col>
-        </el-row>
-      </el-form>
+    <div v-else>
+      <!-- 无结果提示 -->
+      <el-alert
+        v-if="!hasResults"
+        type="warning"
+        :title="t('no_enrichment_results_found')"
+        show-icon
+        class="mb-4"
+      />
       
       <!-- 按类别展示结果 -->
       <template v-for="(categoryData, category) in results" :key="category">
         <div 
           class="mb-5" 
-          :id="`category-${category}`"
+          v-if="categoryData.results.length > 0"
         >
           <h4 class="text-danger mb-3">
             <!-- 类别名称 -->
@@ -70,10 +60,10 @@
           <!-- 结果表格 -->
           <el-card class="mb-4">
             <el-table :data="categoryData.results" style="width: 100%">
-              <el-table-column prop="go_id" label="{{ t('go_id') }}" width="150"></el-table-column>
-              <el-table-column prop="description" label="{{ t('description') }}">
+              <el-table-column prop="go_id" :label="t('go_id')" width="150"></el-table-column>
+              <el-table-column prop="description" :label="t('description')">
                 <template #default="scope">
-                  {{ getDescriptionName(scope.row.description) }}
+                  {{ scope.row.description }}
                 </template>
               </el-table-column>
               <el-table-column prop="gene_ratio" label="GeneRatio" width="120"></el-table-column>
@@ -101,35 +91,6 @@
               <el-table-column prop="genes" label="Genes"></el-table-column>
             </el-table>
           </el-card>
-          
-          <!-- 可视化结果 -->
-          <el-card class="mb-4" v-if="plotImages && (plotImages[category] || plotImages[category.toLowerCase()] || plotImages[category.toUpperCase()])">
-            <template #header>
-              <div class="card-header">
-                <span>Visualization Results</span>
-              </div>
-            </template>
-            <el-image
-              :src="`data:image/png;base64,${plotImages[category] || plotImages[category.toLowerCase()] || plotImages[category.toUpperCase()]}`"
-              :alt="`${category} Plot`"
-              fit="contain"
-              class="w-full"
-              @error="handleImageError($event)"
-            />
-          </el-card>
-          
-          <!-- 分页控件 -->
-          <el-pagination
-            v-if="categoryData.num_pages > 1"
-            v-model:current-page="currentPages[category]"
-            v-model:page-size="perPage"
-            :page-sizes="[5, 10, 25, 50]"
-            layout="total, sizes, prev, pager, next, jumper"
-            :total="categoryData.total"
-            @size-change="handlePerPageChange"
-            @current-change="(page: number) => changePage(category, page)"
-            class="mt-4"
-          />
         </div>
       </template>
     </div>
@@ -217,45 +178,40 @@ const changePage = async (category: string, page: number) => {
 const fetchResults = async () => {
   isLoading.value = true
   try {
-    // 从URL参数获取task_id
-    const taskId = route.query.task_id
-    if (!taskId) {
-      errorMessage.value = 'Task ID missing'
+    // 从URL参数获取gene_id
+    const geneId = route.query.gene_id as string || ''
+    const pValueThreshold = parseFloat(route.query.p_value_threshold as string || '0.05')
+    
+    if (!geneId) {
+      errorMessage.value = 'Missing gene_id parameter'
       hasResults.value = false
       return
     }
     
-    // 准备请求参数
-    const params: any = {
-      task_id: taskId,
-      per_page: perPage.value
-    }
-    
-    // 添加每个类别的当前页码
-    for (const category in currentPages.value) {
-      params[`${category}_page`] = currentPages.value[category]
-    }
-    
     // 使用直接导入的axios实例调用后端API获取结果
-    console.log('请求参数:', params)
-    const response = await axios.get('/tools/go_enrichment/api/results/', {
-      params
+    console.log('请求参数:', { gene_id: geneId, p_value_threshold: pValueThreshold })
+    const response = await axios.get('/CottonOGD_api/go_enrichment/', {
+      params: {
+        gene_id: geneId,
+        p_value_threshold: pValueThreshold
+      }
     }) as any
     
     // 详细打印后端返回的数据，包括所有字段
     console.log('完整的后端返回数据:', JSON.stringify(response, null, 2))
     
     // 检查状态是否为成功
-    if (response.status === 'success' || response.code === 200 || !response.error) {
-      // 处理返回的结果，按类别组织
-      // 修复数据结构问题：真正的富集结果在response.results.results中
-      let resultsData = response.results || response.data || {} 
-      let resultsObj = resultsData.results || {} 
-      let plotImagesObj = response.plot_images || response.images || response.charts || {} 
+    if (response.status === 'success') {
+      const data = response.data
+      console.log('处理后的结果对象:', data.results)
+      console.log('结果数量:', data.results ? data.results.length : 0)
       
-      // 打印处理后的数据结构
-      console.log('处理后的结果对象:', resultsObj)
-      console.log('处理后的图像对象:', plotImagesObj)
+      // 打印每个结果的go_type
+      if (data.results && data.results.length > 0) {
+        data.results.forEach((r: any, index: number) => {
+          console.log(`结果 ${index}: go_id=${r.go_id}, go_type=${r.go_type}, description=${r.description}`)
+        })
+      }
       
       // 初始化结果对象
       results.value = {
@@ -264,42 +220,20 @@ const fetchResults = async () => {
         CC: { results: [], total: 0, num_pages: 1, current_page: 1, has_next: false, has_previous: false }
       }
       
-      // 遍历所有类别，处理结果
-      for (const category in resultsObj) {
-        const categoryData = resultsObj[category]
-        console.log(`处理类别 ${category} 的数据:`, categoryData)
-        
-        if (categoryData && typeof categoryData === 'object') {
-          // 如果categoryData是分页对象，提取results
-          if (Array.isArray(categoryData.results)) {
-            results.value[category] = {
-              results: categoryData.results,
-              total: categoryData.total || categoryData.results.length,
-              num_pages: categoryData.num_pages || 1,
-              current_page: categoryData.current_page || currentPages.value[category] || 1,
-              has_next: categoryData.has_next || false,
-              has_previous: categoryData.has_previous || false
-            }
-          } 
-          // 如果categoryData直接是结果数组
-          else if (Array.isArray(categoryData)) {
-            results.value[category] = {
-              results: categoryData,
-              total: categoryData.length,
-              num_pages: 1,
-              current_page: currentPages.value[category] || 1,
-              has_next: false,
-              has_previous: false
-            }
-          }
+      // 按GO类别组织结果
+      const categories = ['BP', 'MF', 'CC']
+      categories.forEach(category => {
+        const categoryResults = data.results.filter((r: any) => r.go_type === category)
+        console.log(`类别 ${category} 的结果数量: ${categoryResults.length}`)
+        results.value[category] = {
+          results: categoryResults,
+          total: categoryResults.length,
+          num_pages: 1,
+          current_page: 1,
+          has_next: false,
+          has_previous: false
         }
-      }
-      
-      // 处理可视化图像
-      plotImages.value = plotImagesObj
-      
-      // 添加调试信息，查看可视化图像数据
-      console.log('可视化图像数据:', plotImagesObj)
+      })
       
       // 检查是否有结果
       let anyResults = false
@@ -315,10 +249,7 @@ const fetchResults = async () => {
       console.log('最终结果数据:', results.value)
       
       // 设置执行时间
-      executionTime.value = response.execution_time || response.elapsed_time || response.time || 0
-    } else if (response.status === 'processing') {
-      // If task is still processing, retry after a short delay
-      setTimeout(() => fetchResults(), 1000)
+      executionTime.value = 0
     } else {
       errorMessage.value = response.error || 'Failed to get results'
       hasResults.value = false
@@ -335,10 +266,6 @@ const fetchResults = async () => {
 // 生命周期
 onMounted(async () => {
   await fetchResults()
-})
-
-// 初始化工具提示
-onMounted(() => {
   // 这里可以添加工具提示的初始化逻辑
   // 由于使用了Bootstrap，可以在模板中直接使用data-bs-toggle="tooltip"
 })

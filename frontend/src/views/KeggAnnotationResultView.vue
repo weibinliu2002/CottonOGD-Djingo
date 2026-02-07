@@ -32,13 +32,13 @@
     <el-alert
       v-else-if="!hasResults"
       type="warning"
-      title="{{ t('no_results') }}. Please try with different gene IDs."
+      :title="t('no_results') + '. Please try with different gene IDs.'"
       show-icon
       class="mb-4"
     />
     
     <!-- 结果显示 -->
-    <div v-else class="mb-4">
+    <div v-else>
       <!-- 图表区域 -->
       <el-card class="mt-5" v-if="chartData.labels && chartData.labels.length > 0">
         <template #header>
@@ -51,25 +51,6 @@
         </div>
       </el-card>
       
-      <!-- 每页显示控制 -->
-      <el-form @submit.prevent="handlePerPageChange" class="mb-3">
-        <el-row :gutter="20" align="middle">
-          <el-col :span="6">
-            <el-form-item label="每页显示:" label-width="80px">
-              <el-select v-model.number="pageSize" class="w-40" @change="changePageSize">
-                <el-option value="10" label="10"></el-option>
-                <el-option value="25" label="25"></el-option>
-                <el-option value="50" label="50"></el-option>
-                <el-option value="100" label="100"></el-option>
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="4">
-            <span class="text-gray-500">条记录</span>
-          </el-col>
-        </el-row>
-      </el-form>
-      
       <!-- 表格区域 -->
       <el-card class="mb-4">
         <template #header>
@@ -78,27 +59,14 @@
             <el-tag type="primary">{{ totalItems }} results</el-tag>
           </div>
         </template>
-        <el-table :data="paginatedResults" style="width: 100%">
+        <el-table :data="results" style="width: 100%">
           <el-table-column prop="Chr" label="Chr" width="80"></el-table-column>
           <el-table-column prop="Start" label="Start" width="100"></el-table-column>
           <el-table-column prop="End" label="End" width="100"></el-table-column>
           <el-table-column prop="ID" label="ID" width="150"></el-table-column>
           <el-table-column prop="match" label="KO" width="120"></el-table-column>
-          <el-table-column prop="{{ t('description') }}" label="{{ t('pathway_name') }}"></el-table-column>
+          <el-table-column prop="Description" :label="t('pathway_name')"></el-table-column>
         </el-table>
-        
-        <!-- 分页控件 -->
-        <el-pagination
-          v-if="totalPages > 1"
-          v-model:current-page="currentPage"
-          v-model:page-size="pageSize"
-          :page-sizes="[10, 25, 50, 100]"
-          layout="total, sizes, prev, pager, next, jumper"
-          :total="totalItems"
-          @size-change="changePageSize"
-          @current-change="changePage"
-          class="mt-4"
-        />
       </el-card>
     </div>
   </div>
@@ -114,8 +82,6 @@ const route = useRoute()
 
 // 页面数据
 const results = ref<any[]>([])
-const pageSize = ref(10)
-const currentPage = ref(1)
 const hasResults = ref(true)
 const chart = ref<any>(null)
 const isLoading = ref(false)
@@ -126,99 +92,40 @@ const totalGenes = ref(0)
 const annotatedGenes = ref(0)
 const chartData = ref<{ labels: string[], data: number[] }>({ labels: [], data: [] })
 
-// 计算属性
-const totalPages = computed(() => Math.ceil(totalItems.value / pageSize.value))
-const startItem = computed(() => (currentPage.value - 1) * pageSize.value + 1)
-const endItem = computed(() => Math.min(currentPage.value * pageSize.value, totalItems.value))
-
-const paginatedResults = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value
-  const end = start + pageSize.value
-  return results.value.slice(start, end)
-})
-
-const visiblePages = computed(() => {
-  const total = totalPages.value
-  const current = currentPage.value
-  const pages: number[] = []
-  
-  if (total <= 5) {
-    for (let i = 1; i <= total; i++) {
-      pages.push(i)
-    }
-  } else {
-    if (current <= 3) {
-      for (let i = 1; i <= 5; i++) {
-        pages.push(i)
-      }
-    } else if (current >= total - 2) {
-      for (let i = total - 4; i <= total; i++) {
-        pages.push(i)
-      }
-    } else {
-      for (let i = current - 2; i <= current + 2; i++) {
-        pages.push(i)
-      }
-    }
-  }
-  return pages
-})
-
-// 方法
-const handlePerPageChange = () => {
-  currentPage.value = 1 // 重置到第一页
-  fetchResults()
-}
-
-const changePageSize = () => {
-  currentPage.value = 1 // 重置到第一页
-  fetchResults()
-}
-
-const changePage = (page: number) => {
-  if (page < 1 || page > totalPages.value) {
-    return
-  }
-  currentPage.value = page
-  fetchResults()
-}
-
 // 使用统一的axios实例
 import axios from '../utils/http'
 
 const fetchResults = async () => {
   isLoading.value = true
   try {
-    // 从URL参数获取task_id
-    const taskId = route.query.task_id
-    if (!taskId) {
-      errorMessage.value = '缺少任务ID'
+    // 从URL参数获取gene_id
+    const geneId = route.query.gene_id as string || ''
+    if (!geneId) {
+      errorMessage.value = '缺少基因ID'
       hasResults.value = false
       return
     }
     
     // 使用配置好的axios实例调用后端API获取结果
-    const responseData = await axios.get('/tools/kegg_annotation/api/results/', {
+    const responseData = await axios.get('/CottonOGD_api/kegg_annotation/', {
       params: {
-        task_id: taskId,
-        page_size: pageSize.value,
-        page: currentPage.value
+        gene_id: geneId
       }
     }) as any
     
     console.log('KEGG注释API响应:', responseData)
     
     if (responseData && responseData.status === 'success') {
-        results.value = responseData.results || []
-        totalItems.value = responseData.total || 0
-        totalGenes.value = responseData.total_genes || 0
-        annotatedGenes.value = responseData.annotated_genes || 0
+        results.value = responseData.data.results || []
+        totalItems.value = results.value.length
+        totalGenes.value = responseData.data.gene_list ? responseData.data.gene_list.length : 0
+        annotatedGenes.value = results.value.length
         
         // 确保chart_data是正确的格式
-        if (responseData.chart_data) {
+        if (responseData.data.chart_data) {
           chartData.value = {
-            labels: responseData.chart_data.labels || [],
-            data: responseData.chart_data.data || []
+            labels: responseData.data.chart_data.labels || [],
+            data: responseData.data.chart_data.data || []
           }
         } else {
           chartData.value = { labels: [], data: [] }
@@ -233,9 +140,6 @@ const fetchResults = async () => {
         
         // 渲染图表
         renderChart()
-    } else if (responseData && responseData.status === 'processing') {
-      // 如果任务仍在处理中，等待一段时间后重试
-      setTimeout(() => fetchResults(), 1000)
     } else {
       errorMessage.value = responseData.error || '获取结果失败'
       hasResults.value = false

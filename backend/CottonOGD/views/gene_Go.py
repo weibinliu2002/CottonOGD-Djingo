@@ -191,15 +191,26 @@ def go_enrichment(request):
         
         try:
             with connection.cursor() as cursor:
+                # 打印输入的基因列表
+                logger.info(f"GO富集分析 - 输入基因列表: {gene_list}")
+                
+                # 将基因ID转换为大写进行查询
+                gene_list_upper = [gene.upper() for gene in gene_list]
+                logger.info(f"GO富集分析 - 转换为大写的基因列表: {gene_list_upper}")
+                
                 cursor.execute("""
                     SELECT `Gene_Ontology`, Description, `GO_ID`, Query, dddd
                     FROM `eg_go_enrichment` 
                     WHERE Query IN %s
-                """, [tuple(gene_list)])
+                """, [tuple(gene_list_upper)])
                 enrichment_data = cursor.fetchall()
+                
+                logger.info(f"GO富集分析 - 查询到 {len(enrichment_data)} 条富集数据")
 
                 cursor.execute("SELECT COUNT(*) FROM `eg_go_enrichment`")
                 total_background_genes = cursor.fetchone()[0]
+                
+                logger.info(f"GO富集分析 - 背景基因总数: {total_background_genes}")
 
                 cursor.execute("""
                     SELECT `Gene_Ontology`, Description, `GO_ID`, Query, dddd
@@ -208,16 +219,33 @@ def go_enrichment(request):
                     AND `GO_ID` IS NOT NULL
                 """)
                 background_data = cursor.fetchall()
+                
+                logger.info(f"GO富集分析 - 背景数据条数: {len(background_data)}")
 
-            input_genes = set(gene_list)
+            input_genes = set(gene_list_upper)
             input_pathways = defaultdict(list)
+            
+            # GO类型映射函数
+            def normalize_go_type(go_type):
+                if not go_type:
+                    return 'Unknown'
+                go_type_upper = str(go_type).upper().strip()
+                if go_type_upper in ['BP', 'BIOLOGICAL_PROCESS', 'BIOLOGICAL PROCESS']:
+                    return 'BP'
+                elif go_type_upper in ['MF', 'MOLECULAR_FUNCTION', 'MOLECULAR FUNCTION']:
+                    return 'MF'
+                elif go_type_upper in ['CC', 'CELLULAR_COMPONENT', 'CELLULAR COMPONENT']:
+                    return 'CC'
+                return go_type_upper
             
             for row in enrichment_data:
                 gene = row[3]
-                go_type = row[0]
+                go_type = normalize_go_type(row[0])
                 go_id = row[2]
                 description = row[1]
                 dddd = row[4]
+                
+                logger.info(f"处理富集数据: gene={gene}, go_type={go_type}, go_id={go_id}, description={description}")
                 
                 if gene in input_genes:
                     input_pathways[go_id].append({
@@ -227,8 +255,11 @@ def go_enrichment(request):
                         'dddd': dddd
                     })
             
+            logger.info(f"GO富集分析 - 输入通路数: {len(input_pathways)}")
+            
             total_input_genes = len(input_genes)
             if total_input_genes == 0:
+                logger.warning("GO富集分析 - 没有找到输入基因的富集数据")
                 return JsonResponse({
                     'status': 'success',
                     'data': {

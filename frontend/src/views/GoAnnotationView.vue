@@ -96,18 +96,14 @@ const handleSubmit = async () => {
     return
   }
   
-  // 构建查询参数
-  const params = {
-    gene_list: geneList.value,
-    per_page: perPage.value
-  }
-  
   try {
-    // 在实际项目中，这里应该调用API进行数据处理
-    // 这里我们直接跳转到结果页面，并传递参数
+    // 直接跳转到结果页面，并传递参数
     router.push({
       path: '/tools/go-annotation/results',
-      query: params
+      query: {
+        gene_id: geneList.value,
+        per_page: perPage.value
+      }
     })
   } catch (err) {
     error.value = 'Submission failed, please try again'

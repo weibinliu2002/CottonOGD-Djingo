@@ -143,25 +143,16 @@ const submitForm = async () => {
 
   isLoading.value = true
   try {
-    // 使用配置好的axios实例调用后端API
-    const responseData: any = await axios.post('/tools/kegg_enrichment/api/start/', {
-      gene_list: geneList.value,
-      p_value_threshold: pValueThreshold.value
+    // 直接跳转到结果页面，并传递参数
+    router.push({
+      path: '/tools/kegg-enrichment/results',
+      query: {
+        gene_id: geneList.value,
+        p_value_threshold: pValueThreshold.value
+      }
     })
-
-    // 检查API返回的数据
-    if (responseData && responseData.status === 'success' && responseData.task_id) {
-      // 使用任务ID跳转到结果页面
-      router.push({
-        path: '/tools/kegg-enrichment/results',
-        query: {
-          task_id: responseData.task_id
-        }
-      })
-    } 
   } catch (error: any) {
-    console.error('Error submitting form:', error)
-    ElMessage.error(t('error_submitting_form') + ': ' + (error.message || t('unknown_error')));
+    ElMessage.error(t('error') + ': ' + (error.message || 'Unknown error'));
   } finally {
     isLoading.value = false
   }

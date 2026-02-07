@@ -51,29 +51,6 @@
       
       <!-- 显著结果表格 (只有有结果时才显示) -->
       <div v-if="hasResults">
-        <!-- 每页显示控制 -->
-        <el-form @submit.prevent="handlePerPageChange" class="mb-3" id="per-page-form">
-          <el-row :gutter="20" align="middle">
-            <el-col :span="6">
-              <el-form-item :label="t('results_per_page')" label-width="120px">
-                <el-select 
-                  v-model.number="pageSize"
-                  class="w-40" 
-                  @change="changePageSize"
-                >
-                  <el-option value="5" label="5"></el-option>
-                  <el-option value="10" label="10"></el-option>
-                  <el-option value="25" label="25"></el-option>
-                  <el-option value="50" label="50"></el-option>
-                </el-select>
-              </el-form-item>
-            </el-col>
-            <el-col :span="4">
-            <span class="text-gray-500">{{ t('records') }}</span>
-          </el-col>
-          </el-row>
-        </el-form>
-        
         <el-card class="mb-5">
           <template #header>
             <div class="d-flex justify-content-between align-items-center">
@@ -83,7 +60,7 @@
           </template>
           
           <!-- 表格区域 -->
-          <el-table :data="paginatedResults" style="width: 100%">
+          <el-table :data="results" style="width: 100%">
             <el-table-column prop="pathway_id" :label="t('pathway_id')" width="120"></el-table-column>
             <el-table-column prop="description.name" :label="t('description')">
               <template #default="scope">
@@ -118,19 +95,6 @@
               </template>
             </el-table-column>
           </el-table>
-          
-          <!-- 分页控件 -->
-          <el-pagination
-            v-if="totalPages > 1"
-            v-model:current-page="currentPage"
-            v-model:page-size="pageSize"
-            :page-sizes="[5, 10, 25, 50]"
-            layout="total, sizes, prev, pager, next, jumper"
-            :total="totalItems"
-            @size-change="changePageSize"
-            @current-change="changePage"
-            class="mt-4"
-          />
         </el-card>
       </div>
     </div>
@@ -147,8 +111,6 @@ const route = useRoute()
 
 // 页面数据
 const results = ref<any[]>([])
-const pageSize = ref(10)
-const currentPage = ref(1)
 const hasResults = ref(true)
 const isLoading = ref(false)
 const errorMessage = ref('')
@@ -156,56 +118,27 @@ const executionTime = ref(0)
 const plotImage = ref<string | null>(null)
 const totalItems = ref(0)
 
-// 计算属性
-const totalPages = computed(() => Math.ceil(totalItems.value / pageSize.value))
-
-const paginatedResults = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value
-  const end = start + pageSize.value
-  return results.value.slice(start, end)
-})
-
-// 方法
-const handlePerPageChange = () => {
-  currentPage.value = 1 // 重置到第一页
-  fetchResults()
-}
-
-const changePageSize = () => {
-  currentPage.value = 1 // 重置到第一页
-  fetchResults()
-}
-
-const changePage = (page: number) => {
-  if (page < 1 || page > totalPages.value) {
-    return
-  }
-  currentPage.value = page
-  fetchResults()
-}
-
 // 使用统一的axios实例
 import axios from '../utils/http'
 
 const fetchResults = async () => {
   isLoading.value = true
   try {
-    // 从URL参数获取task_id
-    const taskId = route.query.task_id
-    if (!taskId) {
-      errorMessage.value = t('task_id_missing')
+    // 从URL参数获取gene_id和p_value_threshold
+    const geneId = route.query.gene_id as string || ''
+    const pValueThreshold = parseFloat(route.query.p_value_threshold as string || '0.05')
+    
+    if (!geneId) {
+      errorMessage.value = 'Missing gene_id parameter'
       hasResults.value = false
       return
     }
     
     // 使用配置好的axios实例调用后端API获取结果
-    // 注意：axios实例已经在response interceptor中返回了response.data
-    // 类型断言：强制告诉TypeScript这是API返回的实际数据，不是AxiosResponse对象
-    const data = await axios.get('/tools/kegg_enrichment/api/results/', {
+    const data = await axios.get('/CottonOGD_api/kegg_enrichment/', {
       params: {
-        task_id: taskId,
-        page_size: pageSize.value,
-        page: currentPage.value
+        gene_id: geneId,
+        p_value_threshold: pValueThreshold
       }
     }) as unknown as any
     console.log('KEGG富集API响应:', data)
@@ -213,14 +146,12 @@ const fetchResults = async () => {
     // 确保data是一个对象并且有status属性
     if (typeof data === 'object' && data !== null) {
       if (data.status === 'success') {
-        results.value = data.results || []
-        totalItems.value = data.total || results.value.length
+        const resultData = data.data
+        results.value = resultData.results || []
+        totalItems.value = results.value.length
         hasResults.value = results.value.length > 0
-        executionTime.value = data.execution_time || 0
-        plotImage.value = data.plot_image || null
-      } else if (data.status === 'processing') {
-        // If task is still processing, retry after a short delay
-        setTimeout(() => fetchResults(), 1000)
+        executionTime.value = 0
+        plotImage.value = resultData.plot_image || null
       } else {
         errorMessage.value = data.error || 'Failed to get results'
         hasResults.value = false

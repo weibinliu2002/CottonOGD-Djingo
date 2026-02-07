@@ -58,7 +58,6 @@
                       <el-button 
                         type="primary" 
                         @click="fetchSequence" 
-                        :loading="isFetching"
                         :disabled="!sequenceId.trim() || !genomeAssembly"
                         style="width: 100%"
                       >
@@ -126,7 +125,6 @@
                   <el-button 
                     type="primary" 
                     @click="fetchSequenceByPosition" 
-                    :loading="isFetching"
                     :disabled="!genomeAssembly || !genomePosition.chromosome.trim() || !genomePosition.start || !genomePosition.end"
                     style="width: 100%"
                   >
@@ -274,7 +272,6 @@
               <el-button 
                 type="primary" 
                 native-type="submit"
-                :loading="isLoading"
                 :disabled="isSequenceEmpty"
                 @click="console.log('Button clicked, isSequenceEmpty:', isSequenceEmpty, 'sequenceTemplate:', sequenceTemplate)"
                 style="width: 100%"
@@ -309,11 +306,20 @@
           />
           
           <div v-else-if="designResults.length > 0" class="results-container">
-            <h5 class="results-title">{{ t('primer_design_results') }}</h5>
+            <div class="flex justify-between items-center mb-4">
+              <h5 class="results-title">{{ t('primer_design_results') }}</h5>
+              <el-button 
+                type="success" 
+                icon="Download"
+                @click="downloadResults"
+              >
+                {{ t('download_excel') }}
+              </el-button>
+            </div>
             <el-table :data="designTableData" style="width: 100%" border size="medium">
               <el-table-column prop="oligos" :label="t('oligos')" width="140" />
-              <el-table-column prop="startPosition" :label="t('start_position')" width="140" />
-              <el-table-column prop="length" :label="t('length')" width="100" />
+              <!--<el-table-column prop="startPosition" :label="t('start_position')" width="140" />
+              <el-table-column prop="length" :label="t('length')" width="100" />-->
               <el-table-column prop="tm" label="Tm" width="100" />
               <el-table-column prop="gcPercent" :label="t('gc_percent')" width="120" />
               <el-table-column prop="selfAny" :label="t('self_any')" width="100" />
@@ -616,7 +622,16 @@ const designPrimers = async () => {
     return
   }
   
+  // Validate sequence length (max 5000 characters)
+  const processedSequence = sequenceTemplate.value.trim().replace(/\s/g, '').toUpperCase().replace(/[^ACTG]/g, '')
+  if (processedSequence.length > 5000) {
+    console.log('Sequence is too long')
+    error.value = `Sequence is too long (max 5000 characters, got ${processedSequence.length})`
+    return
+  }
+  
   console.log('Starting primer design...')
+  console.log('Processed sequence length:', processedSequence.length)
   
   // Clear previous results before starting new design
   designResults.value = []
@@ -629,7 +644,7 @@ const designPrimers = async () => {
     // Build request data - 使用正确的参数名称
     const requestData = {
       sequence_id: sequenceId.value.trim() || 'default_id',
-      sequence: sequenceTemplate.value.trim().replace(/\s/g, '').toUpperCase().replace(/[^ACTG]/g, ''),
+      sequence: processedSequence,
       parameters: {
         productSizeMin: parameters.value.productSizeMin,
         productSizeMax: parameters.value.productSizeMax,
@@ -659,6 +674,36 @@ const designPrimers = async () => {
   } finally {
     isLoading.value = false
   }
+}
+
+// Download results as Excel
+const downloadResults = () => {
+  console.log('Downloading results...')
+  
+  if (designResults.value.length === 0) {
+    error.value = t('no_data_available_for_download')
+    return
+  }
+  
+  // Create CSV content
+  let csvContent = 'data:text/csv;charset=utf-8,'
+  csvContent += 'Oligos,TM,GC%,Self any,Self end,Hairpin,Sequence,Penalty\n'
+  
+  // Add data rows
+  designTableData.value.forEach(item => {
+    csvContent += `${item.oligos},${item.tm},${item.gcPercent},${item.selfAny},${item.selfEnd},${item.hairpin},${item.sequence},${item.penalty}\n`
+  })
+  
+  // Create download link
+  const encodedUri = encodeURI(csvContent)
+  const link = document.createElement('a')
+  link.setAttribute('href', encodedUri)
+  link.setAttribute('download', `primer_design_results_${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.csv`)
+  document.body.appendChild(link)
+  
+  // Trigger download
+  link.click()
+  document.body.removeChild(link)
 }
 </script>
 

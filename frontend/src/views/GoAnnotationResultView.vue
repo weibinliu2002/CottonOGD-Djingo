@@ -48,8 +48,8 @@
             <el-table-column prop="Start" label="Start" width="100"></el-table-column>
             <el-table-column prop="End" label="End" width="100"></el-table-column>
             <el-table-column prop="ID" label="ID" width="150"></el-table-column>
-            <el-table-column prop="GO_ID" label="{{ t('go_id') }}" width="150"></el-table-column>
-            <el-table-column prop="{{ t('description') }}" label="{{ t('description') }}"></el-table-column>
+            <el-table-column prop="GO_ID" :label="t('go_id')" width="150"></el-table-column>
+            <el-table-column prop="Description" :label="t('description')"></el-table-column>
             <el-table-column prop="Gene_Ontology" label="Gene Ontology" width="150"></el-table-column>
           </el-table>
         </el-card>
@@ -90,6 +90,7 @@ const { t } = useI18n()
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from '../utils/http'
+import httpInstance from '../utils/http'
 
 const route = useRoute()
 
@@ -125,16 +126,14 @@ const loadResults = async () => {
   loading.value = true
   
   // 从路由参数获取查询条件
-  const geneListParam = route.query.gene_list as string || ''
+  const geneListParam = route.query.gene_id as string || ''
   geneList.value = geneListParam
   
   // 添加调试信息
   console.log('=== GO注释结果页面调试信息 ===')
   console.log('路由参数:', route.query)
-  console.log('获取的gene_list参数:', geneListParam)
-  console.log('gene_list参数长度:', geneListParam.length)
-  console.log('当前页码:', currentPage.value)
-  console.log('每页显示条数:', perPage.value)
+  console.log('获取的gene_id参数:', geneListParam)
+  console.log('gene_id参数长度:', geneListParam.length)
   
   try {
     // 检查是否有基因列表参数
@@ -149,12 +148,9 @@ const loadResults = async () => {
     
     // 调用后端API获取数据
     console.log('准备调用API')
-    const responseData = await axios.get('/tools/go_annotation/', {
+    const responseData = await httpInstance.get('/CottonOGD_api/go_annotation/', {
       params: {
-        gene_id: geneListParam,
-        per_page: perPage.value,
-        page: currentPage.value,
-        api: 'true'
+        gene_id: geneListParam
       }
     }) as any
     
@@ -162,7 +158,7 @@ const loadResults = async () => {
     console.log('API响应数据:', responseData)
     
     // 由于axios拦截器直接返回response.data，所以responseData就是后端返回的data对象
-    if (responseData && responseData.success) {
+    if (responseData && responseData.status === 'success') {
       console.log('API响应成功')
       const data = responseData.data
       console.log('数据对象:', data)

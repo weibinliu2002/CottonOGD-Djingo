@@ -145,30 +145,16 @@ const handleSubmit = async () => {
   }
   
   try {
-    if (!$http) {
-      throw new Error('Global axios instance not found')
-    }
-    
-    // 使用全局的axios实例提交数据到正确的API端点
-    const response = await $http.post('/tools/go_enrichment/api/start/', {
-      gene_list: geneList.value,
-      p_value: pValue.value,
-      q_value: qValue.value,
-      per_page: perPage.value
+    // 直接跳转到结果页面，并传递参数
+    router.push({
+      path: '/tools/go-enrichment/results',
+      query: {
+        gene_id: geneList.value,
+        p_value_threshold: pValue.value,
+        per_page: perPage.value
+      }
     })
-    
-    const data = response.data
-    
-    if (data.status === 'success') {
-      // 使用后端返回的task_id跳转到结果页面
-      router.push({
-        path: '/tools/go-enrichment/results',
-        query: { task_id: data.task_id }
-      })
-    } else {
-      error.value = data.error || 'Submission failed'
-    }
-  } catch (err: any) {
+  } catch (err) {
     error.value = 'Submission failed, please try again'
     console.error('Submission failed:', err)
   }
