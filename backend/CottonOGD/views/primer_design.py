@@ -116,9 +116,15 @@ def primer_design(request):
         if not sequence:
             return Response({'error': 'sequence is required'}, status=status.HTTP_400_BAD_REQUEST)
         
+        # 检查序列长度（限制最大长度为 5000 字符）
+        if len(sequence) > 5000:
+            return Response({'error': f'sequence is too long (max 5000 characters, got {len(sequence)})'}, status=status.HTTP_400_BAD_REQUEST)
+        
         # 检查序列是否只包含ACTG字符
         if not re.match(r'^[ACTG]+$', sequence):
             return Response({'error': 'sequence must contain only ACTG characters'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        logger.info(f"Processing primer design for sequence_id={sequence_id}, sequence_length={len(sequence)}")
         
         # 构建primer3的Boulder-IO格式输入
         boulder_input = []
@@ -165,7 +171,8 @@ def primer_design(request):
             return JsonResponse({'status': 'error', 'error': f'Primer3 executable not found at: {primer3_path}'}, status=500)
         
         # 调用primer3_core工具
-        logger.debug("Calling primer3_core...")
+        logger.info("Calling primer3_core...")
+        logger.info(f"Input sequence length: {len(sequence)}")
         
         try:
             # 设置环境变量，指向配置文件目录
@@ -179,27 +186,35 @@ def primer_design(request):
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 cwd=primer3_dir,
-                env=env
+                env=env,
+                shell=True
             )
             
             # 使用\n作为行分隔符，编码为字节流
             boulder_input_bytes = boulder_input_str.encode('utf-8', errors='replace')
             
             # 传递输入并获取输出
-            stdout_bytes, stderr_bytes = process.communicate(input=boulder_input_bytes)
+            stdout_bytes, stderr_bytes = process.communicate(input=boulder_input_bytes, timeout=30)
             
             # 解码输出
             stdout = stdout_bytes.decode('utf-8', errors='replace')
             stderr = stderr_bytes.decode('utf-8', errors='replace')
             
-            logger.debug(f"Primer3 stdout: {stdout}")
-            logger.debug(f"Primer3 stderr: {stderr}")
-            logger.debug(f"Primer3 return code: {process.returncode}")
+            logger.info(f"Primer3 stdout length: {len(stdout)}")
+            logger.info(f"Primer3 stderr length: {len(stderr)}")
+            logger.debug(f"Primer3 stdout: {stdout[:500] if stdout else ''}")
+            logger.debug(f"Primer3 stderr: {stderr[:500] if stderr else ''}")
+            logger.info(f"Primer3 return code: {process.returncode}")
             
             if process.returncode != 0:
-                logger.error(f"Primer3 execution failed with code {process.returncode}: {stderr}")
+                logger.error(f"Primer3 execution failed with code {process.returncode}")
+                logger.error(f"Primer3 stderr: {stderr}")
                 # 返回更详细的错误信息
                 return JsonResponse({'status': 'error', 'error': f'Primer3 execution failed with code {process.returncode}: {stderr}'}, status=500)
+        except subprocess.TimeoutExpired:
+            logger.error("Primer3 execution timed out")
+            process.kill()
+            return JsonResponse({'status': 'error', 'error': 'Primer3 execution timed out (30s)'}, status=500)
         except Exception as e:
             logger.error(f"Error calling Primer3: {str(e)}", exc_info=True)
             return JsonResponse({'status': 'error', 'error': f'Error calling Primer3: {str(e)}'}, status=500)

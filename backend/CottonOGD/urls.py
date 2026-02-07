@@ -11,6 +11,8 @@ from CottonOGD.views.primer_design import *
 from CottonOGD.views.blast import *
 from CottonOGD.views.expression_EFP import *
 from CottonOGD.views.DownloadGenome import download_genome_file
+from CottonOGD.views.gene_Go import go_annotation, go_enrichment
+from CottonOGD.views.gene_Kegg import kegg_annotation, kegg_enrichment
 
 
 
@@ -31,5 +33,9 @@ urlpatterns = [
     path('blast_cmd/', blast_cmd, name='blast_cmd'),
     path('expression_EFP_image/', expression_EFP_image, name='expression_EFP_image'),
     path('download_genome/<str:genome_id>/<str:file_type>', download_genome_file, name='download_genome_file'),
+    path('go_annotation/', go_annotation, name='go_annotation'),
+    path('go_enrichment/', go_enrichment, name='go_enrichment'),
+    path('kegg_annotation/', kegg_annotation, name='kegg_annotation'),
+    path('kegg_enrichment/', kegg_enrichment, name='kegg_enrichment'),
 
 ]
