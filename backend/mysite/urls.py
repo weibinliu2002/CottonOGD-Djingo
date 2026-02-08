@@ -26,7 +26,7 @@ from django.http import HttpResponse
 from django.views.generic import TemplateView
 # 导入jbrowse的views
 from CottonOGD.views.jbrowes_file import serve_large_file
-
+from CottonOGD.views.DownloadGenome import *
 
 def chrome_devtools_config(request):
     return HttpResponse(status=204)  # 返回空内容的成功响应
@@ -41,6 +41,7 @@ urlpatterns = [
     path('.well-known/appspecific/com.chrome.devtools.json', chrome_devtools_config),
     path('jbrowse/large/<str:genome_name>/<str:filename>', serve_large_file, name='serve_large_file'),
     path('static/jbrowse/data/<str:genome_name>/<str:filename>', serve_large_file, name='serve_large_file_static'),
+     path('download_genome/<str:genome_id>/<str:file_type>', download_genome_file, name='download_genome_file'),
     # 处理基因组文件下载（静态文件服务）
 ] + static('/data/genome/', document_root=os.path.join(settings.BASE_DIR, 'data', 'genome')) + [
     # 捕获所有路由，指向index.html，让Vue Router处理
