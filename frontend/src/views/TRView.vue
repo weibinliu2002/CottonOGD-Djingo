@@ -4,7 +4,7 @@
       <!-- 左侧边栏 -->
       <div class="col-md-3">
         <div class="sidebar">
-          <h3>Transcription regulators <el-icon class="info-icon"><QuestionFilled /></el-icon></h3>
+          <h3>Transcription Regulators factors<el-icon class="info-icon"><QuestionFilled /></el-icon></h3>
           <div class="mt-4">
             <h4 class="sidebar-title"><el-icon class="play-icon"><VideoPlay /></el-icon> {{ t('select_genome') }}</h4>
             <el-cascader
@@ -23,7 +23,7 @@
       <!-- 主内容区域 -->
       <div class="col-md-9">
         <div class="main-content">
-          <h2>Annotated transcription regulators</h2>
+          <h2>Annotated transcription regulators factors</h2>
           
           <!-- 转录因子家族复选框 -->
           <div class="tf-families mt-4">
@@ -206,11 +206,6 @@ export default {
       return tfData.value.slice(startIndex, endIndex)
     })
     
-    // 获取家族数据
-    const fetchFamilies = async () => {
-      await familyStore.fetchFamilies()
-    }
-    
     // 根据选择的基因组获取转录因子数据
     const fetchTFDataByGenome = async () => {
       if (selectedGenome.value.length === 0) {
@@ -302,9 +297,6 @@ export default {
       const genome = selectedGenome.value[selectedGenome.value.length - 1]
       familyStore.selectedGenome = genome
       familyStore.selectedClass = 'TR' // 固定为TR
-      // 清空familyInfo数据，确保重新获取
-      familyStore.familyInfo = []
-      familyStore.familyList = []
       // 重新获取家族数据
       await familyStore.fetchFamilies()
       // 仅在基因组改变时重新获取数据
@@ -360,16 +352,15 @@ export default {
     // 组件挂载时加载数据
     onMounted(async () => {
       await fetchGenomes() // 获取基因组列表
-      await fetchFamilies() // 获取家族列表
       
-      // 自动选择第一个基因组
-      if (genomeOptions.value && genomeOptions.value.length > 0) {
-        const firstGenome = genomeOptions.value[0]
-        selectedGenome.value = [firstGenome.value]
-        console.log('Auto-selected first genome:', firstGenome.label)
+      // 设置初始选中的基因组为G.anomalumB1_HAU_v1
+      setTimeout(() => {
+        const targetGenome = 'G.anomalumB1_HAU_v1'
+        selectedGenome.value = [targetGenome]
+        console.log('初始选中的基因组:', targetGenome)
         // 触发基因组选择变化
-        await handleGenomeChange()
-      }
+        handleGenomeChange()
+      }, 100)
     })
     
     return {

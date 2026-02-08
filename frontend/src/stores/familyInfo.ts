@@ -35,9 +35,7 @@ export const useFamilyStore = defineStore('family', {
     // 加载状态
     loading: false,
     // 错误信息
-    error: null as string | null,
-    // 用于缓存请求的Promise
-    _fetchPromise: null as Promise<void> | null
+    error: null as string | null
   }),
   
   getters: {
@@ -55,62 +53,49 @@ export const useFamilyStore = defineStore('family', {
   actions: {
     // 初始化方法
     initialize() {
-      this.fetchFamilies()
+      // 不再自动获取数据，等待基因组选择后再获取
     },
     
     // 从后端获取家族数据
     async fetchFamilies() {
-      // 如果已经有数据，直接返回，不再请求
-      if (this.familyInfo.length > 0) {
-        console.log('Using cached family data');
-        return;
+      // 检查是否已选择基因组和类别
+      if (!this.selectedGenome || !this.selectedClass) {
+        console.log('No genome or class selected, skipping fetch')
+        return
       }
       
-      // 如果已经有正在进行的请求，返回该请求的Promise
-      if (this._fetchPromise) {
-        console.log('Using existing fetch promise for family data');
-        return this._fetchPromise;
-      }
-      
-      // 创建新的请求Promise
-      this._fetchPromise = (async () => {
-        this.loading = true
-        this.error = null
-        try {
-          // 构建请求参数
-          const requestParams = {
-            selectedGenome: this.selectedGenome,
-            Class: this.selectedClass
-          }
-          
-          console.log('Family request params:', requestParams)
-          
-          const data = await httpInstance.post('/CottonOGD_api/get_family_info/', requestParams) as ApiResponse
-          console.log('Family data from API:', data)
-          
-          // 处理后端返回的家族信息
-          const familyInfo = JSON.parse(data.family_info) as FamilyInfo[]
-          this.familyInfo = familyInfo
-          
-          // 处理后端返回的家族列表
-          const familyList = JSON.parse(data.family_list) as FamilyItem[]
-          this.familyList = familyList
-          
-          console.log('Processed family info:', this.familyInfo)
-          console.log('Processed family list:', this.familyList)
-        } catch (error: any) {
-          console.error('Error fetching families in store:', error)
-          this.error = error.message
-          this.familyInfo = []
-          this.familyList = []
-        } finally {
-          this.loading = false
-          // 清空Promise缓存
-          this._fetchPromise = null
+      this.loading = true
+      this.error = null
+      try {
+        // 构建请求参数
+        const requestParams = {
+          selectedGenome: this.selectedGenome,
+          Class: this.selectedClass
         }
-      })()
-      
-      return this._fetchPromise
+        
+        console.log('Family request params:', requestParams)
+        
+        const data = await httpInstance.post('/CottonOGD_api/get_family_info/', requestParams) as ApiResponse
+        console.log('Family data from API:', data)
+        
+        // 处理后端返回的家族信息
+        const familyInfo = JSON.parse(data.family_info) as FamilyInfo[]
+        this.familyInfo = familyInfo
+        
+        // 处理后端返回的家族列表
+        const familyList = JSON.parse(data.family_list) as FamilyItem[]
+        this.familyList = familyList
+        
+        console.log('Processed family info:', this.familyInfo)
+        console.log('Processed family list:', this.familyList)
+      } catch (error: any) {
+        console.error('Error fetching families in store:', error)
+        this.error = error.message
+        this.familyInfo = []
+        this.familyList = []
+      } finally {
+        this.loading = false
+      }
     },
     
     // 重置store
@@ -121,7 +106,6 @@ export const useFamilyStore = defineStore('family', {
       this.selectedClass = ''
       this.loading = false
       this.error = null
-      this._fetchPromise = null
     }
   }
 })

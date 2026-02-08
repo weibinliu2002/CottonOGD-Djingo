@@ -207,11 +207,6 @@ export default {
       return tfData.value.slice(startIndex, endIndex)
     })
     
-    // 获取家族数据
-    const fetchFamilies = async () => {
-      await familyStore.fetchFamilies()
-    }
-    
     // 根据选择的基因组获取转录因子数据
     const fetchTFDataByGenome = async () => {
       if (selectedGenome.value.length === 0) {
@@ -303,9 +298,6 @@ export default {
       const genome = selectedGenome.value[selectedGenome.value.length - 1]
       familyStore.selectedGenome = genome
       familyStore.selectedClass = 'TF' // 固定为TF
-      // 清空familyInfo数据，确保重新获取
-      familyStore.familyInfo = []
-      familyStore.familyList = []
       // 重新获取家族数据
       await familyStore.fetchFamilies()
       // 仅在基因组改变时重新获取数据
@@ -363,7 +355,6 @@ export default {
     // 组件挂载时加载数据
     onMounted(async () => {
       await fetchGenomes() // 获取基因组列表
-      await fetchFamilies() // 获取家族列表
       
       // 设置初始选中的基因组为G.hirsutumAD1_TM-1_HAU_v1.1
       setTimeout(() => {
