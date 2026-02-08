@@ -35,7 +35,7 @@ def serve_large_file(request, genome_name, filename):
     #print(f"DEBUG: File exists: {file_path}")
 
     # 检查文件名是否为大文件类型
-    large_file_extensions = ['.bam', '.cram', '.vcf.gz', '.gff.gz', '.bigwig', '.beddb', '.tbi', '.fai', '.gzi']
+    large_file_extensions = ['.bam', '.cram', '.vcf.gz', '.gff.gz', '.bigwig', '.beddb', '.tbi', '.fai', '.gzi', '.fa.gz', '.fa']
     is_large_file = any(filename.endswith(ext) for ext in large_file_extensions)
     #print(f"DEBUG: filename: {filename}, is_large_file: {is_large_file}")
     #print(f"DEBUG: large_file_extensions: {large_file_extensions}")

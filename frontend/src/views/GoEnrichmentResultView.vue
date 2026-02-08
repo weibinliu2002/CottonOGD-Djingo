@@ -4,7 +4,7 @@
     
     <!-- 返回按钮 -->
     <router-link to="/tools/go-enrichment" class="mb-4">
-      <el-button type="default">Back</el-button>
+      <el-button type="default">{{ t('back') }}</el-button>
     </router-link>
     
     <!-- 加载状态 -->
@@ -53,7 +53,7 @@
             <span v-else-if="category === 'BP'">{{ t('biological_process') }}</span>
             <span v-else-if="category === 'CC'">{{ t('cellular_component') }}</span>
             <small class="text-muted">
-              (Total {{ categoryData.total }} {{ t('records') }})
+              ({{ t('total') }} {{ categoryData.total }} {{ t('records') }})
             </small>
           </h4>
           
@@ -66,29 +66,29 @@
                   {{ scope.row.description.name }}
                 </template>
               </el-table-column>
-              <el-table-column prop="gene_ratio" label="GeneRatio" width="120"></el-table-column>
-              <el-table-column prop="bg_ratio" label="BgRatio" width="120"></el-table-column>
-              <el-table-column label="RichFactor" width="120">
+              <el-table-column prop="gene_ratio" :label="t('gene_ratio')" width="120"></el-table-column>
+              <el-table-column prop="bg_ratio" :label="t('bg_ratio')" width="120"></el-table-column>
+              <el-table-column :label="t('rich_factor')" width="120">
                 <template #default="scope">
                   {{ parseFloat(scope.row.rich_factor).toFixed(4) }}
                 </template>
               </el-table-column>
-              <el-table-column label="FoldEnrichment" width="120">
+              <el-table-column :label="t('fold_enrichment')" width="120">
                 <template #default="scope">
                   {{ parseFloat(scope.row.fold_enrichment).toFixed(4) }}
                 </template>
               </el-table-column>
-              <el-table-column label="zScore" width="100">
+              <el-table-column :label="t('z_score')" width="100">
                 <template #default="scope">
                   {{ parseFloat(scope.row.z_score).toFixed(4) }}
                 </template>
               </el-table-column>
-              <el-table-column label="pvalue" width="120">
+              <el-table-column :label="t('p_value')" width="120">
                 <template #default="scope">
                   {{ parseFloat(scope.row.p_value).toFixed(6) }}
                 </template>
               </el-table-column>
-              <el-table-column prop="genes" label="Genes"></el-table-column>
+              <el-table-column prop="genes" :label="t('number_of_genes')"></el-table-column>
             </el-table>
           </el-card>
         </div>

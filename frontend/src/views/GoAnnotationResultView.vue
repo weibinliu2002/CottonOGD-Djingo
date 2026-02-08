@@ -1,12 +1,12 @@
 <template>
   <div class="container mt-4">
-    <h2 class="mb-4">GO注释结果</h2>
+    <h2 class="mb-4">{{ t('go_annotation_result') }}</h2>
     
     <!-- 可视化图表 -->
     <el-card class="mb-4" v-if="chart">
       <template #header>
         <div class="card-header">
-          <span>{{ t('go') }}</span>
+          <span>{{ t('go_annotation') }}</span>
         </div>
       </template>
       <el-image
@@ -20,7 +20,7 @@
     <el-form @submit.prevent="handlePerPageChange" class="mb-3">
       <el-row :gutter="20" align="middle">
         <el-col :span="6">
-          <el-form-item label="每页显示:" label-width="80px">
+          <el-form-item :label="t('per_page')" label-width="80px">
             <el-select v-model.number="perPage" class="w-32" @change="handlePerPageChange">
               <el-option value="5" label="5"></el-option>
               <el-option value="10" label="10"></el-option>
@@ -30,27 +30,27 @@
           </el-form-item>
         </el-col>
         <el-col :span="4">
-          <span class="text-gray-500">条记录</span>
+          <span class="text-gray-500">{{ t('records') }}</span>
         </el-col>
       </el-row>
     </el-form>
     
-    <div v-loading="loading" element-loading-text="加载中..." class="mb-4">
+    <div v-loading="loading" :element-loading-text="t('loading')" class="mb-4">
       <div v-if="results.length > 0">
         <el-card class="mb-4">
           <template #header>
             <div class="card-header">
-              <span>注释结果</span>
+              <span>{{ t('annotation_results') }}</span>
             </div>
           </template>
           <el-table :data="results" style="width: 100%">
-            <el-table-column prop="Chr" label="Chr" width="80"></el-table-column>
-            <el-table-column prop="Start" label="Start" width="100"></el-table-column>
-            <el-table-column prop="End" label="End" width="100"></el-table-column>
-            <el-table-column prop="ID" label="ID" width="150"></el-table-column>
+            <el-table-column prop="Chr" :label="t('chromosome')" width="80"></el-table-column>
+            <el-table-column prop="Start" :label="t('start_position')" width="100"></el-table-column>
+            <el-table-column prop="End" :label="t('end_position')" width="100"></el-table-column>
+            <el-table-column prop="ID" :label="t('gene_id')" width="150"></el-table-column>
             <el-table-column prop="GO_ID" :label="t('go_id')" width="150"></el-table-column>
             <el-table-column prop="Description" :label="t('description')"></el-table-column>
-            <el-table-column prop="Gene_Ontology" label="Gene Ontology" width="150"></el-table-column>
+            <el-table-column prop="Gene_Ontology" :label="t('go_category')" width="150"></el-table-column>
           </el-table>
         </el-card>
 
@@ -70,7 +70,7 @@
       <el-alert
         v-else
         type="info"
-        title="暂无注释结果"
+        :title="t('no_annotation_results')"
         show-icon
         class="mb-4"
       />
@@ -78,7 +78,7 @@
     
     <div class="mt-3">
       <router-link to="/tools/go-annotation">
-        <el-button type="default">返回</el-button>
+        <el-button type="default">{{ t('back') }}</el-button>
       </router-link>
     </div>
   </div>

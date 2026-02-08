@@ -65,6 +65,17 @@
                       </el-button>
                     </el-form-item>
                   </el-col>
+                  <el-col :span="18">
+                    <el-form-item>
+                      <el-button 
+                        type="info" 
+                        @click="loadExample"
+                        style="width: 100%"
+                      >
+                        {{ t('load_example') }}
+                      </el-button>
+                    </el-form-item>
+                  </el-col>
                 </el-row>
               </div>
               
@@ -511,6 +522,16 @@ onMounted(async () => {
     await fetchChromosomes(genomeAssembly.value)
   }
 })
+
+// 加载示例数据
+const loadExample = () => {
+  // 设置示例基因ID
+  sequenceId.value = 'Ghir_A01G000120.2'
+  // 设置默认基因组
+  genomeAssembly.value = 'G.hirsutumAD1_TM-1_HAU_v1.1'
+  // 设置默认序列类型
+  sequenceType.value = 'mrna'
+}
 
 // Fetch sequence by gene ID
 const fetchSequence = async () => {

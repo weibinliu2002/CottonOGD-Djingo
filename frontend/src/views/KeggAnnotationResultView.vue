@@ -11,7 +11,7 @@
     
     <!-- 返回按钮 -->
     <router-link to="/tools/kegg-annotation" class="mb-4">
-      <el-button type="default">返回搜索</el-button>
+      <el-button type="default">{{ t('return_search') }}</el-button>
     </router-link>
     
     <!-- 加载状态 -->
