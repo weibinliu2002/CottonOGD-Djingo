@@ -68,7 +68,7 @@ const loadGenomes = async () => {
 const downloadFile = async (genomeId: string, type: string) => {
   try {
     // 使用后端 API 下载文件
-    const apiUrl = `/CottonOGD_api/download_genome/${genomeId}/${type}`
+    const apiUrl = `/download_genome/${genomeId}/${type}`
     console.log('Download API URL:', apiUrl)
     
     // 创建下载链接

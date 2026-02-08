@@ -66,16 +66,24 @@
                   :value="index"
                 />
               </el-select>
+              
+              <!-- 显示当前选中的转录本信息 -->
+              <div v-if="currentTranscript" class="mt-2 p-2" style="background-color: #f5f7fa; border-radius: 4px;">
+                <strong>{{ t('current_transcript') }}:</strong> {{ currentTranscript?.id }}
+                <span v-if="currentTranscript.protein_seq && currentTranscript.protein_seq !== 'N/A' && currentTranscript.protein_seq !== 'unavailable' && currentTranscript.protein_seq !== 'Protein sequence not found'" class="ml-2">
+                  ({{ t('protein_length') }}: {{ currentTranscript.protein_seq?.length }} aa)
+                </span>
+              </div>
             </div>
             
-            <!-- 转录本基因结构图 -->
-            <div v-if="gffData.length > 0" class="mb-4">
+            <!-- 转录本基因结构图 - 暂时隐藏 -->
+            <div v-if="false" v-show="false" style="display: none;">
               <h4 class="h6 mb-2">{{ t('transcript_structure') }}</h4>
               <div class="gene-structure-container">
                 <svg :width="svgWidth" height="150" class="gene-structure-svg">
                   <!-- 转录本名称 -->
                   <text x="20" y="20" font-size="12" font-weight="bold" fill="#333">
-                    {{ currentTranscript ? currentTranscript.id : (result.geneid || result.id || 'Unknown') }}
+                    {{ currentTranscript?.id || result?.geneid || result?.id || 'Unknown' }}
                   </text>
                   
                   <!-- 绘制基因结构元素 -->
@@ -87,10 +95,10 @@
                         <template v-if="geneLength > 0">
                           <!-- 绘制当前结构元素 -->
                           <rect
-                            v-if="item.type === 'CDS'"
+                            v-if="item.type === 'exon'"
                             :x="20 + (item.start - geneStart) * scale"
                             y="35"
-                            :width="(item.end - item.start + 1) * scale"
+                            :width="(item.end - item.start +1) * scale"
                             height="50"
                             fill="#34A853"
                             stroke="#227A3D"
@@ -100,7 +108,7 @@
                             v-else-if="item.type === 'five_prime_UTR'"
                             :x="20 + (item.start - geneStart) * scale"
                             y="45"
-                            :width="(item.end - item.start + 1) * scale"
+                            :width="(item.end - item.start +1) * scale"
                             height="30"
                             fill="#FBBC05"
                             stroke="#F29900"
@@ -110,7 +118,7 @@
                             v-else-if="item.type === 'three_prime_UTR'"
                             :x="20 + (item.start - geneStart) * scale"
                             y="45"
-                            :width="(item.end - item.start + 1) * scale"
+                            :width="(item.end - item.start +1) * scale"
                             height="30"
                             fill="#EA4335"
                             stroke="#C5221F"
@@ -170,27 +178,27 @@
                     </template>
                     
                     <!-- 如果没有有效GFF数据，显示简单的基因范围 -->
-                    <template v-else-if="result && result.start !== undefined && result.end !== undefined">
+                    <template v-else-if="result && result?.start !== undefined && result?.end !== undefined">
                       <rect
                         :x="20"
                         y="45"
-                        :width="(result.end - result.start + 1) * scale"
+                        :width="((result?.end || 0) - (result?.start || 0) + 1) * scale"
                         height="30"
                         fill="#90CAF9"
                         stroke="#2196F3"
                         stroke-width="1"
                       />
                       <text x="25" y="65" font-size="12" fill="#333">
-                        {{ result.start }} - {{ result.end }}
+                        {{ result?.start }} - {{ result?.end }}
                       </text>
                       <!-- 简单的转录方向指示 -->
                       <polygon
                         :points="[
-                          20 + (result.end - result.start + 1) * scale + 10,
+                          20 + ((result?.end || 0) - (result?.start || 0) + 1) * scale + 10,
                           60 - 10,
-                          20 + (result.end - result.start + 1) * scale + 20,
+                          20 + ((result?.end || 0) - (result?.start || 0) + 1) * scale + 20,
                           60,
-                          20 + (result.end - result.start + 1) * scale + 10,
+                          20 + ((result?.end || 0) - (result?.start || 0) + 1) * scale + 10,
                           60 + 10
                         ].join(',')"
                         fill="#333"
@@ -1190,11 +1198,113 @@ const downloadGff = (format: string) => {
   }
 }
 
+// 处理基因ID和基因组ID的函数
+const fetchGeneDataWithGeneId = async (gene_id: string, genome_id: string) => {
+  // 添加延迟显示加载状态
+  const loadingTimeout = setTimeout(() => {
+    isLoading.value = true
+  }, 300)
+  
+  errorMessage.value = ''
+  selectedTranscriptIndex.value = 0
+  
+  try {
+    console.log('从后端获取基因数据，gene_id:', gene_id, 'genome_id:', genome_id)
+    const formData = {
+      gene_id: gene_id,
+      genome_id: genome_id
+    }
+    
+    const req_uuid = uuidv4()
+    await httpInstance.post('/CottonOGD_api/login/', {}, {
+      headers: {
+        'Content-Type': 'application/json',
+        'uuid': req_uuid
+      }
+    })
+    
+    const response = await httpInstance.post(
+      '/CottonOGD_api/geneid_result/',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'uuid': req_uuid
+        }
+      }
+    )
+
+    // 清除加载超时定时器
+    clearTimeout(loadingTimeout)
+    
+    // 注意：axios interceptor returns response.data directly
+    const responseData = response as any
+    const data = JSON.parse(responseData.results) as any
+    console.log('从后端获取基因数据，响应数据:', data)
+    
+    if (data.status === 'error' || data.status === 'not_found') {
+      throw new Error(data.error || 'Gene information not found')
+    }
+    
+    // 更新数据 - 从results数组中获取type为gene的数据
+    if (data.gff_data && data.gff_data.length > 0) {
+      // 查找 type 为 gene 的基因信息
+      const geneInfo = data.gff_data.find((item: any) => item.type === 'gene') || data.gff_data[0]
+      
+      result.value = {
+        ...geneInfo,
+        gene_seq: data.gene_seq || '',
+        IDs: data.IDs || geneInfo.IDs || '',
+        jbrowse_url: data.jbrowse_url || '',
+        gff_data: data.gff_data || [],
+        mrna_transcripts: data.mrna_transcripts || []
+      }
+    } else {
+      throw new Error('No gene information found')
+    }
+    
+    // 处理注释数据
+    processAnnotations(data.geneid_result || [])
+    
+    jbrowse_url.value = data.jbrowse_url || ''
+    
+    // 设置GFF数据
+    gffData.value = data.gff_data || data.gene_info_result || []
+    hasGffData.value = gffData.value.length > 0
+    // 重置页码到第一页
+    currentPage.value = 1
+    
+    // 存储基因详细信息到 navigationStore 的 geneDetail 中
+    if (result.value) {
+      navigationStore.setNavigationData('geneDetail', {
+        results: {
+          ...result.value,
+          jbrowse_url: jbrowse_url.value,
+          gff_data: gffData.value
+        },
+        dbId: gene_id
+      })
+      console.log('基因数据已存储到 navigationStore:', result.value.IDs)
+    }
+                                
+  } catch (error: any) {
+    // 清除加载超时定时器
+    clearTimeout(loadingTimeout)
+    errorMessage.value = error.message
+    console.error('获取基因数据错误:', error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
 // 生命周期钩子
 onMounted(() => {
   // 首先检查 URL 参数
   const db_id = route.query.db_id as string
-  console.log('URL db_id:', db_id)
+  const gene_id = route.query.gene_id as string
+  const genome_id = route.query.genome_id as string
+  
+  console.log('URL params:', { db_id, gene_id, genome_id })
   
   // 然后检查 navigationStore 中的基因详细信息
   const geneDetailData = navigationStore.getNavigationData('geneDetail')
@@ -1204,6 +1314,10 @@ onMounted(() => {
     // 如果有 URL 参数，使用参数获取数据
     hasFetched.value = true
     fetchGeneData(db_id)
+  } else if (gene_id && genome_id && !hasFetched.value) {
+    // 如果有基因ID和基因组ID参数，使用这些参数获取数据
+    hasFetched.value = true
+    fetchGeneDataWithGeneId(gene_id, genome_id)
   } else if (geneDetailData && geneDetailData.results) {
     // 如果没有 URL 参数但有导航数据，使用导航数据
     console.log('从 navigationStore 加载基因数据:', geneDetailData.results.IDs)

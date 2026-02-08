@@ -47,7 +47,7 @@ export default defineConfig({
         cookieDomainRewrite: 'localhost'
       },
       // 匹配 data/genome 路径
-      '^/data/genome': {
+      '^/download_genome': {
         target: 'http://172.28.226.114:8000',
         //target: 'http://127.0.0.1:8000',
         changeOrigin: true,

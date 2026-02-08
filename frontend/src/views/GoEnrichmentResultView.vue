@@ -63,7 +63,7 @@
               <el-table-column prop="go_id" :label="t('go_id')" width="150"></el-table-column>
               <el-table-column prop="description" :label="t('description')">
                 <template #default="scope">
-                  {{ scope.row.description }}
+                  {{ scope.row.description.name }}
                 </template>
               </el-table-column>
               <el-table-column prop="gene_ratio" label="GeneRatio" width="120"></el-table-column>
@@ -225,8 +225,22 @@ const fetchResults = async () => {
       categories.forEach(category => {
         const categoryResults = data.results.filter((r: any) => r.go_type === category)
         console.log(`类别 ${category} 的结果数量: ${categoryResults.length}`)
+        
+        // 解析每个结果中的description字段（如果是字符串）
+        const parsedResults = categoryResults.map((result: any) => {
+          if (typeof result.description === 'string') {
+            try {
+              result.description = JSON.parse(result.description)
+            } catch (error) {
+              console.error('解析description失败:', error)
+              result.description = { name: result.description, definition: '' }
+            }
+          }
+          return result
+        })
+        
         results.value[category] = {
-          results: categoryResults,
+          results: parsedResults,
           total: categoryResults.length,
           num_pages: 1,
           current_page: 1,

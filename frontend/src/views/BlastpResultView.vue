@@ -2,11 +2,11 @@
   <div class="container mt-4">
     <el-row :gutter="20" class="mb-4">
       <el-col :span="18">
-        <h2>{{ t('blast_results') }}</h2>
-      </el-col>
-      <el-col :span="6" class="text-right">
-        <el-tag type="info" v-if="executionTime">Executed in {{ executionTime }} seconds</el-tag>
-      </el-col>
+          <h2>{{ t('blast_results') }}</h2>
+        </el-col>
+        <el-col :span="6" class="text-right">
+          <el-tag type="info" v-if="executionTime">{{ t('executed_in') }} {{ executionTime }} {{ t('seconds') }}</el-tag>
+        </el-col>
     </el-row>
     
         
@@ -16,7 +16,7 @@
     <el-form @submit.prevent="handlePerPageChange" class="mb-3">
       <el-row :gutter="20" align="middle">
         <el-col :span="4">
-          <el-form-item label="Show:" label-width="80px">
+          <el-form-item :label="t('show')" label-width="80px">
             <el-select v-model.number="perPage" class="w-32" @change="handlePerPageChange">
               <el-option value="5" label="5"></el-option>
               <el-option value="10" label="10"></el-option>
@@ -26,12 +26,12 @@
           </el-form-item>
         </el-col>
         <el-col :span="4">
-          <span class="text-gray-500">条记录</span>
+          <span class="text-gray-500">{{ t('records') }}</span>
         </el-col>
       </el-row>
     </el-form>
     
-    <div v-loading="loading" element-loading-text="Loading results...">
+    <div v-loading="loading" :element-loading-text="t('loading_results')">
       <div v-if="results.length > 0">
        
 
@@ -39,64 +39,75 @@
 
         <!-- 原始 BLAST 结果表格 (BLAST 6 格式) -->
         <el-card class="mb-4" v-if="rawBlastResults">
+          <template #header>
+            <div class="flex justify-between items-center">
+              <span>{{ t('raw_blast_results') }}</span>
+              <el-button type="primary" size="small" @click="downloadBlastResults">
+                <el-icon><Download /></el-icon>
+                {{ t('download_results') }}
+              </el-button>
+            </div>
+          </template>
           
-          <el-table :data="formattedRawResults" style="width: 100%">
-            <el-table-column label="{{ t('query_id') }}" width="150">
+          <el-table :data="results" style="width: 100%">
+            <el-table-column :label="t('query_id')" width="150">
               <template #default="scope">
-                <code>{{ scope.row.query_id }}</code>
+                <code>{{ scope.row.query }}</code>
               </template>
             </el-table-column>
-            <el-table-column label="Subject ID" width="200">
+            <el-table-column :label="t('subject_id')" width="200">
               <template #default="scope">
-                <code>{{ scope.row.subject_id }}</code>
+                <el-link type="primary" :underline="false" @click="handleGeneClick(scope.row.subject)" class="gene-link">
+                  {{ scope.row.subject }}
+                </el-link>
               </template>
             </el-table-column>
-            <el-table-column label="Identity (%)" width="120" align="right">
+            <el-table-column :label="t('identity')" width="120" align="right">
               <template #default="scope">
                 {{ scope.row.identity.toFixed(2) }}%
               </template>
             </el-table-column>
-            <el-table-column label="Alignment Length" width="120" align="right">
+            <el-table-column :label="t('alignment_length')" width="120" align="right">
               <template #default="scope">
                 {{ scope.row.alignment_length }}
               </template>
             </el-table-column>
-            <el-table-column label="Mismatches" width="100" align="right">
+            <el-table-column :label="t('mismatches')" width="100" align="right">
               <template #default="scope">
                 {{ scope.row.mismatches }}
               </template>
             </el-table-column>
-            <el-table-column label="Gap Openings" width="120" align="right">
+            <el-table-column :label="t('gap_openings')" width="120" align="right">
               <template #default="scope">
                 {{ scope.row.gap_openings }}
               </template>
             </el-table-column>
-            <el-table-column label="Q. Start" width="100" align="right">
+            <el-table-column :label="t('q_start')" width="100" align="right">
               <template #default="scope">
                 {{ scope.row.query_start }}
               </template>
             </el-table-column>
-            <el-table-column label="Q. End" width="100" align="right">
+            <el-table-column :label="t('q_end')" width="100" align="right">
               <template #default="scope">
                 {{ scope.row.query_end }}
               </template>
             </el-table-column>
-            <el-table-column label="S. Start" width="100" align="right">
+            <el-table-column :label="t('s_start')" width="100" align="right">
               <template #default="scope">
                 {{ scope.row.subject_start }}
               </template>
             </el-table-column>
-            <el-table-column label="S. End" width="100" align="right">
+            <el-table-column :label="t('s_end')" width="100" align="right">
               <template #default="scope">
                 {{ scope.row.subject_end }}
               </template>
             </el-table-column>
-            <el-table-column label="E-value" width="120" align="right">
+            <el-table-column :label="t('e_value')" width="120" align="right">
               <template #default="scope">
                 {{ formatEvalue(scope.row.evalue) }}
               </template>
             </el-table-column>
-            <el-table-column label="Bit Score" width="120" align="right">
+            <el-table-column :label="t('bit_score')" width="120" align="right">
               <template #default="scope">
                 {{ scope.row.bit_score.toFixed(0) }}
               </template>
@@ -121,7 +132,7 @@
       <el-alert
         v-else
         type="info"
-        title="未找到匹配结果"
+        :title="t('no_matches_found')"
         show-icon
         class="mb-4"
       />
@@ -130,16 +141,16 @@
     <el-card class="mb-4">
       <template #header>
         <div class="card-header">
-          <span>Chord Diagram</span>
+          <span>{{ t('chord_diagram') }}</span>
         </div>
       </template>
-      <div v-loading="!chordData" element-loading-text="Loading..." class="chord-chart-container">
+      <div v-loading="!chordData" :element-loading-text="t('loading')" class="chord-chart-container">
         <div id="chord-chart" v-if="chordData"></div>
       </div>
     </el-card>
     <div class="mt-3">
       <router-link to="/tools/blastp">
-        <el-button type="default">返回搜索</el-button>
+        <el-button type="default">{{ t('return_to_search') }}</el-button>
       </router-link>
     </div>
   </div>
@@ -147,14 +158,17 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import * as d3 from 'd3'
 import { View, Download } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import { useNavigationStore } from '@/stores/navigationStore'
 import { useBlastStore } from '@/stores/blastStore'
+import { ElIcon } from 'element-plus'
 
 const route = useRoute()
+const router = useRouter()
 const navigationStore = useNavigationStore()
 const blastStore = useBlastStore()
 const { t } = useI18n()
@@ -196,8 +210,8 @@ const formattedRawResults = computed(() => {
       // 只添加有实际数据的条目
       if (hit.protein_id || hit.subject_id) {
         formattedResults.push({
-          query_id: results.query_def,
-          subject_id: hit.description || hit.subject_id,
+          query: results.query_def,
+          subject: hit.description || hit.subject_id,
           identity: hit.identity,
           alignment_length: hit.length || hit.alignment_length,
           mismatches: hit.mismatches,
@@ -225,8 +239,9 @@ const formattedRawResults = computed(() => {
             // 只添加有实际数据的条目
             if (item.protein_id || item.subject_id) {
               formattedResults.push({
-                query_id: results.query_id,
-                subject_id: item.protein_id || item.subject_id,
+                query: results.query_id,
+                subject: item.protein_id || item.subject_id,
+                description: item.description,
                 identity: item.identity,
                 alignment_length: item.length || item.alignment_length,
                 mismatches: item.mismatches,
@@ -252,8 +267,9 @@ const formattedRawResults = computed(() => {
             value.hits.forEach((hit: any) => {
               if (hit.protein_id || hit.subject_id || hit.subject) {
                 formattedResults.push({
-                  query_id: value.query_id || results.query_id,
-                  subject_id: hit.protein_id || hit.subject_id || hit.subject,
+                  query: value.query_id || results.query_id,
+                  subject: hit.protein_id || hit.subject_id || hit.subject,
+                  description: hit.description,
                   identity: hit.identity,
                   alignment_length: hit.length || hit.alignment_length,
                   mismatches: hit.mismatches,
@@ -291,8 +307,9 @@ const formattedRawResults = computed(() => {
               parsedJson.hits.forEach((hit: any) => {
                 if (hit.protein_id || hit.subject_id || hit.subject) {
                   formattedResults.push({
-                    query_id: parsedJson.query_id || results.query_id,
-                    subject_id: hit.protein_id || hit.subject_id || hit.subject,
+                    query: parsedJson.query_id || results.query_id,
+                    subject: hit.protein_id || hit.subject_id || hit.subject,
+                    description: hit.description,
                     identity: hit.identity,
                     alignment_length: hit.length || hit.alignment_length,
                     mismatches: hit.mismatches,
@@ -404,12 +421,12 @@ const loadResults = async () => {
         
         // 将API返回的hits数组转换为组件需要的格式
         const formattedResults = decodedResults.hits.map((hit: any) => ({
-          query: decodedResults.query_id,
-          subject: hit.protein_id || hit.subject_id,
+          query: decodedResults.query_def,
+          subject: hit.description || hit.subject_id,
           identity: hit.identity,
           alignment_length: hit.length || hit.alignment_length,
           mismatches: hit.mismatches,
-          gaps: hit.gaps,
+          gap_openings: hit.gaps,
           query_start: hit.qStart || hit.query_start,
           query_end: hit.qEnd || hit.query_end,
           subject_start: hit.sStart || hit.subject_start,
@@ -477,12 +494,12 @@ const loadResults = async () => {
               value.forEach((item: any) => {
                 if (item.protein_id || item.subject_id) {
                   formattedResults.push({
-                    query: decodedResults.query_id,
-                    subject: item.protein_id || item.subject_id,
+                    query: decodedResults.query_def,
+                    subject: item.description || item.subject_id,
                     identity: item.identity,
                     alignment_length: item.length || item.alignment_length,
                     mismatches: item.mismatches,
-                    gaps: item.gaps,
+                    gap_openings: item.gaps,
                     query_start: item.qStart || item.query_start,
                     query_end: item.qEnd || item.query_end,
                     subject_start: item.sStart || item.subject_start,
@@ -497,12 +514,12 @@ const loadResults = async () => {
             else if (value.protein_id || value.subject_id) {
               console.log('Found single result under key:', key)
               formattedResults.push({
-                query: decodedResults.query_id,
-                subject: value.protein_id || value.subject_id,
+                query: decodedResults.query_def,
+                subject: value.description || value.subject_id,
                 identity: value.identity,
                 alignment_length: value.length || value.alignment_length,
                 mismatches: value.mismatches,
-                gaps: value.gaps,
+                gap_openings: value.gaps,
                 query_start: value.qStart || value.query_start,
                 query_end: value.qEnd || value.query_end,
                 subject_start: value.sStart || value.subject_start,
@@ -522,12 +539,12 @@ const loadResults = async () => {
                 value.hits.forEach((hit: any) => {
                   if (hit.protein_id || hit.subject_id || hit.subject) {
                     formattedResults.push({
-                      query: value.query_id || decodedResults.query_id,
-                      subject: hit.protein_id || hit.subject_id || hit.subject,
+                      query: value.query_def || decodedResults.query_def,
+                      subject: hit.description || hit.subject_id || hit.subject,
                       identity: hit.identity,
                       alignment_length: hit.length || hit.alignment_length,
                       mismatches: hit.mismatches,
-                      gaps: hit.gaps,
+                      gap_openings: hit.gaps,
                       query_start: hit.qStart || hit.query_start,
                       query_end: hit.qEnd || hit.query_end,
                       subject_start: hit.sStart || hit.subject_start,
@@ -554,19 +571,32 @@ const loadResults = async () => {
               if (parsedJson.query_id || parsedJson.query_def || parsedJson.program) {
                 console.log('Parsed JSON contains BLAST result format')
                 
+                // 存储查询定义，供和弦图使用
+                if (parsedJson.query_def) {
+                  decodedResults.query_def = parsedJson.query_def
+                }
+                
+                // 存储查询长度，供和弦图使用
+                if (parsedJson.query_length) {
+                  decodedResults.query_length = parsedJson.query_length
+                }
+                
                 // 检查是否有 hits 数组
                 if (parsedJson.hits && Array.isArray(parsedJson.hits)) {
                   console.log('Found hits array in parsed JSON:', parsedJson.hits.length)
                   
+                  // 存储 hits 到 decodedResults，供和弦图使用
+                  decodedResults.hits = parsedJson.hits
+                  
                   parsedJson.hits.forEach((hit: any) => {
                     if (hit.protein_id || hit.subject_id || hit.subject) {
                       formattedResults.push({
-                        query: parsedJson.query_id || decodedResults.query_id,
-                        subject: hit.protein_id || hit.subject_id || hit.subject,
+                        query: parsedJson.query_def || decodedResults.query_def,
+                        subject: hit.description || hit.subject_id || hit.subject,
                         identity: hit.identity,
                         alignment_length: hit.length || hit.alignment_length,
                         mismatches: hit.mismatches,
-                        gaps: hit.gaps,
+                        gap_openings: hit.gaps,
                         query_start: hit.qStart || hit.query_start,
                         query_end: hit.qEnd || hit.query_end,
                         subject_start: hit.sStart || hit.subject_start,
@@ -640,25 +670,35 @@ const loadResults = async () => {
 
 // 准备和弦图数据
 const prepareChordData = (decodedResults: any) => {
+  console.log('prepareChordData called with:', decodedResults)
+  console.log('decodedResults.hits:', decodedResults.hits)
+  console.log('decodedResults.hits.length:', decodedResults.hits?.length)
+  
   if (!decodedResults.hits || decodedResults.hits.length === 0) {
+    console.log('No hits found, setting chordData to null')
     chordData.value = null
     return
   }
   
+  console.log('Preparing chord data with', decodedResults.hits.length, 'hits')
+  
+  // 获取查询蛋白质名称，与表格一致
+  const queryName = decodedResults.query_def || 'Query_Protein'
+  
   // 构造和弦图需要的数据格式
   const chordDataObj = {
-    query: 'Query_Protein',
+    query: queryName,
     queryLength: decodedResults.query_length || 0,
     proteins: [
-      { id: 'Query_Protein', length: decodedResults.query_length || 0 },
+      { id: queryName, length: decodedResults.query_length || 0 },
       ...decodedResults.hits.map((hit: any) => ({ 
-        id: hit.protein_id, 
+        id: hit.description || hit.subject_id || hit.subject || hit.protein_id, 
         length: hit.length 
       }))
     ],
     hits: decodedResults.hits.map((hit: any) => ({
-      query: hit.protein_id,
-      target: 'Query_Protein',
+      query: hit.description || hit.subject_id || hit.subject || hit.protein_id,
+      target: queryName,
       score: hit.score,
       evalue: hit.evalue,
       identity: hit.identity,
@@ -667,6 +707,7 @@ const prepareChordData = (decodedResults: any) => {
     }))
   }
   
+  console.log('chordDataObj:', chordDataObj)
   chordData.value = chordDataObj
 }
 
@@ -763,9 +804,23 @@ const renderChordDiagram = () => {
   // 清空容器
   container.innerHTML = ''
   
-  const width = container.clientWidth
-  const height = 800
-  const outerRadius = Math.min(width, height) * 0.5 - 40
+  // 添加鼠标离开容器时的事件处理
+  container.addEventListener('mouseleave', () => {
+    tooltip.transition()
+      .duration(200)
+      .style('opacity', 0)
+      .style('left', '-9999px')
+      .style('top', '-9999px')
+  })
+  
+  // 计算合适的尺寸，确保所有标签都能显示
+  const baseWidth = container.clientWidth
+  const baseHeight = 900 // 增加高度以容纳更多标签
+  const padding = 120 // 增加内边距以容纳长标签
+  
+  const width = baseWidth
+  const height = baseHeight
+  const outerRadius = Math.min(width, height) * 0.5 - padding
   const innerRadius = outerRadius - 30
 
   const svg = d3.select('#chord-chart')
@@ -780,22 +835,42 @@ const renderChordDiagram = () => {
     .sortSubgroups(d3.descending)
 
   const chords = chord(processedData.matrix)
-  const cumulativeAngles = [0]
-  let cumulativeSum = 0
   
-  cumulativeSum += processedData.lengths[0]
-  cumulativeAngles.push(cumulativeSum / processedData.totalLength * 2 * Math.PI)
-
-  for (let i = 1; i < processedData.lengths.length; i++) {
-    cumulativeSum += processedData.lengths[i]
-    cumulativeAngles.push(cumulativeSum / processedData.totalLength * 2 * Math.PI)
+  // 固定色块长度，query占更小比例，其他蛋白质平分剩余角度
+  const queryAngle = Math.PI / 4 // query占1/4角度（约45度）
+  const otherAnglePerProtein = (2 * Math.PI - queryAngle) / otherProteins.length
+  
+  // 计算每个蛋白质的角度范围
+  const fixedCumulativeAngles: number[] = []
+  let currentAngle = 0
+  
+  // 为每个蛋白质计算角度范围
+  for (let i = 0; i < processedData.proteins.length; i++) {
+    fixedCumulativeAngles.push(currentAngle)
+    
+    if (processedData.proteins[i] === queryProtein) {
+      currentAngle += queryAngle
+    } else {
+      currentAngle += otherAnglePerProtein
+    }
   }
+  
+  // 添加最后一个角度（2π）
+  fixedCumulativeAngles.push(2 * Math.PI)
+  
+  // 创建自定义的group数据，使用固定角度
+  const customGroups = processedData.proteins.map((protein: string, index: number) => ({
+    index: index,
+    startAngle: fixedCumulativeAngles[index] || 0,
+    endAngle: fixedCumulativeAngles[index + 1] || 0,
+    value: (fixedCumulativeAngles[index + 1] || 0) - (fixedCumulativeAngles[index] || 0)
+  }))
 
   const arc = d3.arc()
     .innerRadius(innerRadius)
     .outerRadius(outerRadius)
-    .startAngle((d: any) => (cumulativeAngles[d.index] || 0) + 0.02)
-    .endAngle((d: any) => (cumulativeAngles[d.index + 1] || 0) - 0.02)
+    .startAngle((d: any) => d.startAngle + 0.02)
+    .endAngle((d: any) => d.endAngle - 0.02)
 
   // 创建颜色比例尺
   const colorScale = d3.scaleOrdinal<string, string>()
@@ -804,13 +879,12 @@ const renderChordDiagram = () => {
 
   const group = svg.append('g')
     .selectAll('g')
-    .data(chords.groups)
+    .data(customGroups)
     .enter().append('g')
 
   group.append('path')
     .attr('class', 'chord-group')
     .style('fill', (d: any) => {
-      // 使用颜色比例尺为每个组分配唯一颜色
       return colorScale(processedData.proteins[d.index])
     })
     .style('stroke', '#000')
@@ -824,30 +898,87 @@ const renderChordDiagram = () => {
       return `${protein} (Length: ${length}, Avg Identity: ${identity.toFixed(2)}%)`
     })
 
-  group.append('text')
-          .each((d: any) => {
-            const startAngle = cumulativeAngles[d.index] || 0
-            const endAngle = cumulativeAngles[d.index + 1] || 0
-            d.angle = (startAngle + endAngle) / 2
-          })
-          .attr('class', 'protein-label')
-          .attr('dy', '.35em')
-          .attr('transform', (d: any) => `
-            rotate(${d.angle * 180 / Math.PI - 90})
-            translate(${innerRadius - 5})
-            ${d.angle > Math.PI ? 'rotate(180)' : ''}
-          `)
-          .style('text-anchor', (d: any) => d.angle > Math.PI ? 'end' : null)
-          .text((d: any) => {
-            const maxLength = 4
-            const proteinName = processedData.proteins[d.index]
-            return proteinName.length > maxLength ? 
-              proteinName.substring(0, maxLength) + '...' : 
-              proteinName
-          })
-
+  // 添加短线链接和标签
+  group.each((d: any, i: number) => {
+    const proteinName = processedData.proteins[d.index]
+    const startAngle = d.startAngle
+    const endAngle = d.endAngle
+    const midAngle = (startAngle + endAngle) / 2
+    
+    // 计算标签位置，确保在圈外且文本方向正确
+    const labelRadius = outerRadius + 10 // 足够远离圆面，确保在圈外
+    
+    // 计算基础标签坐标
+    let labelX = Math.cos(midAngle - Math.PI / 2) * labelRadius
+    let labelY = Math.sin(midAngle - Math.PI / 2) * labelRadius
+    
+    // 为左侧和右侧标签添加偏移，确保标签不与色块重叠
+    const labelOffset = 55 // 标签偏移量
+    if (midAngle >= Math.PI  && midAngle < 4 * Math.PI / 2) {
+      // 左侧标签：向左平移
+      labelX -= labelOffset
+    } else {
+      // 右侧标签：向右平移
+      labelX += labelOffset
+    }
+    
+    // 添加标签，确保总是在圈外且文本不会颠倒
+    svg.append('text')
+      .attr('x', labelX)
+      .attr('y', labelY)
+      .attr('dy', '.35em')
+      .attr('text-anchor', 'middle') // 居中锚点，配合旋转使用
+      .attr('transform', () => {
+        // 确保第二、第三和第四象限（π/2到2π）的标签旋转180度
+        let rotation = 0
+        if (midAngle >= Math.PI  && midAngle < 1 * Math.PI) {
+          rotation = 180
+        }
+        return `rotate(${rotation} ${labelX} ${labelY})`
+      })
+      .style('font-size', '9px')
+      .style('font-family', 'Arial, sans-serif')
+      .style('fill', '#333')
+      .style('font-weight', 'normal')
+      .text(() => proteinName) // 完全展示ID，不移除任何字符
+  })
+  
+  // 手动创建和弦图的线条，确保与色块角度匹配
   const ribbon = d3.ribbon()
     .radius(innerRadius)
+    
+  // 创建自定义的ribbon数据
+  const customRibbons: any[] = []
+  processedData.hits.forEach((hit: any) => {
+    const sourceIndex = processedData.proteins.indexOf(hit.query)
+    const targetIndex = processedData.proteins.indexOf(hit.target)
+    
+    if (sourceIndex !== -1 && targetIndex !== -1) {
+      // 计算源和目标的角度范围
+      const sourceStartAngle = fixedCumulativeAngles[sourceIndex]
+      const sourceEndAngle = fixedCumulativeAngles[sourceIndex + 1]
+      const targetStartAngle = fixedCumulativeAngles[targetIndex]
+      const targetEndAngle = fixedCumulativeAngles[targetIndex + 1]
+      
+      // 创建ribbon数据
+      customRibbons.push({
+        source: {
+          index: sourceIndex,
+          startAngle: sourceStartAngle,
+          endAngle: sourceEndAngle,
+          value: hit.score
+        },
+        target: {
+          index: targetIndex,
+          startAngle: targetStartAngle,
+          endAngle: targetEndAngle,
+          value: hit.score
+        },
+        hit: hit
+      })
+    }
+  })
+  
   const tooltip = d3.select('body')
     .append('div')
     .attr('class', 'tooltip')
@@ -860,10 +991,10 @@ const renderChordDiagram = () => {
     .style('font-size', '12px')
     .style('pointer-events', 'none')
 
-  // 绘制和弦图的线条（ribbons）
+  // 绘制和弦图的线条（ribbons），使用自定义的ribbon数据
   svg.append('g')
     .selectAll('path')
-    .data(chords)
+    .data(customRibbons)
     .enter()
     .append('path')
     .attr('class', 'chord-ribbon')
@@ -875,8 +1006,9 @@ const renderChordDiagram = () => {
       // 根据源蛋白质的颜色来设置线条颜色
       return colorScale(processedData.proteins[d.source.index])
     })
+    .style('stroke-width', '0.2px') // 减小线条宽度
     .attr('d', ribbon as any)
-    .style('opacity', 0.8)
+    .style('opacity', 0.7) // 稍微降低透明度，使线条看起来更细
     .on('mouseover', (event: MouseEvent) => {
       d3.selectAll('.chord-ribbon')
         .style('opacity', 0.1)
@@ -894,35 +1026,43 @@ const renderChordDiagram = () => {
       if (d) {
         const sourceProtein = processedData.proteins[d.source.index]
         const targetProtein = processedData.proteins[d.target.index]
+        const hit = d.hit
         
-        // 查找对应的hit数据
-        const hit = processedData.hits.find((h: any) => 
-          (h.query === sourceProtein && h.target === targetProtein) ||
-          (h.query === targetProtein && h.target === sourceProtein)
-        )
-        
-        tooltip.transition()
-          .duration(200)
-          .style('opacity', 0.9)
-          
-        tooltip.html(`
-          <strong>Query Protein → ${targetProtein}</strong><br>
-          ${hit ? `E-value: ${hit.evalue}<br>Identity: ${hit.identity}%<br>Alignment region: ${hit.qStart}-${hit.qEnd}` : ''}
-        `)
-          .style('left', (event.pageX + 15) + 'px')
-          .style('top', (event.pageY - 28) + 'px')
+        if (hit) {
+          tooltip.transition()
+            .duration(200)
+            .style('opacity', 0.9)
+            
+          tooltip.html(`
+            <strong>${targetProtein} → ${sourceProtein}</strong><br>
+            E-value: ${hit.evalue}<br>Identity: ${hit.identity}%<br>Alignment region: ${hit.qStart}-${hit.qEnd}
+          `)
+            .style('left', (event.pageX + 15) + 'px')
+            .style('top', (event.pageY - 28) + 'px')
+        }
       }
     })
     .on('mouseout', () => {
       d3.selectAll('.chord-ribbon')
         .style('opacity', 0.8)
         .style('stroke', 'none')
-      tooltip.style('opacity', 0)
+      tooltip.transition()
+        .duration(200)
+        .style('opacity', 0)
+        .style('left', '-9999px')
+        .style('top', '-9999px')
     })
     .on('mousemove', (event: MouseEvent) => {
-      tooltip
-        .style('left', (event.pageX + 15) + 'px')
-        .style('top', (event.pageY - 28) + 'px')
+      const target = event.currentTarget as any
+      const d = target?.__data__
+      if (d) {
+        const hit = d.hit
+        if (hit) {
+          tooltip
+            .style('left', (event.pageX + 15) + 'px')
+            .style('top', (event.pageY - 28) + 'px')
+        }
+      }
     })
 }
 
@@ -1078,9 +1218,11 @@ onMounted(() => {
 
 // 监听和弦图数据变化，渲染图表
 watch(chordData, (newVal) => {
+  console.log('chordData changed:', newVal)
   if (newVal) {
     // 延迟渲染，确保DOM已经更新
     setTimeout(() => {
+      console.log('Calling renderChordDiagram')
       renderChordDiagram()
     }, 100)
   }
@@ -1090,6 +1232,95 @@ watch(chordData, (newVal) => {
 watch(lineChartData, () => {
   renderLineChart()
 }, { deep: true })
+
+// 处理基因链接点击
+function handleGeneClick(subject: string | undefined) {
+  if (!subject) {
+    console.warn('No subject provided for gene click')
+    return
+  }
+  
+  console.log('Gene link clicked:', subject)
+  
+  // 从subject字符串中提取基因ID
+  // 假设subject格式为"基因ID (描述)"或直接是基因ID
+  let geneId = subject
+  
+  // 尝试提取括号前的部分作为基因ID
+  const match = subject.match(/^([^\s(]+)/)
+  if (match) {
+    geneId = match[1] || subject
+  }
+  
+  console.log('Extracted gene ID:', geneId)
+  
+  // 清除 navigationStore 中的 geneDetail 数据，确保从后端重新获取
+  navigationStore.clearNavigationData('geneDetail')
+  
+  // 导航到ID搜索结果页面，并将基因ID和基因组ID作为参数传递
+  router.push({
+    name: 'idSearchResults',
+    query: { 
+      gene_id: geneId,
+      genome_id: 'G.hirsutumAD1_TM-1_HAU_v1.1' // 默认基因组，可根据实际情况调整
+    }
+  })
+}
+
+// 下载BLAST结果为文本文件
+function downloadBlastResults() {
+  try {
+    // 构建文本内容
+    let textContent = ''
+    
+    // 添加表头
+    textContent += 'Query ID\tSubject ID\tIdentity (%)\tAlignment Length\tMismatches\tGap Openings\tQ. Start\tQ. End\tS. Start\tS. End\tE-value\tBit Score\n'
+    
+    // 添加数据行
+    if (rawBlastResults.value && rawBlastResults.value.hits) {
+      rawBlastResults.value.hits.forEach((hit: any) => {
+        textContent += `${rawBlastResults.value.query_def}\t`
+        textContent += `${hit.description || hit.subject_id}\t`
+        textContent += `${hit.identity ? hit.identity.toFixed(2) : '0'}\t`
+        textContent += `${hit.length || hit.alignment_length || '0'}\t`
+        textContent += `${hit.mismatches || '0'}\t`
+        textContent += `${hit.gaps || '0'}\t`
+        textContent += `${hit.qStart || hit.query_start || '0'}\t`
+        textContent += `${hit.qEnd || hit.query_end || '0'}\t`
+        textContent += `${hit.sStart || hit.subject_start || '0'}\t`
+        textContent += `${hit.sEnd || hit.subject_end || '0'}\t`
+        textContent += `${hit.evalue || '0'}\t`
+        textContent += `${hit.score || hit.bit_score || '0'}\n`
+      })
+    }
+    
+    // 创建Blob对象
+    const blob = new Blob([textContent], { type: 'text/plain' })
+    
+    // 创建下载链接
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `blastp_results_${new Date().getTime()}.txt`
+    document.body.appendChild(a)
+    
+    // 触发下载
+    a.click()
+    
+    // 清理
+    setTimeout(() => {
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    }, 100)
+    
+    // 显示成功消息
+    ElMessage.success(t('download_success'))
+  } catch (error) {
+    console.error('下载失败:', error)
+    // 显示错误消息
+    ElMessage.error(t('download_failed'))
+  }
+}
 </script>
 
 <style scoped>
@@ -1121,13 +1352,22 @@ watch(lineChartData, () => {
 
 #chord-chart {
   width: 100%;
-  height: 800px;
+  min-height: 900px;
+  height: auto;
   margin: 0 auto;
+  overflow: visible;
 }
 
 #chord-chart svg {
   display: block !important;
   overflow: visible !important;
+  max-width: 100%;
+  height: auto;
+}
+
+.chord-chart-container {
+  overflow: visible !important;
+  position: relative;
 }
 
 .line-chart-container {
