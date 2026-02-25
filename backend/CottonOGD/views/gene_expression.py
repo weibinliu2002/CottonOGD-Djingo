@@ -16,6 +16,25 @@ import base64
 import logging
 logger = logging.getLogger(__name__)
 
+TISSUE_ORDER = [
+    'Root', 'Stem', 'Cotyledon', 'Leaf', 'Pholem', 
+    'Sepal', 'Bract', 'Petal', 'Anther', 'Stigma', 
+    '0 DPA ovules', '3 DPA fibers', '6 DPA fibers', 
+    '9 DPA fibers', '12 DPA fibers', '15 DPA fibers', 
+    '18 DPA fibers', '21 DPA fibers', '24 DPA fibers', 
+    'DPA0', '5 DPA ovules', '10 DPA ovules', 
+    '20 DPA ovules', 'Seed'
+]
+
+def get_sort_key(row):
+    tissue = row['tissue']
+    stage = row['stage'] if row['stage'] else ''
+    try:
+        tissue_idx = TISSUE_ORDER.index(tissue)
+    except ValueError:
+        tissue_idx = len(TISSUE_ORDER)
+    return (tissue_idx, stage)
+
 def generate_heatmap_image(numeric_data, gene_ids_list, selected_columns):
     # 创建DataFrame
     df = pd.DataFrame(numeric_data, index=gene_ids_list, columns=selected_columns)
@@ -105,14 +124,26 @@ def extract_expression(request):
         sample_id = request.data.get('sample_id') or request.query_params.get('sample_id')
         gene_expr=gene_expression.objects.filter(id_id__in=db_id).values('id_id','geneid_id','stage','tissue','value')
         df = pd.DataFrame(list(gene_expr))
-        df['sample'] = df['stage'].str.replace(r'^X(\d+)', r'\1', regex=True) + '' + df['tissue']
-        result = df.pivot_table(
+        
+        # 对数据进行排序：先按组织，再按时期
+        df_sorted = df.copy()
+        df_sorted['tissue_idx'] = df_sorted['tissue'].apply(lambda x: TISSUE_ORDER.index(x) if x in TISSUE_ORDER else len(TISSUE_ORDER))
+        df_sorted = df_sorted.sort_values(by=['tissue_idx', 'stage'], ascending=[True, True])
+        
+        df_sorted['sample'] = df_sorted['stage'].str.replace(r'^X(\d+)', r'\1', regex=True) + '' + df_sorted['tissue']
+        result = df_sorted.pivot_table(
             index=['id_id', 'geneid_id'],  # 保持不变的ID列
             columns='sample',               # stage_tissue 组合成列名
             values='value',                 # 表达量作为值
             aggfunc='mean'                  # 如果有重复值，取平均（可选：'first', 'sum'）
         ).reset_index()
         result.columns.name = None
+        
+        # 确保列的顺序也是按照排序后的顺序
+        sample_order = df_sorted['sample'].unique()
+        existing_columns = [col for col in sample_order if col in result.columns]
+        id_columns = ['id_id', 'geneid_id']
+        result = result[id_columns + existing_columns]
        
 
         # 生成热图
