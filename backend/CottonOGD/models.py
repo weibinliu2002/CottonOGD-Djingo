@@ -88,7 +88,7 @@ class Family(models.Model):
 class gene_expression(models.Model):
     id = models.AutoField(primary_key=True)
     id_id = models.IntegerField(default='0')
-    geneid=models.ForeignKey(GeneMaster, on_delete=models.CASCADE,  null=True,to_field='geneid')
+    geneid=models.CharField(max_length=200,blank=True, null=True)
     genome = models.ForeignKey(Species_info, on_delete=models.CASCADE, to_field='name') 
     tissue = models.CharField(max_length=50)
     stage = models.CharField(max_length=50, null=True)

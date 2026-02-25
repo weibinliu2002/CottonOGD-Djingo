@@ -19,11 +19,7 @@ logger = logging.getLogger(__name__)
 TISSUE_ORDER = [
     'Root', 'Stem', 'Cotyledon', 'Leaf', 'Pholem', 
     'Sepal', 'Bract', 'Petal', 'Anther', 'Stigma', 
-    '0 DPA ovules', '3 DPA fibers', '6 DPA fibers', 
-    '9 DPA fibers', '12 DPA fibers', '15 DPA fibers', 
-    '18 DPA fibers', '21 DPA fibers', '24 DPA fibers', 
-    'DPA0', '5 DPA ovules', '10 DPA ovules', 
-    '20 DPA ovules', 'Seed'
+    'Ovules', 'Fibers', 'Seed'
 ]
 
 def get_sort_key(row):
