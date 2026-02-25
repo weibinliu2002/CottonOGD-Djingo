@@ -118,7 +118,7 @@ def extract_expression(request):
             return Response({'error': 'db_id must contain valid integers'}, status=status.HTTP_400_BAD_REQUEST)
 
         sample_id = request.data.get('sample_id') or request.query_params.get('sample_id')
-        gene_expr=gene_expression.objects.filter(id_id__in=db_id).values('id_id','geneid_id','stage','tissue','value')
+        gene_expr=gene_expression.objects.filter(id_id__in=db_id).values('id_id','geneid','stage','tissue','value')
         df = pd.DataFrame(list(gene_expr))
         
         # 对数据进行排序：先按组织，再按时期
@@ -128,7 +128,7 @@ def extract_expression(request):
         
         df_sorted['sample'] = df_sorted['stage'].str.replace(r'^X(\d+)', r'\1', regex=True) + '' + df_sorted['tissue']
         result = df_sorted.pivot_table(
-            index=['id_id', 'geneid_id'],  # 保持不变的ID列
+            index=['id_id', 'geneid'],  # 保持不变的ID列
             columns='sample',               # stage_tissue 组合成列名
             values='value',                 # 表达量作为值
             aggfunc='mean'                  # 如果有重复值，取平均（可选：'first', 'sum'）
@@ -138,14 +138,14 @@ def extract_expression(request):
         # 确保列的顺序也是按照排序后的顺序
         sample_order = df_sorted['sample'].unique()
         existing_columns = [col for col in sample_order if col in result.columns]
-        id_columns = ['id_id', 'geneid_id']
+        id_columns = ['id_id', 'geneid']
         result = result[id_columns + existing_columns]
        
 
         # 生成热图
         heatmap_image = generate_heatmap_image(
-            numeric_data=result.drop(columns=['id_id', 'geneid_id']).values,
-            gene_ids_list=result['geneid_id'].tolist(),
+            numeric_data=result.drop(columns=['id_id', 'geneid']).values,
+            gene_ids_list=result['geneid'].tolist(),
             selected_columns=result.columns[2:]  # 从第3列开始是样本列
         )
         
