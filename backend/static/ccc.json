@@ -4160,7 +4160,7 @@
       ]
     },
     {
-      "name": "number_0_DPA_ovules",
+      "name": "0DPA_ovules",
       "polygon": [
         [
           1549.3937398449286,
@@ -4229,7 +4229,7 @@
       ]
     },
     {
-      "name": "number_5_dpa_ovules",
+      "name": "5DPA_ovules",
       "polygon": [
         [
           1849.7255174015193,
@@ -4286,7 +4286,7 @@
       ]
     },
     {
-      "name": "number_10_DPA_ovules",
+      "name": "10DPA_ovules",
       "polygon": [
         [
           1535.4710746601859,
@@ -4363,7 +4363,7 @@
       ]
     },
     {
-      "name": "number_20_DPA_ovules",
+      "name": "20DPA_ovules",
       "polygon": [
         [
           1847.7365652322703,
@@ -4517,7 +4517,7 @@
       ]
     },
     {
-      "name": "number_3_DPA_fibers",
+      "name": "3DPA_fibers",
       "polygon": [
         [
           698.1222114063798,
@@ -4662,7 +4662,7 @@
       ]
     },
     {
-      "name": "number_6_DPA_fibers",
+      "name": "6DPA_fibers",
       "polygon": [
         [
           979.6822255143566,
@@ -4779,7 +4779,7 @@
       ]
     },
     {
-      "name": "number_9_DPA_fibers",
+      "name": "9DPA_fibers",
       "polygon": [
         [
           1211.4526849061758,
@@ -4904,7 +4904,7 @@
       ]
     },
     {
-      "name": "number_12_DPA_fibers",
+      "name": "12DPA_fibers",
       "polygon": [
         [
           1494.1797701217283,
@@ -5065,7 +5065,7 @@
       ]
     },
     {
-      "name": "number_15_DPA_fibers",
+      "name": "15DPA_fibers",
       "polygon": [
         [
           616.4107962548384,
@@ -5210,7 +5210,7 @@
       ]
     },
     {
-      "name": "number_18_DPA_fibers",
+      "name": "18DPA_fibers",
       "polygon": [
         [
           928.7255996906232,
@@ -5359,7 +5359,7 @@
       ]
     },
     {
-      "name": "number_21_DPA_fibers",
+      "name": "21DPA_fibers",
       "polygon": [
         [
           1206.521398536137,
@@ -5512,7 +5512,7 @@
       ]
     },
     {
-      "name": "number_24_DPA_fibers",
+      "name": "24DPA_fibers",
       "polygon": [
         [
           1482.6734352583046,

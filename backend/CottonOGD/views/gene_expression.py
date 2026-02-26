@@ -10,7 +10,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
 import json
-import io
+import io ,re
 import base64
 
 import logging
@@ -36,20 +36,48 @@ def generate_heatmap_image(numeric_data, gene_ids_list, selected_columns):
     df = pd.DataFrame(numeric_data, index=gene_ids_list, columns=selected_columns)
     
     # 设置图形大小
-    plt.figure(figsize=(12, max(5, len(gene_ids_list) * 0.5)))
+    # 计算合适的图形大小
+    # 根据基因数量和组织数量动态调整
+    num_genes = len(gene_ids_list)
+    num_tissues = len(selected_columns)
     
-    # 使用seaborn绘制热图
+    # 基础宽度和高度
+    base_width = max(12, num_tissues * 1.2)  # 每个组织至少1.2英寸
+    base_height = max(5, num_genes * 0.6)    # 每个基因至少0.6英寸
+    
+    # 限制最大大小，避免内存问题
+    max_width = 30
+    max_height = 20
+    
+    fig_width = min(base_width, max_width)
+    fig_height = min(base_height, max_height)
+    
+    # 创建图形和轴
+    f, ax = plt.subplots(figsize=(fig_width, fig_height))
+    
+    # 使用seaborn绘制热图，添加数值显示（仅当数据量适中时）
+    annot = False
+    fmt = '.2f'
+    
+    # 当数据量适中时显示数值
+    if num_genes <= 10 and num_tissues <= 15:
+        annot = True
+    
     ax = sns.heatmap(df, cmap='RdYlBu_r', 
                     vmin=0, vmax=15,  # 设置颜色范围
                     xticklabels=True, yticklabels=True, 
-                    cbar_kws={'label': 'Log2(FPKM+1)'})
+                    cbar_kws={'label': 'FPKM'},
+                    annot=annot,  # 显示数值（数据量适中时）
+                    fmt=fmt,  # 数值格式，保留2位小数
+                    linewidths=.5,  # 网格线宽度
+                    ax=ax)  # 指定轴
     
-    # 设置x轴标签旋转
-    plt.xticks(rotation=45, ha='right', fontsize=10)
-    plt.yticks(fontsize=10)
+    # 设置x轴标签旋转和字体大小
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=60, ha='right', fontsize=8)
+    ax.set_yticklabels(ax.get_yticklabels(), fontsize=8)
     
     # 设置标题
-    plt.title('Gene Expression Heatmap', fontsize=14)
+    ax.set_title('Gene Expression Heatmap', fontsize=12)
     
     # 调整布局
     plt.tight_layout()
@@ -121,12 +149,24 @@ def extract_expression(request):
         gene_expr=gene_expression.objects.filter(id_id__in=db_id).values('id_id','geneid','stage','tissue','value')
         df = pd.DataFrame(list(gene_expr))
         
-        # 对数据进行排序：先按组织，再按时期
-        df_sorted = df.copy()
-        df_sorted['tissue_idx'] = df_sorted['tissue'].apply(lambda x: TISSUE_ORDER.index(x) if x in TISSUE_ORDER else len(TISSUE_ORDER))
-        df_sorted = df_sorted.sort_values(by=['tissue_idx', 'stage'], ascending=[True, True])
+        # 处理空值
+        df['stage'] = df['stage'].fillna('')
+        df['tissue'] = df['tissue'].fillna('Unknown')
         
-        df_sorted['sample'] = df_sorted['stage'].str.replace(r'^X(\d+)', r'\1', regex=True) + '' + df_sorted['tissue']
+        # 对数据进行排序：先按组织，再按时期（数字顺序）
+        df_sorted = df.copy()
+        # 添加组织索引列用于排序
+        df_sorted['tissue_idx'] = df_sorted['tissue'].apply(lambda x: TISSUE_ORDER.index(x) if x in TISSUE_ORDER else len(TISSUE_ORDER))
+        # 从stage中提取数字部分用于排序
+        df_sorted['stage_num'] = df_sorted['stage'].str.extract(r'(\d+)').astype(float).fillna(0)
+        # 按组织索引和时期数字排序
+        df_sorted = df_sorted.sort_values(by=['tissue_idx', 'stage_num'], ascending=[True, True])
+        
+        # 构建sample列名，处理空stage的情况
+        df_sorted['sample'] = df_sorted.apply(lambda row: 
+            re.sub(r'^X(\d+)', r'\1', row['stage']) + row['tissue'] if row['stage'] else row['tissue'], 
+            axis=1
+        )
         result = df_sorted.pivot_table(
             index=['id_id', 'geneid'],  # 保持不变的ID列
             columns='sample',               # stage_tissue 组合成列名

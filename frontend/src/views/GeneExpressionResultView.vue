@@ -37,7 +37,7 @@
             </div>
           </template>
           <el-table :data="results" style="width: 100%">
-            <el-table-column prop="geneid_id" :label="t('gene_id')" width="180"></el-table-column>
+            <el-table-column :prop="'geneid'" :label="t('gene_id')" width="180"></el-table-column>
             <el-table-column 
               v-for="tissue in tissues" 
               :key="tissue.value"
@@ -52,35 +52,7 @@
               </template>
             </el-table-column>
           </el-table>
-        </el-card>
-
-        <el-card class="mb-4">
-          <template #header>
-            <div class="d-flex justify-content-between align-items-center">
-              <span>{{ t('expression_level_visualization') }}</span>
-              <el-button type="primary" size="small" @click="downloadHeatmap" v-if="heatmapImage">
-                <el-icon><Download /></el-icon> {{ t('download_image') }}
-              </el-button>
-            </div>
-          </template>
-          <div v-if="heatmapImage" class="heatmap-container mt-3 text-center">
-            <el-image
-              :src="`data:image/png;base64,${heatmapImage}`"
-              :alt="t('gene_expression_heatmap')"
-              fit="contain"
-              class="w-full"
-            />
-          </div>
-          <el-alert
-            v-else-if="visualizationData.length > 0"
-            type="info"
-            :title="t('no_heatmap_image_available')"
-            show-icon
-            class="mt-3"
-          />
-        </el-card>
-
-        <el-pagination
+          <el-pagination
           v-if="total > perPage"
           v-model:current-page="currentPage"
           v-model:page-size="perPage"
@@ -91,6 +63,38 @@
           @current-change="changePage"
           class="mt-4"
         />
+        </el-card>
+        
+
+        <el-card class="mb-4">
+          <template #header>
+            <div class="d-flex justify-content-between align-items-center">
+              <span>{{ t('expression_level_visualization') }}</span>
+              <el-button type="primary" size="small" @click="downloadHeatmap" v-if="heatmapImage">
+                <el-icon><Download /></el-icon> {{ t('download_image') }}
+              </el-button>
+            </div>
+          </template>
+          <div v-if="heatmapImage" class="heatmap-container mt-3" style="overflow: auto; width: 100%; max-height: 600px; border: 1px solid #e4e7ed; border-radius: 4px;">
+            <div style="min-width: 800px; min-height: 500px; display: flex; justify-content: center; align-items: center;">
+              <el-image
+                :src="`data:image/png;base64,${heatmapImage}`"
+                :alt="t('gene_expression_heatmap')"
+                fit="contain"
+                style="max-width: none; max-height: none;"
+              />
+            </div>
+          </div>
+          <el-alert
+            v-else-if="visualizationData.length > 0"
+            type="info"
+            :title="t('no_heatmap_image_available')"
+            show-icon
+            class="mt-3"
+          />
+        </el-card>
+
+        
       </div>
       
       <el-alert
@@ -150,7 +154,7 @@ const allTissues = computed(() => {
     return []
   }
   
-  // 从第一个结果对象中提取列名，排除 id_id 和 geneid_id
+  // 从第一个结果对象中提取列名，排除 id_id 和 geneid
   const firstResult = storeResults[0]
   if (!firstResult) {
     return []
@@ -158,7 +162,7 @@ const allTissues = computed(() => {
   
   // 提取所有非 ID 列名
   const tissueColumns = Object.keys(firstResult).filter(key => 
-    key !== 'id_id' && key !== 'geneid_id' && typeof firstResult[key] === 'number'
+    key !== 'id_id' && key !== 'geneid' && typeof firstResult[key] === 'number'
   )
   
   // 转换为组织列表格式
@@ -194,7 +198,7 @@ const visualizationData = computed(() => {
   }
   
   return results.value.map(item => ({
-    gene_id: item.geneid_id || item.gene_id,
+    gene_id: item.geneid || item.gene_id,
     expression: item
   }))
 })
@@ -249,7 +253,7 @@ const downloadExpressionData = () => {
   
   // 构建CSV行
   const rows = results.value.map(item => {
-    const row = [item.geneid_id]
+    const row = [item.geneid]
     tissueColumns.forEach(col => {
       row.push(item[col] !== undefined ? item[col] : '-')
     })

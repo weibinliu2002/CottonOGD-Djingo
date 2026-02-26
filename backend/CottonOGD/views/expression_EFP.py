@@ -54,21 +54,39 @@ def expression_EFP_image(request):
             return JsonResponse({'success': False, 'error': f'基因ID "{gene_id}" 在基因组 "{genome_id}" 中不存在'})
         logger.info(f'gene_data count: {gene_data.count()}')
 
-        # 创建阶段到表达值的映射（因为tissue字段为空）
-        stage_value_map = {}
+        # 创建阶段和组织到表达值的映射
+        stage_tissue_value_map = {}
         for item in gene_data:
-            # 检查stage字段是否为空或只包含空格
-            if not item.stage or not item.stage.strip():
-                logger.warning(f'Skipping item with empty or whitespace-only stage: {item}')
+            # 检查stage和tissue字段
+            stage = item.stage.strip() if item.stage else ''
+            tissue = item.tissue.strip() if item.tissue else ''
+            
+            # 跳过无效数据
+            if not stage and not tissue:
+                logger.warning(f'Skipping item with empty stage and tissue: {item}')
                 continue
-            # 去除stage字段中的空格并转换为小写
-            stage_key = item.stage.strip().lower()
-            if stage_key not in stage_value_map:
-                stage_value_map[stage_key] = []
-            stage_value_map[stage_key].append(item.value)
-            logger.debug(f'Added value {item.value} for stage {stage_key}')
-        logger.info(f'stage_value_map: {stage_value_map}')
-        logger.info(f'Available stage keys: {list(stage_value_map.keys())}')
+            
+            # 创建键（包含stage和tissue），使用两种格式
+            keys = []
+            if stage:
+                # 格式1: stage_tissue (如 24dpa_fibers)
+                key1 = f'{stage}_{tissue}'.lower() if tissue else stage.lower()
+                keys.append(key1)
+                # 格式2: stagetissue (如 24dpafibers)
+                key2 = f'{stage}{tissue}'.lower() if tissue else stage.lower()
+                keys.append(key2)
+            else:
+                # 只有tissue的情况
+                keys.append(tissue.lower())
+            
+            # 为每个键添加值
+            for key in keys:
+                if key not in stage_tissue_value_map:
+                    stage_tissue_value_map[key] = []
+                stage_tissue_value_map[key].append(item.value)
+                logger.debug(f'Added value {item.value} for key {key}')
+        logger.info(f'stage_tissue_value_map: {stage_tissue_value_map}')
+        logger.info(f'Available keys: {list(stage_tissue_value_map.keys())}')
 
         # 加载区域配置文件
         regions_config_path = os.path.join(settings.BASE_DIR, 'static', 'ccc.json')
@@ -116,23 +134,35 @@ def expression_EFP_image(request):
 
         for region in regions_config['regions']:
             region_name = region['name']
-            # 将区域名称映射到阶段类型
-            stage_key = region_to_tissue.get(region_name, region_name).lower()
-            logger.info(f'Processing region: {region_name}, mapped to stage: {stage_key}')
+            # 将区域名称映射到组织类型
+            tissue_key = region_to_tissue.get(region_name, region_name).lower()
+            logger.info(f'Processing region: {region_name}, mapped to tissue: {tissue_key}')
             
-            # 获取该阶段的表达值
-            region_values = stage_value_map.get(stage_key, [])
-            logger.info(f'Values for {region_name} ({stage_key}): {region_values}')
+            # 尝试多种方式获取表达值
+            region_values = []
+            
+            # 1. 尝试直接使用组织键查找
+            if tissue_key in stage_tissue_value_map:
+                region_values = stage_tissue_value_map[tissue_key]
+                logger.info(f'Found values for {region_name} using tissue key: {region_values}')
+            else:
+                # 2. 尝试查找包含该组织的所有键
+                for key, values in stage_tissue_value_map.items():
+                    if tissue_key in key:
+                        region_values.extend(values)
+                        logger.info(f'Found values for {region_name} using key: {key}')
+            
+            logger.info(f'All values for {region_name} ({tissue_key}): {region_values}')
             if region_values:
                 # 取平均值作为该区域的表达值
                 value = sum(region_values) / len(region_values)
-                logger.info(f'Value for {region_name} ({stage_key}): {value}')
+                logger.info(f'Value for {region_name} ({tissue_key}): {value}')
                 values.append(value)
             else:
-                # 尝试直接使用区域名称作为阶段类型
+                # 尝试直接使用区域名称作为键
                 alternative_key = region_name.lower()
-                if alternative_key != stage_key:
-                    alternative_values = stage_value_map.get(alternative_key, [])
+                if alternative_key != tissue_key:
+                    alternative_values = stage_tissue_value_map.get(alternative_key, [])
                     logger.info(f'Trying alternative key {alternative_key} for {region_name}: {alternative_values}')
                     if alternative_values:
                         value = sum(alternative_values) / len(alternative_values)
@@ -204,14 +234,30 @@ def expression_EFP_image(request):
                 continue
             
             # 使用前面创建的映射获取该区域的表达值
-            stage_key = region_to_tissue.get(region_name, region_name).lower()
-            region_values = stage_value_map.get(stage_key, [])
+            tissue_key = region_to_tissue.get(region_name, region_name).lower()
+            
+            # 尝试多种方式获取表达值
+            region_values = []
+            
+            # 1. 尝试直接使用组织键查找
+            if tissue_key in stage_tissue_value_map:
+                region_values = stage_tissue_value_map[tissue_key]
+                logger.info(f'Found values for {region_name} using tissue key: {region_values}')
+            else:
+                # 2. 尝试查找包含该组织的所有键
+                for key, values in stage_tissue_value_map.items():
+                    if tissue_key in key:
+                        region_values.extend(values)
+                        logger.info(f'Found values for {region_name} using key: {key}')
             
             if not region_values:
-                # 尝试直接使用区域名称作为阶段类型
+                # 尝试直接使用区域名称作为键
                 alternative_key = region_name.lower()
-                if alternative_key != stage_key:
-                    region_values = stage_value_map.get(alternative_key, [])
+                if alternative_key != tissue_key:
+                    alternative_values = stage_tissue_value_map.get(alternative_key, [])
+                    logger.info(f'Trying alternative key {alternative_key} for {region_name}: {alternative_values}')
+                    if alternative_values:
+                        region_values = alternative_values
                 
                 if not region_values:
                     logger.info(f'Region {region_name} has no expression values')
