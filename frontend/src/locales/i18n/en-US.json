@@ -1,5 +1,16 @@
 {
   "message": {
+    "heatmap_settings": "Heatmap Settings",
+    "low_color": "Low Color",
+    "mid_color": "Mid Color",
+    "high_color": "High Color",
+    "font_family": "Font Family",
+    "font_size": "Font Size",
+    "use_log2": "Use Log2",
+    "regenerate": "Regenerate",
+    "download_image": "Download Image",
+    "heatmap_regeneration_failed": "Heatmap regeneration failed",
+    "heatmap_regeneration_error": "Heatmap regeneration error",
     "a_comprehensive_cotton_orthogroups_database": "A Comprehensive Cotton Orthogroups Database",
     "about": "About",
     "about_ogd": "About OGD",

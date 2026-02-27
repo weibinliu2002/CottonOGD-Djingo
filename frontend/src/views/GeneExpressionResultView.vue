@@ -70,11 +70,67 @@
           <template #header>
             <div class="d-flex justify-content-between align-items-center">
               <span>{{ t('expression_level_visualization') }}</span>
-              <el-button type="primary" size="small" @click="downloadHeatmap" v-if="heatmapImage">
-                <el-icon><Download /></el-icon> {{ t('download_image') }}
-              </el-button>
+              <div>
+                <el-button type="primary" size="small" @click="regenerateHeatmap" :loading="heatmapLoading">
+                  <el-icon><Refresh /></el-icon> {{ t('regenerate') }}
+                </el-button>
+                <el-button type="primary" size="small" @click="downloadHeatmap" v-if="heatmapImage">
+                  <el-icon><Download /></el-icon> {{ t('download_image') }}
+                </el-button>
+              </div>
             </div>
           </template>
+          
+          <!-- 热图控制面板 -->
+          <el-collapse class="heatmap-controls mb-3">
+            <el-collapse-item :title="t('heatmap_settings')" name="1">
+              <el-form :model="heatmapConfig" label-position="left" label-width="120px" size="small">
+                <el-row :gutter="20">
+                  <el-col :span="8">
+                    <el-form-item :label="t('low_color')">
+                      <el-color-picker v-model="heatmapConfig.lowColor" show-alpha />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="8">
+                    <el-form-item :label="t('mid_color')">
+                      <el-color-picker v-model="heatmapConfig.midColor" show-alpha />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="8">
+                    <el-form-item :label="t('high_color')">
+                      <el-color-picker v-model="heatmapConfig.highColor" show-alpha />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+                <el-row :gutter="20">
+                  <el-col :span="12">
+                    <el-form-item :label="t('font_family')">
+                      <el-select v-model="heatmapConfig.fontFamily" class="w-full">
+                        <el-option label="Arial" value="Arial" />
+                        <el-option label="Times New Roman" value="Times New Roman" />
+                        <el-option label="Helvetica" value="Helvetica" />
+                        <el-option label="SimSun" value="SimSun" />
+                        <el-option label="Microsoft YaHei" value="Microsoft YaHei" />
+                      </el-select>
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="12">
+                    <el-form-item :label="t('font_size')">
+                      <el-slider v-model="heatmapConfig.fontSize" :min="8" :max="24" :step="1" show-stops />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+                <el-row :gutter="20">
+                  <el-col :span="12">
+                    <el-form-item :label="t('use_log2')">
+                      <el-switch v-model="heatmapConfig.useLog2" />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+              </el-form>
+            </el-collapse-item>
+          </el-collapse>
+          
           <div v-if="heatmapImage" class="heatmap-container mt-3" style="overflow: auto; width: 100%; max-height: 600px; border: 1px solid #e4e7ed; border-radius: 4px;">
             <div style="min-width: 800px; min-height: 500px; display: flex; justify-content: center; align-items: center;">
               <el-image
@@ -123,6 +179,7 @@ import { Download } from '@element-plus/icons-vue'
 // @ts-ignore - heatmap.js doesn't have proper type definitions
 import heatmap from 'heatmap.js'
 import { useGeneExpressionStore } from '@/stores/geneExpressionStore'
+import { Refresh } from '@element-plus/icons-vue'
 
 const { t } = useI18n()
 
@@ -138,6 +195,17 @@ const currentPage = ref(1)
 const total = ref(0)
 const heatmapContainer = ref<HTMLElement | null>(null) // 保留用于下载功能
 const hoverInfo = ref<{ gene: string; tissue: string; value: number } | null>(null)
+const heatmapLoading = ref(false)
+
+// 热图配置
+const heatmapConfig = ref({
+  lowColor: '#0000FF',
+  midColor: '#00FF00',
+  highColor: '#FF0000',
+  fontFamily: 'Arial',
+  fontSize: 12,
+  useLog2: false
+})
 
 // 从 store 获取响应式数据
 const results = computed(() => geneExpressionStore.results)
@@ -219,6 +287,50 @@ const changePage = (page: number) => {
 
 // 热图相关功能已迁移到后端，前端不再需要绘制热图
 // 使用后端生成的热图图片进行展示
+
+// 重新生成热图
+const regenerateHeatmap = async () => {
+  if (!results.value || results.value.length === 0) {
+    alert(t('no_expression_data_available'))
+    return
+  }
+  
+  heatmapLoading.value = true
+  
+  try {
+    // 准备热图数据
+    const heatmapData = {
+      genes: results.value.map(item => ({
+        gene_id: item.geneid,
+        expression: item
+      })),
+      tissues: tissues.value.map(t => t.value),
+      config: {
+        low_color: heatmapConfig.value.lowColor,
+        mid_color: heatmapConfig.value.midColor,
+        high_color: heatmapConfig.value.highColor,
+        font_family: heatmapConfig.value.fontFamily,
+        font_size: heatmapConfig.value.fontSize,
+        use_log2: heatmapConfig.value.useLog2
+      }
+    }
+    
+    // 调用后端API重新生成热图
+    const response = await httpInstance.post('/CottonOGD_api/regenerate_heatmap/', heatmapData)
+    
+    if (response.success) {
+      geneExpressionStore.setHeatmapImage(response.image)
+    } else {
+      console.error('重新生成热图失败:', response.error)
+      alert(t('heatmap_regeneration_failed'))
+    }
+  } catch (error) {
+    console.error('重新生成热图出错:', error)
+    alert(t('heatmap_regeneration_error'))
+  } finally {
+    heatmapLoading.value = false
+  }
+}
 
 // 下载热图
 const downloadHeatmap = () => {

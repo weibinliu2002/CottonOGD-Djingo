@@ -269,6 +269,42 @@
         </div>
       </el-card>
       
+      <!-- 基因表达量表格 -->
+      <el-card v-if="expressionData.length > 0" class="mb-4">
+        <template #header>
+          <div class="d-flex justify-content-between align-items-center">
+            <h3>{{ t('gene_expression') }}</h3>
+            <el-button type="success" size="small" @click="downloadExpressionData">
+              {{ t('download_data') }}
+            </el-button>
+          </div>
+        </template>
+        <div class="card-body">
+          <el-table
+            :data="expressionData"
+            style="width: 100%"
+            stripe
+            border
+          >
+            <el-table-column prop="geneid" label="{{ t('gene_id') }}" width="180" />
+            <el-table-column 
+              v-for="tissue in expressionTissues" 
+              :key="tissue"
+              :prop="tissue" 
+              :label="tissue"
+              min-width="100"
+            >
+              <template #default="scope">
+                <div v-if="scope.row[tissue] !== undefined">
+                  {{ scope.row[tissue].toFixed(4) }}
+                </div>
+                <div v-else>-</div>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+      </el-card>
+      
       <!-- 注释信息卡片 -->
       <el-card
         v-if="Object.keys(annotations).length > 0"
@@ -484,6 +520,11 @@ const svgWidth = ref(800)
 // 上下游序列长度
 const upstreamLength = ref(500) // 默认值
 const downstreamLength = ref(500) // 默认值
+
+// 基因表达量数据
+const expressionData = ref<any[]>([])
+const expressionTissues = ref<string[]>([])
+const expressionLoading = ref(false)
 
 // 计算属性
 const parsedGoAnnotations = computed(() => {
@@ -1198,6 +1239,76 @@ const downloadGff = (format: string) => {
   }
 }
 
+// 加载基因表达量数据
+const loadExpressionData = async (geneId: string) => {
+  if (!geneId) return
+  
+  expressionLoading.value = true
+  try {
+    const response = await httpInstance.post('/CottonOGD_api/extract_expression/', {
+      gene_id: geneId
+    })
+    
+    if (response.expression && response.expression.length > 0) {
+      expressionData.value = response.expression
+      // 提取组织列表（排除id_id和geneid列）
+      if (response.expression.length > 0) {
+        const firstItem = response.expression[0]
+        expressionTissues.value = Object.keys(firstItem).filter(key => 
+          key !== 'id_id' && key !== 'geneid' && typeof firstItem[key] === 'number'
+        )
+      }
+    }
+  } catch (error) {
+    console.error('获取基因表达量数据失败:', error)
+  } finally {
+    expressionLoading.value = false
+  }
+}
+
+// 下载表达量数据
+const downloadExpressionData = () => {
+  if (expressionData.value.length === 0) {
+    ElMessage.warning('No expression data available for download')
+    return
+  }
+
+  // 获取所有组织列名
+  const tissueColumns = expressionTissues.value
+  
+  // 构建CSV表头
+  const headers = ['Gene ID', ...tissueColumns]
+  
+  // 构建CSV行
+  const rows = expressionData.value.map(item => {
+    const row = [item.geneid]
+    tissueColumns.forEach(col => {
+      row.push(item[col] !== undefined ? item[col] : '-')
+    })
+    return row
+  })
+  
+  // 组合表头和行
+  const csvContent = [
+    headers.join(','),
+    ...rows.map(row => row.join(','))
+  ].join('\n')
+  
+  // 创建下载链接
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+  const link = document.createElement('a')
+  
+  if (link.download !== undefined) {
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', 'gene_expression_data.csv')
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+}
+
 // 处理基因ID和基因组ID的函数
 const fetchGeneDataWithGeneId = async (gene_id: string, genome_id: string) => {
   // 添加延迟显示加载状态
@@ -1314,10 +1425,16 @@ onMounted(() => {
     // 如果有 URL 参数，使用参数获取数据
     hasFetched.value = true
     fetchGeneData(db_id)
+    // 加载基因表达量数据
+    if (gene_id) {
+      loadExpressionData(gene_id)
+    }
   } else if (gene_id && genome_id && !hasFetched.value) {
     // 如果有基因ID和基因组ID参数，使用这些参数获取数据
     hasFetched.value = true
     fetchGeneDataWithGeneId(gene_id, genome_id)
+    // 加载基因表达量数据
+    loadExpressionData(gene_id)
   } else if (geneDetailData && geneDetailData.results) {
     // 如果没有 URL 参数但有导航数据，使用导航数据
     console.log('从 navigationStore 加载基因数据:', geneDetailData.results.IDs)
@@ -1337,6 +1454,12 @@ onMounted(() => {
     
     // 重置页码到第一页
     currentPage.value = 1
+    
+    // 加载基因表达量数据
+    const geneId = geneDetailData.results.IDs
+    if (geneId) {
+      loadExpressionData(geneId)
+    }
     
     // 标记为已获取
     hasFetched.value = true

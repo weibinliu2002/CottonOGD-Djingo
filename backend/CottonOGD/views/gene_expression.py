@@ -193,3 +193,162 @@ def extract_expression(request):
         # return Response({'expression': gene_expr}, status=status.HTTP_200_OK)
 
 
+@api_view(['POST'])
+def regenerate_heatmap(request):
+    """
+    根据前端配置重新生成热图
+    """
+    try:
+        # 获取请求数据
+        genes = request.data.get('genes', [])
+        tissues = request.data.get('tissues', [])
+        config = request.data.get('config', {})
+        
+        if not genes or not tissues:
+            return Response({
+                'success': False,
+                'error': 'Genes and tissues data are required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # 提取配置参数
+        low_color = config.get('low_color', '#0000FF')
+        mid_color = config.get('mid_color', '#00FF00')
+        high_color = config.get('high_color', '#FF0000')
+        font_family = config.get('font_family', 'Arial')
+        font_size = config.get('font_size', 12)
+        use_log2 = config.get('use_log2', False)
+        
+        # 处理rgb()格式的颜色
+        def parse_color(color):
+            if isinstance(color, str):
+                # 处理rgb格式: rgb(0, 149, 255)
+                if color.startswith('rgb('):
+                    try:
+                        # 提取RGB值
+                        rgb_values = color.replace('rgb(', '').replace(')', '').split(',')
+                        r, g, b = [int(val.strip()) for val in rgb_values]
+                        # 转换为十六进制格式
+                        return f'#{r:02x}{g:02x}{b:02x}'
+                    except:
+                        pass
+                # 处理rgba格式: rgba(0, 149, 255, 1)
+                elif color.startswith('rgba('):
+                    try:
+                        # 提取RGBA值
+                        rgba_values = color.replace('rgba(', '').replace(')', '').split(',')
+                        r, g, b, a = [float(val.strip()) for val in rgba_values]
+                        r = int(r)
+                        g = int(g)
+                        b = int(b)
+                        # 转换为十六进制格式
+                        return f'#{r:02x}{g:02x}{b:02x}'
+                    except:
+                        pass
+            return color
+        
+        # 解析颜色
+        low_color = parse_color(low_color)
+        mid_color = parse_color(mid_color)
+        high_color = parse_color(high_color)
+        
+        # 准备数据
+        gene_ids_list = []
+        numeric_data = []
+        
+        for gene in genes:
+            gene_id = gene.get('gene_id')
+            expression = gene.get('expression', {})
+            
+            if gene_id:
+                gene_ids_list.append(gene_id)
+                row_data = []
+                for tissue in tissues:
+                    value = expression.get(tissue, 0)
+                    # 如果启用log2转换，进行log2(x+1)转换
+                    if use_log2 and value > 0:
+                        value = np.log2(value + 1)
+                    row_data.append(value)
+                numeric_data.append(row_data)
+        
+        # 创建DataFrame
+        df = pd.DataFrame(numeric_data, index=gene_ids_list, columns=tissues)
+        
+        # 计算图形大小
+        num_genes = len(gene_ids_list)
+        num_tissues = len(tissues)
+        
+        base_width = max(12, num_tissues * 1.2)
+        base_height = max(5, num_genes * 0.6)
+        
+        max_width = 30
+        max_height = 20
+        
+        fig_width = min(base_width, max_width)
+        fig_height = min(base_height, max_height)
+        
+        # 创建自定义颜色映射
+        from matplotlib.colors import LinearSegmentedColormap
+        colors = [low_color, mid_color, high_color]
+        n_bins = 100
+        cmap = LinearSegmentedColormap.from_list('custom', colors, N=n_bins)
+        
+        # 创建图形
+        f, ax = plt.subplots(figsize=(fig_width, fig_height))
+        
+        # 设置字体
+        plt.rcParams['font.family'] = font_family
+        plt.rcParams['font.size'] = font_size
+        
+        # 计算颜色范围
+        vmin = df.values.min()
+        vmax = df.values.max()
+        
+        # 是否显示数值
+        annot = num_genes <= 10 and num_tissues <= 15
+        
+        # 绘制热图
+        ax = sns.heatmap(df, 
+                        cmap=cmap,
+                        vmin=vmin, 
+                        vmax=vmax,
+                        xticklabels=True, 
+                        yticklabels=True, 
+                        cbar_kws={'label': 'Log2(FPKM+1)' if use_log2 else 'FPKM'},
+                        annot=annot,
+                        fmt='.2f',
+                        linewidths=.5,
+                        ax=ax)
+        
+        # 设置标签样式
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=60, ha='right', fontsize=font_size)
+        ax.set_yticklabels(ax.get_yticklabels(), fontsize=font_size)
+        
+        # 设置标题
+        title = 'Gene Expression Heatmap'
+        if use_log2:
+            title += ' (Log2 Transformed)'
+        ax.set_title(title, fontsize=font_size + 2)
+        
+        # 调整布局
+        plt.tight_layout()
+        
+        # 转换为base64
+        buffer = io.BytesIO()
+        plt.savefig(buffer, format='png', dpi=150, bbox_inches='tight')
+        buffer.seek(0)
+        
+        image_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+        buffer.close()
+        plt.close()
+        
+        return Response({
+            'success': True,
+            'image': image_base64
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        logger.error(f'Error regenerating heatmap: {str(e)}', exc_info=True)
+        return Response({
+            'success': False,
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

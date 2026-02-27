@@ -42,7 +42,7 @@ try:
         # 尝试初始化R
         rinterface.initr()
         # 如果成功，标记为可用
-        rpy2_available = True
+        rpy2_available = False
         logger.info('rpy2 package and R initialization successful, will use R for EFP drawing when possible')
     except Exception as init_error:
         # R初始化失败，禁用rpy2

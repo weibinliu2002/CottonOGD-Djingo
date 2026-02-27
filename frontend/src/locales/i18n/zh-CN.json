@@ -1,5 +1,16 @@
 {
   "message": {
+    "heatmap_settings": "热图设置",
+    "low_color": "低值颜色",
+    "mid_color": "中值颜色",
+    "high_color": "高值颜色",
+    "font_family": "字体",
+    "font_size": "字体大小",
+    "use_log2": "使用Log2转换",
+    "regenerate": "重新生成",
+    "download_image": "下载图片",
+    "heatmap_regeneration_failed": "热图生成失败",
+    "heatmap_regeneration_error": "热图生成错误",
     "a_comprehensive_cotton_orthogroups_database": "一个综合性棉花直系同源群数据库",
     "about": "关于我们",
     "about_ogd": "关于OGD",
