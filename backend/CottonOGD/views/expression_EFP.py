@@ -22,26 +22,24 @@ rpy2_available = False
 
 # 尝试导入rpy2包（仅检查是否存在，不初始化）
 try:
-    # 设置R_HOME环境变量，解决路径包含空格的问题
-    # R安装在 D:\Program Files\R\R-4.5.2
-    r_home = r'D:\Program Files\R\R-4.5.2'
+    # 设置R_HOME环境变量
+    # R安装在 D:\software\R\R-4.5.2（无空格路径）
+    r_home = r'D:\software\R\R-4.5.2'
     if os.path.exists(r_home):
         os.environ['R_HOME'] = r_home
         logger.info(f'Set R_HOME to: {r_home}')
-        
-        # 使用rpy2的situation模块来设置R路径
-        import rpy2.situation as rpy2_situation
-        # 覆盖R的路径设置
-        rpy2_situation.R_HOME = r_home
-        logger.info(f'Set rpy2.situation.R_HOME to: {r_home}')
     else:
         logger.warning(f'R installation path not found: {r_home}')
+    
+    # 在Windows上设置cffi模式为ABI
+    os.environ['RPY2_CFFI_MODE'] = 'ABI'
+    logger.info('Set RPY2_CFFI_MODE to ABI for Windows compatibility')
     
     import rpy2
     # 尝试初始化R，检查是否真的可用
     try:
         import rpy2.rinterface as rinterface
-        # 尝试初始化R（使用系统默认R路径）
+        # 尝试初始化R
         rinterface.initr()
         # 如果成功，标记为可用
         rpy2_available = True
@@ -429,90 +427,123 @@ def _draw_heatmap_with_r(regions_info, values, min_val, max_val, min_log, max_lo
         # 延迟导入rpy2组件
         import rpy2.robjects as robjects
         from rpy2.robjects import pandas2ri
+        from rpy2.robjects.conversion import localconverter
         from rpy2.robjects.packages import importr
         
-        # 激活pandas2ri
-        pandas2ri.activate()
+        # 创建包含默认转换器和pandas转换器的复合转换器
+        converter = robjects.default_converter + pandas2ri.converter
         
-        # 设置R选项
-        robjects.r('options(warn = -1)')
-        
-        # 传递数据到R环境
-        robjects.globalenv['df'] = pandas2ri.py2rpy(df)
-        robjects.globalenv['low_color'] = low_color
-        robjects.globalenv['mid_color'] = mid_color
-        robjects.globalenv['high_color'] = high_color
-        
-        # 构建R代码
-        r_code = """
-        # 设置R库路径
-        .libPaths("D:/software/R/Rlib")
-        
-        # 加载必要的包
-        library(ggplot2)
-        library(base64enc)
-        
-        # 保存为临时文件
-        temp_file <- tempfile(fileext = '.png')
-        
-        # 绘制EFP图
-        # 尝试使用ggplot2
-        try {
-            # 直接使用ggplot2绘制
-            p <- ggplot(df, aes(x = name, y = 1, fill = normalized)) +
-              geom_tile() +
-              scale_fill_gradient2(
-                low = low_color,
-                mid = mid_color,
-                high = high_color,
-                midpoint = 0.5,
-                limits = c(0, 1),
-                name = 'Expression Level'
-              ) +
-              theme_minimal() +
-              theme(
-                axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
-                axis.title = element_blank(),
-                axis.text.y = element_blank(),
-                axis.ticks = element_blank(),
-                panel.grid = element_blank()
-              ) +
-              labs(title = 'Expression Pattern')
+        # 确保在转换上下文中执行所有R操作
+        with localconverter(converter):
+            # 设置R选项
+            robjects.r('options(warn = -1)')
+            
+            # 传递数据到R环境
+            robjects.globalenv['df'] = robjects.conversion.py2rpy(df)
+            robjects.globalenv['low_color'] = robjects.conversion.py2rpy(low_color)
+            robjects.globalenv['mid_color'] = robjects.conversion.py2rpy(mid_color)
+            robjects.globalenv['high_color'] = robjects.conversion.py2rpy(high_color)
+            
+            # 构建R代码（使用ggplantmap绘制）
+            r_code = """
+            # 设置R库路径
+            .libPaths("D:/software/R/Rlib")
+            
+            # 加载必要的包
+            library(ggplot2)
+            library(base64enc)
+            library(ggplantmap)
+            library(jsonlite)
+            library(png)
             
             # 保存为临时文件
-            ggsave(temp_file, plot = p, width = 10, height = 6, dpi = 150)
-        } catch (error) {
-            # 如果出错，使用更简单的绘图方法
-            # 创建一个空白图像并添加错误信息
-            png(temp_file, width = 10, height = 6, units = "in", res = 150)
-            plot(1, type = "n", axes = FALSE, xlab = "", ylab = "")
-            text(1, 1, paste("R Error:", as.character(error)), cex = 1.2)
-            dev.off()
-        }
-        
-        # 读取文件并转换为base64
-        img_data <- readBin(temp_file, 'raw', n = file.size(temp_file))
-        base64_str <- base64encode(img_data)
-        
-        # 返回结果
-        list(base64_str = base64_str)
-        """
-        
-        # 执行R代码
-        logger.info('Executing R code...')
-        result = robjects.r(r_code)
-        logger.info(f'R code result type: {type(result)}')
-        logger.info(f'R code result: {result}')
+            temp_file <- tempfile(fileext = '.png')
+            
+            # 尝试使用ggplantmap绘制
+            tryCatch({
+                # 设置编码
+                options(encoding = "UTF-8")
+                
+                # 读取JSON文件（使用正确编码）
+                json_data <- fromJSON('D:/science/OGD/backend/static/ccc.json', encoding = "UTF-8")
+                
+                # 准备区域数据
+                regions_data <- lapply(json_data$regions, function(region) {
+                    list(
+                        name = as.character(region$name),
+                        polygon = region$polygon
+                    )
+                })
+                
+                # 准备表达式数据
+                expr_data <- df
+                
+                # 读取基础图片
+                img <- readPNG('D:/science/OGD/backend/static/images/egg.jpg')
+                
+                # 创建植物图
+                p <- ggplantmap(
+                    image = img,
+                    regions = regions_data,
+                    expression = expr_data,
+                    expression_col = "normalized",
+                    fill_palette = c(low_color, mid_color, high_color)
+                ) +
+                  labs(title = 'Expression Pattern')
+                
+                # 保存为临时文件
+                ggsave(temp_file, plot = p, width = 10, height = 6, dpi = 150)
+            }, error = function(e) {
+                # 如果出错，使用更简单的绘图方法
+                # 创建一个空白图像并添加错误信息
+                png(temp_file, width = 10, height = 6, units = "in", res = 150)
+                plot(1, type = "n", axes = FALSE, xlab = "", ylab = "")
+                text(1, 1, paste("R Error:", as.character(e)), cex = 1.2)
+                dev.off()
+            })
+            
+            # 读取文件并转换为base64
+            img_data <- readBin(temp_file, 'raw', n = file.size(temp_file))
+            base64_str <- base64encode(img_data)
+            
+            # 返回结果
+            list(base64_str = base64_str)
+            """
+            
+            # 执行R代码
+            logger.info('Executing R code...')
+            result = robjects.r(r_code)
+            logger.info(f'R code result type: {type(result)}')
+            logger.info(f'R code result: {result}')
         
         # 获取base64字符串
         if result is None:
             raise ValueError('R code returned None')
         
-        base64_str = result.rx2('base64_str')
+        # 尝试使用不同的方法访问NamedList元素
+        try:
+            # 方法1：直接使用字典访问
+            base64_str = result['base64_str']
+        except (KeyError, TypeError):
+            try:
+                # 方法2：使用索引访问
+                base64_str = result[0]
+            except (IndexError, TypeError):
+                try:
+                    # 方法3：使用rx方法
+                    base64_str = result.rx('base64_str')
+                except AttributeError:
+                    raise ValueError('Unable to access base64_str from R result')
+        
         if base64_str is None:
             raise ValueError('base64_str not found in R result')
         
-        base64_str = base64_str[0]
+        # 确保获取的是实际值
+        try:
+            base64_str = base64_str[0]
+        except (IndexError, TypeError):
+            # 如果已经是字符串，直接使用
+            pass
         logger.info(f'Generated base64 string length: {len(base64_str)}')
         return base64_str, regions_info
         
