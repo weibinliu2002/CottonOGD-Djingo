@@ -232,7 +232,6 @@
     "primer_design": "引物设计",
     "primer_design_results": "引物设计结果",
     "primer_gc_content_range": "引物GC含量范围 (%)",
-    "load_example": "加载示例",
     "primer_length": "引物长度",
     "primer_length_range_bp": "引物长度范围 (bp)",
     "primer_pair": "引物对",

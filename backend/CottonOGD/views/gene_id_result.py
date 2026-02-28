@@ -109,6 +109,12 @@ def geneid_result(request):
     gene_info_result = gene_info.objects.filter(id_id__in=db_ids).values()
     genome_seq_result = gene_seq.objects.filter(id_id__in=db_ids).values()
     
+    # 初始化变量
+    seqid = ''
+    start = 0
+    end = 0
+    IDs = ''
+    
     # 构建 JBrowse URL（如果有基因信息）
     jbrowse_url = None
     if gene_info_result:

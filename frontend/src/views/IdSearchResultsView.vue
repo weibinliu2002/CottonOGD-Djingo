@@ -1247,7 +1247,7 @@ const loadExpressionData = async (geneId: string) => {
   try {
     const response = await httpInstance.post('/CottonOGD_api/extract_expression/', {
       gene_id: geneId
-    })
+    }) as any
     
     if (response.expression && response.expression.length > 0) {
       expressionData.value = response.expression

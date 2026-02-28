@@ -316,7 +316,7 @@ const regenerateHeatmap = async () => {
     }
     
     // 调用后端API重新生成热图
-    const response = await httpInstance.post('/CottonOGD_api/regenerate_heatmap/', heatmapData)
+    const response = await httpInstance.post('/CottonOGD_api/regenerate_heatmap/', heatmapData) as any
     
     if (response.success) {
       geneExpressionStore.setHeatmapImage(response.image)
