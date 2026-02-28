@@ -36,7 +36,7 @@
               </el-button>
             </div>
           </template>
-          <el-table :data="results" style="width: 100%">
+          <el-table :data="paginatedResults" style="width: 100%">
             <el-table-column :prop="'geneid'" :label="t('gene_id')" width="180"></el-table-column>
             <el-table-column 
               v-for="tissue in tissues" 
@@ -103,7 +103,7 @@
                   </el-col>
                 </el-row>
                 <el-row :gutter="20">
-                  <el-col :span="12">
+                  <!--<el-col :span="12">
                     <el-form-item :label="t('font_family')">
                       <el-select v-model="heatmapConfig.fontFamily" class="w-full">
                         <el-option label="Arial" value="Arial" />
@@ -113,7 +113,7 @@
                         <el-option label="Microsoft YaHei" value="Microsoft YaHei" />
                       </el-select>
                     </el-form-item>
-                  </el-col>
+                  </el-col>-->
                   <el-col :span="12">
                     <el-form-item :label="t('font_size')">
                       <el-slider v-model="heatmapConfig.fontSize" :min="8" :max="24" :step="1" show-stops />
@@ -124,6 +124,23 @@
                   <el-col :span="12">
                     <el-form-item :label="t('use_log2')">
                       <el-switch v-model="heatmapConfig.useLog2" />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+                <el-row :gutter="20">
+                  <el-col :span="12">
+                    <el-form-item label="Show Values">
+                      <el-switch v-model="heatmapConfig.showValues" />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+                <el-row :gutter="20" v-if="heatmapConfig.useLog2 && heatmapConfig.showValues">
+                  <el-col :span="12">
+                    <el-form-item label="Value Type">
+                      <el-select v-model="heatmapConfig.valueType" class="w-full">
+                        <el-option label="Original FPKM" value="original" />
+                        <el-option label="Log2(FPKM+1)" value="log2" />
+                      </el-select>
                     </el-form-item>
                   </el-col>
                 </el-row>
@@ -204,13 +221,24 @@ const heatmapConfig = ref({
   highColor: '#FF0000',
   fontFamily: 'Arial',
   fontSize: 12,
-  useLog2: false
+  useLog2: false,
+  showValues: false,
+  valueType: 'original' // 'original' 或 'log2'
 })
 
 // 从 store 获取响应式数据
 const results = computed(() => geneExpressionStore.results)
 const loading = computed(() => geneExpressionStore.loading)
 const heatmapImage = computed(() => geneExpressionStore.heatmapImage)
+
+// 分页后的数据
+const paginatedResults = computed(() => {
+  if (!Array.isArray(results.value)) return []
+  
+  const start = (currentPage.value - 1) * perPage.value
+  const end = start + perPage.value
+  return results.value.slice(start, end)
+})
 
 // 从后端返回的数据中动态获取组织列表
 const allTissues = computed(() => {
@@ -311,7 +339,9 @@ const regenerateHeatmap = async () => {
         high_color: heatmapConfig.value.highColor,
         font_family: heatmapConfig.value.fontFamily,
         font_size: heatmapConfig.value.fontSize,
-        use_log2: heatmapConfig.value.useLog2
+        use_log2: heatmapConfig.value.useLog2,
+        show_values: heatmapConfig.value.showValues,
+        value_type: heatmapConfig.value.valueType
       }
     }
     

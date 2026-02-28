@@ -37,7 +37,7 @@ const fillExample = () => {
           </p>
           
           <!-- 主要搜索框 -->
-          <div class="search-box-container">
+          <!--<div class="search-box-container">
             <el-input
               v-model="searchQuery"
               placeholder="enter_gene_id_symbol_keyword_or_sequence"
@@ -59,7 +59,7 @@ const fillExample = () => {
               <el-tag size="small" class="tip-tag" @click="fillExample">Transcription Factor</el-tag>
               <el-tag size="small" class="tip-tag" @click="fillExample">ABC transporter</el-tag>
             </div>
-          </div>
+          </div>-->
         </div>
       </div>
     </section>

@@ -14,6 +14,7 @@ import io ,re
 import base64
 
 import logging
+from django.core.cache import cache
 logger = logging.getLogger(__name__)
 
 TISSUE_ORDER = [
@@ -31,9 +32,85 @@ def get_sort_key(row):
         tissue_idx = len(TISSUE_ORDER)
     return (tissue_idx, stage)
 
-def generate_heatmap_image(numeric_data, gene_ids_list, selected_columns):
+def generate_heatmap_image(numeric_data, gene_ids_list, selected_columns, config=None):
+    # 默配置
+    if config is None:
+        config = {}
+    
+    # 提取配置参数
+    low_color = config.get('low_color', '#0000FF')
+    mid_color = config.get('mid_color', '#00FF00')
+    high_color = config.get('high_color', '#FF0000')
+    font_family = config.get('font_family', 'Arial')
+    font_size = config.get('font_size', 12)
+    use_log2 = config.get('use_log2', False)
+    show_values = config.get('show_values', False)
+    value_type = config.get('value_type', 'original')  # 'original' 或 'log2'
+    color_range = config.get('color_range', None)  # None表示使用数据的最小最大值
+    
+    # 生成缓存键
+    import hashlib
+    # 将输入参数转换为字符串，用于生成缓存键
+    input_str = f"{gene_ids_list}{selected_columns}{low_color}{mid_color}{high_color}{font_family}{font_size}{use_log2}{show_values}{value_type}{color_range}"
+    # 添加数值数据的摘要，确保数据变化时缓存失效
+    data_hash = hashlib.md5(str(numeric_data).encode()).hexdigest()
+    cache_key = f"heatmap:{data_hash}:{hashlib.md5(input_str.encode()).hexdigest()}"
+    
+    # 尝试从缓存获取
+    cached_result = cache.get(cache_key)
+    if cached_result:
+        return cached_result
+    
+    # 处理rgb()格式的颜色
+    def parse_color(color):
+        if isinstance(color, str):
+            # 处理rgb格式: rgb(0, 149, 255)
+            if color.startswith('rgb('):
+                try:
+                    # 提取RGB值
+                    rgb_values = color.replace('rgb(', '').replace(')', '').split(',')
+                    r, g, b = [int(val.strip()) for val in rgb_values]
+                    # 转换为十六进制格式
+                    return f'#{r:02x}{g:02x}{b:02x}'
+                except:
+                    pass
+            # 处理rgba格式: rgba(0, 149, 255, 1)
+            elif color.startswith('rgba('):
+                try:
+                    # 提取RGBA值
+                    rgba_values = color.replace('rgba(', '').replace(')', '').split(',')
+                    r, g, b, a = [float(val.strip()) for val in rgba_values]
+                    r = int(r)
+                    g = int(g)
+                    b = int(b)
+                    # 转换为十六进制格式
+                    return f'#{r:02x}{g:02x}{b:02x}'
+                except:
+                    pass
+        return color
+    
+    # 解析颜色
+    low_color = parse_color(low_color)
+    mid_color = parse_color(mid_color)
+    high_color = parse_color(high_color)
+    
     # 创建DataFrame
     df = pd.DataFrame(numeric_data, index=gene_ids_list, columns=selected_columns)
+    
+    # 保存原始数据用于显示
+    original_df = df.copy()
+    
+    # 如果启用log2转换，进行log2(x+1)转换
+    if use_log2:
+        df = np.log2(df + 1)
+    
+    # 根据value_type决定显示什么值，只有在使用log2转换且显示值时才生效
+    if use_log2 and show_values and value_type == 'log2':
+        # 显示log2转换后的值
+        display_df = df
+    else:
+        # 默认显示原始值
+        display_df = original_df
     
     # 设置图形大小
     # 计算合适的图形大小
@@ -42,55 +119,83 @@ def generate_heatmap_image(numeric_data, gene_ids_list, selected_columns):
     num_tissues = len(selected_columns)
     
     # 基础宽度和高度
-    base_width = max(12, num_tissues * 1.2)  # 每个组织至少1.2英寸
-    base_height = max(5, num_genes * 0.6)    # 每个基因至少0.6英寸
+    base_width = max(12, num_tissues * 0.8)  # 每个组织至少0.8英寸，减少宽度
+    base_height = max(5, num_genes * 0.4)    # 每个基因至少0.4英寸，减少高度
     
     # 限制最大大小，避免内存问题
-    max_width = 30
-    max_height = 20
+    max_width = 20  # 进一步减小最大宽度
+    max_height = 15  # 进一步减小最大高度
     
     fig_width = min(base_width, max_width)
     fig_height = min(base_height, max_height)
     
+    # 创建自定义颜色映射
+    from matplotlib.colors import LinearSegmentedColormap
+    colors = [low_color, mid_color, high_color]
+    n_bins = 100
+    cmap = LinearSegmentedColormap.from_list('custom', colors, N=n_bins)
+    
     # 创建图形和轴
     f, ax = plt.subplots(figsize=(fig_width, fig_height))
+    
+    # 设置字体
+    plt.rcParams['font.family'] = font_family
+    plt.rcParams['font.size'] = font_size
+    
+    # 计算颜色范围
+    if color_range:
+        vmin, vmax = color_range
+    else:
+        vmin = df.values.min()
+        vmax = df.values.max()
     
     # 使用seaborn绘制热图，添加数值显示（仅当数据量适中时）
     annot = False
     fmt = '.2f'
     
-    # 当数据量适中时显示数值
-    if num_genes <= 10 and num_tissues <= 15:
+    # 通过show_values参数决定是否显示数值
+    if show_values:
         annot = True
     
-    ax = sns.heatmap(df, cmap='RdYlBu_r', 
-                    vmin=0, vmax=15,  # 设置颜色范围
-                    xticklabels=True, yticklabels=True, 
-                    cbar_kws={'label': 'FPKM'},
-                    annot=annot,  # 显示数值（数据量适中时）
+    # 绘制热图
+    # 如果需要显示数值，使用display_df作为annot的数据源
+    annot_data = display_df if show_values else False
+    
+    ax = sns.heatmap(df, 
+                    cmap=cmap,
+                    vmin=vmin, 
+                    vmax=vmax,
+                    xticklabels=True, 
+                    yticklabels=True, 
+                    cbar_kws={'label': 'Log2(FPKM+1)' if use_log2 else 'FPKM'},
+                    annot=annot_data,  # 显示数值（使用display_df作为数据源）
                     fmt=fmt,  # 数值格式，保留2位小数
                     linewidths=.5,  # 网格线宽度
                     ax=ax)  # 指定轴
     
     # 设置x轴标签旋转和字体大小
-    ax.set_xticklabels(ax.get_xticklabels(), rotation=60, ha='right', fontsize=8)
-    ax.set_yticklabels(ax.get_yticklabels(), fontsize=8)
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=60, ha='right', fontsize=font_size)
+    ax.set_yticklabels(ax.get_yticklabels(), fontsize=font_size)
     
     # 设置标题
-    ax.set_title('Gene Expression Heatmap', fontsize=12)
+    title = 'Gene Expression Heatmap'
+    if use_log2:
+        title += ' (Log2 Transformed)'
+    ax.set_title(title, fontsize=font_size + 2)
     
     # 调整布局
     plt.tight_layout()
     
-    # 将图形转换为base64字符串
-    buffer = io.BytesIO()
-    plt.savefig(buffer, format='png', dpi=150, bbox_inches='tight')
-    buffer.seek(0)
-    
-    # 转换为base64
-    image_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
-    buffer.close()
+    # 将图形转换为base64字符串，降低DPI提高速度
+    with io.BytesIO() as buffer:
+        plt.savefig(buffer, format='png', dpi=100, bbox_inches='tight')  # 降低DPI从150到100
+        buffer.seek(0)
+        # 转换为base64
+        image_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
     plt.close()
+    
+    # 保存到缓存，设置过期时间为1小时
+    cache.set(cache_key, image_base64, 3600)
     
     return image_base64
 
@@ -153,21 +258,22 @@ def extract_expression(request):
         df['stage'] = df['stage'].fillna('')
         df['tissue'] = df['tissue'].fillna('Unknown')
         
-        # 对数据进行排序：先按组织，再按时期（数字顺序）
-        df_sorted = df.copy()
-        # 添加组织索引列用于排序
-        df_sorted['tissue_idx'] = df_sorted['tissue'].apply(lambda x: TISSUE_ORDER.index(x) if x in TISSUE_ORDER else len(TISSUE_ORDER))
-        # 从stage中提取数字部分用于排序
-        df_sorted['stage_num'] = df_sorted['stage'].str.extract(r'(\d+)').astype(float).fillna(0)
-        # 按组织索引和时期数字排序
-        df_sorted = df_sorted.sort_values(by=['tissue_idx', 'stage_num'], ascending=[True, True])
-        
         # 构建sample列名，处理空stage的情况
-        df_sorted['sample'] = df_sorted.apply(lambda row: 
+        df['sample'] = df.apply(lambda row: 
             re.sub(r'^X(\d+)', r'\1', row['stage']) + row['tissue'] if row['stage'] else row['tissue'], 
             axis=1
         )
-        result = df_sorted.pivot_table(
+        
+        # 对数据进行排序：先按组织，再按时期（数字顺序）
+        # 添加组织索引列用于排序
+        df['tissue_idx'] = df['tissue'].apply(lambda x: TISSUE_ORDER.index(x) if x in TISSUE_ORDER else len(TISSUE_ORDER))
+        # 从stage中提取数字部分用于排序
+        df['stage_num'] = df['stage'].str.extract(r'(\d+)').astype(float).fillna(0)
+        # 按组织索引和时期数字排序
+        df = df.sort_values(by=['tissue_idx', 'stage_num'], ascending=[True, True])
+        
+        # 直接使用pivot_table，不创建中间副本
+        result = df.pivot_table(
             index=['id_id', 'geneid'],  # 保持不变的ID列
             columns='sample',               # stage_tissue 组合成列名
             values='value',                 # 表达量作为值
@@ -176,17 +282,26 @@ def extract_expression(request):
         result.columns.name = None
         
         # 确保列的顺序也是按照排序后的顺序
-        sample_order = df_sorted['sample'].unique()
+        sample_order = df['sample'].unique()
         existing_columns = [col for col in sample_order if col in result.columns]
         id_columns = ['id_id', 'geneid']
         result = result[id_columns + existing_columns]
        
 
         # 生成热图
+        # 计算数据范围
+        numeric_values = result.drop(columns=['id_id', 'geneid']).values
+        data_min = numeric_values.min()
+        data_max = numeric_values.max()
+        
+        # 生成热图，使用默认配置
         heatmap_image = generate_heatmap_image(
-            numeric_data=result.drop(columns=['id_id', 'geneid']).values,
+            numeric_data=numeric_values,
             gene_ids_list=result['geneid'].tolist(),
-            selected_columns=result.columns[2:]  # 从第3列开始是样本列
+            selected_columns=result.columns[2:],  # 从第3列开始是样本列
+            config={
+                'use_log2': False  # 明确设置不使用log转换
+            }
         )
         
         return Response({'expression': result.to_dict(orient='records'),'heatmap_image':heatmap_image}, status=status.HTTP_200_OK)
@@ -210,47 +325,6 @@ def regenerate_heatmap(request):
                 'error': 'Genes and tissues data are required'
             }, status=status.HTTP_400_BAD_REQUEST)
         
-        # 提取配置参数
-        low_color = config.get('low_color', '#0000FF')
-        mid_color = config.get('mid_color', '#00FF00')
-        high_color = config.get('high_color', '#FF0000')
-        font_family = config.get('font_family', 'Arial')
-        font_size = config.get('font_size', 12)
-        use_log2 = config.get('use_log2', False)
-        
-        # 处理rgb()格式的颜色
-        def parse_color(color):
-            if isinstance(color, str):
-                # 处理rgb格式: rgb(0, 149, 255)
-                if color.startswith('rgb('):
-                    try:
-                        # 提取RGB值
-                        rgb_values = color.replace('rgb(', '').replace(')', '').split(',')
-                        r, g, b = [int(val.strip()) for val in rgb_values]
-                        # 转换为十六进制格式
-                        return f'#{r:02x}{g:02x}{b:02x}'
-                    except:
-                        pass
-                # 处理rgba格式: rgba(0, 149, 255, 1)
-                elif color.startswith('rgba('):
-                    try:
-                        # 提取RGBA值
-                        rgba_values = color.replace('rgba(', '').replace(')', '').split(',')
-                        r, g, b, a = [float(val.strip()) for val in rgba_values]
-                        r = int(r)
-                        g = int(g)
-                        b = int(b)
-                        # 转换为十六进制格式
-                        return f'#{r:02x}{g:02x}{b:02x}'
-                    except:
-                        pass
-            return color
-        
-        # 解析颜色
-        low_color = parse_color(low_color)
-        mid_color = parse_color(mid_color)
-        high_color = parse_color(high_color)
-        
         # 准备数据
         gene_ids_list = []
         numeric_data = []
@@ -264,82 +338,16 @@ def regenerate_heatmap(request):
                 row_data = []
                 for tissue in tissues:
                     value = expression.get(tissue, 0)
-                    # 如果启用log2转换，进行log2(x+1)转换
-                    if use_log2 and value > 0:
-                        value = np.log2(value + 1)
                     row_data.append(value)
                 numeric_data.append(row_data)
         
-        # 创建DataFrame
-        df = pd.DataFrame(numeric_data, index=gene_ids_list, columns=tissues)
-        
-        # 计算图形大小
-        num_genes = len(gene_ids_list)
-        num_tissues = len(tissues)
-        
-        base_width = max(12, num_tissues * 1.2)
-        base_height = max(5, num_genes * 0.6)
-        
-        max_width = 30
-        max_height = 20
-        
-        fig_width = min(base_width, max_width)
-        fig_height = min(base_height, max_height)
-        
-        # 创建自定义颜色映射
-        from matplotlib.colors import LinearSegmentedColormap
-        colors = [low_color, mid_color, high_color]
-        n_bins = 100
-        cmap = LinearSegmentedColormap.from_list('custom', colors, N=n_bins)
-        
-        # 创建图形
-        f, ax = plt.subplots(figsize=(fig_width, fig_height))
-        
-        # 设置字体
-        plt.rcParams['font.family'] = font_family
-        plt.rcParams['font.size'] = font_size
-        
-        # 计算颜色范围
-        vmin = df.values.min()
-        vmax = df.values.max()
-        
-        # 是否显示数值
-        annot = num_genes <= 10 and num_tissues <= 15
-        
-        # 绘制热图
-        ax = sns.heatmap(df, 
-                        cmap=cmap,
-                        vmin=vmin, 
-                        vmax=vmax,
-                        xticklabels=True, 
-                        yticklabels=True, 
-                        cbar_kws={'label': 'Log2(FPKM+1)' if use_log2 else 'FPKM'},
-                        annot=annot,
-                        fmt='.2f',
-                        linewidths=.5,
-                        ax=ax)
-        
-        # 设置标签样式
-        ax.set_xticklabels(ax.get_xticklabels(), rotation=60, ha='right', fontsize=font_size)
-        ax.set_yticklabels(ax.get_yticklabels(), fontsize=font_size)
-        
-        # 设置标题
-        title = 'Gene Expression Heatmap'
-        if use_log2:
-            title += ' (Log2 Transformed)'
-        ax.set_title(title, fontsize=font_size + 2)
-        
-        # 调整布局
-        plt.tight_layout()
-        
-        # 转换为base64
-        buffer = io.BytesIO()
-        plt.savefig(buffer, format='png', dpi=150, bbox_inches='tight')
-        buffer.seek(0)
-        
-        image_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
-        buffer.close()
-        plt.close()
+        # 使用通用的generate_heatmap_image函数生成热图
+        image_base64 = generate_heatmap_image(
+            numeric_data=numeric_data,
+            gene_ids_list=gene_ids_list,
+            selected_columns=tissues,
+            config=config
+        )
         
         return Response({
             'success': True,
