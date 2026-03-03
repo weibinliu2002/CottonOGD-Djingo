@@ -1,27 +1,20 @@
-args <- commandArgs(trailingOnly = TRUE)
-genome<-args[1]
-annoaion<-args[2]
-annoaion<-readLines(annoaion)
-annoaion|>Biostrings::strsplit('\t')-> anno
-anno_df <- as.data.frame(do.call(rbind, anno), stringsAsFactors = FALSE)
-colnames(anno_df) <- anno_df[1, ]
-names(anno_df)
-anno_df <- anno_df[-1, ]
-anno_df$genome_id<-genome
-anno_df$GeneID<-gsub('\\.\\d+','',anno_df$GeneID)
-anno_df <- anno_df %>%
-  left_join(
-    genemaster %>% select(geneid, genome_id,id),
-    by = c("GeneID" = "geneid", "genome_id" = "genome_id")
-  ) 
-names(anno_df)[11]<-c('id_id')
-str(anno_df)
-names(anno_df)[2:9]
-long<-tidyr::gather(anno_df,key = 'annoation_source',value = 'annoation',names(anno_df)[2:9])
-names(long)
-dbReadTable(con,'gene_annotation')|>str()
-names(long)<-c('geneid_id','genome_id','id_id','annoation_source','annotation')
-dbWriteTable(con,'gene_annotation',long,overwrite=F,append=T,row.names=FALSE)
-print('写入数据库成功')
-DBI::dbDisconnect(con)
-print('断开数据库连接')
+#!/usr/bin/Rscript
+Args<-commandArgs(trailingOnly = TRUE )
+dat<-read.table(Args[1],header = F,sep = '\t')
+print(str(dat))
+busco<-function(x){
+  name<-dat[x,1]
+  if(name %in% paste0('N',seq(200,306)))
+    name<-paste0('G.hirsutumAD1_',name,'_CRI_v1')
+fa<-Biostrings::readDNAStringSet(paste('genome',name,dat[x,2],sep = '/'))  
+fa@ranges|>as.data.frame() -> dat
+ total_size<-data.frame(name,dat$width|>sum())
+ write.table(total_size,paste0('Genome_size.txt'),quote = F,row.names =F,sep='\t',col.names = F,append = T)
+}
+if(!file.exists('Genome_size.txt'))
+write.table(data.frame('name','size',paste0('Genome_size.txt'),quote = F,row.names =F,sep='\t' )
+pre_dat<-read.table('Genome_size.txt',header = F,sep = '\t')
+los<-dat[!(dat$V1 %in% pre_dat$V1),]
+a<-sapply(1:length(los$V1), busco)
+
+#write.table(total_size,paste0('Genome_size.txt'),quote = F,row.names =F,sep='\t' )
