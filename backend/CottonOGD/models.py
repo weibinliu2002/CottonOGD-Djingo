@@ -48,9 +48,9 @@ class blastdb_path(models.Model):
 
 class GeneMaster(models.Model):
     id = models.BigAutoField(primary_key=True)
-    geneid = models.CharField(max_length=200,unique=True)
+    geneid = models.CharField(max_length=200,unique=False)
     genome = models.ForeignKey(Species_info, on_delete=models.CASCADE, to_field='name')
-    alias = models.CharField(max_length=200, blank=True, null=True, verbose_name='检索名')
+    alias = models.CharField(max_length=200, blank=True, null=True, verbose_name='检索名',unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
     class Meta:
         db_table = 'genemaster'  # 确保表名与导入数据匹配
@@ -109,7 +109,7 @@ class gene_expression(models.Model):
 class gene_info(models.Model):
     id=models.BigAutoField(primary_key=True)
     id_id = models.IntegerField(default='0')
-    geneid=models.ForeignKey(GeneMaster, on_delete=models.CASCADE, null=True,to_field='geneid')
+    geneid_id=models.CharField(max_length=200,unique=False,default='0')
     genome = models.ForeignKey(Species_info, on_delete=models.CASCADE, to_field='name') 
     seqid = models.CharField(max_length=100)
     source = models.CharField(max_length=100)
@@ -131,7 +131,7 @@ class gene_info(models.Model):
 class gene_annotation(models.Model):
     id=models.BigAutoField(primary_key=True)
     id_id = models.IntegerField(default='0')
-    geneid=models.ForeignKey(GeneMaster, on_delete=models.CASCADE, to_field='geneid', null=True)
+    geneid_id=models.CharField(max_length=200,unique=False,default='0')
     genome = models.ForeignKey(Species_info, on_delete=models.CASCADE, to_field='name') 
     annoation_source=models.CharField(max_length=100, blank=True, null=True)
     annotation = models.TextField(blank=True, null=True)
@@ -146,7 +146,7 @@ class gene_annotation(models.Model):
 class gene_seq(models.Model):
     id = models.BigAutoField(primary_key=True)
     id_id = models.IntegerField(default='0')
-    geneid=models.ForeignKey(GeneMaster, on_delete=models.CASCADE, to_field='geneid', null=True)
+    geneid_id=models.CharField(max_length=200,unique=False,default='0')
     genome = models.ForeignKey(Species_info, on_delete=models.CASCADE, to_field='name') 
     mrna_id = models.CharField(max_length=100, blank=True, null=True)
     gene_type = models.CharField(max_length=100, blank=True, null=True)

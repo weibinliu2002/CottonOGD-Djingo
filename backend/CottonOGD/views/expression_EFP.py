@@ -18,8 +18,9 @@ from django.http import JsonResponse
 logger = logging.getLogger(__name__)
 
 # 全局变量，标记rpy2是否可用
-rpy2_available = False
 
+rpy2_available = False
+'''
 # 尝试导入rpy2包（仅检查是否存在，不初始化）
 try:
     # 设置R_HOME环境变量
@@ -53,7 +54,7 @@ except ImportError as e:
     logger.warning(f'rpy2 not available: {str(e)}, falling back to PIL')
 except Exception as e:
     logger.warning(f'Error checking rpy2: {str(e)}, falling back to PIL')
-
+'''
 @csrf_exempt
 def expression_EFP_image(request):
     """生成热图API - 优化版本"""

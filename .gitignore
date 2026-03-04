@@ -29,5 +29,5 @@ backend/data/genome/
 backend/data/TF_family/
 backend/data/blast_db/
 backend/temp/
-backend/venv/Lib/
+backend/venv/
 frontend/node_modules/
