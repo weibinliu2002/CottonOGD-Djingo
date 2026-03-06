@@ -44,9 +44,9 @@ def go_annotation(request):
             try:
                 with connection.cursor() as cursor:
                     cursor.execute("""
-                        SELECT Chr, Start, End, ID 
-                        FROM `eg_go_annotation` 
-                        WHERE ID IN %s
+                        SELECT seqid, start, end, geneid_id 
+                        FROM `gene_assembly` 
+                        WHERE genome_id = "G.kirkii_ISU_ISU_v3.0" and type = 'gene' AND geneid_id IN %s 
                     """, [tuple(gene_list)])
                     annotation_data = cursor.fetchall()
 
@@ -72,9 +72,9 @@ def go_annotation(request):
                             for enrich_row in enrichment_dict[gene_id]:
                                 results.append({
                                     'Chr': anno_row[0],
-                                    'Start': anno_row[1],
-                                    'End': anno_row[2],
-                                    'ID': anno_row[3],
+                                    'Start': anno_row[2],
+                                    'End': anno_row[3],
+                                    'ID': anno_row[1],
                                     'GO_ID': enrich_row[2],
                                     'Description': enrich_row[1],
                                     'Gene_Ontology': enrich_row[0],

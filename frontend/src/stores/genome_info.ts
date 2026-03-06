@@ -12,6 +12,7 @@ interface GenomeOption {
 interface GenomeItem {
   value: string
   label: string
+  article?: string
 }
 
 interface Species {
@@ -19,6 +20,7 @@ interface Species {
   alias?: string
   name?: string
   Cotton_Species?: string
+  Article?: string
 }
 
 interface ApiResponse {
@@ -96,7 +98,8 @@ export const useGenomeStore = defineStore('genome', {
             }
             genomes[genomeType].push({
               value: species.name || species.alias || species.Cotton_Species || '',
-              label: species.alias || species.name || species.Cotton_Species || ''
+              label: species.alias || species.name || species.Cotton_Species || '',
+              article: species.Article || ''
             })
           })
           

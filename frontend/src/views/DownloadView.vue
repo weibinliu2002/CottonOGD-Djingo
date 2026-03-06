@@ -181,6 +181,7 @@ const activeNames = ref<string[]>([])
                 <div class="genome-info">
                   <h4 class="genome-name">{{ genome.label }}</h4>
                   <p class="genome-id">ID: {{ genome.value }}</p>
+                  <p class="genome-id">Article: {{ genome.article || 'N/A' }}</p>
                 </div>
                 
                 <div class="download-options">

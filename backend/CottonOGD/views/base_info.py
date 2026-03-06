@@ -16,7 +16,7 @@ def get_species_info(request):
     if uuid not in UuidManager.uuid_storage:
         return Response({'error': 'uuid is required'}, status=status.HTTP_400_BAD_REQUEST)
     try:
-        species_info = Species_info.objects.all().values('Cotton_Species','Genome_type','name','alias')
+        species_info = Species_info.objects.all().values('Cotton_Species','Genome_type','name','alias','Article')
         responce=json.dumps(list(species_info), ensure_ascii=False)
         return Response({'species_info': responce}, status=status.HTTP_200_OK)
     except Exception as e:

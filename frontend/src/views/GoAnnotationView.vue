@@ -97,11 +97,14 @@ const handleSubmit = async () => {
   }
   
   try {
+    // 处理基因列表，将换行符替换为空格，确保URL参数正确传递
+    const processedGeneList = geneList.value.trim().replace(/\n/g, ' ').replace(/\s+/g, ' ')
+    
     // 直接跳转到结果页面，并传递参数
     router.push({
       path: '/tools/go-annotation/results',
       query: {
-        gene_id: geneList.value,
+        gene_id: processedGeneList,
         per_page: perPage.value
       }
     })
