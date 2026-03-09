@@ -1,7 +1,7 @@
-<template>
+﻿<template>
   <div class="container-fluid">
     <div class="row">
-      <!-- 左侧边栏 -->
+      <!-- 宸︿晶杈规爮 -->
       <div class="col-md-3">
         <div class="sidebar">
           <h3>{{ t('transcription_factors_') }} <el-icon class="info-icon"><QuestionFilled /></el-icon></h3>
@@ -20,12 +20,12 @@
         </div>
       </div>
 
-      <!-- 主内容区域 -->
+      <!-- 涓诲唴瀹瑰尯鍩?-->
       <div class="col-md-9">
         <div class="main-content">
           <h2>{{ t('annotated_transcription_factors') }}</h2>
           
-          <!-- 转录因子家族复选框 -->
+          <!-- 杞綍鍥犲瓙瀹舵棌澶嶉€夋 -->
           <div class="tf-families mt-4">
             <div class="row">
               <div class="col-md-3" v-for="family in tfFamilies" :key="family.name">
@@ -36,7 +36,7 @@
             </div>
           </div>
 
-          <!-- 表格 -->
+          <!-- 琛ㄦ牸 -->
           <div class="tf-table mt-4">
             <h4 class="table-title">{{ t('click_row_details') }}</h4>
             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -65,10 +65,10 @@
               </div>
             </div>
             
-            <!-- 加载状态 -->
+            <!-- 鍔犺浇鐘舵€?-->
             <el-skeleton v-if="loading" :rows="10" animated />
             
-            <!-- 表格内容 -->
+            <!-- 琛ㄦ牸鍐呭 -->
             <el-table
               v-else
               :data="paginatedTFData"
@@ -89,7 +89,7 @@
               <el-table-column prop="TF_genome" :label="t('genome')" min-width="120" />
             </el-table>
 
-            <!-- 分页 -->
+            <!-- 鍒嗛〉 -->
             <div class="d-flex justify-content-between align-items-center mt-3">
               <span class="table-info">
                 Showing {{ (currentPage - 1) * pageSize + 1 }} to {{ Math.min(currentPage * pageSize, totalCount) }} of {{ totalCount }} entries
@@ -117,7 +117,7 @@ import { QuestionFilled, VideoPlay, Search } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import router from '@/router'
 import httpInstance from '@/utils/http.js'
-import { useGenomeStore } from '@/stores/genome_info'
+import { useGenomeSelector } from '@/composables/useGenomeBrowser'
 import { useFamilyStore } from '@/stores/familyInfo'
 import { useNavigationStore } from '@/stores/navigationStore'
 
@@ -130,84 +130,65 @@ export default {
   },
   setup() {
     const { t } = useI18n()
-    // 获取基因组store
-    const genomeStore = useGenomeStore()
+    // 鑾峰彇鍩哄洜缁剆tore
+    const { selectedGenome, genomeOptions, genomeLoading, cascaderProps, ensureGenomesLoaded, pickDefaultGenome, setSelectedGenome } = useGenomeSelector()
     const navigationStore = useNavigationStore()
     const familyStore = useFamilyStore()
     
-    // 选中的基因组（级联选择器使用数组格式）
-    const selectedGenome = ref([]) 
-    
-    // 级联选择器配置
-    const cascaderProps = ref({
-      multiple: false,
-      checkStrictly: false,
-      expandTrigger: 'click',
-      showAllLevels: false
-    })
-    
-    // 从store获取基因组选项
-    const genomeOptions = computed(() => genomeStore.genomeOptions)
-    // 从store获取加载状态
-    const genomeLoading = computed(() => genomeStore.loading)
-    
-    // 从store获取家族信息
+    // 閫変腑鐨勫熀鍥犵粍锛堢骇鑱旈€夋嫨鍣ㄤ娇鐢ㄦ暟缁勬牸寮忥級
+    // 浠巗tore鑾峰彇瀹舵棌淇℃伅
     const familyInfo = computed(() => familyStore.familyInfo)
-    // 从store获取家族列表
+    // 浠巗tore鑾峰彇瀹舵棌鍒楄〃
     const familyList = computed(() => familyStore.familyList)
-    // 从store获取家族加载状态
+    // 浠巗tore鑾峰彇瀹舵棌鍔犺浇鐘舵€?
     const familyLoading = computed(() => familyStore.loading)
     
-    // 从后端获取基因组数据
-    const fetchGenomes = async () => {
-      await genomeStore.fetchGenomes()
-    }
-    
-    // 转录因子家族数据（带选中状态）
+    // 浠庡悗绔幏鍙栧熀鍥犵粍鏁版嵁
+    // 杞綍鍥犲瓙瀹舵棌鏁版嵁锛堝甫閫変腑鐘舵€侊級
     const tfFamilies = computed(() => {
       return familyInfo.value.map((family, index) => ({
         name: family.name,
         count: family.count,
-        checked: index === 0 // 默认选中第一个家族
+        checked: index === 0 // 榛樿閫変腑绗竴涓鏃?
       }))
     })
     
-    // 转录因子数据
+    // 杞綍鍥犲瓙鏁版嵁
     const tfData = ref([])
-    // 搜索查询
+    // 鎼滅储鏌ヨ
     const searchQuery = ref('')
     
-    // 分页相关
+    // 鍒嗛〉鐩稿叧
     const currentPage = ref(1)
     const pageSize = ref(10)
     const totalCount = ref(0)
     
-    // 加载状态
+    // 鍔犺浇鐘舵€?
     const loading = ref(false)
     
-    // 原始转录因子数据（用于筛选）
+    // 鍘熷杞綍鍥犲瓙鏁版嵁锛堢敤浜庣瓫閫夛級
     const originalTFData = ref([])
     
-    // 监听 familyList 变化，更新 originalTFData
+    // 鐩戝惉 familyList 鍙樺寲锛屾洿鏂?originalTFData
     watch(familyList, (newList) => {
       if (newList && newList.length > 0) {
         originalTFData.value = newList
         console.log('Updated originalTFData from familyList:', originalTFData.value.length, 'items')
-        // 如果已经选择了基因组，重新过滤数据
+        // 濡傛灉宸茬粡閫夋嫨浜嗗熀鍥犵粍锛岄噸鏂拌繃婊ゆ暟鎹?
         if (selectedGenome.value.length > 0) {
           filterTFData()
         }
       }
     }, { immediate: true })
     
-    // 计算分页后的数据
+    // 璁＄畻鍒嗛〉鍚庣殑鏁版嵁
     const paginatedTFData = computed(() => {
       const startIndex = (currentPage.value - 1) * pageSize.value
       const endIndex = startIndex + pageSize.value
       return tfData.value.slice(startIndex, endIndex)
     })
     
-    // 根据选择的基因组获取转录因子数据
+    // 鏍规嵁閫夋嫨鐨勫熀鍥犵粍鑾峰彇杞綍鍥犲瓙鏁版嵁
     const fetchTFDataByGenome = async () => {
       if (selectedGenome.value.length === 0) {
         tfData.value = []
@@ -217,12 +198,12 @@ export default {
       
       loading.value = true
       try {
-        // 直接使用存储的原始数据，根据基因组进行筛选
+        // 鐩存帴浣跨敤瀛樺偍鐨勫師濮嬫暟鎹紝鏍规嵁鍩哄洜缁勮繘琛岀瓫閫?
         if (originalTFData.value.length > 0) {
-          // 调用筛选函数处理显示数据
+          // 璋冪敤绛涢€夊嚱鏁板鐞嗘樉绀烘暟鎹?
           filterTFData()
         } else {
-          // 如果没有原始数据，显示空
+          // 濡傛灉娌℃湁鍘熷鏁版嵁锛屾樉绀虹┖
           tfData.value = []
           totalCount.value = 0
         }
@@ -235,7 +216,7 @@ export default {
       }
     }
     
-    // 筛选转录因子数据
+    // 绛涢€夎浆褰曞洜瀛愭暟鎹?
     const filterTFData = () => {
       console.log('Filtering TF data...')
       console.log('TF families:', tfFamilies.value)
@@ -250,13 +231,13 @@ export default {
       const genome = selectedGenome.value[selectedGenome.value.length - 1]
       console.log('Current genome:', genome)
       
-      // 先过滤基因组
+      // 鍏堣繃婊ゅ熀鍥犵粍
       let filteredData = originalTFData.value//.filter(item => 
         //item.genome === genome || item.genome_id === genome
       //)
       console.log('Filtered by genome:', filteredData.length, 'items')
       
-      // 再过滤家族
+      // 鍐嶈繃婊ゅ鏃?
       const selectedFamilies = tfFamilies.value.filter(f => f.checked).map(f => f.name)
       console.log('Selected families:', selectedFamilies)
       if (selectedFamilies.length > 0) {
@@ -264,7 +245,7 @@ export default {
         console.log('Filtered by families:', filteredData.length, 'items')
       }
       
-      // 最后过滤搜索关键词
+      // 鏈€鍚庤繃婊ゆ悳绱㈠叧閿瘝
       if (searchQuery.value) {
         const query = searchQuery.value.toLowerCase()
         filteredData = filteredData.filter(item => 
@@ -274,7 +255,7 @@ export default {
         console.log('Filtered by search:', filteredData.length, 'items')
       }
       
-      // 处理数据格式
+      // 澶勭悊鏁版嵁鏍煎紡
       tfData.value = filteredData.map(item => ({
         TF_name: item.TF_name || 'Unknown',
         TF_class: item.TF_class || 'Unknown',
@@ -287,83 +268,79 @@ export default {
       console.log('Filtered TF data:', tfData.value)
     }
     
-    // 处理基因组选择变化
+    // 澶勭悊鍩哄洜缁勯€夋嫨鍙樺寲
     const handleGenomeChange = async () => {
-      currentPage.value = 1 // 重置页码
-      // 清空所有本地数据
+      currentPage.value = 1 // 閲嶇疆椤电爜
+      // 娓呯┖鎵€鏈夋湰鍦版暟鎹?
       originalTFData.value = []
       tfData.value = []
       totalCount.value = 0
-      // 更新familyStore中的selectedGenome
+      // 鏇存柊familyStore涓殑selectedGenome
       const genome = selectedGenome.value[selectedGenome.value.length - 1]
       familyStore.selectedGenome = genome
-      familyStore.selectedClass = 'TF' // 固定为TF
-      // 重新获取家族数据
+      familyStore.selectedClass = 'TF' // 鍥哄畾涓篢F
+      // 閲嶆柊鑾峰彇瀹舵棌鏁版嵁
       await familyStore.fetchFamilies()
-      // 仅在基因组改变时重新获取数据
+      // 浠呭湪鍩哄洜缁勬敼鍙樻椂閲嶆柊鑾峰彇鏁版嵁
       fetchTFDataByGenome()
     }
     
-    // 处理家族选择变化
+    // 澶勭悊瀹舵棌閫夋嫨鍙樺寲
     const handleFamilyChange = () => {
-      currentPage.value = 1 // 重置页码
-      // 家族变化时调用筛选函数
+      currentPage.value = 1 // 閲嶇疆椤电爜
+      // 瀹舵棌鍙樺寲鏃惰皟鐢ㄧ瓫閫夊嚱鏁?
       filterTFData()
     }
     
-    // 处理搜索
+    // 澶勭悊鎼滅储
     const handleSearch = () => {
-      currentPage.value = 1 // 重置页码
-      // 搜索变化时调用筛选函数
+      currentPage.value = 1 // 閲嶇疆椤电爜
+      // 鎼滅储鍙樺寲鏃惰皟鐢ㄧ瓫閫夊嚱鏁?
       filterTFData()
     }
     
-    // 处理页码变化
+    // 澶勭悊椤电爜鍙樺寲
     const handlePageChange = () => {
-      // 页码变化时不需要重新请求数据，只需要更新计算属性
+      // 椤电爜鍙樺寲鏃朵笉闇€瑕侀噸鏂拌姹傛暟鎹紝鍙渶瑕佹洿鏂拌绠楀睘鎬?
     }
     
-    // 处理每页条数变化
+    // 澶勭悊姣忛〉鏉℃暟鍙樺寲
     const handlePageSizeChange = () => {
-      currentPage.value = 1 // 重置页码
-      // 每页条数变化时不需要重新请求数据，只需要更新计算属性
+      currentPage.value = 1 // 閲嶇疆椤电爜
+      // 姣忛〉鏉℃暟鍙樺寲鏃朵笉闇€瑕侀噸鏂拌姹傛暟鎹紝鍙渶瑕佹洿鏂拌绠楀睘鎬?
     }
     
-    // 处理行点击
+    // 澶勭悊琛岀偣鍑?
     const handleRowClick = (row) => {
       console.log('Selected row:', row)
-      // 这里可以添加点击行后的处理逻辑，比如跳转到详情页
+      // 杩欓噷鍙互娣诲姞鐐瑰嚮琛屽悗鐨勫鐞嗛€昏緫锛屾瘮濡傝烦杞埌璇︽儏椤?
     }
     
-    // 处理基因链接点击
+    // 澶勭悊鍩哄洜閾炬帴鐐瑰嚮
     const handleGeneClick = (geneId) => {
       console.log('Gene link clicked:', geneId)
-      // 清除 navigationStore 中的 geneDetail 数据，确保从后端重新获取
+      // 娓呴櫎 navigationStore 涓殑 geneDetail 鏁版嵁锛岀‘淇濅粠鍚庣閲嶆柊鑾峰彇
       navigationStore.clearNavigationData('geneDetail')
-      // 导航到ID搜索结果页面，并将基因ID作为参数传递
+      // 瀵艰埅鍒癐D鎼滅储缁撴灉椤甸潰锛屽苟灏嗗熀鍥營D浣滀负鍙傛暟浼犻€?
       router.push({
         name: 'idSearchResults',
         query: { db_id: geneId }
       })
     }
     
-    // 监听pageSize变化，确保currentPage被重置
+    // 鐩戝惉pageSize鍙樺寲锛岀‘淇漜urrentPage琚噸缃?
     watch(pageSize, () => {
       currentPage.value = 1
     })
     
-    // 组件挂载时加载数据
+    // 缁勪欢鎸傝浇鏃跺姞杞芥暟鎹?
     onMounted(async () => {
-      await fetchGenomes() // 获取基因组列表
-      
-      // 设置初始选中的基因组为G.hirsutumAD1_TM-1_HAU_v1.1
-      setTimeout(() => {
-        const targetGenome = 'G.hirsutumAD1_TM-1_HAU_v1.1'
-        selectedGenome.value = [targetGenome]
-        console.log('初始选中的基因组:', targetGenome)
-        // 触发基因组选择变化
+      await ensureGenomesLoaded()
+      const targetGenome = pickDefaultGenome()
+      if (targetGenome) {
+        setSelectedGenome(targetGenome)
         handleGenomeChange()
-      }, 100)
+      }
     })
     
     return {
@@ -399,7 +376,7 @@ export default {
   min-height: 100vh;
 }
 
-/* 左侧边栏样式 */
+/* 宸︿晶杈规爮鏍峰紡 */
 .sidebar {
   background-color: white;
   padding: 20px;
@@ -434,7 +411,7 @@ export default {
   color: #e6a23c;
 }
 
-/* 主内容区域样式 */
+/* 涓诲唴瀹瑰尯鍩熸牱寮?*/
 .main-content {
   background-color: white;
   padding: 20px;
@@ -449,7 +426,7 @@ export default {
   margin-bottom: 20px;
 }
 
-/* 转录因子家族样式 */
+/* 杞綍鍥犲瓙瀹舵棌鏍峰紡 */
 .tf-families {
   background-color: #f9f9f9;
   padding: 15px;
@@ -462,7 +439,7 @@ export default {
   font-size: 0.9rem;
 }
 
-/* 表格样式 */
+/* 琛ㄦ牸鏍峰紡 */
 .table-title {
   color: #e6a23c;
   font-weight: bold;
@@ -475,7 +452,7 @@ export default {
   border-radius: 6px;
 }
 
-/* 基因链接样式 */
+/* 鍩哄洜閾炬帴鏍峰紡 */
 .gene-link {
   color: #409eff;
   text-decoration: none;
@@ -497,7 +474,7 @@ export default {
   color: #666;
 }
 
-/* 响应式设计 */
+/* 鍝嶅簲寮忚璁?*/
 @media (max-width: 768px) {
   .container-fluid {
     padding: 10px;

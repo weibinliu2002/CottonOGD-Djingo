@@ -59,8 +59,15 @@
                 <li><router-link class="dropdown-item" to="/browse/tr">{{ t('transposons') }}</router-link></li>
               </ul>
             </li>
-            <li class="nav-item">
-              <router-link class="nav-link" to="/jbrowse">{{ t('jbrowse_view') }}</router-link>
+            
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                {{ t('Genome Brower') }}
+              </a>
+              <ul class="dropdown-menu">
+                <li><router-link class="dropdown-item" to="/jbrowse">{{ t('jbrowse_view') }}</router-link></li>
+                <li><router-link class="dropdown-item" to="/IGV">{{ t('igv_view') }}</router-link></li>
+              </ul>
             </li>
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">

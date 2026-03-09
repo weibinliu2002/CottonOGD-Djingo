@@ -1,22 +1,21 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
 import { onMounted, computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { ElMessage } from 'element-plus'
 import { Delete, Search } from '@element-plus/icons-vue'
-import { useGenomeStore } from '@/stores/genome_info'
+import { useGenomeSelector } from '@/composables/useGenomeBrowser'
 import { useBlastStore } from '@/stores/blastStore'
 
-// 使用Pinia store
-const genomeStore = useGenomeStore()
+// 浣跨敤Pinia store
+const { genomeStore, ensureGenomesLoaded } = useGenomeSelector()
 const blastStore = useBlastStore()
 
-// 文件上传相关
+// 鏂囦欢涓婁紶鐩稿叧
 const fileName = ref('')
 
-// 从blastStore中获取状态和action
-// 使用storeToRefs来确保解构出的属性保持响应性
+// 浣跨敤storeToRefs鏉ョ‘淇濊В鏋勫嚭鐨勫睘鎬т繚鎸佸搷搴旀€?
 const {
   sequence,
   evalue,
@@ -38,13 +37,13 @@ const {
 
 const { submitBlast, resetForm, setDefaultGenomes, fillExample } = blastStore
 
-// 获取当前选中blast类型的介绍
+// 鑾峰彇褰撳墠閫変腑blast绫诲瀷鐨勪粙缁?
 const currentBlastDescription = computed(() => {
   const currentType = blastTypes.value.find(type => type.value === selectedBlastType.value)
   return currentType ? currentType.description : ''
 })
 
-// 文件上传处理函数
+// 鏂囦欢涓婁紶澶勭悊鍑芥暟
 const handleFileChange = (file: any) => {
   const selectedFile = file.raw
   if (selectedFile) {
@@ -68,21 +67,15 @@ const handleFileChange = (file: any) => {
   }
 }
 
-onMounted(() => {
-  // 加载基因组数据并设置默认值
-  if (genomeStore.genomeOptions.length === 0) {
-    genomeStore.fetchGenomes().then(() => {
-      setDefaultGenomes(genomeStore.genomeOptions)
-    })
-  } else {
-    setDefaultGenomes(genomeStore.genomeOptions)
-  }
+onMounted(async () => {
+  await ensureGenomesLoaded()
+  setDefaultGenomes(genomeStore.genomeOptions)
 })
 </script>
 
 <template>
   <div class="blastp-view">
-    <!-- 页面标题和简介 -->
+    <!-- 椤甸潰鏍囬鍜岀畝浠?-->
     <div class="page-header">
       <h1>{{ t('blast_search') }}</h1>
       <p class="page-description">
@@ -91,7 +84,7 @@ onMounted(() => {
       </p>
     </div>
     
-    <!-- 错误提示 -->
+    <!-- 閿欒鎻愮ず -->
     <el-alert
       v-if="error"
       type="error"
@@ -100,9 +93,9 @@ onMounted(() => {
       class="error-alert"
     />
     
-    <!-- 主要内容卡片 -->
+    <!-- 涓昏鍐呭鍗＄墖 -->
     <el-card class="main-card">
-      <!-- Blast类型选择 -->
+      <!-- Blast绫诲瀷閫夋嫨 -->
       <el-tabs v-model="selectedBlastType" class="blast-type-tabs">
         <el-tab-pane
           v-for="type in blastTypes"
@@ -112,7 +105,7 @@ onMounted(() => {
         />
       </el-tabs>
       
-      <!-- Blast类型介绍 -->
+      <!-- Blast绫诲瀷浠嬬粛 -->
       <el-card type="info" shadow="never" class="blast-info-card">
         <div class="blast-info-content">
           <h3 class="info-title">{{ blastTypes.find(type => type.value === selectedBlastType)?.label }} {{ t('description') }}</h3>
@@ -120,9 +113,9 @@ onMounted(() => {
         </div>
       </el-card>
       
-      <!-- BLAST表单 -->
+      <!-- BLAST琛ㄥ崟 -->
       <el-form label-width="180px" class="blast-form">
-        <!-- 提交按钮（顶部固定） -->
+        <!-- 鎻愪氦鎸夐挳锛堥《閮ㄥ浐瀹氾級 -->
         <div class="form-header-actions">
           <el-button 
             type="primary" 
@@ -143,11 +136,11 @@ onMounted(() => {
         </div>
         
         <div class="form-layout">
-          <!-- 序列输入区域 -->
+          <!-- 搴忓垪杈撳叆鍖哄煙 -->
           <div class="form-section">
             <h3 class="section-title">{{ t('sequence') }} Input</h3>
             
-            <!-- 序列输入 -->
+            <!-- 搴忓垪杈撳叆 -->
             <el-form-item :label="t('query_sequence')">
               <el-input
                 type="textarea"
@@ -188,11 +181,11 @@ onMounted(() => {
             </el-form-item>
           </div>
           
-          <!-- 搜索参数区域 -->
+          <!-- 鎼滅储鍙傛暟鍖哄煙 -->
           <div class="form-section">
             <h3 class="section-title">{{ t('search') }} Parameters</h3>
             
-            <!-- 基因组选择 -->
+            <!-- 鍩哄洜缁勯€夋嫨 -->
             <el-form-item :label="t('select_genomes')">
               <el-select
                 v-model="selectedGenomes"
@@ -203,15 +196,15 @@ onMounted(() => {
                 :loading="genomeStore.loading"
                 class="w-full genome-select"
               >
-                <!-- 直接显示所有选项，包括大类和单个基因组 -->
+                <!-- 鐩存帴鏄剧ず鎵€鏈夐€夐」锛屽寘鎷ぇ绫诲拰鍗曚釜鍩哄洜缁?-->
                 <template v-for="group in genomeStore.genomeOptions" :key="group.value">
-                  <!-- 基因组大类作为可选择选项 -->
+                  <!-- 鍩哄洜缁勫ぇ绫讳綔涓哄彲閫夋嫨閫夐」 -->
                   <el-option
                     :label="group.label"
                     :value="group.value"
                     class="category-option"
                   />
-                  <!-- 单个基因组选项，添加缩进样式 -->
+                  <!-- 鍗曚釜鍩哄洜缁勯€夐」锛屾坊鍔犵缉杩涙牱寮?-->
                   <el-option
                     v-for="item in group.children"
                     :key="item.value"
@@ -227,7 +220,7 @@ onMounted(() => {
               </div>
             </el-form-item>
             
-            <!-- 数据库类型选择 -->
+            <!-- 鏁版嵁搴撶被鍨嬮€夋嫨 -->
             <el-form-item :label="t('database_type')">
               <el-select
                 v-model="selectedDatabaseType"
@@ -247,9 +240,9 @@ onMounted(() => {
               </div>
             </el-form-item>
             
-            <!-- 参数设置 -->
+            <!-- 鍙傛暟璁剧疆 -->
             <div class="parameter-grid">
-              <!-- {{ t('e_value') }}阈值 -->
+              <!-- {{ t('e_value') }}闃堝€?-->
               <el-form-item :label="t('e_value') + ' Threshold'">
                 <el-input
                   type="number"
@@ -265,7 +258,7 @@ onMounted(() => {
                 </div>
               </el-form-item>
               
-              <!-- 最大目标序列数 -->
+              <!-- 鏈€澶х洰鏍囧簭鍒楁暟 -->
               <el-form-item :label="t('max_target_sequences')">
                 <el-input
                   type="number"
@@ -284,7 +277,7 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- 高级参数区域 -->
+        <!-- 楂樼骇鍙傛暟鍖哄煙 -->
         <div class="advanced-params-section">
           <el-button 
             type="primary" 
@@ -375,7 +368,7 @@ onMounted(() => {
       </el-form>
     </el-card>
     
-    <!-- 帮助信息卡片 -->
+    <!-- 甯姪淇℃伅鍗＄墖 -->
     <el-card class="help-card">
       <template #header>
         <div class="help-header">
@@ -414,14 +407,14 @@ onMounted(() => {
 
 
 <style scoped>
-/* 页面容器 */
+/* 椤甸潰瀹瑰櫒 */
 .blastp-view {
   max-width: 1400px;
   margin: 0 auto;
   padding: 20px;
 }
 
-/* 页面标题 */
+/* 椤甸潰鏍囬 */
 .page-header {
   text-align: left;
   margin-bottom: 30px;
@@ -442,13 +435,13 @@ onMounted(() => {
   margin: 0;
 }
 
-/* 错误提示 */
+/* 閿欒鎻愮ず */
 .error-alert {
   margin-bottom: 24px;
   border-radius: 8px;
 }
 
-/* 主要内容卡片 */
+/* 涓昏鍐呭鍗＄墖 */
 .main-card {
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
@@ -456,7 +449,7 @@ onMounted(() => {
   overflow: hidden;
 }
 
-/* BLAST类型标签页 */
+/* BLAST绫诲瀷鏍囩椤?*/
 .blast-type-tabs {
   margin-bottom: 24px;
   border-bottom: 2px solid #e9ecef;
@@ -485,7 +478,7 @@ onMounted(() => {
   border-radius: 2px;
 }
 
-/* BLAST信息卡片 */
+/* BLAST淇℃伅鍗＄墖 */
 .blast-info-card {
   margin-bottom: 24px;
   border-radius: 8px;
@@ -509,12 +502,12 @@ onMounted(() => {
   margin: 0;
 }
 
-/* BLAST表单 */
+/* BLAST琛ㄥ崟 */
 .blast-form {
   padding: 20px;
 }
 
-/* 表单顶部操作按钮 */
+/* 琛ㄥ崟椤堕儴鎿嶄綔鎸夐挳 */
 .form-header-actions {
   display: flex;
   gap: 20px;
@@ -523,7 +516,7 @@ onMounted(() => {
   border-bottom: 1px solid #e9ecef;
 }
 
-/* 表单弹性布局 */
+/* 琛ㄥ崟寮规€у竷灞€ */
 .form-layout {
   display: grid;
   grid-template-columns: 1fr;
@@ -535,7 +528,7 @@ onMounted(() => {
   min-width: 0;
 }
 
-/* 表单区域 */
+/* 琛ㄥ崟鍖哄煙 */
 .form-section {
   background-color: #f8f9fa;
   padding: 20px;
@@ -552,14 +545,14 @@ onMounted(() => {
   border-bottom: 2px solid #e9ecef;
 }
 
-/* 序列输入区域 */
+/* 搴忓垪杈撳叆鍖哄煙 */
 .sequence-textarea {
   border-radius: 8px;
   font-family: 'Courier New', Courier, monospace;
   font-size: 14px;
 }
 
-/* 表单操作按钮 */
+/* 琛ㄥ崟鎿嶄綔鎸夐挳 */
 .form-actions {
   display: flex;
   gap: 10px;
@@ -575,7 +568,7 @@ onMounted(() => {
   display: none;
 }
 
-/* 帮助文本 */
+/* 甯姪鏂囨湰 */
 .help-text {
   font-size: 13px;
   color: #666;
@@ -603,7 +596,7 @@ onMounted(() => {
   color: #dc3545;
 }
 
-/* 参数网格 */
+/* 鍙傛暟缃戞牸 */
 .parameter-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -614,7 +607,7 @@ onMounted(() => {
   min-width: 0;
 }
 
-/* 高级参数区域 */
+/* 楂樼骇鍙傛暟鍖哄煙 */
 .advanced-params-section {
   margin-top: 20px;
   padding-top: 20px;
@@ -640,7 +633,7 @@ onMounted(() => {
   gap: 25px;
 }
 
-/* 基因组选择器 */
+/* 鍩哄洜缁勯€夋嫨鍣?*/
 .genome-select {
   border-radius: 8px;
 }
@@ -665,7 +658,7 @@ onMounted(() => {
   box-shadow: 0 4px 12px rgba(58, 110, 165, 0.3);
 }
 
-/* 帮助卡片 */
+/* 甯姪鍗＄墖 */
 .help-card {
   margin-top: 30px;
   border-radius: 12px;
@@ -732,7 +725,7 @@ onMounted(() => {
   color: #333;
 }
 
-/* 响应式设计 */
+/* 鍝嶅簲寮忚璁?*/
 @media (max-width: 1200px) {
   .form-layout {
     grid-template-columns: 1fr;
@@ -798,3 +791,4 @@ onMounted(() => {
   }
 }
 </style>
+

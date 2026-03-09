@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="container mt-6">
     <h1 class="page-title">{{ t('primer_design') }}</h1>
     <el-row :gutter="20">
@@ -354,21 +354,17 @@
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { usePrimerDesignStore } from '@/stores/primerDesign'
-import { useGenomeStore } from '../stores/genome_info'
+import { useGenomeSelector } from '@/composables/useGenomeBrowser'
 import { Loading } from '@element-plus/icons-vue'
 import httpInstance from '@/utils/http'
 import { treemapResquarify } from 'd3'
 
 const { t } = useI18n()
 
-// 初始化store
+// 鍒濆鍖杝tore
 const primerDesignStore = usePrimerDesignStore()
-const genomeStore = useGenomeStore()
+const { genomeOptions: groupedGenomeOptions, ensureGenomesLoaded, pickDefaultGenome } = useGenomeSelector()
 
-// 基因组选项
-const genomeOptions = ref([])
-
-// 表单数据 - 使用 store 中的状态
 const sequenceId = computed({
   get: () => primerDesignStore.sequenceId,
   set: (val) => primerDesignStore.setSequence(val, primerDesignStore.sequenceTemplate)
@@ -377,15 +373,15 @@ const sequenceType = computed({
   get: () => primerDesignStore.sequenceType,
   set: (val) => primerDesignStore.setSequenceType(val)
 })
-const inputMethod = ref('geneId') // 默认使用基因ID输入方式
-const genomeAssembly = ref('G.hirsutumAD1_TM-1_HAU_v1.1') // 选择的基因组，默认选中陆地棉
+const inputMethod = ref('geneId') // 榛樿浣跨敤鍩哄洜ID杈撳叆鏂瑰紡
+const genomeAssembly = ref('G.hirsutumAD1_TM-1_HAU_v1.1')
 const genomePosition = reactive({
   chromosome: '',
   start: null,
   end: null
 })
-const chromosomeList = ref([]) // 染色体列表
-const isLoadingChromosomes = ref(false) // 染色体加载状态
+const chromosomeList = ref([])
+const isLoadingChromosomes = ref(false)
 const directSequence = ref('')
 const sequenceTemplate = computed({
   get: () => primerDesignStore.sequenceTemplate,
@@ -396,7 +392,6 @@ const parameters = computed({
   set: (val) => primerDesignStore.setParameters(val)
 })
 
-// 状态 - 使用 store 中的状态
 const isLoading = computed({
   get: () => primerDesignStore.isLoading,
   set: (val) => primerDesignStore.setLoading(val)
@@ -414,16 +409,15 @@ const designResults = computed({
   set: (val) => primerDesignStore.setDesignResults(val)
 })
 
-// 检查序列是否为空
 const isSequenceEmpty = computed(() => {
   return !sequenceTemplate.value || sequenceTemplate.value.trim() === ''
 })
 
-// 计算表格数据
+// 璁＄畻琛ㄦ牸鏁版嵁
 const designTableData = computed(() => {
   const tableData = []
   designResults.value.forEach((result, index) => {
-    // 上游引物
+    // 涓婃父寮曠墿
     tableData.push({
       oligos: t('forward_primer'),
       startPosition: result.forward.START,
@@ -436,7 +430,7 @@ const designTableData = computed(() => {
       sequence: result.forward.SEQUENCE,
       penalty: result.penalty
     })
-    // 下游引物
+    // 涓嬫父寮曠墿
     tableData.push({
       oligos: t('reverse_primer'),
       startPosition: result.reverse.START,
@@ -453,10 +447,10 @@ const designTableData = computed(() => {
   return tableData
 })
 
-// 计算基因组选项
+// 璁＄畻鍩哄洜缁勯€夐」
 const computedGenomeOptions = computed(() => {
-  // 从genomeStore获取所有基因组选项
-  const allGenomes = genomeStore.genomeOptions.flatMap(option => 
+  // 浠巊enomeStore鑾峰彇鎵€鏈夊熀鍥犵粍閫夐」
+  const allGenomes = groupedGenomeOptions.value.flatMap(option => 
     option.children?.map(child => ({
       value: child.value,
       label: child.label
@@ -465,7 +459,6 @@ const computedGenomeOptions = computed(() => {
   return allGenomes
 })
 
-// 获取染色体列表
 const fetchChromosomes = async (genome) => {
   if (!genome) {
     chromosomeList.value = []
@@ -507,29 +500,29 @@ const fetchChromosomes = async (genome) => {
   }
 }
 
-// 监听基因组变化
 watch(genomeAssembly, async (newGenome) => {
   await fetchChromosomes(newGenome)
-  // 重置染色体选择
+  // 閲嶇疆鏌撹壊浣撻€夋嫨
   genomePosition.chromosome = ''
 })
 
-// 组件挂载时获取基因组数据
+// 缁勪欢鎸傝浇鏃惰幏鍙栧熀鍥犵粍鏁版嵁
 onMounted(async () => {
-  await genomeStore.fetchGenomes()
-  // 如果有默认基因组，获取其染色体列表
+  await ensureGenomesLoaded()
+  if (!genomeAssembly.value) {
+    genomeAssembly.value = pickDefaultGenome()
+  }
   if (genomeAssembly.value) {
     await fetchChromosomes(genomeAssembly.value)
   }
 })
 
-// 加载示例数据
+// 鍔犺浇绀轰緥鏁版嵁
 const loadExample = () => {
-  // 设置示例基因ID
+  // 璁剧疆绀轰緥鍩哄洜ID
   sequenceId.value = 'Ghir_A01G000120.2'
-  // 设置默认基因组
   genomeAssembly.value = 'G.hirsutumAD1_TM-1_HAU_v1.1'
-  // 设置默认序列类型
+  // 璁剧疆榛樿搴忓垪绫诲瀷
   sequenceType.value = 'mrna'
 }
 
@@ -549,15 +542,14 @@ const fetchSequence = async () => {
   error.value = null
   
   try {
-    // 直接调用 extract_seq，传递 gene_id 和 genome_id
+    // 鐩存帴璋冪敤 extract_seq锛屼紶閫?gene_id 鍜?genome_id
     const seqResponse = await httpInstance.post('/CottonOGD_api/extract_seq/', {
       gene_id: sequenceId.value.trim(),
       genome_id: genomeAssembly.value
     })
     
     if (seqResponse.seq) {
-      // 根据类型选择对应的序列
-      let sequence = ''
+      // 鏍规嵁绫诲瀷閫夋嫨瀵瑰簲鐨勫簭鍒?      let sequence = ''
       if (sequenceType.value === 'mrna') {
         sequence = seqResponse.seq.mrna_seq?.[0]?.seq || ''
       } else if (sequenceType.value === 'cds') {
@@ -592,13 +584,13 @@ const fetchSequenceByPosition = async () => {
   error.value = null
   
   try {
-    // Call genome position sequence fetch API - 使用已有的 extract_seq_gff API
+    // Call genome position sequence fetch API - 浣跨敤宸叉湁鐨?extract_seq_gff API
     const response = await httpInstance.post('/CottonOGD_api/extract_seq_gff/', {
       genome_id: genomeAssembly.value,
       seqid: genomePosition.chromosome.trim(),
       start: genomePosition.start,
       end: genomePosition.end,
-      strand: '+' // 默认为正链
+      strand: '+' // 榛樿涓烘閾?
     })
     
     if (response.sequence) {
@@ -662,7 +654,6 @@ const designPrimers = async () => {
   isLoading.value = true
   
   try {
-    // Build request data - 使用正确的参数名称
     const requestData = {
       sequence_id: sequenceId.value.trim() || 'default_id',
       sequence: processedSequence,
@@ -678,7 +669,6 @@ const designPrimers = async () => {
       }
     }
     
-    // Call API - 使用正确的路径
     console.log('requestData:', requestData)
     const response = await httpInstance.post('/CottonOGD_api/primer_design/', requestData)
     console.log('response:', response)
@@ -834,7 +824,7 @@ const downloadResults = () => {
   }
 }
 
-/* 响应式设计 */
+/* 鍝嶅簲寮忚璁?*/
 @media (max-width: 1200px) {
   .container {
     max-width: 100%;
@@ -885,3 +875,4 @@ const downloadResults = () => {
   }
 }
 </style>
+

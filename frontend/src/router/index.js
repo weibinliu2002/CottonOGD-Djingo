@@ -5,6 +5,7 @@ import IdSearchView from '@/views/IdSearchView.vue'
 import IdSearchResultsView from '@/views/IdSearchResultsView.vue'
 import IdSearchSummaryView from '@/views/IdSearchSummaryView.vue'
 import JbrowseView from '@/views/JbrowseView.vue'
+import IGVView from '@/views/IGVView.vue'
 import DownloadView from '@/views/DownloadView.vue'
 import Contact_usView from '@/views/Contact_usView.vue'
 import AboutView from '@/views/AboutView.vue'
@@ -64,6 +65,11 @@ const routes = [
     path: '/jbrowse',
     name: 'jbrowse',
     component: JbrowseView
+  },
+  {
+    path: '/IGV',
+    name: 'IGV',
+    component: IGVView
   },
   {    path: '/tools/id-search',
     name: 'idSearch',

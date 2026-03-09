@@ -113,26 +113,25 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import httpInstance from '../utils/http'
 import { Search } from '@element-plus/icons-vue'
-import { useGenomeStore } from '@/stores/genome_info'
+import { useGenomeSelector } from '@/composables/useGenomeBrowser'
 import { useGeneExpressionStore } from '@/stores/geneExpressionStore'
 
 const { t } = useI18n()
 
 const router = useRouter()
-const genomeStore = useGenomeStore()
+const { genomeStore, ensureGenomesLoaded, pickDefaultGenome } = useGenomeSelector('G.hirsutumAD1_Jin668_HAU_v1T2T')
 const geneExpressionStore = useGeneExpressionStore()
 
 // 表单数据
 const geneList = ref('')
 const selectedTissue = ref('')
-const selectedGenome = ref('G.hirsutumAD1_Jin668_HAU_v1T2T')
+const selectedGenome = ref('')
 const error = ref('')
 
 // 组件挂载时加载基因组数据
-onMounted(() => {
-  if (genomeStore.genomeOptions.length === 0) {
-    genomeStore.fetchGenomes()
-  }
+onMounted(async () => {
+  await ensureGenomesLoaded()
+  selectedGenome.value = pickDefaultGenome()
 })
 
 // 填充示例数据

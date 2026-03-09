@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useGenomeStore } from '../stores/genome_info'
+import { useGenomeSelector } from '@/composables/useGenomeBrowser'
 import { Download, RefreshLeft, Folder, Files, Loading } from '@element-plus/icons-vue'
 import axios from '../utils/http'
 
 const { t } = useI18n()
 
-const genomeStore = useGenomeStore()
+const { genomeStore, ensureGenomesLoaded } = useGenomeSelector()
 const isLoading = ref(false)
 const errorMessage = ref('')
 const selectedCategory = ref('')
@@ -47,16 +47,14 @@ const categories = computed(() => {
 
 // 初始化数据
 onMounted(async () => {
-  if (genomeStore.genomeOptions.length === 0) {
-    await loadGenomes()
-  }
+  await loadGenomes()
 })
 
 // 加载基因组数据
 const loadGenomes = async () => {
   isLoading.value = true
   try {
-    await genomeStore.fetchGenomes()
+    await ensureGenomesLoaded()
   } catch (error: any) {
     errorMessage.value = error.message || 'Failed to load genome data'
   } finally {

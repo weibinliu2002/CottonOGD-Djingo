@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="container">
     <h1>{{ t('gene_expression_in_efp') }}</h1>
 
@@ -149,15 +149,15 @@
 <script>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useGenomeStore } from '@/stores/genome_info'
+import { useGenomeSelector } from '@/composables/useGenomeBrowser'
 
 export default {
   name: 'GeneExpressionEfpView',
   setup() {
     const { t } = useI18n()
-    const genomeStore = useGenomeStore()
+    const { genomeStore, ensureGenomesLoaded, pickDefaultGenome } = useGenomeSelector('G.hirsutumAD1_Jin668_HAU_v1T2T')
     const geneId = ref('')
-    const selectedGenome = ref('G.hirsutumAD1_Jin668_HAU_v1T2T')
+    const selectedGenome = ref('')
     const lowColor = ref('#0000FF')
     const midColor = ref('#00FF00')
     const highColor = ref('#FF0000')
@@ -173,88 +173,25 @@ export default {
     const tooltipContent = ref({ name: '', value: '' })
     const tooltipStyle = ref({ left: '0px', top: '0px' })
     
-    // 组件挂载时加载基因组数据
-    onMounted(() => {
-      console.log('Initial genomeOptions:', genomeStore.genomeOptions);
-      console.log('Initial genomeStore error:', genomeStore.error);
-      if (genomeStore.genomeOptions.length === 0) {
-        console.log('Fetching genomes...');
-        genomeStore.fetchGenomes().then(() => {
-          console.log('Genomes fetched successfully:', genomeStore.genomeOptions);
-          console.log('GenomeStore error after fetch:', genomeStore.error);
-          // 如果仍然没有数据，添加一些测试数据
-          if (genomeStore.genomeOptions.length === 0) {
-            console.log('Adding test genome data...');
-            genomeStore.genomeOptions = [
-              {
-                value: 'AD1',
-                label: 'AD1',
-                children: [
-                  { value: 'G.hirsutumAD1_Jin668_HAU_v1T2T', label: 'G.hirsutumAD1_Jin668_HAU_v1T2T' },
-                  { value: 'G.hirsutumAD1_TM1_NBI_v2.1', label: 'G.hirsutumAD1_TM1_NBI_v2.1' }
-                ]
-              },
-              {
-                value: 'D5',
-                label: 'D5',
-                children: [
-                  { value: 'G.raimondiiD5_JGI_v2.1', label: 'G.raimondiiD5_JGI_v2.1' }
-                ]
-              }
-            ];
-            console.log('Test genome data added:', genomeStore.genomeOptions);
-            // 确保 selectedGenome 被设置为默认值
-            if (!selectedGenome.value) {
-              selectedGenome.value = 'G.hirsutumAD1_Jin668_HAU_v1T2T';
-              console.log('Set selectedGenome to default value:', selectedGenome.value);
-            }
-          }
-        }).catch((error) => {
-          console.error('Error fetching genomes:', error);
-          // 如果请求失败，添加一些测试数据
-          console.log('Adding test genome data due to error...');
-          genomeStore.genomeOptions = [
-            {
-              value: 'AD1',
-              label: 'AD1',
-              children: [
-                { value: 'G.hirsutumAD1_Jin668_HAU_v1T2T', label: 'G.hirsutumAD1_Jin668_HAU_v1T2T' },
-                { value: 'G.hirsutumAD1_TM1_NBI_v2.1', label: 'G.hirsutumAD1_TM1_NBI_v2.1' }
-              ]
-            },
-            {
-              value: 'D5',
-              label: 'D5',
-              children: [
-                { value: 'G.raimondiiD5_JGI_v2.1', label: 'G.raimondiiD5_JGI_v2.1' }
-              ]
-            }
-          ];
-          console.log('Test genome data added:', genomeStore.genomeOptions);
-          // 确保 selectedGenome 被设置为默认值
-          if (!selectedGenome.value) {
-            selectedGenome.value = 'G.hirsutumAD1_Jin668_HAU_v1T2T';
-            console.log('Set selectedGenome to default value:', selectedGenome.value);
-          }
-        });
-      }
-      
-      // 支持回车键提交
-      document.getElementById('gene_id').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-          generateImage();
-        }
-      });
+    // 缁勪欢鎸傝浇鏃跺姞杞藉熀鍥犵粍鏁版嵁
+    onMounted(async () => {
+      await ensureGenomesLoaded()
+      selectedGenome.value = pickDefaultGenome()
 
-      // 窗口大小变化时重新计算坐标
-      window.addEventListener('resize', handleResize);
+      document.getElementById('gene_id')?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          generateImage()
+        }
+      })
+
+      window.addEventListener('resize', handleResize)
     })
-    
+
     onBeforeUnmount(() => {
       window.removeEventListener('resize', handleResize);
     })
     
-    // 填充示例基因ID
+    // 濉厖绀轰緥鍩哄洜ID
     const fillExample = () => {
       const exampleIDs = 'Ghjin_A01g000040';
       geneId.value = exampleIDs;
@@ -328,25 +265,23 @@ export default {
       });
     }
     
-    // 图片加载完成后创建图像映射
     const onImageLoad = () => {
       if (currentRegionsInfo.value.length > 0 && currentImageSize.value.width > 0) {
         createImageMap();
       }
     }
     
-    // 创建图像映射
+    // 鍒涘缓鍥惧儚鏄犲皠
     const createImageMap = () => {
       const imgElement = document.getElementById('result-image');
       if (!imgElement || !imgElement.complete || imgElement.naturalWidth === 0) {
         return;
       }
       
-      // 获取当前显示的图像尺寸
       const displayWidth = imgElement.offsetWidth;
       const displayHeight = imgElement.offsetHeight;
       
-      // 计算缩放比例
+      // 璁＄畻缂╂斁姣斾緥
       const scaleX = currentImageSize.value.width > 0 ? displayWidth / currentImageSize.value.width : 1;
       const scaleY = currentImageSize.value.height > 0 ? displayHeight / currentImageSize.value.height : 1;
       
@@ -355,7 +290,7 @@ export default {
       
       mappedRegions.value = currentRegionsInfo.value
         .filter(region => {
-          // 过滤掉无效的区域数据
+          // 杩囨护鎺夋棤鏁堢殑鍖哄煙鏁版嵁
           const validRegion = region && region.polygon && Array.isArray(region.polygon) && region.polygon.length >= 3;
           if (!validRegion) {
             console.log('Skipping invalid region:', region);
@@ -364,7 +299,6 @@ export default {
         })
         .map(region => {
           try {
-            // 缩放坐标以适应显示的图像尺寸
             const scaledCoords = region.polygon.map(point => {
               if (Array.isArray(point) && point.length === 2) {
                 return [
@@ -398,7 +332,6 @@ export default {
       console.log('Number of mapped regions:', mappedRegions.value.length);
     }
     
-    // 显示提示框
     const showTooltip = (event, region) => {
       let valueDisplay;
       
@@ -416,7 +349,6 @@ export default {
       moveTooltip(event);
     }
     
-    // 移动提示框
     const moveTooltip = (event) => {
       const img = document.getElementById('result-image');
       if (!img || !img.complete || img.naturalWidth === 0) {
@@ -434,28 +366,27 @@ export default {
       };
     }
     
-    // 隐藏提示框
     const hideTooltip = () => {
       tooltipVisible.value = false;
     }
     
-    // 显示消息
+    // 鏄剧ず娑堟伅
     const showMessage = (text, type) => {
       message.value = text;
       messageType.value = type;
     }
     
-    // 隐藏消息
+    // 闅愯棌娑堟伅
     const hideMessage = () => {
       message.value = '';
     }
     
-    // 隐藏初始图片
+    // 闅愯棌鍒濆鍥剧墖
     const hideInitialImage = () => {
-      // 错误处理
+      // 閿欒澶勭悊
     }
     
-    // 获取cookie
+    // 鑾峰彇cookie
     const getCookie = (name) => {
       let cookieValue = null;
       if (document.cookie && document.cookie !== '') {
@@ -471,7 +402,6 @@ export default {
       return cookieValue;
     }
     
-    // 更新颜色框
     const updateColorBox = (event) => {
       const type = event.target.dataset.type;
       if (type === 'low') {
@@ -484,12 +414,12 @@ export default {
       console.log(`Color updated: ${type} = ${event.target.value}`);
     }
     
-    // 触发颜色输入
+    // 瑙﹀彂棰滆壊杈撳叆
     const triggerColorInput = (type) => {
       document.getElementById(`${type}-color`).click();
     }
     
-    // 处理窗口大小变化
+    // 澶勭悊绐楀彛澶у皬鍙樺寲
     const handleResize = () => {
       if (showResultImage.value && currentRegionsInfo.value.length > 0) {
         createImageMap();
@@ -621,7 +551,7 @@ export default {
     text-align: center;
     margin-top: 20px;
   }
-  /* 修改图片相关样式 */
+  /* 淇敼鍥剧墖鐩稿叧鏍峰紡 */
   .image-container {
     position: relative;
     display: block;
@@ -653,7 +583,7 @@ export default {
     text-align: center;
     margin-top: 20px;
   }
-  /* 添加提示框样式 */
+  /* 娣诲姞鎻愮ず妗嗘牱寮?*/
   .tooltip {
     position: absolute;
     background: rgba(0, 0, 0, 0.8);
@@ -669,13 +599,14 @@ export default {
   .tooltip strong {
     color: #ffeb3b;
   }
-  /* 区域悬停效果 */
+  /* 鍖哄煙鎮仠鏁堟灉 */
   area:hover {
     cursor: pointer;
   }
-  /* 确保地图元素居中 */
+  /* 纭繚鍦板浘鍏冪礌灞呬腑 */
   map {
     display: block;
     margin: 0 auto;
   }
 </style>
+
