@@ -150,29 +150,13 @@ const customTrackForm = ref({
 })
 
 const destroyBrowser = () => {
-  try {
-    // 首先检查browser.value是否存在
-    if (browser.value) {
-      // 尝试调用dispose方法
-      if (typeof browser.value.dispose === 'function') {
-        browser.value.dispose()
-      }
-      // 无论dispose是否成功，都将browser.value设置为null
-      browser.value = null
-    }
-  } catch (error) {
-    console.error('Error disposing IGV browser:', error)
-    // 即使出错，也要确保browser.value被设置为null
-    browser.value = null
-  } finally {
-    // 清空容器内容，确保DOM干净
-    if (igvContainer.value) {
-      try {
-        igvContainer.value.innerHTML = ''
-      } catch (error) {
-        console.error('Error clearing IGV container:', error)
-      }
-    }
+  if (browser.value && typeof browser.value.dispose === 'function') {
+    browser.value.dispose()
+  }
+  browser.value = null
+
+  if (igvContainer.value) {
+    igvContainer.value.innerHTML = ''
   }
 }
 

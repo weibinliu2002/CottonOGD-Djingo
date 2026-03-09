@@ -32,14 +32,14 @@
             :loading="genomeStore.loading"
           >
             <el-option value="" :label="t('all_genomes')" />
-            <!-- 直接显示所有选项，包括大类和单个基因组 -->
+            <!-- 鐩存帴鏄剧ず鎵€鏈夐€夐」锛屽寘鎷ぇ绫诲拰鍗曚釜鍩哄洜缁?-->
             <template v-for="group in genomeStore.genomeOptions" :key="group.value">
-              <!-- 基因组大类作为可选择选项 -->
+              <!-- 鍩哄洜缁勫ぇ绫讳綔涓哄彲閫夋嫨閫夐」 -->
               <el-option
                 :label="group.label"
                 :value="group.value"
               />
-              <!-- 单个基因组选项，添加缩进样式 -->
+              <!-- 鍗曚釜鍩哄洜缁勯€夐」锛屾坊鍔犵缉杩涙牱寮?-->
               <el-option
                 v-for="item in group.children"
                 :key="item.value"
@@ -122,19 +122,19 @@ const router = useRouter()
 const { genomeStore, ensureGenomesLoaded, pickDefaultGenome } = useGenomeSelector('G.hirsutumAD1_Jin668_HAU_v1T2T')
 const geneExpressionStore = useGeneExpressionStore()
 
-// 表单数据
+// 琛ㄥ崟鏁版嵁
 const geneList = ref('')
 const selectedTissue = ref('')
 const selectedGenome = ref('')
 const error = ref('')
 
-// 组件挂载时加载基因组数据
+// 缁勪欢鎸傝浇鏃跺姞杞藉熀鍥犵粍鏁版嵁
 onMounted(async () => {
   await ensureGenomesLoaded()
   selectedGenome.value = pickDefaultGenome()
 })
 
-// 填充示例数据
+// 濉厖绀轰緥鏁版嵁
 const fillExample = () => {
   const exampleIDs = `Ghjin_A01g000110
 Ghjin_A01g000120
@@ -149,78 +149,57 @@ Ghjin_A01g000190
   geneList.value = exampleIDs
 }
 
-// 提交表单
+// Submit form.
 const handleSubmit = async () => {
   error.value = ''
-  
-  // 验证表单
+
   if (!geneList.value.trim()) {
     error.value = t('please_enter_gene_list')
     return
   }
-  
+
   try {
-    // 构建查询参数
     const params = {
       gene_id: geneList.value,
       tissue: selectedTissue.value,
-      genome_id: selectedGenome.value,
+      genome_id: selectedGenome.value
     }
     console.log('params:', params)
-    
-    // 存储查询参数到 store
+
     geneExpressionStore.setQueryParams({
       geneList: geneList.value,
       tissue: selectedTissue.value,
       genome: selectedGenome.value
     })
-    
-    // 设置加载状态
+
     geneExpressionStore.setLoading(true)
     geneExpressionStore.setError(null)
-    
-    // 直接调用后端API获取数据
+
     const response = await httpInstance.post('/CottonOGD_api/extract_expression/', params)
     console.log('Gene expression response:', response)
-    
-    // 处理响应数据
-    if (response) {
-      // 添加类型断言，告诉 TypeScript 响应是任意类型
-      const data = response as any
-      
-      // 检查响应是否包含 expression 属性
-      if (data.expression) {
-        // 存储结果到 store
-        geneExpressionStore.setResults(data.expression)
-        
-        // 检查并存储热图图像
-        if (data.heatmap_image) {
-          geneExpressionStore.setHeatmapImage(data.heatmap_image)
-        }
-        
-        // 跳转到结果页面
-        router.push({
-          path: '/tools/gene-expression/results'
-        })
-      } else {
-        // 如果响应不包含 expression 属性，尝试直接使用响应
-        geneExpressionStore.setResults(Array.isArray(data) ? data : [data])
-        
-        // 检查并存储热图图像
-        if (data.heatmap_image) {
-          geneExpressionStore.setHeatmapImage(data.heatmap_image)
-        }
-        
-        // 跳转到结果页面
-        router.push({
-          path: '/tools/gene-expression/results'
-        })
-      }
-    } else {
+
+    if (!response) {
       error.value = t('invalid_response_from_server')
-      console.error('Invalid response:', response)
       geneExpressionStore.setError(t('invalid_response_from_server'))
+      return
     }
+
+    const data = response as any
+    if (data.expression) {
+      // Save full payload so results page can read expression/tissues/clustergrammer_data.
+      geneExpressionStore.setResults(data)
+    } else {
+      // Backward compatibility with old array-style response.
+      geneExpressionStore.setResults(Array.isArray(data) ? data : [data])
+    }
+
+    if (data.heatmap_image) {
+      geneExpressionStore.setHeatmapImage(data.heatmap_image)
+    }
+
+    router.push({
+      path: '/tools/gene-expression/results'
+    })
   } catch (err: any) {
     error.value = t('submission_failed_please_try_again')
     console.error('Submission failed:', err)
@@ -275,3 +254,4 @@ const handleSubmit = async () => {
   font-weight: 500;
 }
 </style>
+

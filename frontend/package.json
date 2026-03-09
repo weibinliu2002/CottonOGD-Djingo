@@ -21,6 +21,7 @@
     "@fortawesome/fontawesome-free": "^7.1.0",
     "axios": "^1.13.4",
     "chart.js": "^4.5.1",
+    "clustergrammer": "^1.19.5",
     "d3": "^7.9.0",
     "element-plus": "^2.13.2",
     "heatmap.js": "^2.0.5",

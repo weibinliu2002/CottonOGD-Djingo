@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="container mt-6">
     <h1 class="page-title">{{ t('primer_design') }}</h1>
     <el-row :gutter="20">

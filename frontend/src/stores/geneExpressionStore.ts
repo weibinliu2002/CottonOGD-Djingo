@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 
 export const useGeneExpressionStore = defineStore('geneExpression', {
   state: () => ({
-    results: [] as any[],
+    results: {} as any,
     heatmapImage: '' as string,
     loading: false as boolean,
     error: null as any,
@@ -14,7 +14,7 @@ export const useGeneExpressionStore = defineStore('geneExpression', {
   }),
   
   actions: {
-    setResults(results: any[]) {
+    setResults(results: any) {
       this.results = results
     },
     
@@ -39,7 +39,7 @@ export const useGeneExpressionStore = defineStore('geneExpression', {
     },
     
     clear() {
-      this.results = []
+      this.results = {}
       this.heatmapImage = ''
       this.error = null
       this.queryParams = {
