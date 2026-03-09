@@ -19,8 +19,8 @@ export interface GenomeDataPaths {
 export const buildGenomeDataPaths = (genomeName: string): GenomeDataPaths => ({
   fastaURL: `/data/genome/${genomeName}/${genomeName}.genome.fa.gz`,
   faiURL: `/data/genome/${genomeName}/${genomeName}.genome.fa.gz.fai`,
-  gffURL: `/data/genome/${genomeName}/${genomeName}.gff.gz`,
-  gffIndexURL: `/data/genome/${genomeName}/${genomeName}.gff.gz.tbi`
+  gffURL: `/jbrowse/large/${genomeName}/${genomeName}.gff.gz`,
+  gffIndexURL: `/jbrowse/large/${genomeName}/${genomeName}.gff.gz.tbi`
 })
 
 export const getFirstChromosomeFromFai = async (genomeName: string, fallback = 'chr1') => {
