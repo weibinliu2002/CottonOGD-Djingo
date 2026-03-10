@@ -134,6 +134,7 @@ class gene_annotation(models.Model):
     geneid_id=models.CharField(max_length=200,unique=False,default='0')
     genome = models.ForeignKey(Species_info, on_delete=models.CASCADE, to_field='name') 
     annoation_source=models.CharField(max_length=100, blank=True, null=True)
+    annoation_id=models.CharField(max_length=100, blank=True, null=True)
     annotation = models.TextField(blank=True, null=True)
     def __str__(self):
         return self.geneid
@@ -155,6 +156,38 @@ class gene_seq(models.Model):
         return str(self.geneid)
     class Meta:
         db_table = 'gene_seq'
+        indexes = [
+            models.Index(fields=['id_id']),
+        ]
+
+class gene_go(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    id_id = models.IntegerField(default='0')
+    geneid_id=models.CharField(max_length=200,unique=False,default='0')
+    genome = models.ForeignKey(Species_info, on_delete=models.CASCADE, to_field='name') 
+    go_id = models.CharField(max_length=100, blank=True, null=True)
+    go_description = models.CharField(max_length=100, blank=True, null=True)
+    go_type = models.CharField(max_length=100, blank=True, null=True)
+    def __str__(self):
+        return str(self.geneid)
+    class Meta:
+        db_table = 'gene_go'
+        indexes = [
+            models.Index(fields=['id_id']),
+        ]
+
+class gene_kegg(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    id_id = models.IntegerField(default='0')
+    geneid_id=models.CharField(max_length=200,unique=False,default='0')
+    genome = models.ForeignKey(Species_info, on_delete=models.CASCADE, to_field='name') 
+    kegg_id = models.CharField(max_length=100, blank=True, null=True)
+    kegg_description = models.CharField(max_length=100, blank=True, null=True)
+    kegg_type = models.CharField(max_length=100, blank=True, null=True)
+    def __str__(self):
+        return str(self.geneid)
+    class Meta:
+        db_table = 'gene_kegg'
         indexes = [
             models.Index(fields=['id_id']),
         ]

@@ -162,7 +162,7 @@ def geneid_result(request):
         'genome_id': genome_id,
         'IDs': IDs,
         'db_id': db_id,
-        'gene_seq': genome_seq_result.filter(mrna_id=IDs, gene_type='genome').values_list('sequence', flat=True).first(),
+        'gene_seq': genome_seq_result.filter(mrna_id=IDs, gene_type='gene_genomegene_').values_list('sequence', flat=True).first(),
         'geneid_result': list(gene_annotation_result),
         'gff_data': list(gene_info_result),
         'mrna_transcripts': mrna_transcript_result,    

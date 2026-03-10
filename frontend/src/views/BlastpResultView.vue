@@ -1262,7 +1262,7 @@ function handleGeneClick(subject: string | undefined) {
     name: 'idSearchResults',
     query: { 
       gene_id: geneId,
-      genome_id: 'G.hirsutumAD1_TM-1_HAU_v1.1' // 默认基因组，可根据实际情况调整
+      genome_id: genomeId.value || 'G.hirsutumAD1_TM-1_HAU_v1.1' // 默认基因组，可根据实际情况调整
     }
   })
 }
