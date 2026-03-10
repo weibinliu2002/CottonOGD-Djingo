@@ -23,6 +23,21 @@ TISSUE_ORDER = [
     'Ovules', 'Fibers', 'Seed'
 ]
 
+@api_view(['GET'])
+def get_tissues(request):
+    """
+    获取所有组织类型的列表
+    """
+    try:
+        # 从数据库中获取所有tissue值并去重
+        tissues = gene_expression.objects.values_list('tissue', flat=True).distinct()
+        # 过滤空值
+        tissues = [tissue for tissue in tissues if tissue]
+        return Response(tissues, status=status.HTTP_200_OK)
+    except Exception as e:
+        logger.error('Error getting tissues: %s', e)
+        return Response([], status=status.HTTP_200_OK)
+
 @api_view(['POST'])
 def extract_expression(request):
     if request.method == 'POST':
@@ -75,8 +90,10 @@ def extract_expression(request):
         if not db_id:
             return Response({'error': 'db_id must contain valid integers'}, status=status.HTTP_400_BAD_REQUEST)
 
-        sample_id = request.data.get('sample_id') or request.query_params.get('sample_id')
-        gene_expr=gene_expression.objects.filter(id_id__in=db_id).values('id_id','geneid','stage','tissue','value')
+        tissues = request.data.get('tissue') or request.query_params.get('tissue')
+        if tissues:
+            tissues = tissues.split(',')
+        gene_expr=gene_expression.objects.filter(id_id__in=db_id, tissue__in=tissues).values('id_id','geneid','stage','tissue','value')
         df = pd.DataFrame(list(gene_expr))
         
         # 处理空值

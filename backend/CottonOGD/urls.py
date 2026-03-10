@@ -29,6 +29,7 @@ urlpatterns = [
     path('extract_seq/', extract_seq, name='extract_seq'),
     path('extract_seq_gff/', extract_seq_gff, name='extract_seq_gff'),
     path('extract_expression/', extract_expression, name='extract_expression'),
+    path('extract_expression/tissues/', get_tissues, name='get_tissues'),
     path('primer_design/', primer_design, name='primer_design'),
     path('blast_cmd/', blast_cmd, name='blast_cmd'),
     path('expression_EFP_image/', expression_EFP_image, name='expression_EFP_image'),

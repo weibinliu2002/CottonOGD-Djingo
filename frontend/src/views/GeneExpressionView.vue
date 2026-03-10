@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="container mt-4">
     <h2 class="mb-4">{{ t('gene_expression_analysis') }}</h2>
     
@@ -55,35 +55,19 @@
             v-model="selectedTissue"
             :placeholder="t('select_tissue_placeholder')"
             style="width: 100%"
+            :loading="loadingTissues"
+            multiple
+            filterable
+            allow-create
+            default-first-option
           >
             <el-option value="" :label="t('all_tissues')" />
-            <!-- Top tissues -->
-            <el-option value="Root" label="Root" />
-            <el-option value="Stem" label="Stem" />
-            <el-option value="Cotyledon" label="Cotyledon" />
-            <el-option value="Leaf" label="Leaf" />
-            <el-option value="Pholem" label="Pholem" />
-            <el-option value="Sepal" label="Sepal" />
-            <el-option value="Bract" label="Bract" />
-            <el-option value="Petal" label="Petal" />
-            <el-option value="Anther" label="Anther" />
-            <el-option value="Stigma" label="Stigma" />
-            <!-- Bottom left tissues -->
-            <el-option value="0_DPA_ovules" label="0_DPA_ovules" />
-            <el-option value="3_DPA_fibers" label="3_DPA_fibers" />
-            <el-option value="6_DPA_fibers" label="6_DPA_fibers" />
-            <el-option value="9_DPA_fibers" label="9_DPA_fibers" />
-            <el-option value="12_DPA_fibers" label="12_DPA_fibers" />
-            <el-option value="15_DPA_fibers" label="15_DPA_fibers" />
-            <el-option value="18_DPA_fibers" label="18_DPA_fibers" />
-            <el-option value="21_DPA_fibers" label="21_DPA_fibers" />
-            <el-option value="24_DPA_fibers" label="24_DPA_fibers" />
-            <!-- Bottom right tissues -->
-            <el-option value="DPA0" label="DPA0" />
-            <el-option value="5_DPA_ovules" label="5_DPA_ovules" />
-            <el-option value="10_DPA_ovules" label="10_DPA_ovules" />
-            <el-option value="20_DPA_ovules" label="20_DPA_ovules" />
-            <el-option value="Seed" label="Seed" />
+            <el-option
+              v-for="tissue in tissueOptions"
+              :key="tissue"
+              :value="tissue"
+              :label="tissue"
+            />
           </el-select>
         </el-form-item>
         
@@ -124,14 +108,32 @@ const geneExpressionStore = useGeneExpressionStore()
 
 // 琛ㄥ崟鏁版嵁
 const geneList = ref('')
-const selectedTissue = ref('')
+const selectedTissue = ref<string[]>([])
 const selectedGenome = ref('')
 const error = ref('')
+const tissueOptions = ref<string[]>([])
+const loadingTissues = ref(false)
+
+// 从后端获取tissue列表
+const fetchTissues = async () => {
+  try {
+    loadingTissues.value = true
+    const response = await httpInstance.get('/CottonOGD_api/extract_expression/tissues/')
+    if (response && Array.isArray(response)) {
+      tissueOptions.value = response
+    }
+  } catch (err) {
+    console.error('Failed to fetch tissues:', err)
+  } finally {
+    loadingTissues.value = false
+  }
+}
 
 // 缁勪欢鎸傝浇鏃跺姞杞藉熀鍥犵粍鏁版嵁
 onMounted(async () => {
   await ensureGenomesLoaded()
   selectedGenome.value = pickDefaultGenome()
+  await fetchTissues()
 })
 
 // 濉厖绀轰緥鏁版嵁
@@ -159,16 +161,19 @@ const handleSubmit = async () => {
   }
 
   try {
+    // 处理多选的tissue值
+    const tissueValue = selectedTissue.value.length > 0 ? selectedTissue.value.join(',') : ''
+    
     const params = {
       gene_id: geneList.value,
-      tissue: selectedTissue.value,
+      tissue: tissueValue,
       genome_id: selectedGenome.value
     }
     console.log('params:', params)
 
     geneExpressionStore.setQueryParams({
       geneList: geneList.value,
-      tissue: selectedTissue.value,
+      tissue: tissueValue,
       genome: selectedGenome.value
     })
 
