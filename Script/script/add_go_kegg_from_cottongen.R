@@ -39,7 +39,10 @@ read_and_merge_xlsx <- function(file_path, skip = 2) {
     merged_data <- do.call(rbind, data_list)
     cat("合并后", file_path, "数据表行数:", nrow(merged_data), "\n")
     names(merged_data)<-c('geneid_id','kegg_id','kegg_description')
-    merged_data$geneid<-gsub('\\.\\d+','',merged_data$geneid_id)
+    merged_data$geneid<-gsub(paste0('_',pattern),'',merged_data$geneid_id)
+    merged_data$geneid<-gsub('ER','ERROPOS',merged_data$geneid)
+    merged_data$geneid<-gsub('\\.\\d+','',merged_data$geneid)
+
 dat<-merged_data
     dat$geneid<-gsub('gnl\\|WGS:VKDL\\|','',dat$geneid)
 dat$geneid<-gsub('\\.\\d+$','',dat$geneid)
@@ -50,14 +53,6 @@ dat$geneid<-gsub('evm\\.model\\.','',dat$geneid)
 dat$geneid<-gsub('gene-','',dat$geneid)
 dat$geneid<-gsub('-RA','',dat$geneid)
 dat$geneid<-gsub('-mRNA-\\d+','',dat$geneid)
-dat$geneid<-gsub(':cds','',dat$geneid)
-dat$geneid<-gsub(':cds:\\d+','',dat$geneid)
-dat$geneid<-gsub(':exon','',dat$geneid)
-dat$geneid<-gsub(':exon:\\d+','',dat$geneid)
-dat$geneid<-gsub(':\\d+$','',dat$geneid)
-dat$geneid<-gsub('^cds\\d+\\.','',dat$geneid)
-dat$geneid<-gsub('\\.exon\\d+','',dat$geneid)
-dat$geneid<-gsub('\\.utr\\dp\\d+','',dat$geneid)i
 dat$geneid<-gsub('rna-gnl\\|WGS:VKGE\\|','',dat$geneid)
 dat$geneid<-gsub('rna-gnl\\|WGS:JABEZW\\|','',dat$geneid)
 
@@ -92,11 +87,11 @@ if(file.exists(kegg_path)){
         genemaster %>% select(geneid, genome_id,id),
         by = c("geneid" = "geneid", "genome_id" = "genome_id")
       ) 
-      names(kegg_path)[-1]<-'id_id'
+      names(kegg_path)[7]<-'id_id'
       if (any(is.na(kegg_path$id_id))) {
         cat("警告：KEGG pathways 文件中存在缺失的基因ID对应关系，可能需要检查数据\n")
       }
-      dbWriteTable(con,'kegg_pathway',kegg_path,geneIPR[,-geneid],overwrite=F,append=T,row.names=FALSE)
+      dbWriteTable(con,'gene_kegg',kegg_path,overwrite=F,append=T,row.names=FALSE)
   }
 }
 
@@ -112,11 +107,11 @@ if(file.exists(kegg_ortho)){
         genemaster %>% select(geneid, genome_id,id),
         by = c("geneid_id" = "geneid", "genome_id" = "genome_id")
       ) 
-      names(kegg_ortho)[-1]<-'id_id'
+      names(kegg_ortho)[7]<-'id_id'
       if (any(is.na(kegg_ortho$id_id))) {
         cat("警告：KEGG orthologs 文件中存在缺失的基因ID对应关系，可能需要检查数据\n")
       }
-      dbWriteTable(con,'kegg_ortholog',kegg_ortho,geneIPR[,-geneid],overwrite=F,append=T,row.names=FALSE)
+      dbWriteTable(con,'gene_kegg',kegg_ortho,overwrite=F,append=T,row.names=FALSE)
   }
 }
 
@@ -136,11 +131,11 @@ if(file.exists(genego)){
         genemaster %>% select(geneid, genome_id,id),
         by = c("geneid_id" = "geneid", "genome_id" = "genome_id")
       ) 
-      names(genego)[-1]<-'id_id'
+      names(genego)[7]<-'id_id'
       if (any(is.na(genego$id_id))) {
         cat("警告：genes2Go 文件中存在缺失的基因ID对应关系，可能需要检查数据\n")
       }
-      dbWriteTable(con,'gene_go',genego,geneIPR[,-geneid],overwrite=F,append=T,row.names=FALSE)
+      dbWriteTable(con,'gene_go',genego,overwrite=F,append=T,row.names=FALSE)
   }
 }
 
@@ -156,11 +151,11 @@ if(file.exists(geneIPR)){
         genemaster %>% select(geneid, genome_id,id),
         by = c("geneid_id" = "geneid", "genome_id" = "genome_id")
       ) 
-      names(geneIPR)[-1]<-'id_id'
+      names(geneIPR)[7]<-'id_id'
       if (any(is.na(geneIPR$id_id))) {
         cat("警告：genes2IPR 文件中存在缺失的基因ID对应关系，可能需要检查数据\n")
       }
-      dbWriteTable(con,'gene_annotation',geneIPR[,-geneid],overwrite=F,append=T,row.names=FALSE)
+      dbWriteTable(con,'gene_annotation',geneIPR,overwrite=F,append=T,row.names=FALSE)
   }
 }
 dbDisconnect(con)
