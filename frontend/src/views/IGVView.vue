@@ -32,7 +32,7 @@
             <button class="btn btn-primary" @click="handleLoad" :disabled="loading">
               Load / Reload
             </button>
-            <button class="btn btn-secondary" @click="handleReset" :disabled="loading">
+            <button class="btn btn-secondary reset-action-btn" @click="handleReset" :disabled="loading">
               {{ t('igv_reset') }}
             </button>
           </div>
@@ -108,7 +108,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, onMounted, onBeforeUnmount, nextTick, inject } from 'vue'
 import { useI18n } from 'vue-i18n'
 import igv from 'igv'
 import {
@@ -131,6 +131,8 @@ const {
   setSelectedGenome,
   extractGenomeName
 } = useGenomeSelector()
+const showLoading = inject('showLoading')
+const hideLoading = inject('hideLoading')
 
 const igvContainer = ref(null)
 const browser = ref(null)
@@ -221,6 +223,7 @@ const loadGenome = async (genomeName, preferredLocus = '') => {
   if (!genomeName) return
 
   const token = ++latestLoadToken
+  showLoading?.()
   loading.value = true
   errorMessage.value = ''
 
@@ -245,6 +248,7 @@ const loadGenome = async (genomeName, preferredLocus = '') => {
   } finally {
     if (token === latestLoadToken) {
       loading.value = false
+      hideLoading?.()
     }
   }
 }

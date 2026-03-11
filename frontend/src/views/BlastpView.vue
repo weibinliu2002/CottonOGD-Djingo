@@ -1,7 +1,7 @@
 ﻿<script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
-import { onMounted, computed, ref } from 'vue'
+import { onMounted, computed, ref, inject } from 'vue'
 import { storeToRefs } from 'pinia'
 import { ElMessage } from 'element-plus'
 import { Delete, Search } from '@element-plus/icons-vue'
@@ -36,6 +36,8 @@ const {
 } = storeToRefs(blastStore)
 
 const { submitBlast, resetForm, setDefaultGenomes, fillExample } = blastStore
+const showLoading = inject<() => void>('showLoading')
+const hideLoading = inject<() => void>('hideLoading')
 
 // 鑾峰彇褰撳墠閫変腑blast绫诲瀷鐨勪粙缁?
 const currentBlastDescription = computed(() => {
@@ -71,6 +73,15 @@ onMounted(async () => {
   await ensureGenomesLoaded()
   setDefaultGenomes(genomeStore.genomeOptions)
 })
+
+const handleBlastSubmit = async () => {
+  showLoading?.()
+  try {
+    await submitBlast()
+  } finally {
+    hideLoading?.()
+  }
+}
 </script>
 
 <template>
@@ -124,12 +135,12 @@ onMounted(async () => {
             class="submit-button"
             :loading="loading"
             :disabled="loading"
-            @click="submitBlast"
+            @click="handleBlastSubmit"
           >
             <el-icon><Search /></el-icon>
             Run {{ t('blast_search') }}
           </el-button>
-          <el-button type="default" @click="resetForm" size="large" class="reset-button">
+          <el-button type="default" @click="resetForm" size="large" class="reset-button reset-action-btn">
             <el-icon><Refresh /></el-icon>
             {{ t('reset') }} Form
           </el-button>
@@ -791,4 +802,3 @@ onMounted(async () => {
   }
 }
 </style>
-

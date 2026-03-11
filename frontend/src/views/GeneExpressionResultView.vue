@@ -434,7 +434,7 @@ const downloadExpressionData = () => {
   const headers = ['Gene ID', ...tissueColumns]
   
   // 构建CSV行
-  const rows = results.value.map((item: { geneid: string }) => {
+  const rows = results.value.map((item: { geneid: string; [key: string]: any }) => {
     const row = [item.geneid]
     tissueColumns.forEach((col: string) => {
       row.push(item[col] !== undefined ? item[col] : '-')

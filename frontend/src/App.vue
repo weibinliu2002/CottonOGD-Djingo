@@ -84,9 +84,23 @@
                 <li><router-link class="dropdown-item" to="/tools/kegg-enrichment">{{ t('kegg_enrichment') }}</router-link></li>
 
                 <li><router-link class="dropdown-item" to="/tools/gene-expression">{{ t('gene_expression') }}</router-link></li>
+        
+                <li><router-link class="dropdown-item" to="/tools/primer-design">{{ t('primer_design') }}</router-link></li>
+              </ul>
+            </li>
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                {{ t('Graphical Tools') }}
+              </a>
+              <ul class="dropdown-menu">
+                <li><router-link class="dropdown-item" to="/tools/clustergramme_heatmap">{{ t('clustergramme_heatmap') }}</router-link></li>
+                 <li><router-link class="dropdown-item" to="/tools/canvaspress">{{ t('canvaspress') }}</router-link></li>
+                <li><router-link class="dropdown-item" to="/tools/ppi">{{ t('ppi') }}</router-link></li>
+                <li><router-link class="dropdown-item" to="/tools/phylotree">{{ t('phylotree') }}</router-link></li>
+                <li><router-link class="dropdown-item" to="/tools/circos">{{ t('circos') }}</router-link></li>
                 <li><router-link class="dropdown-item" to="/tools/gene-expression-efp">{{ t('gene_expression_in_efp') }}</router-link></li>
 
-                <li><router-link class="dropdown-item" to="/tools/primer-design">{{ t('primer_design') }}</router-link></li>
+             
               </ul>
             </li>
             <li class="nav-item">
@@ -108,15 +122,20 @@
       <router-view />
     </main>
     
-    <!-- 加载遮罩 -->
-    <div v-if="isLoading" class="loading-overlay">
-      <div class="loading-content">
-        <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">{{ t('loading') }}</span>
-        </div>
-        <div class="mt-3">{{ t('loading') }}</div>
+    <el-dialog
+      v-model="isLoading"
+      width="280px"
+      :show-close="false"
+      :close-on-click-modal="false"
+      :close-on-press-escape="false"
+      class="search-loading-dialog"
+      align-center
+    >
+      <div class="search-loading-content">
+        <div class="search-loading-title">Search is running ...</div>
+        <div class="search-loading-time">{{ formattedLoadingTime }}</div>
       </div>
-    </div>
+    </el-dialog>
     
     <!-- 底部区域 -->
     <div class="footer-section">
@@ -189,6 +208,11 @@ const { t } = useI18n()
 
 // 定义全局加载状态
 const isLoading = ref(false)
+const loadingRequestCount = ref(0)
+const loadingSeconds = ref(0)
+let loadingTimer = null
+let loadingDelayTimer = null
+const LOADING_DIALOG_DELAY_MS = 500
 
 // 搜索相关
 const searchQuery = ref('')
@@ -204,12 +228,50 @@ const currentLanguage = computed({
 
 // 定义加载状态管理方法
 const showLoading = () => {
-  isLoading.value = true
+  loadingRequestCount.value += 1
+  if (loadingRequestCount.value === 1) {
+    if (loadingDelayTimer) {
+      clearTimeout(loadingDelayTimer)
+    }
+    loadingDelayTimer = setTimeout(() => {
+      loadingDelayTimer = null
+      if (loadingRequestCount.value > 0) {
+        loadingSeconds.value = 0
+        isLoading.value = true
+        if (loadingTimer) {
+          clearInterval(loadingTimer)
+        }
+        loadingTimer = setInterval(() => {
+          loadingSeconds.value += 1
+        }, 1000)
+      }
+    }, LOADING_DIALOG_DELAY_MS)
+  }
 }
 
 const hideLoading = () => {
-  isLoading.value = false
+  if (loadingRequestCount.value > 0) {
+    loadingRequestCount.value -= 1
+  }
+  if (loadingRequestCount.value === 0) {
+    if (loadingDelayTimer) {
+      clearTimeout(loadingDelayTimer)
+      loadingDelayTimer = null
+    }
+    isLoading.value = false
+    if (loadingTimer) {
+      clearInterval(loadingTimer)
+      loadingTimer = null
+    }
+  }
 }
+
+const formattedLoadingTime = computed(() => {
+  const hours = Math.floor(loadingSeconds.value / 3600)
+  const minutes = Math.floor((loadingSeconds.value % 3600) / 60)
+  const seconds = loadingSeconds.value % 60
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+})
 
 // 提供全局加载状态和方法
 provide('isLoading', isLoading)
@@ -679,32 +741,53 @@ footer {
   font-size: 20px;
 }
 
-/* 加载遮罩样式 */
-.loading-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(255, 255, 255, 0.8);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
-  backdrop-filter: blur(2px);
+/* 检索计时弹窗 */
+.search-loading-dialog .el-dialog {
+  border: 1px solid #8fb8e8;
+  border-radius: 0;
 }
 
-.loading-content {
+.search-loading-dialog .el-dialog__header {
+  padding: 0;
+}
+
+.search-loading-dialog .el-dialog__body {
+  padding: 18px 20px;
+}
+
+.search-loading-content {
   text-align: center;
-  color: #333;
-  font-size: 18px;
-  font-weight: 500;
 }
 
-.spinner-border {
-  width: 4rem;
-  height: 4rem;
-  border-width: 0.3rem;
+.search-loading-title {
+  color: #2f5f94;
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 1.1;
+  margin-bottom: 10px;
+}
+
+.search-loading-time {
+  color: #2f5f94;
+  font-family: "Consolas", "Courier New", monospace;
+  font-size: 28px;
+  letter-spacing: 1px;
+}
+
+/* 统一 reset 按钮样式 */
+.reset-action-btn {
+  border: 1px solid #8aa3bf !important;
+  color: #466686 !important;
+  background-color: #f4f7fb !important;
+  border-radius: 8px !important;
+  transition: all 0.2s ease;
+}
+
+.reset-action-btn:hover,
+.reset-action-btn:focus {
+  border-color: #5d7e9f !important;
+  background-color: #e9f0f8 !important;
+  color: #355a80 !important;
 }
 
 /* 响应式设计 */

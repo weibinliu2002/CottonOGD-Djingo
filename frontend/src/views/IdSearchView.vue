@@ -13,7 +13,7 @@
           />
           <div class="mt-2">
             <el-button type="info" @click="loadExample">{{ t('load_example') }}</el-button>
-            <el-button type="default" @click="reset" class="ml-2">{{ t('reset') }}</el-button>
+            <el-button type="default" @click="reset" class="ml-2 reset-action-btn">{{ t('reset') }}</el-button>
           </div>
           <div class="text-muted mt-1">{{ t('one_gene_id_per_line') }}</div>
         </el-form-item>
@@ -55,7 +55,7 @@
         </el-form-item>
 
         <el-form-item>
-          <el-button type="primary" native-type="submit" :loading="geneSearchStore.loading">{{ t('search') }}</el-button>
+          <el-button type="primary" native-type="submit" :loading="geneSearchStore.isLoading">{{ t('search') }}</el-button>
         </el-form-item>
       </el-form>
 

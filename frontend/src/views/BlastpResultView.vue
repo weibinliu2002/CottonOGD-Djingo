@@ -188,6 +188,7 @@ const executionTime = ref(0)
 const chordData = ref<any>(null)
 const lineChartData = ref<any[]>([])
 const rawBlastResults = ref<any>(null)
+const genomeId = ref('')
 
 // 总页数
 const totalPages = computed(() => Math.ceil(total.value / perPage.value))

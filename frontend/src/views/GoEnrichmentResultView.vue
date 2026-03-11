@@ -98,12 +98,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, inject } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
 const route = useRoute()
 const { t } = useI18n()
+const showLoading = inject('showLoading') as (() => void) | undefined
+const hideLoading = inject('hideLoading') as (() => void) | undefined
 
 // 页面数据
 const perPage = ref(10)
@@ -176,6 +178,7 @@ const changePage = async (category: string, page: number) => {
 
 // 获取结果数据
 const fetchResults = async () => {
+  showLoading?.()
   isLoading.value = true
   try {
     // 从URL参数获取gene_id
@@ -274,6 +277,7 @@ const fetchResults = async () => {
     hasResults.value = false
   } finally {
     isLoading.value = false
+    hideLoading?.()
   }
 }
 

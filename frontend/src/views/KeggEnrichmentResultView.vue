@@ -102,12 +102,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, inject } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 const route = useRoute()
+const showLoading = inject('showLoading') as (() => void) | undefined
+const hideLoading = inject('hideLoading') as (() => void) | undefined
 
 // 页面数据
 const results = ref<any[]>([])
@@ -122,6 +124,7 @@ const totalItems = ref(0)
 import axios from '../utils/http'
 
 const fetchResults = async () => {
+  showLoading?.()
   isLoading.value = true
   try {
     // 从URL参数获取gene_id和p_value_threshold
@@ -166,6 +169,7 @@ const fetchResults = async () => {
     hasResults.value = false
   } finally {
     isLoading.value = false
+    hideLoading?.()
   }
 }
 

@@ -92,7 +92,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import httpInstance from '../utils/http'
@@ -101,6 +101,8 @@ import { useGenomeSelector } from '@/composables/useGenomeBrowser'
 import { useGeneExpressionStore } from '@/stores/geneExpressionStore'
 
 const { t } = useI18n()
+const showLoading = inject('showLoading') as (() => void) | undefined
+const hideLoading = inject('hideLoading') as (() => void) | undefined
 
 const router = useRouter()
 const { genomeStore, ensureGenomesLoaded, pickDefaultGenome } = useGenomeSelector('G.hirsutumAD1_Jin668_HAU_v1T2T')
@@ -153,6 +155,7 @@ Ghjin_A01g000190
 
 // Submit form.
 const handleSubmit = async () => {
+  showLoading?.()
   error.value = ''
 
   if (!geneList.value.trim()) {
@@ -211,6 +214,7 @@ const handleSubmit = async () => {
     geneExpressionStore.setError(t('submission_failed_please_try_again'))
   } finally {
     geneExpressionStore.setLoading(false)
+    hideLoading?.()
   }
 }
 </script>

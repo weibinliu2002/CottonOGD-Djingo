@@ -87,12 +87,14 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, inject } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from '../utils/http'
 import httpInstance from '../utils/http'
 
 const route = useRoute()
+const showLoading = inject('showLoading') as (() => void) | undefined
+const hideLoading = inject('hideLoading') as (() => void) | undefined
 
 // 页面数据
 const perPage = ref(10)
@@ -123,6 +125,7 @@ const changePage = (page: number) => {
 
 // 加载结果数据
 const loadResults = async () => {
+  showLoading?.()
   loading.value = true
   
   // 从路由参数获取查询条件
@@ -188,6 +191,7 @@ const loadResults = async () => {
     hasResults.value = false
   } finally {
     loading.value = false
+    hideLoading?.()
   }
 }
 

@@ -25,8 +25,15 @@ import KeggEnrichmentResultView from '@/views/KeggEnrichmentResultView.vue'
 import TFView from '@/views/TFView.vue'
 import TRView from '@/views/TRView.vue'
 import PrimerView from '@/views/PrimerView.vue'
+import Clustergramme_heatmapView from '@/views/Clustergramme_heatmap.vue'
+import PPIView from '@/views/PPIView.vue'
+import PhylotreeView from '@/views/PhylotreeView.vue'
+import CircosView from '@/views/CircosView.vue'
+import CanvaspressView from '@/views/CanvaspressView.vue'
 
-// 简单的占位组件
+
+
+//简单的占位组件
 const SimpleView = { 
   props: ['title'],
   template: `<div class="container mt-4">
@@ -183,14 +190,29 @@ const routes = [
     component: () => ({ ...SimpleView, propsData: { title: '多序列比对结果' } })
   },
   {
-    path: '/tools/circos',
-    name: 'Circos',
-    component: () => ({ ...SimpleView, propsData: { title: 'Circos可视化' } })
+    path: '/tools/clustergramme_heatmap',
+    name: 'Clustergramme_heatmap',
+    component: Clustergramme_heatmapView
   },
   {
-    path: '/tools/circos/results',
-    name: 'CircosResults',
-    component: () => ({ ...SimpleView, propsData: { title: 'Circos可视化结果' } })
+    path: '/tools/ppi',
+    name: 'PPI',
+    component: PPIView
+  },
+  {
+    path: '/tools/phylotree',
+    name: 'Phylotree',
+    component: PhylotreeView
+  },
+  {
+    path: '/tools/circos',
+    name: 'Circos',
+    component: CircosView
+  },
+  {
+    path: '/tools/canvaspress',
+    name: 'Canvaspress',
+    component: CanvaspressView
   },
   {
     path: '/download',

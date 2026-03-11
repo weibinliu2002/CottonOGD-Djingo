@@ -75,10 +75,12 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, watch, nextTick, inject } from 'vue'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
+const showLoading = inject('showLoading') as (() => void) | undefined
+const hideLoading = inject('hideLoading') as (() => void) | undefined
 
 // 页面数据
 const results = ref<any[]>([])
@@ -96,6 +98,7 @@ const chartData = ref<{ labels: string[], data: number[] }>({ labels: [], data: 
 import axios from '../utils/http'
 
 const fetchResults = async () => {
+  showLoading?.()
   isLoading.value = true
   try {
     // 从URL参数获取gene_id
@@ -150,6 +153,7 @@ const fetchResults = async () => {
     hasResults.value = false
   } finally {
     isLoading.value = false
+    hideLoading?.()
   }
 }
 

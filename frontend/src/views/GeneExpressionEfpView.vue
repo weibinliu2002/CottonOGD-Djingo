@@ -147,7 +147,7 @@
 </template>
 
 <script>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount, inject } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useGenomeSelector } from '@/composables/useGenomeBrowser'
 
@@ -155,6 +155,8 @@ export default {
   name: 'GeneExpressionEfpView',
   setup() {
     const { t } = useI18n()
+    const showLoading = inject('showLoading')
+    const hideLoading = inject('hideLoading')
     const { genomeStore, ensureGenomesLoaded, pickDefaultGenome } = useGenomeSelector('G.hirsutumAD1_Jin668_HAU_v1T2T')
     const geneId = ref('')
     const selectedGenome = ref('')
@@ -199,8 +201,10 @@ export default {
     
     // Generate heatmap
     const generateImage = () => {
+      showLoading?.()
       if (!geneId.value.trim()) {
         showMessage('Please enter gene ID', 'error');
+        hideLoading?.()
         return;
       }
       
@@ -262,6 +266,7 @@ export default {
       })
       .finally(() => {
         isLoading.value = false;
+        hideLoading?.()
       });
     }
     
