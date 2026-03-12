@@ -1,6 +1,6 @@
 <template>
   <div class="container mt-4">
-    <h2 class="mb-3">BioCircos Viewer</h2>
+    <h2 class="mb-3">NG-Circos Viewer</h2>
     <el-alert
       v-if="errorMessage"
       type="error"
@@ -11,7 +11,7 @@
     <el-card class="mb-3">
       <template #header>
         <div class="card-header">
-          <span>BioCircos.js Example Layout</span>
+          <span>NG-Circos Example Layout</span>
           <div class="actions">
             <el-button type="primary" size="small" :loading="isRendering" @click="renderCircos">
               Render
@@ -23,22 +23,24 @@
         </div>
       </template>
       <div class="tip">
-        Tracks are configured based on the BioCircos documentation pattern:
+        Tracks are configured based on the NG-Circos documentation pattern:
         <code>BACKGROUND + SNP + SCATTER + LINK + Genome + config</code>.
       </div>
     </el-card>
     <el-card>
-      <div id="biocircos-root" ref="chartRoot" class="circos-root"></div>
+      <div id="NGCircos" ref="chartRoot" class="circos-root"></div>
     </el-card>
   </div>
 </template>
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+// 使用相对路径导入，避免TypeScript类型错误
+const ngCircosUrl = '/src/assets/js/NGCircos.js'
 
 declare global {
   interface Window {
-    BioCircos?: any
+    NGCircos?: any
     jQuery?: any
   }
 }
@@ -72,13 +74,15 @@ const ensureScript = (id: string, src: string) =>
     document.body.appendChild(script)
   })
 
-const ensureBioCircosLib = async () => {
-  if (typeof window.BioCircos === 'function') return
-  await ensureScript('biocircos-jquery', '@/assets/js/jquery.js')
-  await ensureScript('biocircos-d3v3', '@/assets/js/d3.js')
-  await ensureScript('biocircos-lib', '@/assets/js/biocircos-1.1.0.js')
-  if (typeof window.BioCircos !== 'function') {
-    throw new Error('BioCircos library is unavailable after script loading.')
+const ensureNGCircosLib = async () => {
+  if (typeof window.NGCircos === 'function') return
+  await ensureScript('ngcircos-jquery', '/src/assets/js/NGCircos/jquery.js')
+  await ensureScript('ngcircos-d3v3', '/src/assets/js/NGCircos/d3.js')
+  await ensureScript('ngcircos-lib', '/src/assets/js/NGCircos/NGCircos.js')
+  await ensureScript('ngcircos-save', '/src/assets/js/NGCircos/saveSvgAsPng.js')
+  await ensureScript('ngcircos-crowbar', '/src/assets/js/NGCircos/svg-crowbar.js')
+  if (typeof window.NGCircos !== 'function') {
+    throw new Error('NG-Circos library is unavailable after script loading.')
   }
 }
 
@@ -191,19 +195,19 @@ const renderCircos = async () => {
   isRendering.value = true
   errorMessage.value = ''
   try {
-    await ensureBioCircosLib()
+    await ensureNGCircosLib()
     clearChart()
 
     const { genome, BACKGROUND01, SNP01, SCATTER01, LINK01 } = buildDemoTracks()
-    const BioCircos = window.BioCircos as any
-    const circos = new BioCircos(
+    const NGCircos = window.NGCircos as any
+    const circos = new NGCircos(
       LINK01,
       BACKGROUND01,
       SNP01,
       SCATTER01,
-      genome,
+      [genome],
       {
-        target: 'biocircos-root',
+        target: 'NGCircos',
         svgWidth: 760,
         svgHeight: 620,
         chrPad: 0.04,
@@ -216,7 +220,7 @@ const renderCircos = async () => {
     )
     circos.draw_genome(circos.genomeLength)
   } catch (error: any) {
-    errorMessage.value = error?.message || 'Failed to render BioCircos chart.'
+    errorMessage.value = error?.message || 'Failed to render NG-Circos chart.'
   } finally {
     isRendering.value = false
   }
