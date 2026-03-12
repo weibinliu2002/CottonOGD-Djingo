@@ -37,10 +37,6 @@ export default defineConfig({
   server: {
     port: 5713,
     hmr: true,
-    // 禁用对node_modules中文件的source map加载
-    sourcemapIgnoreList: (source) => {
-      return source.includes('node_modules')
-    },
     proxy: {
       // 匹配 CottonOGD_api 路径
       '^/CottonOGD_api': {

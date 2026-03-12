@@ -351,7 +351,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, watch, inject } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { usePrimerDesignStore } from '@/stores/primerDesign'
 import { useGenomeSelector } from '@/composables/useGenomeBrowser'
@@ -360,8 +360,6 @@ import httpInstance from '@/utils/http'
 import { treemapResquarify } from 'd3'
 
 const { t } = useI18n()
-const showLoading = inject('showLoading')
-const hideLoading = inject('hideLoading')
 
 // 鍒濆鍖杝tore
 const primerDesignStore = usePrimerDesignStore()
@@ -530,16 +528,13 @@ const loadExample = () => {
 
 // Fetch sequence by gene ID
 const fetchSequence = async () => {
-  showLoading?.()
   if (!sequenceId.value.trim()) {
     error.value = t('please_enter_sequence_id')
-    hideLoading?.()
     return
   }
   
   if (!genomeAssembly.value) {
     error.value = t('please_select_genome')
-    hideLoading?.()
     return
   }
   
@@ -575,16 +570,13 @@ const fetchSequence = async () => {
     console.error('Failed to fetch sequence:', err)
   } finally {
     isFetching.value = false
-    hideLoading?.()
   }
 }
 
 // Fetch sequence by genome position
 const fetchSequenceByPosition = async () => {
-  showLoading?.()
   if (!genomeAssembly.value || !genomePosition.chromosome.trim() || !genomePosition.start || !genomePosition.end) {
     error.value = t('please_fill_in_complete_genome_position_information')
-    hideLoading?.()
     return
   }
   
@@ -614,7 +606,6 @@ const fetchSequenceByPosition = async () => {
     console.error('Failed to fetch sequence by genome position:', err)
   } finally {
     isFetching.value = false
-    hideLoading?.()
   }
 }
 
@@ -633,7 +624,6 @@ const useDirectSequence = () => {
 
 // Design primers function
 const designPrimers = async () => {
-  showLoading?.()
   console.log('designPrimers called')
   console.log('sequenceTemplate.value:', sequenceTemplate.value)
   console.log('sequenceTemplate.value.trim():', sequenceTemplate.value.trim())
@@ -642,7 +632,6 @@ const designPrimers = async () => {
   if (!sequenceTemplate.value.trim()) {
     console.log('Sequence is empty, showing error')
     error.value = t('please_enter_dna_sequence')
-    hideLoading?.()
     return
   }
   
@@ -651,7 +640,6 @@ const designPrimers = async () => {
   if (processedSequence.length > 5000) {
     console.log('Sequence is too long')
     error.value = `Sequence is too long (max 5000 characters, got ${processedSequence.length})`
-    hideLoading?.()
     return
   }
   
@@ -696,7 +684,6 @@ const designPrimers = async () => {
     console.error('Failed to design primers:', err)
   } finally {
     isLoading.value = false
-    hideLoading?.()
   }
 }
 
@@ -888,3 +875,4 @@ const downloadResults = () => {
   }
 }
 </style>
+
