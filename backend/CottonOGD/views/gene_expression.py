@@ -276,7 +276,11 @@ def extract_expression(request):
         tissues = request.data.get('tissue') or request.query_params.get('tissue')
         if tissues:
             tissues = tissues.split(',')
-        gene_expr=gene_expression.objects.filter(id_id__in=db_id, tissue__in=tissues).values('id_id','geneid','stage','tissue','value')
+        # 当tissue参数为空时，提取所有组织的表达量
+        if tissues:
+            gene_expr=gene_expression.objects.filter(id_id__in=db_id, tissue__in=tissues).values('id_id','geneid','stage','tissue','value')
+        else:
+            gene_expr=gene_expression.objects.filter(id_id__in=db_id).values('id_id','geneid','stage','tissue','value')
         df = pd.DataFrame(list(gene_expr))
         
         # 处理空值
