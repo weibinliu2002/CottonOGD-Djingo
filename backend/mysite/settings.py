@@ -38,6 +38,7 @@ CSRF_TRUSTED_ORIGINS = [
     'http://localhost:5173',
     'http://localhost:5174',
     'http://localhost:5713',
+    'http://localhost:5714',
     'http://127.0.0.1:5173',
 ]
 
@@ -45,7 +46,7 @@ CSRF_TRUSTED_ORIGINS = [
 # Application definition
 
 INSTALLED_APPS = [
-    # "daphne",
+     "daphne",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -82,6 +83,7 @@ CSRF_COOKIE_SAMESITE = 'Lax'
 CORS_ORIGIN_ALLOW_ALL = True
 CORS_ORIGIN_WHITELIST = [
     *(f'http://localhost:{port}' for port in range(5173, 5180)),
+    'http://localhost:5714',
 ]
 CORS_ALLOW_HEADERS = [
     '*',
@@ -105,8 +107,8 @@ TEMPLATES = [
         },
     },
 ]
-# ASGI_APPLICATION = "mysite.asgi.application"
-WSGI_APPLICATION = 'mysite.wsgi.application'
+ASGI_APPLICATION = "mysite.asgi.application"
+#WSGI_APPLICATION = 'mysite.asgi.application'
 
 
 # Database

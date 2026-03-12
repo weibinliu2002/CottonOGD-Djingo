@@ -98,10 +98,13 @@
                 <li><router-link class="dropdown-item" to="/tools/ppi">{{ t('ppi') }}</router-link></li>
                 <li><router-link class="dropdown-item" to="/tools/phylotree">{{ t('phylotree') }}</router-link></li>
                 <li><router-link class="dropdown-item" to="/tools/circos">{{ t('circos') }}</router-link></li>
-                <li><router-link class="dropdown-item" to="/tools/gene-expression-efp">{{ t('gene_expression_in_efp') }}</router-link></li>
+               
 
-             
+              
               </ul>
+            </li>
+            <li class="nav-item">
+              <router-link class="nav-link" to="//tools/gene-expression-efp">{{ t('gene_expression_in_efp') }}</router-link>
             </li>
             <li class="nav-item">
               <router-link class="nav-link" to="/download">{{ t('download') }}</router-link>
@@ -196,7 +199,7 @@
 </template>
 
 <script setup>
-import { ref, provide, onMounted, computed } from 'vue'
+import { ref, provide, onMounted, computed, watch } from 'vue'
 import { ArrowUp } from '@element-plus/icons-vue'
 import httpInstance from './utils/http.js'
 import { useRouter } from 'vue-router'

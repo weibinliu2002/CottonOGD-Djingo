@@ -37,10 +37,30 @@ export default defineConfig({
   server: {
     port: 5713,
     hmr: true,
+    // 启用historyApiFallback，解决SPA路由刷新404问题
+    historyApiFallback: true,
+    // 禁用对node_modules中文件的source map加载
+    sourcemapIgnoreList: (source) => {
+      return source.includes('node_modules')
+    },
     proxy: {
       // 匹配 CottonOGD_api 路径
       '^/CottonOGD_api': {
         //target: 'http://172.28.226.114:8000',
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+        secure: false,
+        cookieDomainRewrite: 'localhost'
+      },
+      // 匹配 admin 路径及其子路径
+      '^/admin.*': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+        secure: false,
+        cookieDomainRewrite: 'localhost'
+      },
+      // 匹配 admin 路径
+      '^/admin': {
         target: 'http://127.0.0.1:8000',
         changeOrigin: true,
         secure: false,

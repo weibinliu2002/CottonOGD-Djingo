@@ -5,7 +5,9 @@
       <p class="page-description">{{ t('get_in_touch') }}</p>
     </div>
     <el-card>
-      <p>This page is under development...</p>
+      <h4>Github issues:<a href="https://github.com/weibinliu2002/CottonOGD-Djingo/issues" target="_blank">weibinliu</a></h4>
+      <h4>Google Email:<a href="liuweibin2002@gmail.com">liuweibin2002@gmail.com</a></h4>
+      <h4>163 Email:<a href="liuweibin2002@163.com">liuweibin2002@163.com</a></h4>
     </el-card>
   </div>
 </template>

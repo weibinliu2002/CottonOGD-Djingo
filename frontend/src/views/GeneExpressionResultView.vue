@@ -82,7 +82,7 @@
           </template>
           
           <!-- 热图控制面板 -->
-          <el-collapse class="heatmap-controls mb-3">
+          <el-collapse class="heatmap-controls mb-3" v-model="activeCollapseItems">
             <el-collapse-item :title="t('heatmap_settings')" name="1">
               <el-form :model="heatmapConfig" label-position="left" label-width="120px" size="small">
                 <el-row :gutter="20">
@@ -225,6 +225,9 @@ const heatmapConfig = ref({
   showValues: false,
   valueType: 'original' // 'original' 或 'log2'
 })
+
+// 折叠面板默认展开
+const activeCollapseItems = ref(['1'])
 
 // 从 store 获取响应式数据
 const results = computed(() => {

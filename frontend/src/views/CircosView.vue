@@ -35,14 +35,8 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-
-// 静态导入脚本文件，确保Vite能正确打包
-// 使用类型断言解决TypeScript类型检查问题
-const jqueryUrl = '/assets/js/NGCircos/jquery.js'
-const d3Url = '/assets/js/NGCircos/d3.js'
-const ngCircosUrl = '/assets/js/NGCircos/NGCircos.js'
-const saveSvgAsPngUrl = '/assets/js/NGCircos/saveSvgAsPng.js'
-const svgCrowbarUrl = '/assets/js/NGCircos/svg-crowbar.js'
+// 使用相对路径导入，避免TypeScript类型错误
+const ngCircosUrl = '/src/assets/js/NGCircos.js'
 
 declare global {
   interface Window {
@@ -82,11 +76,11 @@ const ensureScript = (id: string, src: string) =>
 
 const ensureNGCircosLib = async () => {
   if (typeof window.NGCircos === 'function') return
-  await ensureScript('ngcircos-jquery', jqueryUrl)
-  await ensureScript('ngcircos-d3v3', d3Url)
-  await ensureScript('ngcircos-lib', ngCircosUrl)
-  await ensureScript('ngcircos-save', saveSvgAsPngUrl)
-  await ensureScript('ngcircos-crowbar', svgCrowbarUrl)
+  await ensureScript('ngcircos-jquery', '/assets/js/NGCircos/jquery.js')
+  await ensureScript('ngcircos-d3v3', '/assets/js/NGCircos/d3.js')
+  await ensureScript('ngcircos-lib', '/assets/js/NGCircos/NGCircos.js')
+  await ensureScript('ngcircos-save', '/assets/js/NGCircos/saveSvgAsPng.js')
+  await ensureScript('ngcircos-crowbar', '/assets/js/NGCircos/svg-crowbar.js')
   if (typeof window.NGCircos !== 'function') {
     throw new Error('NG-Circos library is unavailable after script loading.')
   }
