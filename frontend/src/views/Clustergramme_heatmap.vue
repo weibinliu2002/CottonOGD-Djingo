@@ -1,4 +1,4 @@
-﻿<template>
+﻿﻿<template>
   <div class="fullscreen-container">
     <div ref="heatmapContainer" id="clustergrammer-root" class="fullscreen-heatmap"></div>
   </div>
