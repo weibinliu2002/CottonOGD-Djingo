@@ -43,7 +43,7 @@ urlpatterns = [
     path('static/jbrowse/data/<str:genome_name>/<str:filename>', serve_large_file, name='serve_large_file_static'),
     path('download_genome/<str:genome_id>/<str:file_type>', download_genome_file, name='download_genome_file'),
     # 处理基因组文件下载（静态文件服务）
-] + static('/data/genome/', document_root=os.path.join(settings.BASE_DIR, 'data', 'genome')) + static(settings.STATIC_URL, document_root=os.path.join(os.path.dirname(settings.BASE_DIR), 'frontend', 'dist', 'assets')) + static('/vendor/', document_root=os.path.join(os.path.dirname(settings.BASE_DIR), 'frontend', 'public', 'vendor')) + debug_toolbar_urls() + [
+] + static('/data/genome/', document_root=os.path.join(settings.BASE_DIR, 'data', 'genome')) + static('/vendor/', document_root=os.path.join(os.path.dirname(settings.BASE_DIR), 'frontend', 'public', 'vendor')) + static('/assets/jbrowse/', document_root=os.path.join(settings.BASE_DIR, 'static', 'jbrowse')) + static(settings.STATIC_URL, document_root=os.path.join(os.path.dirname(settings.BASE_DIR), 'frontend', 'dist', 'assets')) + debug_toolbar_urls() + [
     # 捕获所有路由，指向index.html，让Vue Router处理
     path('', TemplateView.as_view(template_name='index.html')),
     path('<path:path>', TemplateView.as_view(template_name='index.html')),
