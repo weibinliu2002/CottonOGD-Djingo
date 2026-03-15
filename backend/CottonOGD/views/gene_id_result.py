@@ -108,6 +108,8 @@ def geneid_result(request):
     gene_annotation_result = gene_annotation.objects.filter(id_id__in=db_ids).values()
     gene_info_result = gene_info.objects.filter(id_id__in=db_ids).values()
     genome_seq_result = gene_seq.objects.filter(id_id__in=db_ids).values()
+    gene_go_result = gene_go.objects.filter(id_id__in=db_ids).values()
+    gene_kegg_result = gene_kegg.objects.filter(id_id__in=db_ids).values()
     
     # 初始化变量
     seqid = ''
@@ -162,9 +164,11 @@ def geneid_result(request):
         'genome_id': genome_id,
         'IDs': IDs,
         'db_id': db_id,
-        'gene_seq': genome_seq_result.filter(mrna_id=IDs, gene_type='gene_genomegene_').values_list('sequence', flat=True).first(),
+        'gene_seq': genome_seq_result.filter(mrna_id=IDs, gene_type='genome').values_list('sequence', flat=True).first(),
         'geneid_result': list(gene_annotation_result),
         'gff_data': list(gene_info_result),
+        'gene_go_result': list(gene_go_result),
+        'gene_kegg_result': list(gene_kegg_result),
         'mrna_transcripts': mrna_transcript_result,    
         'jbrowse_url': jbrowse_url
                          }

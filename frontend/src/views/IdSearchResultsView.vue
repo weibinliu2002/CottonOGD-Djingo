@@ -735,6 +735,34 @@ const fetchGeneData = async (db_id: string) => {
         processAnnotations([])
       }
       
+      // 处理 GO 注释数据（如果有的话）
+      if (navigationData.results.gene_go_result && Array.isArray(navigationData.results.gene_go_result)) {
+        const goAnnotations = navigationData.results.gene_go_result.map((item: any) => ({
+          annotation: `${item.go_type}: ${item.go_description} (${item.go_id})`,
+          geneid_id: item.geneid_id,
+          genome_id: item.genome_id,
+          id_id: item.id_id
+        }))
+        if (!annotations.value.GO_annotation) {
+          annotations.value.GO_annotation = []
+        }
+        annotations.value.GO_annotation = [...annotations.value.GO_annotation, ...goAnnotations]
+      }
+      
+      // 处理 KEGG 注释数据（如果有的话）
+      if (navigationData.results.gene_kegg_result && Array.isArray(navigationData.results.gene_kegg_result)) {
+        const keggAnnotations = navigationData.results.gene_kegg_result.map((item: any) => ({
+          annotation: `${item.kegg_type}: ${item.kegg_description} (${item.kegg_id})`,
+          geneid_id: item.geneid_id,
+          genome_id: item.genome_id,
+          id_id: item.id_id
+        }))
+        if (!annotations.value.KEGG_annotation) {
+          annotations.value.KEGG_annotation = []
+        }
+        annotations.value.KEGG_annotation = [...annotations.value.KEGG_annotation, ...keggAnnotations]
+      }
+      
       // 设置jbrowse_url
       jbrowse_url.value = navigationData.results.jbrowse_url || ''
       
@@ -816,6 +844,34 @@ const fetchGeneData = async (db_id: string) => {
       
       // 处理注释数据
       processAnnotations(data.geneid_result || [])
+      
+      // 处理 GO 注释数据
+      if (data.gene_go_result && data.gene_go_result.length > 0) {
+        const goAnnotations = data.gene_go_result.map((item: any) => ({
+          annotation: `${item.go_type}: ${item.go_description} (${item.go_id})`,
+          geneid_id: item.geneid_id,
+          genome_id: item.genome_id,
+          id_id: item.id_id
+        }))
+        if (!annotations.value.GO_annotation) {
+          annotations.value.GO_annotation = []
+        }
+        annotations.value.GO_annotation = [...annotations.value.GO_annotation, ...goAnnotations]
+      }
+      
+      // 处理 KEGG 注释数据
+      if (data.gene_kegg_result && data.gene_kegg_result.length > 0) {
+        const keggAnnotations = data.gene_kegg_result.map((item: any) => ({
+          annotation: `${item.kegg_type}: ${item.kegg_description} (${item.kegg_id})`,
+          geneid_id: item.geneid_id,
+          genome_id: item.genome_id,
+          id_id: item.id_id
+        }))
+        if (!annotations.value.KEGG_annotation) {
+          annotations.value.KEGG_annotation = []
+        }
+        annotations.value.KEGG_annotation = [...annotations.value.KEGG_annotation, ...keggAnnotations]
+      }
       
       jbrowse_url.value = data.jbrowse_url || ''
       
