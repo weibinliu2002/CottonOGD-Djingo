@@ -84,10 +84,16 @@ class blast:
         # 构建BLAST可执行文件路径
         if system == 'windows':
             blast_path = os.path.join(settings.BASE_DIR,  'soft', 'windows','blast+', 'bin')
+            db_path = os.path.join(settings.BASE_DIR, 'data','blast_db', genome_id, f'{genome_id}_{data_type}')
         elif system == 'linux':
             blast_path = os.path.join(settings.BASE_DIR,  'soft', 'UNIX','blast+', 'bin')
+            db_path = os.path.join(settings.BASE_DIR, 'data','blast_db','CottonOGD', genome_id, data_type,genome_id)
+            
         else:
             raise OSError(f"不支持的操作系统: {system}")
+        # 构建数据库路径
+        
+        
         
         # 根据BLAST类型选择可执行文件
         if type == 'blastn':
@@ -103,8 +109,7 @@ class blast:
         else:
             raise OSError(f"不支持的BLAST类型: {type}")
         
-        # 构建数据库路径
-        db_path = os.path.join(settings.BASE_DIR, 'data','blast_db','CottonOGD', genome_id, data_type,genome_id)
+        
         
         # 构建BLAST命令
         cmd = [
@@ -186,14 +191,18 @@ class blast:
                     # 提取hits
                     for hit in blast_record.alignments:
                         for hsp in hit.hsps:
+                            alignment_length = getattr(hsp, 'align_len', None) or getattr(hsp, 'length', None) or (len(hsp.query) if hsp.query else 0)
+                            identities = getattr(hsp, 'identities', 0) or 0
+                            gaps = getattr(hsp, 'gaps', 0) or 0
+                            
                             hit_dict = {
                                 'protein_id': hit.hit_id,
                                 'description': hit.hit_def,
                                 'length': hit.length,
-                                'identity': (hsp.identities / hsp.align_len) * 100 if hsp.align_len > 0 else 0,
-                                'alignment_length': hsp.align_len,
-                                'mismatches': max(0, hsp.align_len - hsp.identities - hsp.gaps),
-                                'gaps': hsp.gaps,
+                                'identity': (identities / alignment_length) * 100 if alignment_length > 0 else 0,
+                                'alignment_length': alignment_length,
+                                'mismatches': max(0, alignment_length - identities - gaps),
+                                'gaps': gaps,
                                 'query_start': hsp.query_start,
                                 'query_end': hsp.query_end,
                                 'subject_start': hsp.sbjct_start,
