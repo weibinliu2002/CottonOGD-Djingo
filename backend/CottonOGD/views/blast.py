@@ -211,9 +211,9 @@ class blast:
                             hit_dict = {
                                 'protein_id': hit.hit_id,
                                 'description': hit.hit_def,
-                                'length': hit.length,
+                                'length': align_length,
                                 'identity': pident,
-                                'alignment_length': align_length,
+                                'alignment_length': hit.length,
                                 'mismatches': mismatch,
                                 'gaps': gaps,
                                 'gap_openings': gapopen,
