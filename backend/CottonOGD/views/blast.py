@@ -203,8 +203,29 @@ class blast:
                             pident = (identities / align_length) * 100
                             # 计算错配数
                             mismatch = align_length - identities - gaps
-                            # 计算缺口开放数（简化处理）
-                            gapopen = gaps // 2
+                            # 计算缺口开放数
+                            # 同时分析查询序列和目标序列中的缺口模式
+                            gapopen = 0
+                            
+                            # 分析查询序列中的缺口
+                            in_gap = False
+                            for char in hsp.query:
+                                if char == '-':
+                                    if not in_gap:
+                                        gapopen += 1
+                                        in_gap = True
+                                else:
+                                    in_gap = False
+                            
+                            # 分析目标序列中的缺口
+                            in_gap = False
+                            for char in hsp.sbjct:
+                                if char == '-':
+                                    if not in_gap:
+                                        gapopen += 1
+                                        in_gap = True
+                                else:
+                                    in_gap = False
                             # 使用正确的比特分数
                             bitscore = int(hsp.bits)
                             
