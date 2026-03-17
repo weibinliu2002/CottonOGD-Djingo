@@ -246,13 +246,13 @@ const formattedRawResults = computed(() => {
                 identity: item.identity,
                 alignment_length: item.length || item.alignment_length,
                 mismatches: item.mismatches,
-                gap_openings: item.gaps,
+                gap_openings: item.gap_openings,
                 query_start: item.qStart || item.query_start,
                 query_end: item.qEnd || item.query_end,
                 subject_start: item.sStart || item.subject_start,
                 subject_end: item.sEnd || item.subject_end,
                 evalue: item.evalue,
-                bit_score: item.score || item.bit_score
+                bit_score: item.bit_score || item.score
               })
             }
           })
@@ -274,13 +274,13 @@ const formattedRawResults = computed(() => {
                   identity: hit.identity,
                   alignment_length: hit.length || hit.alignment_length,
                   mismatches: hit.mismatches,
-                  gap_openings: hit.gaps,
+                  gap_openings: hit.gap_openings,
                   query_start: hit.qStart || hit.query_start,
                   query_end: hit.qEnd || hit.query_end,
                   subject_start: hit.sStart || hit.subject_start,
                   subject_end: hit.sEnd || hit.subject_end,
                   evalue: hit.evalue,
-                  bit_score: hit.score || hit.bit_score
+                  bit_score: hit.bit_score || hit.score
                 })
               }
             })
@@ -314,13 +314,13 @@ const formattedRawResults = computed(() => {
                     identity: hit.identity,
                     alignment_length: hit.length || hit.alignment_length,
                     mismatches: hit.mismatches,
-                    gap_openings: hit.gaps,
+                    gap_openings: hit.gap_openings,
                     query_start: hit.qStart || hit.query_start,
                     query_end: hit.qEnd || hit.query_end,
                     subject_start: hit.sStart || hit.subject_start,
                     subject_end: hit.sEnd || hit.subject_end,
                     evalue: hit.evalue,
-                    bit_score: hit.score || hit.bit_score
+                    bit_score: hit.bit_score || hit.score
                   })
                 }
               })
