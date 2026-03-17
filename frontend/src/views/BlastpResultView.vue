@@ -216,13 +216,13 @@ const formattedRawResults = computed(() => {
           identity: hit.identity,
           alignment_length: hit.length || hit.alignment_length,
           mismatches: hit.mismatches,
-          gap_openings: hit.gaps,
+          gap_openings: hit.gap_openings,
           query_start: hit.qStart || hit.query_start,
           query_end: hit.qEnd || hit.query_end,
           subject_start: hit.sStart || hit.subject_start,
           subject_end: hit.sEnd || hit.subject_end,
           evalue: hit.evalue,
-          bit_score: hit.score || hit.bit_score
+          bit_score: hit.bit_score
         })
       }
     })
