@@ -427,13 +427,13 @@ const loadResults = async () => {
           identity: hit.identity,
           alignment_length: hit.length || hit.alignment_length,
           mismatches: hit.mismatches,
-          gap_openings: hit.gaps,
+          gap_openings: hit.gap_openings,
           query_start: hit.qStart || hit.query_start,
           query_end: hit.qEnd || hit.query_end,
           subject_start: hit.sStart || hit.subject_start,
           subject_end: hit.sEnd || hit.subject_end,
           evalue: hit.evalue,
-          bit_score: hit.score || hit.bit_score
+          bit_score: hit.bit_score || hit.score
         }))
         
         console.log('Formatted results length:', formattedResults.length)
@@ -500,13 +500,13 @@ const loadResults = async () => {
                     identity: item.identity,
                     alignment_length: item.length || item.alignment_length,
                     mismatches: item.mismatches,
-                    gap_openings: item.gaps,
+                    gap_openings: item.gap_openings,
                     query_start: item.qStart || item.query_start,
                     query_end: item.qEnd || item.query_end,
                     subject_start: item.sStart || item.subject_start,
                     subject_end: item.sEnd || item.subject_end,
                     evalue: item.evalue,
-                    bit_score: item.score || item.bit_score
+                    bit_score: item.bit_score || item.score
                   })
                 }
               })
@@ -520,13 +520,13 @@ const loadResults = async () => {
                 identity: value.identity,
                 alignment_length: value.length || value.alignment_length,
                 mismatches: value.mismatches,
-                gap_openings: value.gaps,
+                gap_openings: value.gap_openings,
                 query_start: value.qStart || value.query_start,
                 query_end: value.qEnd || value.query_end,
                 subject_start: value.sStart || value.subject_start,
                 subject_end: value.sEnd || value.subject_end,
                 evalue: value.evalue,
-                bit_score: value.score || value.bit_score
+                bit_score: value.bit_score || value.score
               })
             }
             // 检查是否包含 BLAST 标准输出格式
@@ -597,13 +597,13 @@ const loadResults = async () => {
                         identity: hit.identity,
                         alignment_length: hit.length || hit.alignment_length,
                         mismatches: hit.mismatches,
-                        gap_openings: hit.gaps,
+                        gap_openings: hit.gap_openings,
                         query_start: hit.qStart || hit.query_start,
                         query_end: hit.qEnd || hit.query_end,
                         subject_start: hit.sStart || hit.subject_start,
                         subject_end: hit.sEnd || hit.subject_end,
                         evalue: hit.evalue,
-                        bit_score: hit.score || hit.bit_score
+                        bit_score:  hit.bit_score
                       })
                     }
                   })
@@ -1285,13 +1285,13 @@ function downloadBlastResults() {
         textContent += `${hit.identity ? hit.identity.toFixed(2) : '0'}\t`
         textContent += `${hit.length || hit.alignment_length || '0'}\t`
         textContent += `${hit.mismatches || '0'}\t`
-        textContent += `${hit.gaps || '0'}\t`
+        textContent += `${hit.gap_openings || '0'}\t`
         textContent += `${hit.qStart || hit.query_start || '0'}\t`
         textContent += `${hit.qEnd || hit.query_end || '0'}\t`
         textContent += `${hit.sStart || hit.subject_start || '0'}\t`
         textContent += `${hit.sEnd || hit.subject_end || '0'}\t`
         textContent += `${hit.evalue || '0'}\t`
-        textContent += `${hit.score || hit.bit_score || '0'}\n`
+        textContent += `${hit.bit_score || hit.score || '0'}\n`
       })
     }
     
