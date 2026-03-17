@@ -167,8 +167,11 @@ class blast:
                 for i, blast_record in enumerate(blast_records):
                     logger.info(f"BLAST record {i+1} parsed successfully: {blast_record.query_id}")
                     # 转换为字典格式
+                    # 移除查询序列ID中的" cdna"后缀
+                    query_id = blast_record.query.replace(" cdna", "")
+                    
                     blast_dict = {
-                        'query_id': blast_record.query_id,
+                        'query_id': query_id,
                         'query_def': blast_record.query,
                         'query_length': blast_record.query_length,
                         'program': blast_record.application,
@@ -191,27 +194,36 @@ class blast:
                     # 提取hits
                     for hit in blast_record.alignments:
                         for hsp in hit.hsps:
-                            alignment_length = getattr(hsp, 'align_len', None) or getattr(hsp, 'length', None) or (len(hsp.query) if hsp.query else 0)
-                            identities = getattr(hsp, 'identities', 0) or 0
-                            gaps = getattr(hsp, 'gaps', 0) or 0
+                            # 使用正确的属性名
+                            align_length = hsp.align_length
+                            identities = hsp.identities
+                            gaps = hsp.gaps
+                            
+                            # 计算一致性百分比
+                            pident = (identities / align_length) * 100
+                            # 计算错配数
+                            mismatch = align_length - identities - gaps
+                            # 计算缺口开放数（简化处理）
+                            gapopen = gaps // 2
+                            # 使用正确的比特分数
+                            bitscore = int(hsp.bits)
                             
                             hit_dict = {
                                 'protein_id': hit.hit_id,
                                 'description': hit.hit_def,
                                 'length': hit.length,
-                                'identity': (identities / alignment_length) * 100 if alignment_length > 0 else 0,
-                                'alignment_length': alignment_length,
-                                'mismatches': max(0, alignment_length - identities - gaps),
+                                'identity': pident,
+                                'alignment_length': align_length,
+                                'mismatches': mismatch,
                                 'gaps': gaps,
+                                'gap_openings': gapopen,
                                 'query_start': hsp.query_start,
                                 'query_end': hsp.query_end,
                                 'subject_start': hsp.sbjct_start,
                                 'subject_end': hsp.sbjct_end,
                                 'evalue': hsp.expect,
-                                'bit_score': hsp.bits,
+                                'bit_score': bitscore,
                                 'score': hsp.score,
-                                'query_frame': getattr(hsp, 'query_frame', 0),
-                                'subject_frame': getattr(hsp, 'sbjct_frame', 0),
                                 'query_sequence': hsp.query,
                                 'subject_sequence': hsp.sbjct,
                                 'match_sequence': hsp.match
