@@ -192,7 +192,7 @@ class blast:
                                 'length': hit.length,
                                 'identity': (hsp.identities / hsp.align_length) * 100 if hsp.align_length > 0 else 0,
                                 'alignment_length': hsp.align_length,
-                                'mismatches': max(0, align_len - identities - hsp.gaps),
+                                'mismatches': max(0, align_length - identities - hsp.gaps),
                                 'gaps': hsp.gaps,
                                 'query_start': hsp.query_start,
                                 'query_end': hsp.query_end,
