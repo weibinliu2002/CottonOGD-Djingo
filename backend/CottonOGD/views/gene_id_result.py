@@ -3,7 +3,7 @@ from rest_framework.decorators import api_view
 from rest_framework import status
 from CottonOGD.views.base import UuidManager
 from CottonOGD.views.location_ID import Id_map
-from CottonOGD.models import gene_annotation, gene_info,gene_seq
+from CottonOGD.models import gene_annotation, gene_info,gene_seq,gene_go,gene_kegg,gene_expression
 import logging,json
 logger = logging.getLogger(__name__)
 

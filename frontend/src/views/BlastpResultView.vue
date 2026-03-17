@@ -443,8 +443,14 @@ const loadResults = async () => {
         const uniqueResults = [...new Map(formattedResults.map((item: any) => [item.subject, item])).values()]
         console.log('Unique results length:', uniqueResults.length)
         
-        // 按bit_score降序排序
-        uniqueResults.sort((a: any, b: any) => b.bit_score - a.bit_score)
+        // 先按identity降序排序，再按bit_score降序排序
+        uniqueResults.sort((a: any, b: any) => {
+          if (b.identity !== a.identity) {
+            return b.identity - a.identity;
+          } else {
+            return b.bit_score - a.bit_score;
+          }
+        })
         
         allResults.value = uniqueResults
         total.value = uniqueResults.length
