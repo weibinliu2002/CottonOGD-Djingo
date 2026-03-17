@@ -1296,13 +1296,14 @@ const downloadGff = (format: string) => {
 }
 
 // 加载基因表达量数据
-const loadExpressionData = async (geneId: string) => {
+const loadExpressionData = async (geneId: string, genomeId?: string) => {
   if (!geneId) return
   
   expressionLoading.value = true
   try {
     const response = await httpInstance.post('/CottonOGD_api/extract_expression/', {
-      gene_id: geneId
+      gene_id: geneId,
+      genome_id: genomeId || route.query.genome_id
     }) as any
     
     if (response.expression && response.expression.length > 0) {
@@ -1483,14 +1484,14 @@ onMounted(() => {
     fetchGeneData(db_id)
     // 加载基因表达量数据
     if (gene_id) {
-      loadExpressionData(gene_id)
+      loadExpressionData(gene_id, genome_id)
     }
   } else if (gene_id && genome_id && !hasFetched.value) {
     // 如果有基因ID和基因组ID参数，使用这些参数获取数据
     hasFetched.value = true
     fetchGeneDataWithGeneId(gene_id, genome_id)
     // 加载基因表达量数据
-    loadExpressionData(gene_id)
+    loadExpressionData(gene_id, genome_id)
   } else if (geneDetailData && geneDetailData.results) {
     // 如果没有 URL 参数但有导航数据，使用导航数据
     console.log('从 navigationStore 加载基因数据:', geneDetailData.results.IDs)
@@ -1513,8 +1514,9 @@ onMounted(() => {
     
     // 加载基因表达量数据
     const geneId = geneDetailData.results.IDs
+    const genomeIdFromResult = geneDetailData.results.genome_id || route.query.genome_id
     if (geneId) {
-      loadExpressionData(geneId)
+      loadExpressionData(geneId, genomeIdFromResult as string)
     }
     
     // 标记为已获取

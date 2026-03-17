@@ -153,7 +153,8 @@ ATGGGCGAAGCGATAAAGAAACAAGAAGGAGTGTCTACCGTCAAGGAAGACAACAAGTTGATCGACTCCAAGAAGAAGAA
           const navigationStore = useNavigationStore();
           navigationStore.setNavigationData('blast', {
             results: results,
-            blastType: blastType
+            blastType: blastType,
+            selectedGenomes: processedGenome
           });
           console.log('Results stored in navigationStore:', results);
           

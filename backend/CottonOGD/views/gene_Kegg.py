@@ -53,9 +53,9 @@ def kegg_annotation(request):
                         annotation_data = cursor.fetchall()
 
                         cursor.execute("""
-                            SELECT Query, `match`, Description
-                            FROM `eg_kegg` 
-                            WHERE Query = %s
+                            SELECT `geneid`, `kegg_id`, `kegg_description`
+                            FROM `gene_kegg` 
+                            WHERE `geneid` = %s
                         """, [gene_id])
                         kegg_data = cursor.fetchall()
 
@@ -130,7 +130,7 @@ def kegg_enrichment(request):
                 'error': 'Missing gene_id parameter'
             })
         
-        gene_list = [gene.strip().upper() for gene in gene_input.replace(',', '\n').split() if gene.strip()]
+        gene_list = [gene.strip() for gene in gene_input.replace(',', '\n').split() if gene.strip()]
         
         if not gene_list:
             return JsonResponse({
@@ -141,9 +141,8 @@ def kegg_enrichment(request):
         try:
             with connection.cursor() as cursor:
                 cursor.execute(
-                    "SELECT DISTINCT `Match`, Description FROM eg_kegg "
-                    "WHERE `Match` IS NOT NULL AND `Match` != '-'"
-                )
+                    "SELECT DISTINCT `kegg_id`, `kegg_description` FROM gene_kegg "
+                    "WHERE `kegg_id` IS NOT NULL AND `kegg_id` != '-' and kegg_type = 'pathway'")
                 pathways = {}
                 for pathway_id, description in cursor:
                     for pathway in pathway_id.split(','):
@@ -152,20 +151,19 @@ def kegg_enrichment(request):
                             pathways[pathway] = description
                 
                 cursor.execute(
-                    "SELECT COUNT(*) FROM eg_kegg"
+                    "SELECT COUNT(*) FROM gene_kegg"
                 )
                 total_background_genes = cursor.fetchone()[0]
                 
                 cursor.execute(
-                    "SELECT Query, `Match`, Description FROM eg_kegg "
-                    "WHERE Query IN %s AND `Match` IS NOT NULL AND `Match` != '-'"
-                , [tuple(gene_list)])
+                    "SELECT `geneid`, `kegg_id`, `kegg_description` FROM gene_kegg "
+                    "WHERE `geneid` IN %s AND `kegg_id` IS NOT NULL AND `kegg_id` != '-'",
+                    [tuple(gene_list)])
                 input_genes_kegg = cursor.fetchall()
                 
                 cursor.execute(
-                    "SELECT `Match`, Description FROM eg_kegg "
-                    "WHERE `Match` IS NOT NULL AND `Match` != '-'"
-                )
+                    "SELECT `kegg_id`, `kegg_description` FROM gene_kegg "
+                    "WHERE `kegg_id` IS NOT NULL AND `kegg_id` != '-'")
                 background_counts = defaultdict(int)
                 background_descriptions = {}
                 

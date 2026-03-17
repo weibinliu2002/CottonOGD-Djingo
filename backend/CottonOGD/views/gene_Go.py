@@ -33,7 +33,7 @@ def go_annotation(request):
                 'error': 'Missing gene_id parameter'
             })
         
-        gene_list = [gene.strip().upper() for gene in gene_input.replace(',', '\n').split() if gene.strip()]
+        gene_list = [gene.strip() for gene in gene_input.replace(',', '\n').split() if gene.strip()]
         
         results = []
         chart = None
@@ -51,11 +51,14 @@ def go_annotation(request):
                     annotation_data = cursor.fetchall()
 
                     cursor.execute("""
-                        SELECT `Gene_Ontology`, Description, `GO_ID`, Query, dddd
-                        FROM `eg_go_enrichment` 
-                        WHERE Query IN %s
+                        SELECT go_type, go_description, go_id, geneid, go_type
+                        FROM `gene_go` 
+                        WHERE genome_id = "G.kirkii_ISU_ISU_v3.0" and geneid IN %s
                     """, [tuple(gene_list)])
                     enrichment_data = cursor.fetchall()
+                    logger.info(f"GO annotation - 数据库样本数据: {len(annotation_data)}")
+                    logger.info(f"GO annotation - 查询到 {len(enrichment_data)} 条GO数据，基因列表: {gene_list}")
+              
 
                     # 创建 enrichment_data 的字典，便于快速查找
                     enrichment_dict = {}
@@ -72,9 +75,9 @@ def go_annotation(request):
                             for enrich_row in enrichment_dict[gene_id]:
                                 results.append({
                                     'Chr': anno_row[0],
-                                    'Start': anno_row[2],
-                                    'End': anno_row[3],
-                                    'ID': anno_row[1],
+                                    'Start': anno_row[1],
+                                    'End': anno_row[2],
+                                    'ID': anno_row[3],
                                     'GO_ID': enrich_row[2],
                                     'Description': enrich_row[1],
                                     'Gene_Ontology': enrich_row[0],
@@ -191,7 +194,7 @@ def go_enrichment(request):
                 'error': 'Missing gene_id parameter'
             })
         
-        gene_list = [gene.strip().upper() for gene in gene_input.replace(',', '\n').split() if gene.strip()]
+        gene_list = [gene.strip() for gene in gene_input.replace(',', '\n').split() if gene.strip()]
         
         if not gene_list:
             return JsonResponse({
@@ -205,24 +208,24 @@ def go_enrichment(request):
                 logger.info(f"GO富集分析 - 输入基因列表: {gene_list}")
                 
                 cursor.execute("""
-                    SELECT `Gene_Ontology`, Description, `GO_ID`, Query, dddd
-                    FROM `eg_go_enrichment` 
-                    WHERE Query IN %s
+                    SELECT go_type, go_description, go_id, geneid, go_type
+                    FROM gene_go 
+                    WHERE geneid IN %s
                 """, [tuple(gene_list)])
                 enrichment_data = cursor.fetchall()
                 
                 logger.info(f"GO富集分析 - 查询到 {len(enrichment_data)} 条富集数据")
 
-                cursor.execute("SELECT COUNT(*) FROM `eg_go_enrichment`")
+                cursor.execute("SELECT COUNT(*) FROM `gene_go`")
                 total_background_genes = cursor.fetchone()[0]
                 
                 logger.info(f"GO富集分析 - 背景基因总数: {total_background_genes}")
 
                 cursor.execute("""
-                    SELECT `Gene_Ontology`, Description, `GO_ID`, Query, dddd
-                    FROM `eg_go_enrichment` 
-                    WHERE `Gene_Ontology` IS NOT NULL 
-                    AND `GO_ID` IS NOT NULL
+                    SELECT `go_type`, `go_description`, `go_id`, `geneid`, `go_type`
+                    FROM `gene_go` 
+                    WHERE `go_type` IS NOT NULL 
+                    AND `go_id` IS NOT NULL
                 """)
                 background_data = cursor.fetchall()
                 

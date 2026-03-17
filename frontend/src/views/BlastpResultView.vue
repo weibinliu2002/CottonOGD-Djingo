@@ -401,6 +401,12 @@ const loadResults = async () => {
       const blastData = navigationStore.getNavigationData('blast')
       decodedResults = blastData.results
       console.log('Received BLASTP results from navigationStore:', decodedResults)
+      
+      // 从 navigationStore 中获取选中的基因组ID
+      if (blastData.selectedGenomes) {
+        genomeId.value = blastData.selectedGenomes
+        console.log('Set genomeId from navigationStore:', genomeId.value)
+      }
     }
     // 3. 从 blastStore 中获取结果数据
     else if (blastStore.blastResults) {
