@@ -47,14 +47,14 @@ def kegg_annotation(request):
                     for gene_id in gene_list:
                         cursor.execute("""
                             SELECT seqid, start, end ,geneid_id
-                            FROM `gene_assembly` 
+                            FROM `GeneAssembly` 
                             WHERE genome_id = "G.kirkii_ISU_ISU_v3.0" and type = 'gene' AND geneid_id = %s
                         """, [gene_id])
                         annotation_data = cursor.fetchall()
 
                         cursor.execute("""
                             SELECT `geneid`, `kegg_id`, `kegg_description`
-                            FROM `gene_kegg` 
+                            FROM `GeneKegg` 
                             WHERE `geneid` = %s
                         """, [gene_id])
                         kegg_data = cursor.fetchall()
@@ -141,7 +141,7 @@ def kegg_enrichment(request):
         try:
             with connection.cursor() as cursor:
                 cursor.execute(
-                    "SELECT DISTINCT `kegg_id`, `kegg_description` FROM gene_kegg "
+                    "SELECT DISTINCT `kegg_id`, `kegg_description` FROM GeneKegg "
                     "WHERE `kegg_id` IS NOT NULL AND `kegg_id` != '-' and kegg_type = 'pathway'")
                 pathways = {}
                 for pathway_id, description in cursor:
@@ -156,13 +156,13 @@ def kegg_enrichment(request):
                 total_background_genes = cursor.fetchone()[0]
                 
                 cursor.execute(
-                    "SELECT `geneid`, `kegg_id`, `kegg_description` FROM gene_kegg "
+                    "SELECT `geneid`, `kegg_id`, `kegg_description` FROM GeneKegg "
                     "WHERE `geneid` IN %s AND `kegg_id` IS NOT NULL AND `kegg_id` != '-'",
                     [tuple(gene_list)])
                 input_genes_kegg = cursor.fetchall()
                 
                 cursor.execute(
-                    "SELECT `kegg_id`, `kegg_description` FROM gene_kegg "
+                    "SELECT `kegg_id`, `kegg_description` FROM GeneKegg "
                     "WHERE `kegg_id` IS NOT NULL AND `kegg_id` != '-'")
                 background_counts = defaultdict(int)
                 background_descriptions = {}

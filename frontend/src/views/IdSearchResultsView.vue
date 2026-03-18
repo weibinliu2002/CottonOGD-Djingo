@@ -341,6 +341,8 @@ interface Result {
   geneid?: string
   id?: string
   mrna_transcripts?: Transcript[]
+  gene_go_result?: any[]
+  gene_kegg_result?: any[]
 }
 
 // 初始化路由

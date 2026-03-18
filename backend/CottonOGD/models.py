@@ -103,7 +103,37 @@ class gene_expression(models.Model):
         ]
         db_table = 'expression'
 
-
+class GenomeTissue(models.Model):
+    """维度表 - 用于快速查询"""
+    genome = models.ForeignKey(
+        'Species_info',
+        on_delete=models.DO_NOTHING,
+        to_field='name',
+        db_column='genome'
+    )
+    tissue = models.CharField(max_length=50)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        managed = True  # ✅ Django 管理此表
+        db_table = 'genome_tissue'
+        unique_together = ['genome', 'tissue']  # 联合唯一约束
+        indexes = [
+            models.Index(fields=['genome'], name='gt_genome_idx'),
+        ]
+    
+    @classmethod
+    def sync_from_expression(cls):
+        """从 Expression 表同步所有唯一组合"""
+        from django.db import connection
+        with connection.cursor() as cursor:
+            # 清空并重新导入（或 INSERT IGNORE）
+            cursor.execute("""
+                INSERT IGNORE INTO genome_tissue (genome, tissue)
+                SELECT DISTINCT genome, tissue FROM expression
+            """)
+        return cls.objects.count()
+    
 
 
 class gene_info(models.Model):

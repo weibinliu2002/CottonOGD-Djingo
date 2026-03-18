@@ -50,22 +50,26 @@ def Id_map(gene_id: str, genome_id: str):
         return {}
     
     id_map = {}
-    search_ids = []
-    
+    normalized_ids = {}
+    search_ids=[]
     logger.info(f"gene_ids: {gene_ids}")
-    for i, gid in enumerate(gene_ids):
+    for gid in gene_ids:
+        # 如果 genome_ids 为空，跳过
+        if not genome_ids:
+            continue
         # 如果基因 ID 数量大于基因组 ID 数量，重复使用第一个基因组 ID
-        genome = genome_ids[0] if len(gene_ids) > len(genome_ids) else genome_ids[i]
+        genome = genome_ids[0] if len(gene_ids) > len(genome_ids) else genome_ids[gene_ids.index(gid)]
         nid = clean_gene_id(gid)
-        search_id = f"{genome}_{nid}"
-        search_ids.append(search_id)
-        id_map[gid] = {'geneid': nid, 'genome_id': genome, 'search_id': search_id}
-    
-    # 优化数据库查询，直接使用search_ids查询alias字段
-    # 这样可以避免使用OR条件，提高查询效率
-    map_ids = GeneMaster.objects.filter(alias__in=search_ids).values('alias', 'id')
-    map_ids = {item['alias']: item['id'] for item in map_ids}
-    
+        if nid not in norm_map:
+            norm_map.append(nid)
+            search_ids.append(f"{genome}_{nid}")
+            normalized_ids[nid] = {'normalized_id': nid, 'genome_id': genome,'search_id':f"{genome}_{nid}"}
+        id_map[gid] = {'geneid':nid,'genome_id':genome,'search_id':f"{genome}_{nid}"}
+    #logger.info(f"search_ids: {search_ids}")
+    #logger.info(f"norm_map: {norm_map}")
+    #map_ids=GeneMaster.objects.filter(alias__in=search_ids).values('alias','id')
+    map_ids=GeneMaster.objects.filter(Q(geneid__in=norm_map) | Q(genome_id__in=genome_ids)).values('alias','id')
+    map_ids={item['alias']:item['id'] for item in map_ids}
     genome_gene_id = attach_db_id(id_map, map_ids)
     
     # 保存到缓存，设置过期时间为1小时

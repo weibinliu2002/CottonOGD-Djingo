@@ -3,7 +3,7 @@ from rest_framework.decorators import api_view
 from rest_framework import status
 from CottonOGD.views.base import UuidManager
 from CottonOGD.views.location_ID import Id_map
-from CottonOGD.models import gene_expression
+from CottonOGD.models import gene_expression, GenomeTissue
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -32,13 +32,36 @@ TISSUE_ORDER = [
 @api_view(['GET'])
 def get_tissues(request):
     """
-    获取所有组织类型的列表
+    获取指定基因组的组织类型列表
     """
     try:
-        # 从数据库中获取所有tissue值并去重
-        tissues = gene_expression.objects.values_list('tissue', flat=True).distinct()
+        # 获取genome_id参数
+        genome_id = request.query_params.get('genome_id')
+        
+        # 生成缓存键
+        cache_key = f"tissues:{genome_id or 'all'}"
+        
+        # 尝试从缓存获取
+        cached_tissues = cache.get(cache_key)
+        if cached_tissues:
+            return Response(cached_tissues, status=status.HTTP_200_OK)
+        
+     
+        
+        # 优化查询：只选择tissue字段，使用distinct()直接在数据库层面去重
+        if genome_id:
+            # 如果提供了genome_id，根据genome字段过滤
+            tissues = GenomeTissue.objects.filter(genome=genome_id).values_list('tissue', flat=True).distinct()
+        else:
+            # 不提供genome_id时，获取所有tissue
+            tissues = GenomeTissue.objects.values_list('tissue', flat=True).distinct()
+        
         # 过滤空值
         tissues = [tissue for tissue in tissues if tissue]
+        
+        # 缓存结果，设置过期时间为1小时
+        cache.set(cache_key, tissues, 3600 * 24 * 7)
+        
         return Response(tissues, status=status.HTTP_200_OK)
     except Exception as e:
         logger.error('Error getting tissues: %s', e)

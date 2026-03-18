@@ -92,7 +92,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, inject } from 'vue'
+import { ref, onMounted, inject, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import httpInstance from '../utils/http'
@@ -117,10 +117,12 @@ const tissueOptions = ref<string[]>([])
 const loadingTissues = ref(false)
 
 // 从后端获取tissue列表
-const fetchTissues = async () => {
+const fetchTissues = async (genomeId?: string) => {
   try {
     loadingTissues.value = true
-    const response = await httpInstance.get('/CottonOGD_api/extract_expression/tissues/')
+    const params = genomeId ? { genome_id: genomeId } : {}
+    console.log('params:', params)
+    const response = await httpInstance.get('/CottonOGD_api/extract_expression/tissues/', { params })
     if (response && Array.isArray(response)) {
       tissueOptions.value = response
     }
@@ -135,7 +137,12 @@ const fetchTissues = async () => {
 onMounted(async () => {
   await ensureGenomesLoaded()
   selectedGenome.value = pickDefaultGenome()
-  await fetchTissues()
+  await fetchTissues(selectedGenome.value)
+})
+
+// 监听基因组选择变化，重新获取tissue数据
+watch(selectedGenome, async (newGenome) => {
+  await fetchTissues(newGenome)
 })
 
 // 濉厖绀轰緥鏁版嵁
