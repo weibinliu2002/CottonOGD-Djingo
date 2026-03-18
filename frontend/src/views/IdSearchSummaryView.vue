@@ -53,7 +53,7 @@
               </a>
             </template>
           </el-table-column>
-          <el-table-column prop="species" :label="t('species')" width="200" />
+          <el-table-column prop="species" :label="t('species')" width="250" />
         </el-table>
 
         <!-- 序列展示区域 - 为每个基因添加序列按钮 -->

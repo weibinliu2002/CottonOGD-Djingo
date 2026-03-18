@@ -58,7 +58,7 @@
             <!-- 转录本选择器 -->
             <div v-if="hasMultipleTranscripts" class="mb-4">
               <h4 class="h6 mb-2">{{ t('transcript_selector') }}</h4>
-              <el-select v-model="selectedTranscriptIndex" @change="switchTranscript" class="w-auto">
+              <el-select v-model="selectedTranscriptIndex" @change="switchTranscript" class="w-auto" style="min-width: 400px;">
                 <el-option
                   v-for="(transcript, index) in result.mrna_transcripts"
                   :key="index"
@@ -66,177 +66,9 @@
                   :value="index"
                 />
               </el-select>
-              
-              <!-- 显示当前选中的转录本信息 -->
-              <div v-if="currentTranscript" class="mt-2 p-2" style="background-color: #f5f7fa; border-radius: 4px;">
-                <strong>{{ t('current_transcript') }}:</strong> {{ currentTranscript?.id }}
-                <span v-if="currentTranscript.protein_seq && currentTranscript.protein_seq !== 'N/A' && currentTranscript.protein_seq !== 'unavailable' && currentTranscript.protein_seq !== 'Protein sequence not found'" class="ml-2">
-                  ({{ t('protein_length') }}: {{ currentTranscript.protein_seq?.length }} aa)
-                </span>
-              </div>
             </div>
             
-            <!-- 转录本基因结构图 - 暂时隐藏 -->
-            <div v-if="false" v-show="false" style="display: none;">
-              <h4 class="h6 mb-2">{{ t('transcript_structure') }}</h4>
-              <div class="gene-structure-container">
-                <svg :width="svgWidth" height="150" class="gene-structure-svg">
-                  <!-- 转录本名称 -->
-                  <text x="20" y="20" font-size="12" font-weight="bold" fill="#333">
-                    {{ currentTranscript?.id || result?.geneid || result?.id || 'Unknown' }}
-                  </text>
-                  
-                  <!-- 绘制基因结构元素 -->
-                  <g>
-                    <!-- 如果有有效GFF数据，绘制详细结构 -->
-                    <template v-if="validTranscriptGffData.length > 0">
-                      <!-- 绘制内含子（窄方框）和连接线 -->
-                      <g v-for="(item, index) in validTranscriptGffData" :key="'structure-' + index">
-                        <template v-if="geneLength > 0">
-                          <!-- 绘制当前结构元素 -->
-                          <rect
-                            v-if="item.type === 'exon'"
-                            :x="20 + (item.start - geneStart) * scale"
-                            y="35"
-                            :width="(item.end - item.start +1) * scale"
-                            height="50"
-                            fill="#34A853"
-                            stroke="#227A3D"
-                            stroke-width="1"
-                          />
-                          <rect
-                            v-else-if="item.type === 'five_prime_UTR'"
-                            :x="20 + (item.start - geneStart) * scale"
-                            y="45"
-                            :width="(item.end - item.start +1) * scale"
-                            height="30"
-                            fill="#FBBC05"
-                            stroke="#F29900"
-                            stroke-width="1"
-                          />
-                          <rect
-                            v-else-if="item.type === 'three_prime_UTR'"
-                            :x="20 + (item.start - geneStart) * scale"
-                            y="45"
-                            :width="(item.end - item.start +1) * scale"
-                            height="30"
-                            fill="#EA4335"
-                            stroke="#C5221F"
-                            stroke-width="1"
-                          />
-                          
-                          <!-- 绘制与下一个元素的连接线 -->
-                          <line
-                            v-if="index < validTranscriptGffData.length - 1"
-                            :x1="20 + (Number(item.end) - geneStart) * scale"
-                            y1="60"
-                            :x2="20 + (Number(validTranscriptGffData[index + 1]!.start) - geneStart) * scale"
-                            y2="60"
-                            stroke="#333"
-                            stroke-width="2"
-                          />
-                          
-                          <!-- 绘制内含子（窄方框） -->
-                          <rect
-                            v-if="index < validTranscriptGffData.length - 1"
-                            :x="20 + (Number(item.end) - geneStart) * scale"
-                            y="55"
-                            :width="(Number(validTranscriptGffData[index + 1]!.start) - Number(item.end) - 1) * scale"
-                            height="10"
-                            fill="#E0E0E0"
-                            stroke="#BDBDBD"
-                            stroke-width="1"
-                          />
-                        </template>
-                      </g>
-                      
-                      <!-- 转录方向指示 -->
-                      <g v-if="validTranscriptGffData.length > 0">
-                        <template v-if="geneLength > 0">
-                          <!-- 箭头位置：基因结构的右侧 -->
-                          <polygon
-                            :points="[
-                              20 + (validTranscriptGffData[validTranscriptGffData.length - 1]!.end - geneStart) * scale + 10,
-                              60 - 10,
-                              20 + (validTranscriptGffData[validTranscriptGffData.length - 1]!.end - geneStart) * scale + 20,
-                              60,
-                              20 + (validTranscriptGffData[validTranscriptGffData.length - 1]!.end - geneStart) * scale + 10,
-                              60 + 10
-                            ].join(',')"
-                            fill="#333"
-                          />
-                          <text
-                            :x="20 + (validTranscriptGffData[validTranscriptGffData.length - 1]!.end - geneStart) * scale + 25"
-                            y="65"
-                            font-size="12"
-                            fill="#333"
-                          >
-                            Transcription Direction
-                          </text>
-                        </template>
-                      </g>
-                    </template>
-                    
-                    <!-- 如果没有有效GFF数据，显示简单的基因范围 -->
-                    <template v-else-if="result && result?.start !== undefined && result?.end !== undefined">
-                      <rect
-                        :x="20"
-                        y="45"
-                        :width="((result?.end || 0) - (result?.start || 0) + 1) * scale"
-                        height="30"
-                        fill="#90CAF9"
-                        stroke="#2196F3"
-                        stroke-width="1"
-                      />
-                      <text x="25" y="65" font-size="12" fill="#333">
-                        {{ result?.start }} - {{ result?.end }}
-                      </text>
-                      <!-- 简单的转录方向指示 -->
-                      <polygon
-                        :points="[
-                          20 + ((result?.end || 0) - (result?.start || 0) + 1) * scale + 10,
-                          60 - 10,
-                          20 + ((result?.end || 0) - (result?.start || 0) + 1) * scale + 20,
-                          60,
-                          20 + ((result?.end || 0) - (result?.start || 0) + 1) * scale + 10,
-                          60 + 10
-                        ].join(',')"
-                        fill="#333"
-                      />
-                    </template>
-                  </g>
-                  
-                  <!-- 基因范围标注 -->
-                  <text x="20" y="110" font-size="10" fill="#666">
-                    {{ geneStart }}
-                  </text>
-                  <text :x="svgWidth - 20" y="110" font-size="10" fill="#666" text-anchor="end">
-                    {{ geneEnd }}
-                  </text>
-                  
-                  <!-- 图注 -->
-                  <g transform="translate(20, 130)">
-                    <text font-size="11" font-weight="bold" fill="#333">Legend:</text>
-                    <g transform="translate(50, 0)">
-                      <rect x="0" y="-8" width="15" height="15" fill="#34A853" stroke="#227A3D" stroke-width="1" />
-                      <text x="20" y="5" font-size="10" fill="#333">CDS</text>
-                    </g>
-                    <g transform="translate(120, 0)">
-                      <rect x="0" y="-8" width="15" height="15" fill="#FBBC05" stroke="#F29900" stroke-width="1" />
-                      <text x="20" y="5" font-size="10" fill="#333">5' UTR</text>
-                    </g>
-                    <g transform="translate(190, 0)">
-                      <rect x="0" y="-8" width="15" height="15" fill="#EA4335" stroke="#C5221F" stroke-width="1" />
-                      <text x="20" y="5" font-size="10" fill="#333">3' UTR</text>
-                    </g>
-                    <g transform="translate(260, 0)">
-                      <rect x="0" y="-3" width="30" height="5" fill="#E0E0E0" stroke="#BDBDBD" stroke-width="1" />
-                      <text x="35" y="5" font-size="10" fill="#333">Intron</text>
-                    </g>
-                  </g>
-                </svg>
-              </div>
-            </div>
+           
             
            <!-- 使用通用序列展示组件 -->
               <sequence-display
@@ -256,16 +88,49 @@
               />
             
           <div class="mb-3">
-            <el-button type="success" @click="downloadAllSequences">Download All Sequences</el-button>
+            <el-button type="success" @click="showDownloadDialog">Download Data</el-button>
             <el-button
               v-if="hasMultipleTranscripts"
               type="primary"
               class="ml-2"
-              @click="downloadCurrentTranscriptSequences"
+              @click="showCurrentTranscriptDownloadDialog"
             >
               Download Current Transcript Sequences
             </el-button>
           </div>
+          
+          <!-- 下载参数弹窗 -->
+          <el-dialog
+            v-model="downloadDialogVisible"
+            title="Download Parameters"
+            width="500px"
+          >
+            <el-form :model="downloadForm" label-width="120px">
+              <el-form-item label="Data Type">
+                <el-checkbox-group v-model="downloadForm.dataTypes">
+                  <el-checkbox label="genomic">Genomic</el-checkbox>
+                  <el-checkbox label="mrna">mRNA</el-checkbox>
+                  <el-checkbox label="upstream">Upstream</el-checkbox>
+                  <el-checkbox label="downstream">Downstream</el-checkbox>
+                  <el-checkbox label="cdna">cDNA</el-checkbox>
+                  <el-checkbox label="cds">CDS</el-checkbox>
+                  <el-checkbox label="protein">Protein</el-checkbox>
+                </el-checkbox-group>
+              </el-form-item>
+              <el-form-item label="Format">
+                <el-radio-group v-model="downloadForm.format">
+                  <el-radio label="fasta">FASTA</el-radio>
+                  <el-radio label="txt">TXT</el-radio>
+                </el-radio-group>
+              </el-form-item>
+            </el-form>
+            <template #footer>
+              <span class="dialog-footer">
+                <el-button @click="downloadDialogVisible = false">Cancel</el-button>
+                <el-button type="primary" @click="downloadSelectedData">Download</el-button>
+              </span>
+            </template>
+          </el-dialog>
         </div>
       </el-card>
       
@@ -316,20 +181,29 @@
           </div>
         </template>
         <div class="card-body">
-          <!-- 动态展示所有注释类型 -->
+          <!-- 特殊处理GO注释，使用表格展示 -->
+          <div v-if="parsedGoAnnotations.length > 0" class="mb-3">
+            <h4>GO annotation</h4>
+            <el-table :data="parsedGoAnnotations" border>
+               <el-table-column prop="id" label="GO ID" width="150" />
+              <el-table-column prop="type" label="GO Type" width="150" />
+              <el-table-column prop="term" label="Term" />
+             
+            </el-table>
+          </div>
+          
+          <!-- 特殊处理KEGG注释，使用表格展示 -->
+          <div v-if="parsedKeggAnnotations.length > 0" class="mb-3">
+            <h4>KEGG annotation</h4>
+            <el-table :data="parsedKeggAnnotations" border>
+              <el-table-column prop="id" label="KEGG ID" width="150" />
+              <el-table-column prop="description" label="Description" />
+            </el-table>
+          </div>
+          
+          <!-- 其他注释类型使用简单列表展示 -->
           <div v-for="(annotationList, annotationType) in annotations" :key="annotationType" class="mb-3">
-            <!-- 特殊处理GO注释，使用表格展示 -->
-            <div v-if="annotationType === 'GO_annotation' && annotationList.length > 0">
-              <h4>{{ annotationType.replace('_', ' ') }}</h4>
-              <el-table :data="parsedGoAnnotations" border>
-                <el-table-column prop="type" label="GO Type" width="150" />
-                <el-table-column prop="term" label="Term" />
-                <el-table-column prop="id" label="GO ID" width="150" />
-              </el-table>
-            </div>
-            
-            <!-- 其他注释类型使用简单列表展示 -->
-            <div v-else-if="annotationList.length > 0">
+            <div v-if="annotationType !== 'GO_annotation' && annotationType !== 'KEGG_annotation' && annotationList.length > 0">
               <!--<h4>{{ String(annotationType).replace('_', ' ') }}</h4>-->
               <div class="annotation-list">
                 <div 
@@ -528,23 +402,33 @@ const expressionLoading = ref(false)
 
 // 计算属性
 const parsedGoAnnotations = computed(() => {
-  const goAnnotations = annotations.value.GO_annotation || []
+  const goAnnotations = result.value?.gene_go_result || []
+  console.log('goAnnotations:', goAnnotations)
   const parsed: { type: string; term: string; id: string }[] = []
   
-  goAnnotations.forEach((item: { annotation: string }) => {
-    if (item && item.annotation) {
-      const cleanAnnotation = item.annotation.replace(/;;+\s*$/, '')
-      const goTerms = cleanAnnotation.split(';; ')
-      
-      goTerms.forEach((term: string) => {
-        const match = term.match(/^(\w+\s+\w+):\s*([^(]+)\s*\((GO:\d+)\)$/)
-        if (match && match[1] && match[2] && match[3]) {
-          parsed.push({
-            type: match[1],
-            term: match[2].trim(),
-            id: match[3]
-          })
-        }
+  goAnnotations.forEach((item: any) => {
+    if (item && item.go_type && item.go_description && item.go_id) {
+      parsed.push({
+        type: item.go_type,
+        term: item.go_description,
+        id: item.go_id
+      })
+    }
+  })
+  
+  return parsed
+})
+
+// 解析KEGG注释数据
+const parsedKeggAnnotations = computed(() => {
+  const keggAnnotations = result.value?.gene_kegg_result || []
+  const parsed: { id: string; description: string }[] = []
+  
+  keggAnnotations.forEach((item: any) => {
+    if (item && item.kegg_id && item.kegg_description) {
+      parsed.push({
+        id: item.kegg_id,
+        description: item.kegg_description
       })
     }
   })
@@ -829,7 +713,9 @@ const fetchGeneData = async (db_id: string) => {
           IDs: data.IDs || geneInfo.IDs || '',
           jbrowse_url: data.jbrowse_url || '',
           gff_data: data.gff_data || [],
-          mrna_transcripts: data.mrna_transcripts || []
+          mrna_transcripts: data.mrna_transcripts || [],
+          gene_go_result: data.gene_go_result || [],
+          gene_kegg_result: data.gene_kegg_result || []
         }
       } else {
         result.value = {
@@ -838,7 +724,9 @@ const fetchGeneData = async (db_id: string) => {
           IDs: data.IDs || geneInfo.IDs || '',
           jbrowse_url: data.jbrowse_url || '',
           gff_data: data.gff_data || [],
-          mrna_transcripts: data.mrna_transcripts || []
+          mrna_transcripts: data.mrna_transcripts || [],
+          gene_go_result: data.gene_go_result || [],
+          gene_kegg_result: data.gene_kegg_result || []
         }
       }
       
@@ -984,8 +872,7 @@ const handleShowSequence = async (eventData: { type: string; title: string; cont
 
 // 处理下载事件
 const handleDownload = ({ content, type, geneId }: { content: string; type: string; geneId: string }) => {
-  const header = `>${geneId} ${type}`
-  const fastaContent = `${header}\n${content}`
+  const fastaContent = `${content}`
   
   const blob = new Blob([fastaContent], { type: 'text/plain' })
   const url = URL.createObjectURL(blob)
@@ -1007,8 +894,7 @@ const handleDownload = ({ content, type, geneId }: { content: string; type: stri
 // 处理复制事件
 const handleCopy = ({ content, type, geneId }: { content: string; type: string; geneId: string }) => {
   // 按照FASTA格式复制序列，包含基因ID和序列类型
-  const header = `>${geneId} ${type}`
-  const fastaContent = `${header}\n${content}`
+  const fastaContent = `${content}`
   
   navigator.clipboard.writeText(fastaContent)
     .then(() => {
@@ -1101,6 +987,149 @@ const downloadCurrentTranscriptSequences = () => {
   URL.revokeObjectURL(url)
   
   ElMessage.success('All sequences for the current transcript have been downloaded')
+}
+
+// 下载参数弹窗相关
+const downloadDialogVisible = ref(false)
+const downloadForm = ref({
+  dataTypes: [],
+  format: 'fasta'
+})
+
+// 显示下载参数弹窗
+const showDownloadDialog = () => {
+  // 重置下载模式为默认（所有转录本）
+  downloadMode.value = 'all'
+  downloadDialogVisible.value = true
+}
+
+// 显示当前转录本的下载参数弹窗
+const showCurrentTranscriptDownloadDialog = () => {
+  // 设置下载模式为当前转录本
+  downloadMode.value = 'current'
+  downloadDialogVisible.value = true
+}
+
+// 下载模式：'all' 表示下载所有转录本，'current' 表示只下载当前转录本
+const downloadMode = ref('all')
+
+// 下载选定的数据
+const downloadSelectedData = () => {
+  if (!result.value) {
+    ElMessage.error('无法获取基因数据')
+    return
+  }
+  
+  const { dataTypes, format } = downloadForm.value
+  if (dataTypes.length === 0) {
+    ElMessage.error('请选择至少一种数据类型')
+    return
+  }
+  
+  // 这里可以根据选择的参数实现下载逻辑
+  // 每种类型一个文件，包含该基因该类型的所有数据
+  dataTypes.forEach(type => {
+    let sequences = ''
+    if (!result.value) return
+    
+    const geneId = result.value.IDs
+    
+    // 收集该类型的所有序列
+  if (type === 'genomic') {
+    // 基因组序列 - 只有一个
+    if (result.value.gene_seq && result.value.gene_seq !== 'N/A') {
+      sequences += `>${geneId} genomic\n${formatSequence(result.value.gene_seq)}\n\n`
+    }
+  } else if (result.value.mrna_transcripts) {
+    // 根据下载模式决定处理哪些转录本
+    if (downloadMode.value === 'current') {
+      // 只处理当前转录本
+      if (currentTranscript.value) {
+        let sequence: string = ''
+        
+        switch (type) {
+          case 'mrna':
+            sequence = currentTranscript.value.mrna_seq || ''
+            break
+          case 'upstream':
+            sequence = currentTranscript.value.upstream_seq || ''
+            break
+          case 'downstream':
+            sequence = currentTranscript.value.downstream_seq || ''
+            break
+          case 'cdna':
+            sequence = currentTranscript.value.cdna_seq || ''
+            break
+          case 'cds':
+            sequence = currentTranscript.value.cds_seq || ''
+            break
+          case 'protein':
+            sequence = currentTranscript.value.protein_seq || ''
+            break
+        }
+        
+        if (sequence && sequence !== 'N/A' && sequence !== 'unavailable' && sequence !== 'CDS sequence not found' && sequence !== 'Protein sequence not found') {
+          sequences += `>${currentTranscript.value.id} ${type}\n${formatSequence(sequence)}\n\n`
+        }
+      }
+    } else {
+      // 处理所有转录本
+      result.value.mrna_transcripts.forEach(transcript => {
+        let sequence: string = ''
+        
+        switch (type) {
+          case 'mrna':
+            sequence = transcript.mrna_seq || ''
+            break
+          case 'upstream':
+            sequence = transcript.upstream_seq || ''
+            break
+          case 'downstream':
+            sequence = transcript.downstream_seq || ''
+            break
+          case 'cdna':
+            sequence = transcript.cdna_seq || ''
+            break
+          case 'cds':
+            sequence = transcript.cds_seq || ''
+            break
+          case 'protein':
+            sequence = transcript.protein_seq || ''
+            break
+        }
+        
+        if (sequence && sequence !== 'N/A' && sequence !== 'unavailable' && sequence !== 'CDS sequence not found' && sequence !== 'Protein sequence not found') {
+          sequences += `>${transcript.id} ${type}\n${formatSequence(sequence)}\n\n`
+        }
+      })
+    }
+  }
+    
+    if (sequences) {
+      // 创建并下载文件
+      const blob = new Blob([sequences], { type: 'text/plain' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      // 根据下载模式调整文件名
+      const fileName = downloadMode.value === 'current' && currentTranscript.value 
+        ? `${currentTranscript.value.id}_${type}.${format}` 
+        : `${geneId}_${type}.${format}`
+      a.download = fileName
+      const event = new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        view: window
+      })
+      document.body.appendChild(a)
+      a.dispatchEvent(event)
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    }
+  })
+  
+  downloadDialogVisible.value = false
+  ElMessage.success(`已下载 ${dataTypes.length} 个文件`)
 }
 
 // 下载所有序列
@@ -1425,7 +1454,9 @@ const fetchGeneDataWithGeneId = async (gene_id: string, genome_id: string) => {
         IDs: data.IDs || geneInfo.IDs || '',
         jbrowse_url: data.jbrowse_url || '',
         gff_data: data.gff_data || [],
-        mrna_transcripts: data.mrna_transcripts || []
+        mrna_transcripts: data.mrna_transcripts || [],
+        gene_go_result: data.gene_go_result || [],
+        gene_kegg_result: data.gene_kegg_result || []
       }
     } else {
       throw new Error('No gene information found')
