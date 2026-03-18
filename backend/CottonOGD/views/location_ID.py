@@ -9,9 +9,6 @@ logger = logging.getLogger(__name__)
 
 
 
-import hashlib
-from django.core.cache import cache
-
 def clean_gene_id(id_str: str) -> str:
     id_str = re.sub(r'[()\[\]"\'\s]', '', id_str.strip())
     id_str = re.sub(r'[^a-zA-Z0-9_:.-]', '', id_str)
@@ -19,7 +16,6 @@ def clean_gene_id(id_str: str) -> str:
     if not re.match(r'^[a-zA-Z0-9_:.-]+$', id_str):
         id_str = f"ID_{id_str}"
     return id_str
-
 def attach_db_id(genome_gene_id: dict, map_ids: dict) -> dict:
     """
     将 map_ids 中的数据库 id，关联回 genome_gene_id
@@ -33,22 +29,22 @@ def attach_db_id(genome_gene_id: dict, map_ids: dict) -> dict:
 #@api_view(['POST'])
 #def Id_map(request):
 def Id_map(gene_id: str, genome_id: str):
-    # 生成缓存键
-    cache_key = f"id_map:{hashlib.md5(f'{gene_id}:{genome_id}'.encode()).hexdigest()}"
-    
-    # 尝试从缓存获取
-    cached_result = cache.get(cache_key)
-    if cached_result:
-        return cached_result
-    
+    # uuid=request.headers.get('uuid')
+    # if not uuid:
+    #     return Response({'error': 'uuid is required'}, status=400)
+    # gene_id = request.data.get('gene_id') or request.query_params.get('gene_id')
+    # genome_id = request.data.get('genome_id') or request.query_params.get('genome_id')
+    # if not gene_id or not genome_id:
+    #     return Response({'error': 'gene_id and genome_id are required'}, status=400)
     # 以逗号或换行符分割输入，过滤空字符串
+    
     gene_ids = [gid.strip() for gid in re.split(r'[,|\n]+', gene_id) if gid.strip()]
     genome_ids = [gid.strip() for gid in re.split(r'[,|\n]+', genome_id) if gid.strip()]
-    
-    # 如果没有基因ID或基因组ID，直接返回空字典
-    if not gene_ids or not genome_ids:
-        return {}
-    
+    # 检查基因 ID 和基因组 ID 列表长度是否相同
+    '''
+    if len(gene_ids) != len(genome_ids):
+        return Response({'error': 'gene_id and genome_id lists must have the same length'}, status=400)'''
+    norm_map = []
     id_map = {}
     normalized_ids = {}
     search_ids=[]
@@ -71,10 +67,6 @@ def Id_map(gene_id: str, genome_id: str):
     map_ids=GeneMaster.objects.filter(Q(geneid__in=norm_map) | Q(genome_id__in=genome_ids)).values('alias','id')
     map_ids={item['alias']:item['id'] for item in map_ids}
     genome_gene_id = attach_db_id(id_map, map_ids)
-    
-    # 保存到缓存，设置过期时间为1小时
-    cache.set(cache_key, genome_gene_id, 3600)
-    
     return genome_gene_id
     #logger.info(f"id_map: {id_map}")
     #return Response({'map':genome_gene_id,'normalized_ids':norm_map})
