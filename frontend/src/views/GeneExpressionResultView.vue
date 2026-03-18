@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="container mt-4">
     <h2 class="mb-4">{{ t('gene_expression_analysis_results') }}</h2>
     
@@ -184,6 +184,9 @@
         <el-button type="default">{{ t('back') }}</el-button>
       </router-link>
     </div>
+    
+    <!-- 回到顶部 -->
+    <el-backtop :right="40" :bottom="40" target=".container" />
   </div>
 </template>
 

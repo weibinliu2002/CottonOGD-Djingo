@@ -26,29 +26,43 @@
     />
     
     <!-- 结果展示 -->
-    <div v-else-if="result">
+    <div v-else-if="result" class="result-container">
+      <!-- 左侧固定锚点导航 -->
+      <div class="anchor-sidebar">
+        <el-anchor direction="vertical" :offset="80">
+          <el-anchor-link href="#basic-info" :title="t('gene_basic_information')" />
+          <el-anchor-link v-if="jbrowse_url" href="#jbrowse-view" :title="t('jbrowse_view')" />
+          <el-anchor-link href="#sequence" :title="t('sequence')" />
+          <el-anchor-link v-if="expressionData.length > 0" href="#expression" :title="t('gene_expression')" />
+          <el-anchor-link v-if="Object.keys(annotations).length > 0" href="#annotations" :title="'Annotations'" />
+          <el-anchor-link v-if="hasGffData" href="#gff-data" :title="'GFF Data'" />
+        </el-anchor>
+      </div>
       
-      <!-- 基本信息卡片 - 使用 GeneInfoCard 组件 -->
-      <gene-info-card 
-        :gene-data="result" 
-        :title="t('gene_basic_information')"
-        class="mb-4"
-      />
+      <!-- 主内容区域 -->
+      <div class="main-content">
+          <!-- 基本信息卡片 - 使用 GeneInfoCard 组件 -->
+          <gene-info-card 
+            :gene-data="result" 
+            :title="t('gene_basic_information')"
+            class="mb-4"
+            id="basic-info"
+          />
       
-      <!-- JBrowse View -->
-      <el-card v-if="jbrowse_url" class="mb-4">
-        <template #header>
-          <div class="d-flex justify-content-between align-items-center">
-            <h3>{{ t('jbrowse_view') }}</h3>
-          </div>
-        </template>
-        <div class="card-body">
-          <iframe :src="jbrowse_url" style="width: 100%; height: 400px; border: 1px solid #ddd; border-radius: 4px;"></iframe>
-        </div>
-      </el-card>
-      
-      <!-- 序列信息卡片 -->
-      <el-card  class="mb-4">
+          <!-- JBrowse View -->
+          <el-card v-if="jbrowse_url" class="mb-4" id="jbrowse-view">
+            <template #header>
+              <div class="d-flex justify-content-between align-items-center">
+                <h3>{{ t('jbrowse_view') }}</h3>
+              </div>
+            </template>
+            <div class="card-body">
+              <iframe :src="jbrowse_url" style="width: 100%; height: 400px; border: 1px solid #ddd; border-radius: 4px;"></iframe>
+            </div>
+          </el-card>
+          
+          <!-- 序列信息卡片 -->
+          <el-card  class="mb-4" id="sequence">
         <template #header>
           <div class="d-flex justify-content-between align-items-center">
             <h3>{{ t('sequence') }}</h3>
@@ -135,7 +149,7 @@
       </el-card>
       
       <!-- 基因表达量表格 -->
-      <el-card v-if="expressionData.length > 0" class="mb-4">
+      <el-card v-if="expressionData.length > 0" class="mb-4" id="expression">
         <template #header>
           <div class="d-flex justify-content-between align-items-center">
             <h3>{{ t('gene_expression') }}</h3>
@@ -151,7 +165,19 @@
             stripe
             border
           >
-            <el-table-column prop="geneid" label="{{ t('gene_id') }}" width="180" />
+            <el-table-column label="{{ t('gene_id') }}" width="180">
+              <template #default="scope">
+                <router-link :to="{
+                  path: '/tools/gene-expression-efp/',
+                  query: {
+                    gene_id: scope.row.geneid,
+                    genome_id: result?.genome_id
+                  }
+                }">
+                  {{ scope.row.geneid }}
+                </router-link>
+              </template>
+            </el-table-column>
             <el-table-column 
               v-for="tissue in expressionTissues" 
               :key="tissue"
@@ -174,6 +200,7 @@
       <el-card
         v-if="Object.keys(annotations).length > 0"
         class="mb-4"
+        id="annotations"
       >
         <template #header>
           <div class="d-flex justify-content-between align-items-center">
@@ -185,10 +212,15 @@
           <div v-if="parsedGoAnnotations.length > 0" class="mb-3">
             <h4>GO annotation</h4>
             <el-table :data="parsedGoAnnotations" border>
-               <el-table-column prop="id" label="GO ID" width="150" />
+              <el-table-column label="GO ID" width="150">
+                <template #default="scope">
+                  <a :href="`https://www.ebi.ac.uk/QuickGO/term/${scope.row.id}`" target="_blank" rel="noopener noreferrer">
+                    {{ scope.row.id }}
+                  </a>
+                </template>
+              </el-table-column>
               <el-table-column prop="type" label="GO Type" width="150" />
               <el-table-column prop="term" label="Term" />
-             
             </el-table>
           </div>
           
@@ -196,31 +228,44 @@
           <div v-if="parsedKeggAnnotations.length > 0" class="mb-3">
             <h4>KEGG annotation</h4>
             <el-table :data="parsedKeggAnnotations" border>
-              <el-table-column prop="id" label="KEGG ID" width="150" />
+              <el-table-column label="KEGG ID" width="150">
+                <template #default="scope">
+                  <a :href="`https://www.ebi.ac.uk/QuickGO/term/${scope.row.id}`" target="_blank" rel="noopener noreferrer">
+                    {{ scope.row.id }}
+                  </a>
+                </template>
+              </el-table-column>
               <el-table-column prop="description" label="Description" />
             </el-table>
           </div>
           
-          <!-- 其他注释类型使用简单列表展示 -->
+          <!-- 其他注释类型使用表格展示 -->
           <div v-for="(annotationList, annotationType) in annotations" :key="annotationType" class="mb-3">
             <div v-if="annotationType !== 'GO_annotation' && annotationType !== 'KEGG_annotation' && annotationList.length > 0">
-              <!--<h4>{{ String(annotationType).replace('_', ' ') }}</h4>-->
-              <div class="annotation-list">
-                <div 
-                  v-for="(item, index) in annotationList" 
-                  :key="index"
-                  class="annotation-item"
-                >
-                  {{ item.annotation }}
-                </div>
-              </div>
+              <h4>{{ String(annotationType).replace(/_/g, ' ') }}</h4>
+              <el-table :data="annotationList" border>
+                <el-table-column label="Annotation ID" width="150">
+                  <template #default="scope">
+                    <a 
+                      v-if="scope.row.annotation_source === 'InterProScan' && scope.row.annoation_id"
+                      :href="`https://www.ebi.ac.uk/interpro/entry/InterPro/${scope.row.annoation_id}`" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                    >
+                      {{ scope.row.annoation_id }}
+                    </a>
+                    <span v-else>{{ scope.row.annoation_id || '-' }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="annotation" label="Annotation" />
+              </el-table>
             </div>
           </div>
         </div>
       </el-card>
       
       <!-- GFF数据表格 -->
-      <el-card v-if="hasGffData" class="mb-4">
+      <el-card v-if="hasGffData" class="mb-4" id="gff-data">
         <template #header>
           <div class="d-flex justify-content-between align-items-center">
             <h3>GFF Data</h3>
@@ -266,6 +311,7 @@
         </div>
       </el-card>
     </div>
+  </div>
     
     <!-- 序列弹窗组件 -->
     <sequence-modal
@@ -277,6 +323,9 @@
       @download="handleDownload"
       @copy="handleCopy"
     />
+    
+    <!-- 回到顶部 -->
+    <el-backtop :right="40" :bottom="40" target=".container" />
   </div>
 </template>
 
@@ -298,6 +347,8 @@ const { t } = useI18n()
 // 定义类型
 interface Annotation {
   annotation: string
+  annoation_id?: string
+  annotation_source?: string
   geneid_id?: number
   genome_id?: number
   id_id?: number
@@ -340,6 +391,7 @@ interface Result {
   protein_seq?: string
   geneid?: string
   id?: string
+  genome_id?: string
   mrna_transcripts?: Transcript[]
   gene_go_result?: any[]
   gene_kegg_result?: any[]
@@ -485,7 +537,7 @@ const currentTranscriptGffData = computed(() => {
   const filtered = gffData.value.filter((item: GffItem) => {
     if (item.attributes && currentId) {
       const matches = item.attributes.indexOf(currentId) !== -1
-      console.log(`GFF item attributes: ${item.attributes}, currentId: ${currentId}, matches: ${matches}`)
+      //console.log(`GFF item attributes: ${item.attributes}, currentId: ${currentId}, matches: ${matches}`)
       return matches
     }
     return false
@@ -579,6 +631,8 @@ const processAnnotations = (geneidResult: any[]) => {
         }
         newAnnotations[annotationSource].push({
           annotation: item.annotation,
+          annoation_id: item.annoation_id,
+          annotation_source: annotationSource,
           geneid_id: item.geneid_id,
           genome_id: item.genome_id,
           id_id: item.id_id
@@ -661,6 +715,12 @@ const fetchGeneData = async (db_id: string) => {
       // 清除加载超时定时器
       clearTimeout(loadingTimeout)
       isLoading.value = false
+      
+      // 加载基因表达量数据
+      const geneId = result.value?.IDs
+      if (geneId) {
+        loadExpressionData(geneId)
+      }
       return
     }
     
@@ -786,6 +846,12 @@ const fetchGeneData = async (db_id: string) => {
         dbId: db_id
       })
       console.log('基因数据已存储到 navigationStore:', result.value.IDs)
+      
+      // 加载基因表达量数据
+      const geneId = result.value?.IDs
+      if (geneId) {
+        loadExpressionData(geneId, undefined, db_id)
+      }
     }
                                 
   } catch (error: any) {
@@ -1327,15 +1393,20 @@ const downloadGff = (format: string) => {
 }
 
 // 加载基因表达量数据
-const loadExpressionData = async (geneId: string, genomeId?: string) => {
-  if (!geneId) return
+const loadExpressionData = async (geneId: string, genomeId?: string, dbId?: string) => {
+  if (!geneId && !dbId) return
   
   expressionLoading.value = true
   try {
-    const response = await httpInstance.post('/CottonOGD_api/extract_expression/', {
-      gene_id: geneId,
-      genome_id: genomeId || route.query.genome_id
-    }) as any
+    const params: any = {}
+    if (dbId) {
+      params.db_id = dbId
+    } else {
+      params.gene_id = geneId
+      params.genome_id = genomeId || route.query.genome_id
+    }
+    
+    const response = await httpInstance.post('/CottonOGD_api/extract_expression/', params) as any
     
     if (response.expression && response.expression.length > 0) {
       expressionData.value = response.expression
@@ -1564,7 +1635,7 @@ onMounted(() => {
 <style scoped>
 /* 自定义样式 */
 .container {
-  max-width: 1200px;
+  max-width: 1300px;
   margin: 0 auto;
   padding: 0 15px;
 }
@@ -1632,5 +1703,53 @@ onMounted(() => {
 
 .annotation-item:last-child {
   border-bottom: none;
+}
+
+/* 结果容器样式 */
+.result-container {
+  position: relative;
+}
+
+/* 锚点侧边栏样式 */
+.anchor-sidebar {
+  position: fixed;
+  left: 10px;
+  top: 280px;
+  width: 140px;
+  z-index: 200;
+}
+
+/* 主内容区域样式 */
+.main-content {
+  margin-left: 0;
+  width: 100%;
+}
+
+/* 锚点导航样式 */
+:deep(.el-anchor) {
+  background: #fff;
+  padding: 8px;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.1);
+  font-size: 24px;
+}
+
+:deep(.el-anchor-link) {
+  padding: 4px 0;
+}
+
+:deep(.el-anchor-link__title) {
+  font-size: 18px;
+}
+
+:deep(.el-anchor__marker) {
+  display: none;
+}
+
+/* 响应式布局：小屏幕时隐藏锚点 */
+@media (max-width: 1400px) {
+  .anchor-sidebar {
+    display: none;
+  }
 }
 </style>

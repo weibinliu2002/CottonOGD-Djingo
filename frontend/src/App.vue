@@ -83,8 +83,7 @@
                 <li><router-link class="dropdown-item" to="/tools/go-enrichment">{{ t('go_enrichment') }}</router-link></li>
                 <li><router-link class="dropdown-item" to="/tools/kegg-enrichment">{{ t('kegg_enrichment') }}</router-link></li>
 
-                <li><router-link class="dropdown-item" to="/tools/gene-expression">{{ t('gene_expression') }}</router-link></li>
-        
+                
                 <li><router-link class="dropdown-item" to="/tools/primer-design">{{ t('primer_design') }}</router-link></li>
               </ul>
             </li>
@@ -97,15 +96,19 @@
                  <li><router-link class="dropdown-item" to="/tools/canvaspress">{{ t('canvaspress') }}</router-link></li>
                 <li><router-link class="dropdown-item" to="/tools/ppi">{{ t('ppi') }}</router-link></li>
                 <li><router-link class="dropdown-item" to="/tools/phylotree">{{ t('phylotree') }}</router-link></li>
-                <li><router-link class="dropdown-item" to="/tools/circos">{{ t('circos') }}</router-link></li>
-               
-
-              
+                <li><router-link class="dropdown-item" to="/tools/circos">{{ t('circos') }}</router-link></li>            
               </ul>
             </li>
-            <li class="nav-item">
-              <router-link class="nav-link" to="//tools/gene-expression-efp">{{ t('gene_expression_in_efp') }}</router-link>
-            </li>
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                {{ t('Expression') }}
+              </a>
+              <ul class="dropdown-menu">
+                <li><router-link class="dropdown-item" to="/tools/gene-expression">{{ t('gene_expression') }}</router-link></li>
+        
+                <li><router-link class="dropdown-item" to="/tools/gene-expression-efp">{{ t('gene_expression_in_efp') }}</router-link></li>
+              </ul>
+          </li>
             <li class="nav-item">
               <router-link class="nav-link" to="/download">{{ t('download') }}</router-link>
             </li>

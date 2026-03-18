@@ -13,8 +13,9 @@
       <select 
         v-model="selectedGenome" 
         class="genome-select"
+        :disabled="loadingGenomes"
       >
-        <template v-for="genomeType in genomeStore.genomeOptions" :key="genomeType.value">
+        <template v-for="genomeType in filteredGenomeOptions" :key="genomeType.value">
           <optgroup 
             v-if="genomeType.children && genomeType.children.length > 0"
             :label="genomeType.label"
@@ -98,375 +99,394 @@
         ></div>
       </div>
     </div>
-    
-    <!-- Initial Image -->
-    <img 
-      id="initial-image" 
-      src="../assets/images/egg.jpg" 
-      :alt="t('initial_heatmap_template')" 
-      v-if="!showResultImage"
-      @error="hideInitialImage"
-    >
-    <div id="message" v-if="message" :class="messageType">{{ message }}</div>
-    
+
     <div id="result">
-      <div class="image-container">
-        <img 
-          id="result-image" 
-          :src="resultImage" 
-          :alt="t('heatmap_result')" 
-          usemap="#regionMap"
-          v-if="showResultImage"
-          @load="onImageLoad"
+      <img 
+        v-if="showResultImage" 
+        :src="resultImage" 
+        alt="Heatmap" 
+        id="result-image"
+        @load="onImageLoad"
+      >
+      <img 
+        v-else
+        src="/src/assets/images/egg.jpg" 
+        alt="Initial" 
+        id="initial-image"
+      >
+      
+      <!-- 图像映射 -->
+      <map name="result-map" v-if="mappedRegions.length > 0">
+        <area 
+          v-for="(region, index) in mappedRegions" 
+          :key="index"
+          shape="poly"
+          :coords="region.coords"
+          :title="region.title"
+          @mouseenter="(e) => showTooltip(e, region)"
+          @mousemove="moveTooltip"
+          @mouseleave="hideTooltip"
         >
-        <map name="regionMap" id="regionMap">
-          <area 
-            v-for="(region, index) in mappedRegions" 
-            :key="index"
-            shape="poly"
-            :coords="region.coords"
-            :alt="region.name"
-            :title="region.title"
-            @mouseenter="showTooltip($event, region)"
-            @mousemove="moveTooltip($event)"
-            @mouseleave="hideTooltip"
-          />
-        </map>
-        <div 
-          id="tooltip" 
-          class="tooltip" 
-          v-if="tooltipVisible"
-          :style="tooltipStyle"
-        >
-          <strong>{{ tooltipContent.name }}</strong><br>
-          {{ t('expression_value') }}: {{ tooltipContent.value }}
-        </div>
+      </map>
+      
+      <!-- Tooltip -->
+      <div 
+        v-if="tooltipVisible" 
+        class="tooltip"
+        :style="{ left: tooltipStyle.left, top: tooltipStyle.top }"
+      >
+        <div class="tooltip-title">{{ tooltipContent.name }}</div>
+        <div class="tooltip-value">{{ tooltipContent.value }}</div>
       </div>
     </div>
+
+    <div v-if="message" :class="messageType" id="message">
+      {{ message }}
+    </div>
+    
+    <!-- 回到顶部 -->
+    <el-backtop :right="40" :bottom="40" target=".container" />
   </div>
 </template>
 
-<script>
-import { ref, onMounted, onBeforeUnmount, inject } from 'vue'
+<script setup lang="ts">
+import { ref, onMounted, onBeforeUnmount, inject, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 import { useGenomeSelector } from '@/composables/useGenomeBrowser'
+import httpInstance from '../utils/http'
 
-export default {
-  name: 'GeneExpressionEfpView',
-  setup() {
-    const { t } = useI18n()
-    const showLoading = inject('showLoading')
-    const hideLoading = inject('hideLoading')
-    const { genomeStore, ensureGenomesLoaded, pickDefaultGenome } = useGenomeSelector('G.hirsutumAD1_Jin668_HAU_v1T2T')
-    const geneId = ref('')
-    const selectedGenome = ref('')
-    const lowColor = ref('#0000FF')
-    const midColor = ref('#00FF00')
-    const highColor = ref('#FF0000')
-    const isLoading = ref(false)
-    const resultImage = ref('')
-    const showResultImage = ref(false)
-    const message = ref('')
-    const messageType = ref('')
-    const currentRegionsInfo = ref([])
-    const currentImageSize = ref({ width: 0, height: 0 })
-    const mappedRegions = ref([])
-    const tooltipVisible = ref(false)
-    const tooltipContent = ref({ name: '', value: '' })
-    const tooltipStyle = ref({ left: '0px', top: '0px' })
-    
-    // 缁勪欢鎸傝浇鏃跺姞杞藉熀鍥犵粍鏁版嵁
-    onMounted(async () => {
-      await ensureGenomesLoaded()
-      selectedGenome.value = pickDefaultGenome()
+const { t } = useI18n()
+const route = useRoute()
+const showLoading = inject<(() => void) | undefined>('showLoading', undefined)
+const hideLoading = inject<(() => void) | undefined>('hideLoading', undefined)
+const { genomeStore, ensureGenomesLoaded, pickDefaultGenome } = useGenomeSelector('G.hirsutumAD1_Jin668_HAU_v1T2T')
 
-      document.getElementById('gene_id')?.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-          generateImage()
-        }
-      })
+const geneId = ref('')
+const selectedGenome = ref('')
+const lowColor = ref('#0000FF')
+const midColor = ref('#00FF00')
+const highColor = ref('#FF0000')
+const isLoading = ref(false)
+const resultImage = ref('')
+const showResultImage = ref(false)
+const message = ref('')
+const messageType = ref('')
+const currentRegionsInfo = ref<any[]>([])
+const currentImageSize = ref({ width: 0, height: 0 })
+const mappedRegions = ref<any[]>([])
+const tooltipVisible = ref(false)
+const tooltipContent = ref({ name: '', value: '' })
+const tooltipStyle = ref({ left: '0px', top: '0px' })
+const genomesWithTissue = ref<string[]>([])
+const loadingGenomes = ref(false)
 
-      window.addEventListener('resize', handleResize)
-    })
-
-    onBeforeUnmount(() => {
-      window.removeEventListener('resize', handleResize);
-    })
-    
-    // 濉厖绀轰緥鍩哄洜ID
-    const fillExample = () => {
-      const exampleIDs = 'Ghjin_A01g000040';
-      geneId.value = exampleIDs;
+// 从后端获取有tissue数据的基因组列表
+const fetchGenomesWithTissue = async () => {
+  try {
+    loadingGenomes.value = true
+    const response = await httpInstance.get('/CottonOGD_api/extract_expression/genomes/')
+    if (response && Array.isArray(response)) {
+      genomesWithTissue.value = response
     }
-    
-    // Generate heatmap
-    const generateImage = () => {
-      showLoading?.()
-      if (!geneId.value.trim()) {
-        showMessage('Please enter gene ID', 'error');
-        hideLoading?.()
-        return;
-      }
-      
-      isLoading.value = true;
-      showResultImage.value = false;
-      hideMessage();
-      
-      const data = {
-        'gene_id': geneId.value.trim(),
-        'genome_id': selectedGenome.value,
-        'low_color': lowColor.value,
-        'mid_color': midColor.value,
-        'high_color': highColor.value
-      };
-      console.log('Request data:', data);
-      console.log('selectedGenome.value:', selectedGenome.value);
-      console.log('typeof selectedGenome.value:', typeof selectedGenome.value);
-      
-      fetch('/CottonOGD_api/expression_EFP_image/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': getCookie('csrftoken')
-        },
-        body: JSON.stringify(data)
-      })
-      .then(response => {
-        if (!response.ok) {
-          return response.text().then(text => {
-            throw new Error(`HTTP error ${response.status}`);
-          });
-        }
-        return response.json();
-      })
-      .then(data => {
-        console.log('Response data:', data);
-        console.log('typeof data:', typeof data);
-        // Try to get image field directly, not dependent on success field
-        if (data.image) {
-          console.log('Found image in response:', data.image);
-          currentRegionsInfo.value = data.regions_info || [];
-          currentImageSize.value = {
-            width: data.image_width || 0,
-            height: data.image_height || 0
-          };
-          
-          resultImage.value = data.image;
-          showResultImage.value = true;
-        } else if (data.error) {
-          console.log('Error response:', data.error);
-          showMessage('Error: ' + data.error, 'error');
-        } else {
-          console.log('Unexpected response format:', data);
-          showMessage('Error: Invalid response format', 'error');
-        }
-      })
-      .catch(error => {
-        showMessage('Request failed: ' + error.message, 'error');
-      })
-      .finally(() => {
-        isLoading.value = false;
-        hideLoading?.()
-      });
-    }
-    
-    const onImageLoad = () => {
-      if (currentRegionsInfo.value.length > 0 && currentImageSize.value.width > 0) {
-        createImageMap();
-      }
-    }
-    
-    // 鍒涘缓鍥惧儚鏄犲皠
-    const createImageMap = () => {
-      const imgElement = document.getElementById('result-image');
-      if (!imgElement || !imgElement.complete || imgElement.naturalWidth === 0) {
-        return;
-      }
-      
-      const displayWidth = imgElement.offsetWidth;
-      const displayHeight = imgElement.offsetHeight;
-      
-      // 璁＄畻缂╂斁姣斾緥
-      const scaleX = currentImageSize.value.width > 0 ? displayWidth / currentImageSize.value.width : 1;
-      const scaleY = currentImageSize.value.height > 0 ? displayHeight / currentImageSize.value.height : 1;
-      
-      console.log('Processing regions_info:', currentRegionsInfo.value);
-      console.log('Number of regions:', currentRegionsInfo.value.length);
-      
-      mappedRegions.value = currentRegionsInfo.value
-        .filter(region => {
-          // 杩囨护鎺夋棤鏁堢殑鍖哄煙鏁版嵁
-          const validRegion = region && region.polygon && Array.isArray(region.polygon) && region.polygon.length >= 3;
-          if (!validRegion) {
-            console.log('Skipping invalid region:', region);
-          }
-          return validRegion;
-        })
-        .map(region => {
-          try {
-            const scaledCoords = region.polygon.map(point => {
-              if (Array.isArray(point) && point.length === 2) {
-                return [
-                  Math.round(point[0] * scaleX),
-                  Math.round(point[1] * scaleY)
-                ];
-              }
-              return [0, 0];
-            });
-            
-            const coordsString = scaledCoords.map(point => `${point[0]},${point[1]}`).join(',');
-            
-            return {
-              coords: coordsString,
-              name: region.name || 'Unknown Region',
-              title: `${region.name || 'Unknown Region'}: ${typeof region.value === 'number' ? region.value.toFixed(4) : region.value || 'N/A'}`,
-              value: region.value
-            };
-          } catch (error) {
-            console.error('Error processing region:', error, region);
-            return {
-              coords: '',
-              name: region.name || 'Error Region',
-              title: 'Error processing region',
-              value: 'Error'
-            };
-          }
-        });
-      
-      console.log('Generated mappedRegions:', mappedRegions.value);
-      console.log('Number of mapped regions:', mappedRegions.value.length);
-    }
-    
-    const showTooltip = (event, region) => {
-      let valueDisplay;
-      
-      if (typeof region.value === 'number') {
-        valueDisplay = region.value.toFixed(4);
-      } else {
-        valueDisplay = region.value;
-      }
-      
-      tooltipContent.value = {
-        name: region.name,
-        value: valueDisplay
-      };
-      tooltipVisible.value = true;
-      moveTooltip(event);
-    }
-    
-    const moveTooltip = (event) => {
-      const img = document.getElementById('result-image');
-      if (!img || !img.complete || img.naturalWidth === 0) {
-        return;
-      }
-      
-      const imgRect = img.getBoundingClientRect();
-      const containerRect = img.parentElement.getBoundingClientRect();
-      const x = event.clientX - containerRect.left + 15;
-      const y = event.clientY - containerRect.top + 15;
-      
-      tooltipStyle.value = {
-        left: `${x}px`,
-        top: `${y}px`
-      };
-    }
-    
-    const hideTooltip = () => {
-      tooltipVisible.value = false;
-    }
-    
-    // 鏄剧ず娑堟伅
-    const showMessage = (text, type) => {
-      message.value = text;
-      messageType.value = type;
-    }
-    
-    // 闅愯棌娑堟伅
-    const hideMessage = () => {
-      message.value = '';
-    }
-    
-    // 闅愯棌鍒濆鍥剧墖
-    const hideInitialImage = () => {
-      // 閿欒澶勭悊
-    }
-    
-    // 鑾峰彇cookie
-    const getCookie = (name) => {
-      let cookieValue = null;
-      if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-          const cookie = cookies[i].trim();
-          if (cookie.substring(0, name.length + 1) === (name + '=')) {
-            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-            break;
-          }
-        }
-      }
-      return cookieValue;
-    }
-    
-    const updateColorBox = (event) => {
-      const type = event.target.dataset.type;
-      if (type === 'low') {
-        lowColor.value = event.target.value;
-      } else if (type === 'mid') {
-        midColor.value = event.target.value;
-      } else if (type === 'high') {
-        highColor.value = event.target.value;
-      }
-      console.log(`Color updated: ${type} = ${event.target.value}`);
-    }
-    
-    // 瑙﹀彂棰滆壊杈撳叆
-    const triggerColorInput = (type) => {
-      document.getElementById(`${type}-color`).click();
-    }
-    
-    // 澶勭悊绐楀彛澶у皬鍙樺寲
-    const handleResize = () => {
-      if (showResultImage.value && currentRegionsInfo.value.length > 0) {
-        createImageMap();
-      }
-    }
-    
-    return {
-      t,
-      geneId,
-      selectedGenome,
-      lowColor,
-      midColor,
-      highColor,
-      isLoading,
-      resultImage,
-      showResultImage,
-      message,
-      messageType,
-      currentRegionsInfo,
-      currentImageSize,
-      mappedRegions,
-      tooltipVisible,
-      tooltipContent,
-      tooltipStyle,
-      genomeStore,
-      fillExample,
-      generateImage,
-      onImageLoad,
-      createImageMap,
-      showTooltip,
-      moveTooltip,
-      hideTooltip,
-      showMessage,
-      hideMessage,
-      hideInitialImage,
-      getCookie,
-      updateColorBox,
-      triggerColorInput,
-      handleResize
-    }
+  } catch (err) {
+    console.error('Failed to fetch genomes with tissue:', err)
+  } finally {
+    loadingGenomes.value = false
   }
 }
+
+// 计算属性：筛选后的基因组选项
+const filteredGenomeOptions = computed(() => {
+  if (!genomesWithTissue.value.length) return genomeStore.genomeOptions
+  
+  return genomeStore.genomeOptions.map((group: any) => {
+    // 筛选有tissue数据的子选项
+    const filteredChildren = group.children?.filter((child: any) => 
+      genomesWithTissue.value.includes(child.value)
+    ) || []
+    
+    // 如果该组有子选项被筛选出来，返回该组
+    if (filteredChildren.length > 0) {
+      return {
+        ...group,
+        children: filteredChildren
+      }
+    }
+    return null
+  }).filter(Boolean)
+})
+
+// 填充示例基因ID
+const fillExample = () => {
+  const exampleIDs = 'Ghjin_A01g000040'
+  geneId.value = exampleIDs
+}
+
+// Generate heatmap
+const generateImage = () => {
+  showLoading?.()
+  if (!geneId.value.trim()) {
+    showMessage('Please enter gene ID', 'error')
+    hideLoading?.()
+    return
+  }
+  
+  isLoading.value = true
+  showResultImage.value = false
+  hideMessage()
+  
+  const data = {
+    'gene_id': geneId.value.trim(),
+    'genome_id': selectedGenome.value,
+    'low_color': lowColor.value,
+    'mid_color': midColor.value,
+    'high_color': highColor.value
+  }
+  console.log('Request data:', data)
+  console.log('selectedGenome.value:', selectedGenome.value)
+  console.log('typeof selectedGenome.value:', typeof selectedGenome.value)
+  
+  const csrfToken = getCookie('csrftoken')
+  fetch('/CottonOGD_api/expression_EFP_image/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': csrfToken || ''
+    },
+    body: JSON.stringify(data)
+  })
+  .then(response => {
+    if (!response.ok) {
+      return response.text().then(text => {
+        throw new Error(`HTTP error ${response.status}`)
+      })
+    }
+    return response.json()
+  })
+  .then(data => {
+    console.log('Response data:', data)
+    console.log('typeof data:', typeof data)
+    // Try to get image field directly, not dependent on success field
+    if (data.image) {
+      console.log('Found image in response:', data.image)
+      currentRegionsInfo.value = data.regions_info || []
+      currentImageSize.value = {
+        width: data.image_width || 0,
+        height: data.image_height || 0
+      }
+      
+      resultImage.value = data.image
+      showResultImage.value = true
+    } else if (data.error) {
+      console.log('Error response:', data.error)
+      showMessage('Error: ' + data.error, 'error')
+    } else {
+      console.log('Unexpected response format:', data)
+      showMessage('Error: Invalid response format', 'error')
+    }
+  })
+  .catch(error => {
+    showMessage('Request failed: ' + error.message, 'error')
+  })
+  .finally(() => {
+    isLoading.value = false
+    hideLoading?.()
+  })
+}
+
+const onImageLoad = () => {
+  if (currentRegionsInfo.value.length > 0 && currentImageSize.value.width > 0) {
+    createImageMap()
+  }
+}
+
+// 创建图像映射
+const createImageMap = () => {
+  const imgElement = document.getElementById('result-image') as HTMLImageElement
+  if (!imgElement || !imgElement.complete || imgElement.naturalWidth === 0) {
+    return
+  }
+  
+  const displayWidth = imgElement.offsetWidth
+  const displayHeight = imgElement.offsetHeight
+  
+  // 计算缩放比例
+  const scaleX = currentImageSize.value.width > 0 ? displayWidth / currentImageSize.value.width : 1
+  const scaleY = currentImageSize.value.height > 0 ? displayHeight / currentImageSize.value.height : 1
+  
+  console.log('Processing regions_info:', currentRegionsInfo.value)
+  console.log('Number of regions:', currentRegionsInfo.value.length)
+  
+  mappedRegions.value = currentRegionsInfo.value
+    .filter((region: any) => {
+      // 过滤掉无效的区域数据
+      const validRegion = region && region.polygon && Array.isArray(region.polygon) && region.polygon.length >= 3
+      if (!validRegion) {
+        console.log('Skipping invalid region:', region)
+      }
+      return validRegion
+    })
+    .map((region: any) => {
+      try {
+        const scaledCoords = region.polygon.map((point: any) => {
+          if (Array.isArray(point) && point.length === 2) {
+            return [
+              Math.round(point[0] * scaleX),
+              Math.round(point[1] * scaleY)
+            ]
+          }
+          return [0, 0]
+        })
+        
+        const coordsString = scaledCoords.map((point: any) => `${point[0]},${point[1]}`).join(',')
+        
+        return {
+          coords: coordsString,
+          name: region.name || 'Unknown Region',
+          title: `${region.name || 'Unknown Region'}: ${typeof region.value === 'number' ? region.value.toFixed(4) : region.value || 'N/A'}`,
+          value: region.value
+        }
+      } catch (error) {
+        console.error('Error processing region:', error, region)
+        return {
+          coords: '',
+          name: region.name || 'Error Region',
+          title: 'Error processing region',
+          value: 'Error'
+        }
+      }
+    })
+  
+  console.log('Generated mappedRegions:', mappedRegions.value)
+  console.log('Number of mapped regions:', mappedRegions.value.length)
+}
+
+const showTooltip = (event: any, region: any) => {
+  let valueDisplay: string
+  
+  if (typeof region.value === 'number') {
+    valueDisplay = region.value.toFixed(4)
+  } else {
+    valueDisplay = region.value
+  }
+  
+  tooltipContent.value = {
+    name: region.name,
+    value: valueDisplay
+  }
+  tooltipVisible.value = true
+  moveTooltip(event)
+}
+
+const moveTooltip = (event: any) => {
+  const img = document.getElementById('result-image') as HTMLImageElement
+  if (!img || !img.complete || img.naturalWidth === 0) {
+    return
+  }
+  
+  const imgRect = img.getBoundingClientRect()
+  const containerRect = img.parentElement?.getBoundingClientRect()
+  if (!containerRect) return
+  
+  const x = event.clientX - containerRect.left + 15
+  const y = event.clientY - containerRect.top + 15
+  
+  tooltipStyle.value = {
+    left: `${x}px`,
+    top: `${y}px`
+  }
+}
+
+const hideTooltip = () => {
+  tooltipVisible.value = false
+}
+
+// 显示消息
+const showMessage = (text: string, type: string) => {
+  message.value = text
+  messageType.value = type
+}
+
+// 隐藏消息
+const hideMessage = () => {
+  message.value = ''
+}
+
+// 获取cookie
+const getCookie = (name: string): string | null => {
+  let cookieValue = null
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';')
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i]?.trim()
+      if (cookie && cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1))
+        break
+      }
+    }
+  }
+  return cookieValue
+}
+
+const updateColorBox = (event: any) => {
+  const type = event.target.dataset.type
+  if (type === 'low') {
+    lowColor.value = event.target.value
+  } else if (type === 'mid') {
+    midColor.value = event.target.value
+  } else if (type === 'high') {
+    highColor.value = event.target.value
+  }
+  console.log(`Color updated: ${type} = ${event.target.value}`)
+}
+
+// 触发颜色输入
+const triggerColorInput = (type: string) => {
+  document.getElementById(`${type}-color`)?.click()
+}
+
+// 处理窗口大小变化
+const handleResize = () => {
+  if (showResultImage.value && currentRegionsInfo.value.length > 0) {
+    createImageMap()
+  }
+}
+
+// 组件挂载时加载基因组数据
+onMounted(async () => {
+  await ensureGenomesLoaded()
+  await fetchGenomesWithTissue()
+  selectedGenome.value = pickDefaultGenome()
+
+  document.getElementById('gene_id')?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      generateImage()
+    }
+  })
+
+  window.addEventListener('resize', handleResize)
+  
+  // 处理URL参数，如果有gene_id和genome_id，自动执行请求
+  const urlGeneId = route.query.gene_id as string
+  const urlGenomeId = route.query.genome_id as string
+  
+  if (urlGeneId) {
+    geneId.value = urlGeneId
+    
+    // 如果URL中有genome_id，优先使用
+    if (urlGenomeId && genomesWithTissue.value.includes(urlGenomeId)) {
+      selectedGenome.value = urlGenomeId
+    }
+    
+    // 自动执行请求绘制图形
+    generateImage()
+  }
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', handleResize)
+})
 </script>
 
 <style scoped>
@@ -556,7 +576,7 @@ export default {
     text-align: center;
     margin-top: 20px;
   }
-  /* 淇敼鍥剧墖鐩稿叧鏍峰紡 */
+  /* 修改图片相关样式 */
   .image-container {
     position: relative;
     display: block;
@@ -587,8 +607,11 @@ export default {
     color: #27ae60;
     text-align: center;
     margin-top: 20px;
+    padding: 15px;
+    background-color: #d4edda;
+    border-radius: 5px;
+    border: 1px solid #27ae60;
   }
-  /* 娣诲姞鎻愮ず妗嗘牱寮?*/
   .tooltip {
     position: absolute;
     background: rgba(0, 0, 0, 0.8);
@@ -599,19 +622,12 @@ export default {
     pointer-events: none;
     z-index: 1000;
     max-width: 200px;
-    text-align: center;
   }
-  .tooltip strong {
-    color: #ffeb3b;
+  .tooltip-title {
+    font-weight: bold;
+    margin-bottom: 4px;
   }
-  /* 鍖哄煙鎮仠鏁堟灉 */
-  area:hover {
-    cursor: pointer;
-  }
-  /* 纭繚鍦板浘鍏冪礌灞呬腑 */
-  map {
-    display: block;
-    margin: 0 auto;
+  .tooltip-value {
+    color: #3498db;
   }
 </style>
-

@@ -39,6 +39,9 @@
         <canvas id="canvasxpress-root" ref="canvasRef" width="900" height="520"></canvas>
       </div>
     </el-card>
+    
+    <!-- 回到顶部 -->
+    <el-backtop :right="40" :bottom="40" target=".container" />
   </div>
 </template>
 

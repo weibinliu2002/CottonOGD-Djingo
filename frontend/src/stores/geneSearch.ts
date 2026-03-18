@@ -26,6 +26,8 @@ interface SearchResult {
   geneid_result: GeneIdResult[]
   gene_info_result: GeneInfoResult[]
   search_map: Record<string, { db_id: number; [key: string]: any }>
+  gene_go_result?: any[]
+  gene_kegg_result?: any[]
 }
 
 export const useGeneSearchStore = defineStore('geneSearch', () => {
@@ -69,7 +71,9 @@ export const useGeneSearchStore = defineStore('geneSearch', () => {
         searchResults.value = {
           geneid_result: typeof data.geneid_result === 'string' ? JSON.parse(data.geneid_result) : data.geneid_result,
           gene_info_result: typeof data.gene_info_result === 'string' ? JSON.parse(data.gene_info_result) : data.gene_info_result,
-          search_map: typeof data.search_map === 'string' ? JSON.parse(data.search_map) : data.search_map
+          search_map: typeof data.search_map === 'string' ? JSON.parse(data.search_map) : data.search_map,
+          gene_go_result: data.gene_go_result || [],
+          gene_kegg_result: data.gene_kegg_result || []
         };
         console.log('Parsed Search Results:', searchResults.value);
 

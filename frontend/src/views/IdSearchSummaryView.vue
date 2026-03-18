@@ -93,6 +93,9 @@
       @download="handleDownload"
       @copy="handleCopy"
     />
+    
+    <!-- 回到顶部 -->
+    <el-backtop :right="40" :bottom="40" target=".container" />
   </div>
 </template>
 <script>
@@ -167,10 +170,15 @@ export default {
       const searchResults = navigationData.results
       const geneInfoResult = searchResults.gene_info_result || []
       const geneidResult = searchResults.geneid_result || []
+      const geneGoResult = searchResults.gene_go_result || []
+      const geneKeggResult = searchResults.gene_kegg_result || []
       
       // 根据当前基因的 db_id 过滤出对应的 geneInfoResult 和 geneidResult
       const currentGeneInfoResult = geneInfoResult.filter(item => item.id_id === geneData.db_id)
       const currentGeneidResult = geneidResult.filter(item => item.id_id === geneData.db_id)
+      // 根据 id_id 过滤出对应的 GO 和 KEGG 注释数据
+      const currentGeneGoResult = geneGoResult.filter(item => item.id_id === geneData.db_id)
+      const currentGeneKeggResult = geneKeggResult.filter(item => item.id_id === geneData.db_id)
       
       // 获取序列缓存中的数据
       const geneId = geneData.IDs
@@ -294,6 +302,8 @@ export default {
         mrna_transcripts: mrnaTranscripts,
         gene_info_result: currentGeneInfoResult,
         geneid_result: currentGeneidResult,
+        gene_go_result: currentGeneGoResult,
+        gene_kegg_result: currentGeneKeggResult,
         jbrowse_url: jbrowseUrl,
         gff_data: gffData
       }

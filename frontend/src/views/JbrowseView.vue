@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="container-fluid">
     <div class="row">
       <!-- 左侧边栏 - 选择基因组 -->
@@ -44,6 +44,9 @@
         </div>
       </div>
     </div>
+    
+    <!-- 回到顶部 -->
+    <el-backtop :right="40" :bottom="40" target=".container-fluid" />
   </div>
 </template>
 

@@ -29,17 +29,17 @@
             v-model="selectedGenome"
             :placeholder="t('select_genome_placeholder')"
             style="width: 100%"
-            :loading="genomeStore.loading"
+            :loading="genomeStore.loading || loadingGenomes"
           >
             <el-option value="" :label="t('all_genomes')" />
-            <!-- 鐩存帴鏄剧ず鎵€鏈夐€夐」锛屽寘鎷ぇ绫诲拰鍗曚釜鍩哄洜缁?-->
-            <template v-for="group in genomeStore.genomeOptions" :key="group.value">
-              <!-- 鍩哄洜缁勫ぇ绫讳綔涓哄彲閫夋嫨閫夐」 -->
+            <!-- 只显示有tissue数据的基因组选项-->
+            <template v-for="group in filteredGenomeOptions" :key="group.value">
+              <!-- 基因组大类作为可选择选项 -->
               <el-option
                 :label="group.label"
                 :value="group.value"
               />
-              <!-- 鍗曚釜鍩哄洜缁勯€夐」锛屾坊鍔犵缉杩涙牱寮?-->
+              <!-- 单个基因组选项，添加缩进样式-->
               <el-option
                 v-for="item in group.children"
                 :key="item.value"
@@ -88,11 +88,14 @@
         </el-form-item>
       </el-form>
     </el-card>
+    
+    <!-- 回到顶部 -->
+    <el-backtop :right="40" :bottom="40" target=".container" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, inject, watch } from 'vue'
+import { ref, onMounted, inject, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import httpInstance from '../utils/http'
@@ -108,13 +111,51 @@ const router = useRouter()
 const { genomeStore, ensureGenomesLoaded, pickDefaultGenome } = useGenomeSelector('G.hirsutumAD1_Jin668_HAU_v1T2T')
 const geneExpressionStore = useGeneExpressionStore()
 
-// 琛ㄥ崟鏁版嵁
+// 表单数据
 const geneList = ref('')
 const selectedTissue = ref<string[]>([])
 const selectedGenome = ref('')
 const error = ref('')
 const tissueOptions = ref<string[]>([])
 const loadingTissues = ref(false)
+const genomesWithTissue = ref<string[]>([])
+const loadingGenomes = ref(false)
+
+// 从后端获取有tissue数据的基因组列表
+const fetchGenomesWithTissue = async () => {
+  try {
+    loadingGenomes.value = true
+    const response = await httpInstance.get('/CottonOGD_api/extract_expression/genomes/')
+    if (response && Array.isArray(response)) {
+      genomesWithTissue.value = response
+    }
+  } catch (err) {
+    console.error('Failed to fetch genomes with tissue:', err)
+  } finally {
+    loadingGenomes.value = false
+  }
+}
+
+// 计算属性：筛选后的基因组选项
+const filteredGenomeOptions = computed(() => {
+  if (!genomesWithTissue.value.length) return genomeStore.genomeOptions
+  
+  return genomeStore.genomeOptions.map(group => {
+    // 筛选有tissue数据的子选项
+    const filteredChildren = group.children?.filter((child: any) => 
+      genomesWithTissue.value.includes(child.value)
+    ) || []
+    
+    // 如果该组有子选项被筛选出来，返回该组
+    if (filteredChildren.length > 0) {
+      return {
+        ...group,
+        children: filteredChildren
+      }
+    }
+    return null
+  }).filter(Boolean)
+})
 
 // 从后端获取tissue列表
 const fetchTissues = async (genomeId?: string) => {
@@ -133,9 +174,10 @@ const fetchTissues = async (genomeId?: string) => {
   }
 }
 
-// 缁勪欢鎸傝浇鏃跺姞杞藉熀鍥犵粍鏁版嵁
+// 组件挂载时加载基因组数据
 onMounted(async () => {
   await ensureGenomesLoaded()
+  await fetchGenomesWithTissue()
   selectedGenome.value = pickDefaultGenome()
   await fetchTissues(selectedGenome.value)
 })

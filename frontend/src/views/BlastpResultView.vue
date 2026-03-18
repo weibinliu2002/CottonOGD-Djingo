@@ -153,6 +153,9 @@
         <el-button type="default">{{ t('return_to_search') }}</el-button>
       </router-link>
     </div>
+    
+    <!-- 回到顶部 -->
+    <el-backtop :right="40" :bottom="40" target=".container" />
   </div>
 </template>
 

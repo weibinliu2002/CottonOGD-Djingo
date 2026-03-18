@@ -67,6 +67,33 @@ def get_tissues(request):
         logger.error('Error getting tissues: %s', e)
         return Response([], status=status.HTTP_200_OK)
 
+@api_view(['GET'])
+def get_genomes_with_tissue(request):
+    """
+    获取genome_tissue表中所有唯一的genome_id列表
+    """
+    try:
+        # 生成缓存键
+        cache_key = "genomes_with_tissue"
+        
+        # 尝试从缓存获取
+        cached_genomes = cache.get(cache_key)
+        if cached_genomes:
+            return Response(cached_genomes, status=status.HTTP_200_OK)
+        
+        # 从genome_tissue表中获取所有唯一的genome_id
+        genomes = GenomeTissue.objects.values_list('genome', flat=True).distinct()
+        # 过滤空值并转换为列表
+        genome_list = [genome for genome in genomes if genome]
+        
+        # 缓存结果，设置过期时间为7天
+        cache.set(cache_key, genome_list, 3600 * 24 * 7)
+        
+        return Response(genome_list, status=status.HTTP_200_OK)
+    except Exception as e:
+        logger.error('Error getting genomes with tissue: %s', e)
+        return Response([], status=status.HTTP_200_OK)
+
 def get_sort_key(row):
     tissue = row['tissue']
     stage = row['stage'] if row['stage'] else ''

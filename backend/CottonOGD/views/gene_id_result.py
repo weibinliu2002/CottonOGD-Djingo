@@ -44,6 +44,9 @@ def geneid_summary(request):
     # 使用 db_id 过滤基因注释
     gene_annotation_result = gene_annotation.objects.filter(id_id__in=db_ids).values()
     gene_info_result = gene_info.objects.filter(id_id__in=db_ids).values()
+    # 获取GO和KEGG注释数据
+    gene_go_result = gene_go.objects.filter(id_id__in=db_ids).values()
+    gene_kegg_result = gene_kegg.objects.filter(id_id__in=db_ids).values()
     # 构建 JBrowse URL
     geneid_result=json.dumps(list(gene_annotation_result))
     gene_info_result=json.dumps(list(gene_info_result))
@@ -51,6 +54,8 @@ def geneid_summary(request):
     return Response({'geneid_result': geneid_result,
                      'gene_info_result': gene_info_result,
                      'search_map': search_map,
+                     'gene_go_result': list(gene_go_result),
+                     'gene_kegg_result': list(gene_kegg_result),
                      }, status=status.HTTP_200_OK)
 
 

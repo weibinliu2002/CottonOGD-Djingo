@@ -30,6 +30,9 @@
     <el-card>
       <div id="NGCircos" ref="chartRoot" class="circos-root"></div>
     </el-card>
+    
+    <!-- 回到顶部 -->
+    <el-backtop :right="40" :bottom="40" target=".container" />
   </div>
 </template>
 

@@ -3,7 +3,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useGenomeSelector } from '@/composables/useGenomeBrowser'
 import { Download, RefreshLeft, Folder, Files, Loading } from '@element-plus/icons-vue'
-import axios from '../utils/http'
+import axios from '@/utils/http'
 
 const { t } = useI18n()
 
@@ -204,6 +204,9 @@ const activeNames = ref<string[]>([])
         </el-collapse>
       </div>
     </div>
+    
+    <!-- 回到顶部 -->
+    <el-backtop :right="40" :bottom="40" target=".download-page" />
   </div>
 </template>
 

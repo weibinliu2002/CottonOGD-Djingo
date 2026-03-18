@@ -13,6 +13,8 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     ElAlert: typeof import('element-plus/es')['ElAlert']
+    ElAnchor: typeof import('element-plus/es')['ElAnchor']
+    ElAnchorLink: typeof import('element-plus/es')['ElAnchorLink']
     ElBacktop: typeof import('element-plus/es')['ElBacktop']
     ElButton: typeof import('element-plus/es')['ElButton']
     ElCard: typeof import('element-plus/es')['ElCard']
@@ -77,6 +79,8 @@ declare module 'vue' {
 // For TSX support
 declare global {
   const ElAlert: typeof import('element-plus/es')['ElAlert']
+  const ElAnchor: typeof import('element-plus/es')['ElAnchor']
+  const ElAnchorLink: typeof import('element-plus/es')['ElAnchorLink']
   const ElBacktop: typeof import('element-plus/es')['ElBacktop']
   const ElButton: typeof import('element-plus/es')['ElButton']
   const ElCard: typeof import('element-plus/es')['ElCard']

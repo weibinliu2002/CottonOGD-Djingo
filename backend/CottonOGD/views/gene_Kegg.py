@@ -54,7 +54,7 @@ def kegg_annotation(request):
 
                         cursor.execute("""
                             SELECT `geneid`, `kegg_id`, `kegg_description`
-                            FROM `GeneKegg` 
+                            FROM `gene_kegg` 
                             WHERE `geneid` = %s
                         """, [gene_id])
                         kegg_data = cursor.fetchall()
@@ -141,7 +141,7 @@ def kegg_enrichment(request):
         try:
             with connection.cursor() as cursor:
                 cursor.execute(
-                    "SELECT DISTINCT `kegg_id`, `kegg_description` FROM GeneKegg "
+                    "SELECT DISTINCT `kegg_id`, `kegg_description` FROM gene_kegg "
                     "WHERE `kegg_id` IS NOT NULL AND `kegg_id` != '-' and kegg_type = 'pathway'")
                 pathways = {}
                 for pathway_id, description in cursor:
@@ -156,13 +156,13 @@ def kegg_enrichment(request):
                 total_background_genes = cursor.fetchone()[0]
                 
                 cursor.execute(
-                    "SELECT `geneid`, `kegg_id`, `kegg_description` FROM GeneKegg "
+                    "SELECT `geneid`, `kegg_id`, `kegg_description` FROM gene_kegg "
                     "WHERE `geneid` IN %s AND `kegg_id` IS NOT NULL AND `kegg_id` != '-'",
                     [tuple(gene_list)])
                 input_genes_kegg = cursor.fetchall()
                 
                 cursor.execute(
-                    "SELECT `kegg_id`, `kegg_description` FROM GeneKegg "
+                    "SELECT `kegg_id`, `kegg_description` FROM gene_kegg "
                     "WHERE `kegg_id` IS NOT NULL AND `kegg_id` != '-'")
                 background_counts = defaultdict(int)
                 background_descriptions = {}

@@ -17,6 +17,9 @@
         <li>{{ t('data_download_capabilities') }}</li>
       </ul>
     </el-card>-->
+    
+    <!-- 回到顶部 -->
+    <el-backtop :right="40" :bottom="40" target=".container" />
   </div>
 </template>
 

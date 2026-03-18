@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="container mt-4">
     <h1>{{ t('search_by_id') }}</h1>
     <el-card class="mt-4">
@@ -68,6 +68,9 @@
         @close="geneSearchStore.clearError()"
       />
     </el-card>
+    
+    <!-- 回到顶部 -->
+    <el-backtop :right="40" :bottom="40" target=".container" />
   </div>
 </template>
 

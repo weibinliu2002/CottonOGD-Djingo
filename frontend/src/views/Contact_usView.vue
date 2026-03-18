@@ -9,6 +9,9 @@
       <h4>Google Email:<a href="liuweibin2002@gmail.com">liuweibin2002@gmail.com</a></h4>
       <h4>163 Email:<a href="liuweibin2002@163.com">liuweibin2002@163.com</a></h4>
     </el-card>
+    
+    <!-- 回到顶部 -->
+    <el-backtop :right="40" :bottom="40" target=".container" />
   </div>
 </template>
 
