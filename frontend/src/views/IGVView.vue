@@ -106,7 +106,7 @@
     </div>
     
     <!-- 回到顶部 -->
-    <el-backtop :right="40" :bottom="40" target=".container-fluid" />
+    <el-backtop :right="40" :bottom="40" />
   </div>
 </template>
 

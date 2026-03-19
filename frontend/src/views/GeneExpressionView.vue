@@ -33,15 +33,16 @@
           >
             <el-option value="" :label="t('all_genomes')" />
             <!-- 只显示有tissue数据的基因组选项-->
-            <template v-for="group in filteredGenomeOptions" :key="group.value">
+            <template v-for="group in filteredGenomeOptions" :key="group?.value">
               <!-- 基因组大类作为可选择选项 -->
               <el-option
+                v-if="group"
                 :label="group.label"
                 :value="group.value"
               />
               <!-- 单个基因组选项，添加缩进样式-->
               <el-option
-                v-for="item in group.children"
+                v-for="item in group?.children || []"
                 :key="item.value"
                 :label="`  ${item.label}`"
                 :value="item.value"
@@ -90,7 +91,7 @@
     </el-card>
     
     <!-- 回到顶部 -->
-    <el-backtop :right="40" :bottom="40" target=".container" />
+    <el-backtop :right="40" :bottom="40" />
   </div>
 </template>
 

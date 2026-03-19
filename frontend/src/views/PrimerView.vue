@@ -349,7 +349,7 @@
     </el-row>
     
     <!-- 回到顶部 -->
-    <el-backtop :right="40" :bottom="40" target=".container" />
+    <el-backtop :right="40" :bottom="40" />
   </div>
 </template>
 
@@ -700,24 +700,27 @@ const downloadResults = () => {
   }
   
   // Create CSV content
-  let csvContent = 'data:text/csv;charset=utf-8,'
-  csvContent += 'Oligos,TM,GC%,Self any,Self end,Hairpin,Sequence,Penalty\n'
+  let csvContent = 'Oligos,TM,GC%,Self any,Self end,Hairpin,Sequence,Penalty\n'
   
   // Add data rows
   designTableData.value.forEach(item => {
     csvContent += `${item.oligos},${item.tm},${item.gcPercent},${item.selfAny},${item.selfEnd},${item.hairpin},${item.sequence},${item.penalty}\n`
   })
   
-  // Create download link
-  const encodedUri = encodeURI(csvContent)
+  // Add BOM标记，解决Excel打开中文乱码问题
+  const bom = new Uint8Array([0xEF, 0xBB, 0xBF])
+  const blob = new Blob([bom, csvContent], { type: 'text/csv;charset=utf-8;' })
   const link = document.createElement('a')
-  link.setAttribute('href', encodedUri)
-  link.setAttribute('download', `primer_design_results_${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.csv`)
-  document.body.appendChild(link)
   
-  // Trigger download
-  link.click()
-  document.body.removeChild(link)
+  if (link.download !== undefined) {
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', `primer_design_results_${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
 }
 </script>
 

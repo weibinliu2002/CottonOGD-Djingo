@@ -323,10 +323,10 @@
       @download="handleDownload"
       @copy="handleCopy"
     />
-    
-    <!-- 回到顶部 -->
-    <el-backtop :right="40" :bottom="40" target=".container" />
   </div>
+  
+  <!-- 回到顶部 -->
+  <el-backtop :right="40" :bottom="40" />
 </template>
 
 <script setup lang="ts">
@@ -1453,8 +1453,9 @@ const downloadExpressionData = () => {
     ...rows.map(row => row.join(','))
   ].join('\n')
   
-  // 创建下载链接
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+  // 添加BOM标记，解决Excel打开中文乱码问题
+  const bom = new Uint8Array([0xEF, 0xBB, 0xBF])
+  const blob = new Blob([bom, csvContent], { type: 'text/csv;charset=utf-8;' })
   const link = document.createElement('a')
   
   if (link.download !== undefined) {

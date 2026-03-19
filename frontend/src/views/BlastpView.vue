@@ -1,4 +1,4 @@
-﻿﻿﻿<script setup lang="ts">
+﻿﻿﻿﻿<script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
 import { onMounted, computed, ref, inject } from 'vue'
@@ -414,7 +414,7 @@ const handleBlastSubmit = async () => {
     </el-card>
     
     <!-- 回到顶部 -->
-    <el-backtop :right="40" :bottom="40" target=".blastp-view" />
+    <el-backtop :right="40" :bottom="40" />
   </div>
 </template>
 

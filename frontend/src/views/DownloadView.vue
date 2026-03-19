@@ -206,7 +206,7 @@ const activeNames = ref<string[]>([])
     </div>
     
     <!-- 回到顶部 -->
-    <el-backtop :right="40" :bottom="40" target=".download-page" />
+    <el-backtop :right="40" :bottom="40" />
   </div>
 </template>
 

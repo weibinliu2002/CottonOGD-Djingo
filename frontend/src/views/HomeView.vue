@@ -393,7 +393,7 @@ const fillExample = () => {
     </section>-->
     
     <!-- 回到顶部 -->
-    <el-backtop :right="40" :bottom="40" target=".home" />
+    <el-backtop :right="40" :bottom="40" />
   </div>
 </template>
 
