@@ -480,6 +480,12 @@ const fetchChromosomes = async (genome) => {
     }
     
     const text = await response.text()
+    
+    // 检查返回的是否是 HTML 页面（如果包含 <html> 标签，则不是有效的 .fai 文件）
+    if (text.includes('<html')) {
+      throw new Error('Received HTML instead of .fai file content')
+    }
+    
     const lines = text.trim().split('\n')
     const chromosomes = []
     
@@ -487,7 +493,7 @@ const fetchChromosomes = async (genome) => {
       const parts = line.split('\t')
       if (parts.length > 0) {
         const chromosomeName = parts[0]
-        if (chromosomeName) {
+        if (chromosomeName && !chromosomeName.includes('<')) {
           chromosomes.push(chromosomeName)
         }
       }
@@ -543,6 +549,7 @@ const fetchSequence = async () => {
   
   isFetching.value = true
   error.value = null
+  let sequence = ''
   
   try {
     // 鐩存帴璋冪敤 extract_seq锛屼紶閫?gene_id 鍜?genome_id
@@ -552,7 +559,6 @@ const fetchSequence = async () => {
     })
     
     if (seqResponse.seq) {
-      // 鏍规嵁绫诲瀷閫夋嫨瀵瑰簲鐨勫簭鍒?      let sequence = ''
       if (sequenceType.value === 'mrna') {
         sequence = seqResponse.seq.mrna_seq?.[0]?.seq || ''
       } else if (sequenceType.value === 'cds') {

@@ -54,7 +54,16 @@
             </template>
           </el-table-column>
           <el-table-column prop="species" :label="t('species')" width="250" />
+          <el-table-column prop="seqid" :label="t('chromosome')" width="250" />
+          <el-table-column prop="start" :label="t('start')" width="150" />
+          <el-table-column prop="end" :label="t('end')" width="150" />
+          <el-table-column prop="strand" :label="t('strand')" width="100" />
         </el-table>
+
+        <!-- 表格下载按钮 -->
+        <div class="mt-4">
+          <el-button type="primary" @click="downloadTableAsTxt">{{ t('download_table') }}</el-button>
+        </div>
 
         <!-- 序列展示区域 - 为每个基因添加序列按钮 -->
         <div v-if="results.length > 0" class="mt-6">
@@ -371,7 +380,9 @@ export default {
                   start: item.start,
                   end: item.end,
                   strand: item.strand,
-                  species: item.genome_id
+                  species: item.genome_id,
+                  seqid: item.seqid || '',
+                  db_id: item.id_id
                 }
                 //console.log(`添加基因信息到 geneInfoMap: ${item.id_id}`, geneInfoMap[item.id_id])
               } else if (item.type === 'mRNA') {
@@ -492,6 +503,7 @@ export default {
                 IDs: info.geneid,
                 db_id: info.db_id,
                 species: speciesInfo,
+                seqid: geneInfo.seqid,
                 start: geneInfo.start,
                 end: geneInfo.end,
                 strand: geneInfo.strand,
@@ -757,11 +769,11 @@ export default {
       const downLen = this.selectedDownstreamLength || 500
 
       let allContent = ''
-      
+
       for (const geneData of this.results) {
         const geneId = geneData.IDs
         for (const type of types) {
-          // 如果是 genomic 类型，只处理一次，与转录本无关
+          // 如果是 genomic 类型，只处理一次，与转录本无关      
           if (type === 'genomic') {
             // 尝试使用 geneData.gene_seq
             if (geneData.gene_seq && geneData.gene_seq !== 'N/A') {
@@ -804,11 +816,55 @@ export default {
         }
       }
 
-      const blob = new Blob([allContent.trim()], { type: 'text/plain' })
+      const blob = new Blob([allContent.trim()], { type: 'text/plain' })        
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
       a.download = `all_genes_all_sequences.fasta`
+      a.click()
+      URL.revokeObjectURL(url)
+    },
+
+    downloadTableAsTxt() {
+      if (!this.results || this.results.length === 0) {
+        this.$message.info(this.t('no_data_to_download'))
+        return
+      }
+
+      // 构建表头
+      const headers = [
+        this.t('input_id'),
+        this.t('query_id'),
+        this.t('species'),
+        this.t('chromosome'),
+        this.t('start'),
+        this.t('end'),
+        this.t('strand')
+      ]
+
+      // 构建数据行
+      const rows = this.results.map(row => [
+        row.original_id || '-',
+        row.IDs || '-',
+        row.species || '-',
+        row.seqid || '-',
+        row.start || '-',
+        row.end || '-',
+        row.strand || '-'
+      ])
+
+      // 组合表头和数据
+      const content = [
+        headers.join('\t'),
+        ...rows.map(row => row.join('\t'))
+      ].join('\n')
+
+      // 创建并下载文件
+      const blob = new Blob([content], { type: 'text/plain' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `gene_search_results_${new Date().toISOString().split('T')[0]}.txt`
       a.click()
       URL.revokeObjectURL(url)
     }

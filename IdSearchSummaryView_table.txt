@@ -1,0 +1,18 @@
+      <!-- 结果展示 - 只有在加载完成且没有错误时才显示 -->
+      <template v-else-if="results">
+        <!-- 结果表格 -->
+        <el-table :data="results" style="width: 100%" class="mb-4">
+          <el-table-column prop="original_id" :label="t('input_id')" width="200" />
+          <el-table-column :label="t('query_id')" width="200">
+            <template #default="scope">
+              <a href="javascript:void(0)" @click="navigateToResults(scope.row)">
+                {{ scope.row.IDs || '-' }}
+              </a>
+            </template>
+          </el-table-column>
+          <el-table-column prop="species" :label="t('species')" width="250" />
+          <el-table-column prop="seqid" :label="t('chromosome')" width="250" />
+          <el-table-column prop="start" :label="t('start')" width="150" />
+          <el-table-column prop="end" :label="t('end')" width="150" />
+          <el-table-column prop="strand" :label="t('strand')" width="100" />
+        </el-table>
