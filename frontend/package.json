@@ -14,7 +14,8 @@
     "type-check": "vue-tsc --build",
     "lint": "eslint . --fix --cache",
     "format": "prettier --write src/",
-    "clean": "rimraf dist"
+    "clean": "rimraf dist",
+    "test": "node --test src/__tests__/*.test.mjs"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",

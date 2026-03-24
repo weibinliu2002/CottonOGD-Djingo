@@ -114,6 +114,7 @@ import SequenceDisplay from '@/components/SequenceDisplay.vue'
 import SequenceModal from '@/components/SequenceModal.vue'
 import { useGeneSearchStore } from '@/stores/geneSearch.ts'
 import { useNavigationStore } from '@/stores/navigationStore.ts'
+import { resolveSequenceLengths } from '@/utils/sequenceLength'
 
 export default {
   name: 'IdSearchSummaryView',
@@ -149,16 +150,11 @@ export default {
   methods: {
 
     handleLengthChange(lengths) {
-      let upstreamLength, downstreamLength
-      if (typeof lengths === 'object' && lengths !== null) {
-        upstreamLength =
-          lengths.upstreamLength ?? lengths.upstream ?? this.selectedUpstreamLength
-        downstreamLength =
-          lengths.downstreamLength ?? lengths.downstream ?? this.selectedDownstreamLength
-      } else {
-        upstreamLength = lengths ?? this.selectedUpstreamLength
-        downstreamLength = lengths ?? this.selectedDownstreamLength
-      }
+      const { upstreamLength, downstreamLength } = resolveSequenceLengths(
+        lengths,
+        this.selectedUpstreamLength,
+        this.selectedDownstreamLength
+      )
 
       this.selectedUpstreamLength = upstreamLength
       this.selectedDownstreamLength = downstreamLength

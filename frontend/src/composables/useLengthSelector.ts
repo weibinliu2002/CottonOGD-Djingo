@@ -1,4 +1,5 @@
 import { ref, type Ref } from 'vue'
+import { resolveSequenceLengths } from '@/utils/sequenceLength'
 
 interface UseLengthSelectorReturn {
   upstreamLength: Ref<number>
@@ -17,14 +18,11 @@ export function useLengthSelector(initialUpstream: number = 10000, initialDownst
   }
 
   const handleLengthChange = (lengths: any): boolean => {
-    let newUpstreamLength, newDownstreamLength
-    if (typeof lengths === 'object' && lengths !== null) {
-      newUpstreamLength = lengths.upstreamLength ?? lengths.upstream ?? upstreamLength.value
-      newDownstreamLength = lengths.downstreamLength ?? lengths.downstream ?? downstreamLength.value
-    } else {
-      newUpstreamLength = lengths ?? upstreamLength.value
-      newDownstreamLength = lengths ?? downstreamLength.value
-    }
+    const { upstreamLength: newUpstreamLength, downstreamLength: newDownstreamLength } = resolveSequenceLengths(
+      lengths,
+      upstreamLength.value,
+      downstreamLength.value
+    )
 
     const changed = newUpstreamLength !== upstreamLength.value || newDownstreamLength !== downstreamLength.value
 

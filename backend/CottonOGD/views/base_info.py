@@ -17,8 +17,8 @@ def get_species_info(request):
         return Response({'error': 'uuid is required'}, status=status.HTTP_400_BAD_REQUEST)
     try:
         species_info = Species_info.objects.all().values('Cotton_Species','Genome_type','name','alias','Article')
-        responce=json.dumps(list(species_info), ensure_ascii=False)
-        return Response({'species_info': responce}, status=status.HTTP_200_OK)
+        response_payload = json.dumps(list(species_info), ensure_ascii=False)
+        return Response({'species_info': response_payload}, status=status.HTTP_200_OK)
     except Exception as e:
         logger.error(f"Error fetching species info: {e}")
         return Response({'error': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

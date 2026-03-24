@@ -35,6 +35,7 @@
 
 <script setup>
 import { ref } from 'vue'
+import { resolveSequenceLengths } from '@/utils/sequenceLength'
 
 const props = defineProps({
   displayMode: { type: String, default: 'buttons', validator: val => ['buttons', 'full'].includes(val) },
@@ -67,11 +68,15 @@ const sequenceTypes = [
 
 const lengthOptions = [500, 1000, 2000, 3000, 4000, 5000, 10000]
 
-// 初始值设置为10000，优先使用10000作为默认值
-const selectedUpstreamLength = ref(10000)
-const selectedDownstreamLength = ref(10000)
+const initialLengths = resolveSequenceLengths({
+  upstreamLength: props.upstreamLength,
+  downstreamLength: props.downstreamLength
+})
 
-// 组件初始化时，将初始长度传递给父组件
+const selectedUpstreamLength = ref(initialLengths.upstreamLength)
+const selectedDownstreamLength = ref(initialLengths.downstreamLength)
+
+// 组件初始化时，将解析后的初始长度传递给父组件
 emit('length-change', {
   upstreamLength: selectedUpstreamLength.value,
   downstreamLength: selectedDownstreamLength.value
@@ -153,8 +158,7 @@ const handleLengthChange = () => {
 }
 
 const handleButtonClick = (type, title, content, id) => {
-  // 对于基因组序列，直接传递真实的序列内容
-  // 对于其他序列类型（特别是上下游序列），传递空字符串，让父组件重新请求
+  // 将当前可用的序列内容传递给父组件；若内容为空，父组件会自行回源请求。
   emit('show-sequence', { type, title, content, id })
 }
 </script>
