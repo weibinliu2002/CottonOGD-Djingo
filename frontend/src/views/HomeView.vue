@@ -1,28 +1,136 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
-import { ref } from 'vue'
+import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { Search } from '@element-plus/icons-vue'
+import { Search, ArrowDown, Setting } from '@element-plus/icons-vue'
+import { searchGenes } from '@/utils/meilisearch'
 
 const searchQuery = ref('')
+const selectedDatabase = ref('all')
 const router = useRouter()
+const showAdvancedSearch = ref(false)
 
-const performSearch = () => {
-  if (searchQuery.value.trim()) {
-    // 跳转到搜索结果页面并传递搜索参数
-    router.push({
-      path: '/tools/id-search/results',
-      query: { q: searchQuery.value.trim() }
-    })
+// 高级搜索选项
+const advancedOptions = reactive({
+  genomeId: '',
+  geneFamily: '',
+  chromosome: '',
+  startPosition: null as number | null,
+  endPosition: null as number | null,
+  exactMatch: false
+})
+
+// 数据库选项
+const databaseOptions = [
+  { label: 'All Databases', value: 'all' },
+  { label: 'Gene', value: 'gene' },
+  { label: 'Protein', value: 'protein' },
+  { label: 'Genome', value: 'genome' },
+  { label: 'Orthogroup', value: 'orthogroup' },
+  { label: 'Expression', value: 'expression' }
+]
+
+// 基因组选项
+const genomeOptions = [
+  { label: 'All Genomes', value: '' },
+  { label: 'G. hirsutum (AD1)', value: 'Ghirsutum' },
+  { label: 'G. barbadense (AD2)', value: 'Gbarbadense' },
+  { label: 'G. arboreum (A2)', value: 'Garboreum' },
+  { label: 'G. raimondii (D5)', value: 'Graimondii' }
+]
+
+// 基因家族选项
+const geneFamilyOptions = [
+  { label: 'All Families', value: '' },
+  { label: 'Transcription Factors', value: 'TF' },
+  { label: 'Transposable Elements', value: 'TE' },
+  { label: 'Kinase', value: 'kinase' },
+  { label: 'Transporter', value: 'transporter' }
+]
+
+const performSearch = async () => {
+  if (!searchQuery.value.trim()) {
+    return
   }
+
+  // 构建搜索参数
+  const searchParams: any = {
+    q: searchQuery.value.trim(),
+    database: selectedDatabase.value,
+    limit: 20
+  }
+
+  // 添加高级搜索参数
+  if (showAdvancedSearch.value) {
+    if (advancedOptions.genomeId) {
+      searchParams.genome_id = advancedOptions.genomeId
+    }
+    if (advancedOptions.geneFamily) {
+      searchParams.gene_family = advancedOptions.geneFamily
+    }
+    if (advancedOptions.chromosome) {
+      searchParams.chromosome = advancedOptions.chromosome
+    }
+    if (advancedOptions.startPosition !== null) {
+      searchParams.start = advancedOptions.startPosition
+    }
+    if (advancedOptions.endPosition !== null) {
+      searchParams.end = advancedOptions.endPosition
+    }
+    searchParams.exact_match = advancedOptions.exactMatch
+  }
+
+  // 如果使用 Meilisearch 搜索基因
+  if (selectedDatabase.value === 'all' || selectedDatabase.value === 'gene') {
+    try {
+      const results = await searchGenes(searchQuery.value.trim(), {
+        limit: 20,
+        genome_id: advancedOptions.genomeId || undefined
+      })
+      console.log('results:', results)
+           if (results.success && results['total'] > 0) {
+        // 跳转到搜索结果页面
+        router.push({
+          path: '/tools/id-search/results',
+          query: {
+            q: searchQuery.value.trim(),
+            source: 'meilisearch',
+            ...searchParams
+          }
+        })
+        return
+      }
+    } catch (error) {
+      console.error('Meilisearch search failed:', error)
+    }
+  }
+
+  // 回退到原有的搜索方式
+  router.push({
+    path: '/tools/id-search/results',
+    query: searchParams
+  })
 }
 
-const fillExample = () => {
-  // 默认填充第一个示例基因ID
-  searchQuery.value = 'Ghir_A01G000100'
+const fillExample = (example: string) => {
+  searchQuery.value = example
+}
+
+const toggleAdvancedSearch = () => {
+  showAdvancedSearch.value = !showAdvancedSearch.value
+}
+
+const clearAdvancedOptions = () => {
+  advancedOptions.genomeId = ''
+  advancedOptions.geneFamily = ''
+  advancedOptions.chromosome = ''
+  advancedOptions.startPosition = null
+  advancedOptions.endPosition = null
+  advancedOptions.exactMatch = false
 }
 </script>
+
 <template>
   <div class="home">
     <!-- 英雄区域 -->
@@ -36,30 +144,197 @@ const fillExample = () => {
             enabling researchers to explore orthogroups, gene families, and evolutionary relationships across cotton species.
           </p>
           
-          <!-- 主要搜索框 -->
-          <!--<div class="search-box-container">
-            <el-input
-              v-model="searchQuery"
-              placeholder="enter_gene_id_symbol_keyword_or_sequence"
-              clearable
-              size="large"
-              @keyup.enter="performSearch"
-              class="search-input"
-            >
-              <template #append>
-                <el-button type="primary" size="large" @click="performSearch">
-                  <el-icon><Search /></el-icon>
-                  {{ t('search') }}
-                </el-button>
-              </template>
-            </el-input>
+          <!-- 水平布局搜索框 -->
+          <div class="search-box-container">
+            <!-- 水平排列：数据库选择 + 输入框 + 搜索按钮 -->
+            <div class="search-row">
+              <el-select
+                v-model="selectedDatabase"
+                class="database-select"
+                size="large"
+                placeholder="Select database"
+              >
+                <el-option
+                  v-for="option in databaseOptions"
+                  :key="option.value"
+                  :label="option.label"
+                  :value="option.value"
+                />
+              </el-select>
+              
+              <el-input
+                v-model="searchQuery"
+                placeholder="Enter gene ID, symbol, keyword, or sequence"
+                clearable
+                size="large"
+                @keyup.enter="performSearch"
+                class="search-input"
+              />
+              
+              <el-button 
+                type="primary" 
+                size="large" 
+                @click="performSearch"
+                class="search-btn"
+              >
+                <el-icon><Search /></el-icon>
+                {{ t('search') }}
+              </el-button>
+            </div>
+            
+            <!-- 高级搜索按钮 -->
+            <div class="advanced-search-toggle">
+              <el-button
+                type="text"
+                size="small"
+                @click="toggleAdvancedSearch"
+                class="advanced-btn"
+              >
+                <el-icon><Setting /></el-icon>
+                Advanced Search
+                <el-icon class="arrow-icon" :class="{ 'is-open': showAdvancedSearch }">
+                  <ArrowDown />
+                </el-icon>
+              </el-button>
+            </div>
+            
+            <!-- 高级搜索面板 - NCBI风格 -->
+            <el-collapse-transition>
+              <div v-show="showAdvancedSearch" class="advanced-search-panel">
+                <el-divider />
+                <div class="advanced-options">
+                  <!-- 搜索历史/构建器区域 -->
+                  <div class="search-builder">
+                    <div class="builder-label">Search Builder</div>
+                    <div class="builder-content">
+                      <div v-if="searchQuery" class="search-term">
+                        <span class="term-text">"{{ searchQuery }}"</span>
+                        <span class="term-field">[All Fields]</span>
+                      </div>
+                      <div v-else class="search-term-placeholder">
+                        Enter search terms above...
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 过滤器网格 -->
+                  <div class="filters-grid">
+                    <!-- 第一行过滤器 -->
+                    <div class="filter-row">
+                      <div class="filter-item">
+                        <label class="filter-label">Genome</label>
+                        <el-select
+                          v-model="advancedOptions.genomeId"
+                          placeholder="All Genomes"
+                          clearable
+                          size="default"
+                          class="filter-select"
+                        >
+                          <el-option
+                            v-for="option in genomeOptions"
+                            :key="option.value"
+                            :label="option.label"
+                            :value="option.value"
+                          />
+                        </el-select>
+                      </div>
+                      
+                      <div class="filter-item">
+                        <label class="filter-label">Gene Family</label>
+                        <el-select
+                          v-model="advancedOptions.geneFamily"
+                          placeholder="All Families"
+                          clearable
+                          size="default"
+                          class="filter-select"
+                        >
+                          <el-option
+                            v-for="option in geneFamilyOptions"
+                            :key="option.value"
+                            :label="option.label"
+                            :value="option.value"
+                          />
+                        </el-select>
+                      </div>
+                      
+                      <div class="filter-item">
+                        <label class="filter-label">Chromosome</label>
+                        <el-input
+                          v-model="advancedOptions.chromosome"
+                          placeholder="e.g., A01"
+                          clearable
+                          size="default"
+                          class="filter-input"
+                        />
+                      </div>
+                    </div>
+
+                    <!-- 第二行过滤器 - 位置范围 -->
+                    <div class="filter-row">
+                      <div class="filter-item position-range">
+                        <label class="filter-label">Position Range</label>
+                        <div class="position-inputs">
+                          <el-input-number
+                            v-model="advancedOptions.startPosition"
+                            :min="0"
+                            placeholder="Start"
+                            size="default"
+                            :controls="false"
+                            class="position-input"
+                          />
+                          <span class="range-separator">to</span>
+                          <el-input-number
+                            v-model="advancedOptions.endPosition"
+                            :min="0"
+                            placeholder="End"
+                            size="default"
+                            :controls="false"
+                            class="position-input"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div class="filter-item">
+                        <label class="filter-label">Match Type</label>
+                        <el-radio-group v-model="advancedOptions.exactMatch" size="default">
+                          <el-radio :label="false">Partial</el-radio>
+                          <el-radio :label="true">Exact</el-radio>
+                        </el-radio-group>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 操作按钮 -->
+                  <div class="advanced-actions">
+                    <el-button
+                      type="primary"
+                      size="default"
+                      @click="performSearch"
+                      class="action-btn search-action-btn"
+                    >
+                      <el-icon><Search /></el-icon>
+                      Search
+                    </el-button>
+                    <el-button
+                      size="default"
+                      @click="clearAdvancedOptions"
+                      class="action-btn"
+                    >
+                      Clear All
+                    </el-button>
+                  </div>
+                </div>
+              </div>
+            </el-collapse-transition>
+            
+            <!-- 搜索提示 -->
             <div class="search-tips">
               <span class="tip-label">{{ t('example') }}:</span>
-              <el-tag size="small" class="tip-tag" @click="fillExample">Ghir_A01G000100</el-tag>
-              <el-tag size="small" class="tip-tag" @click="fillExample">Transcription Factor</el-tag>
-              <el-tag size="small" class="tip-tag" @click="fillExample">ABC transporter</el-tag>
+              <el-tag size="small" class="tip-tag" @click="fillExample('Ghir_A01G000100')">Ghir_A01G000100</el-tag>
+              <el-tag size="small" class="tip-tag" @click="fillExample('Transcription Factor')">Transcription Factor</el-tag>
+              <el-tag size="small" class="tip-tag" @click="fillExample('ABC transporter')">ABC transporter</el-tag>
             </div>
-          </div>-->
+          </div>
         </div>
       </div>
     </section>
@@ -287,110 +562,6 @@ const fillExample = () => {
         </el-row>
       </div>
     </section>
-    <!--
-    
-    <section class="news-research-section bg-light">
-      <div class="container">
-        <div class="row">
-         
-          <div class="col-md-6">
-            <h2 class="section-title">{{ t('latest') }} Research</h2>
-            <el-card shadow="hover" class="research-card">
-              <template #header>
-                <div class="card-header">
-                  <span>{{ t('genome') }}-Wide Analysis of Cotton Transcription Factors</span>
-                  <el-tag type="success" size="small">{{ t('featured') }}</el-tag>
-                </div>
-              </template>
-              <div class="research-content">
-                <p>
-                  Identification and characterization of transcription factor families across cotton species, 
-                  revealing their evolutionary dynamics and functional diversification.
-                </p>
-                <div class="research-meta">
-                  <span class="meta-item">
-                    <i class="fas fa-user"></i> Cotton Research Team
-                  </span>
-                  <span class="meta-item">
-                    <i class="fas fa-calendar-alt"></i> 2025-01-15
-                  </span>
-                </div>
-                <div class="text-right mt-2">
-                  <el-button type="primary" size="small">Read Article</el-button>
-                </div>
-              </div>
-            </el-card>
-          </div>
-          
-      
-          <div class="col-md-6">
-            <h2 class="section-title">{{ t('news') }} & Updates</h2>
-            <el-timeline>
-              <el-timeline-item timestamp="2025-01-20" placement="top">
-                <div class="timeline-content">
-                  <h4 class="timeline-title">Database {{ t('update') }} v1.2 Released</h4>
-                  <p>Updated with latest cotton genome annotations and new analysis tools.</p>
-                  <el-button type="text" size="small">Read more</el-button>
-                </div>
-              </el-timeline-item>
-              <el-timeline-item timestamp="2024-12-15" placement="top">
-                <div class="timeline-content">
-                  <h4 class="timeline-title">New Publication</h4>
-                  <p>New research paper published on cotton orthogroups using CottonOGD data.</p>
-                  <el-button type="text" size="small">Read more</el-button>
-                </div>
-              </el-timeline-item>
-              <el-timeline-item timestamp="2024-11-30" placement="top">
-                <div class="timeline-content">
-                  <h4 class="timeline-title">Upcoming Features</h4>
-                  <p>Enhanced gene expression analysis tools and integrated pathway viewer coming soon.</p>
-                  <el-button type="text" size="small">Read more</el-button>
-                </div>
-              </el-timeline-item>
-            </el-timeline>
-          </div>
-        </div>
-      </div>
-    </section>-->
-    
-    <!-- 合作伙伴与引用区域 -->
-     <!--
-    <section class="partners-section">
-      <div class="container">
-        <h2 class="section-title">{{ t('partners_citations') }}</h2>
-        <div class="partners-content">
-          <div class="citation-info">
-            <div class="citation-icon">
-              <i class="fas fa-quote-left"></i>
-            </div>
-            <div class="citation-text">
-              <p>
-                "CottonOGD has become an essential resource for our cotton research, providing comprehensive 
-                orthogroup information and powerful analysis tools that have accelerated our discoveries."
-              </p>
-              <div class="citation-author">- Dr. XXXX, Professor of Plant Genomics</div>
-            </div>
-          </div>
-          <div class="partners-logos">
-            <h3>Collaborating Institutions</h3>
-            <div class="logos-grid">
-              <div class="logo-item">
-                <i class="fas fa-university" style="font-size: 48px; color: #666;"></i>
-                <span>University A</span>
-              </div>
-              <div class="logo-item">
-                <i class="fas fa-university" style="font-size: 48px; color: #666;"></i>
-                <span>Institute B</span>
-              </div>
-              <div class="logo-item">
-                <i class="fas fa-university" style="font-size: 48px; color: #666;"></i>
-                <span>Research Center C</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>-->
     
     <!-- 回到顶部 -->
     <el-backtop :right="40" :bottom="40" />
@@ -426,7 +597,7 @@ const fillExample = () => {
 .hero-content {
   position: relative;
   z-index: 1;
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto;
 }
 
@@ -452,9 +623,9 @@ const fillExample = () => {
   color: rgba(255, 255, 255, 0.85);
 }
 
-/* 搜索框 */
+/* 水平布局搜索框 */
 .search-box-container {
-  max-width: 700px;
+  max-width: 800px;
   margin: 0 auto;
   background-color: rgba(255, 255, 255, 0.95);
   padding: 20px;
@@ -462,9 +633,219 @@ const fillExample = () => {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 
+/* 水平排列的搜索行 */
+.search-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+/* 数据库选择器 */
+.database-select {
+  width: 160px;
+  flex-shrink: 0;
+}
+
+.database-select :deep(.el-input__wrapper) {
+  background-color: #f5f7fa;
+  border-radius: 6px;
+}
+
+/* 搜索输入框 */
 .search-input {
+  flex: 1;
+}
+
+.search-input :deep(.el-input__wrapper) {
+  border-radius: 6px;
+}
+
+/* 搜索按钮 */
+.search-btn {
+  flex-shrink: 0;
+  background-color: #3a6ea5;
+  border-color: #3a6ea5;
+  border-radius: 6px;
+  padding: 0 24px;
+}
+
+.search-btn:hover {
+  background-color: #2c5282;
+  border-color: #2c5282;
+}
+
+/* 高级搜索按钮 */
+.advanced-search-toggle {
+  text-align: left;
+  margin-bottom: 8px;
+}
+
+.advanced-btn {
+  color: #3a6ea5;
+  font-size: 13px;
+}
+
+.advanced-btn:hover {
+  color: #2c5282;
+}
+
+.arrow-icon {
+  margin-left: 4px;
+  transition: transform 0.3s ease;
+}
+
+.arrow-icon.is-open {
+  transform: rotate(180deg);
+}
+
+.advanced-search-panel {
+  text-align: left;
+  margin-top: 16px;
+}
+
+.advanced-options {
+  padding: 0;
+}
+
+/* 搜索构建器 - NCBI风格 */
+.search-builder {
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+
+.builder-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #495057;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.builder-content {
+  min-height: 24px;
+}
+
+.search-term {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.term-text {
+  font-weight: 500;
+  color: #3a6ea5;
+}
+
+.term-field {
+  color: #6c757d;
+  font-size: 13px;
+}
+
+.search-term-placeholder {
+  color: #adb5bd;
+  font-style: italic;
+  font-size: 13px;
+}
+
+/* 过滤器网格 */
+.filters-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.filter-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.filter-item {
+  flex: 1;
+  min-width: 160px;
+}
+
+.filter-item.position-range {
+  flex: 2;
+  min-width: 300px;
+}
+
+.filter-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.filter-select,
+.filter-input {
   width: 100%;
-  border-radius: 8px;
+}
+
+/* 位置范围输入 */
+.position-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.position-input {
+  flex: 1;
+}
+
+.position-input :deep(.el-input__wrapper) {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+.range-separator {
+  color: #6c757d;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* 操作按钮 */
+.advanced-actions {
+  display: flex;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid #e9ecef;
+}
+
+.action-btn {
+  min-width: 100px;
+}
+
+.search-action-btn {
+  background-color: #3a6ea5;
+  border-color: #3a6ea5;
+}
+
+.search-action-btn:hover {
+  background-color: #2c5282;
+  border-color: #2c5282;
+}
+
+/* 单选按钮组样式 */
+.filter-item :deep(.el-radio-group) {
+  display: flex;
+  gap: 16px;
+  padding-top: 8px;
+}
+
+.filter-item :deep(.el-radio) {
+  margin-right: 0;
 }
 
 .search-tips {
@@ -546,7 +927,7 @@ const fillExample = () => {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 60px; /* Fixed height for consistency */
+  height: 60px;
 }
 
 .feature-icon i {
@@ -596,16 +977,12 @@ const fillExample = () => {
   font-size: 48px;
   color: #3a6ea5;
   margin-bottom: 16px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 60px;
 }
 
 .stats-value {
-  font-size: 36px;
+  font-size: 32px;
   font-weight: 700;
-  color: #333;
+  color: #3a6ea5;
   margin-bottom: 8px;
 }
 
@@ -613,43 +990,38 @@ const fillExample = () => {
   font-size: 14px;
   color: #666;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
 }
 
 /* 快速访问卡片 */
 .quick-link {
   text-decoration: none;
-  color: inherit;
   display: block;
 }
 
 .quick-link-card {
-  padding: 24px;
+  text-align: center;
+  padding: 24px 16px;
   border-radius: 12px;
   transition: all 0.3s ease;
-  text-align: center;
   border: 1px solid #e9ecef;
-  background-color: #ffffff;
+  height: 100%;
 }
 
 .quick-link-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
   border-color: #3a6ea5;
 }
 
-.feature-icon, .stats-icon, .quick-link-icon {
-  font-size: 48px;
+.quick-link-icon {
+  font-size: 40px;
   color: #3a6ea5;
   margin-bottom: 16px;
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  height: 60px;
 }
 
 .quick-link-title {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   color: #333;
   margin-bottom: 8px;
@@ -659,248 +1031,67 @@ const fillExample = () => {
   font-size: 13px;
   color: #666;
   line-height: 1.5;
+  margin: 0;
 }
 
-/* 研究与新闻区域 */
-.row {
-  display: flex;
-  flex-wrap: wrap;
-  margin: 0 -15px;
-}
-
-.col-md-6 {
-  flex: 0 0 50%;
-  max-width: 50%;
-  padding: 0 15px;
-}
-
-.research-card {
-  border-radius: 12px;
-  transition: all 0.3s ease;
-  border: 1px solid #e9ecef;
-}
-
-.research-card:hover {
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 20px;
-  background-color: #f8f9fa;
-  border-radius: 12px 12px 0 0;
-  font-weight: 600;
-  color: #333;
-}
-
-.research-content {
-  padding: 20px;
-}
-
-.research-content p {
-  font-size: 14px;
-  line-height: 1.6;
-  color: #666;
-  margin-bottom: 16px;
-}
-
-.research-meta {
-  display: flex;
-  gap: 20px;
-  font-size: 13px;
-  color: #999;
-  margin-bottom: 16px;
-}
-
-.meta-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-/* 时间线样式 */
-.timeline-content {
-  padding: 16px;
-  background-color: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  border: 1px solid #e9ecef;
-}
-
-.timeline-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 8px;
-}
-
-.timeline-content p {
-  font-size: 13px;
-  color: #666;
-  line-height: 1.5;
-  margin-bottom: 8px;
-}
-
-/* 合作伙伴与引用区域 */
-.partners-content {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 40px;
-  align-items: center;
-}
-
-.citation-info {
-  display: flex;
-  gap: 20px;
-  align-items: flex-start;
-  background-color: #ffffff;
-  padding: 30px;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  border-left: 4px solid #3a6ea5;
-}
-
-.citation-icon {
-  font-size: 40px;
-  color: #3a6ea5;
-  opacity: 0.7;
-}
-
-.citation-text p {
-  font-size: 16px;
-  color: #666;
-  line-height: 1.6;
-  font-style: italic;
-  margin-bottom: 16px;
-}
-
-.citation-author {
-  font-size: 14px;
-  font-weight: 600;
-  color: #333;
-  text-align: right;
-}
-
-.partners-logos {
-  text-align: center;
-}
-
-.partners-logos h3 {
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 24px;
-}
-
-.logos-grid {
-  display: flex;
-  justify-content: center;
-  gap: 40px;
-  flex-wrap: wrap;
-}
-
-.logo-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  padding: 20px;
-  background-color: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  border: 1px solid #e9ecef;
-  transition: all 0.3s ease;
-  min-width: 150px;
-}
-
-.logo-item:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
-}
-
-.logo-item span {
-  font-size: 14px;
-  color: #666;
-  font-weight: 500;
-}
-
-/* 响应式设计 */
-@media (max-width: 992px) {
-  .partners-content {
-    grid-template-columns: 1fr;
-    gap: 30px;
-  }
-  
-  .hero-section h1 {
-    font-size: 36px;
-  }
-  
-  .hero-subtitle {
-    font-size: 20px;
-  }
-}
-
+/* 响应式调整 */
 @media (max-width: 768px) {
-  .col-md-6 {
-    flex: 0 0 100%;
-    max-width: 100%;
-    margin-bottom: 30px;
-  }
-  
-  .hero-section {
-    padding: 40px 0;
-  }
-  
   .hero-section h1 {
-    font-size: 28px;
+    font-size: 32px;
   }
   
   .hero-subtitle {
     font-size: 18px;
   }
   
-  .features-section,
-  .stats-section,
-  .quick-access-section,
-  .news-research-section,
-  .partners-section {
-    padding: 40px 0;
+  /* 移动端垂直布局 */
+  .search-row {
+    flex-direction: column;
+    gap: 12px;
   }
   
-  .section-title {
-    font-size: 24px;
-    margin-bottom: 30px;
+  .database-select {
+    width: 100%;
   }
   
-  .logos-grid {
-    gap: 20px;
+  .search-btn {
+    width: 100%;
   }
   
-  .logo-item {
-    min-width: 120px;
-    padding: 15px;
-  }
-}
-
-@media (max-width: 576px) {
   .search-box-container {
-    padding: 15px;
+    padding: 16px;
   }
   
-  .research-meta {
+  /* 高级搜索移动端适配 */
+  .filter-row {
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
   }
   
-  .citation-info {
+  .filter-item {
+    min-width: 100%;
+  }
+  
+  .filter-item.position-range {
+    min-width: 100%;
+  }
+  
+  .position-inputs {
     flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .range-separator {
     text-align: center;
+    padding: 4px 0;
   }
   
-  .citation-text p {
-    text-align: left;
+  .advanced-actions {
+    flex-direction: column;
+  }
+  
+  .action-btn {
+    width: 100%;
   }
 }
 </style>

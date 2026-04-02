@@ -13,6 +13,7 @@ from CottonOGD.views.expression_EFP import *
 from CottonOGD.views.DownloadGenome import download_genome_file
 from CottonOGD.views.gene_Go import go_annotation, go_enrichment
 from CottonOGD.views.gene_Kegg import kegg_annotation, kegg_enrichment
+from CottonOGD.views.Meilisearch import search_genes_meilisearch, search_genes
 
 
 
@@ -32,6 +33,8 @@ urlpatterns = [
     path('regenerate_heatmap/', regenerate_heatmap, name='regenerate_heatmap'),
     path('extract_expression/tissues/', get_tissues, name='get_tissues'),
     path('extract_expression/genomes/', get_genomes_with_tissue, name='get_genomes_with_tissue'),
+    path('search_genes/', search_genes, name='search_genes'),
+    path('search_genes_meilisearch/', search_genes_meilisearch, name='search_genes_meilisearch'),
     path('primer_design/', primer_design, name='primer_design'),
     path('blast_cmd/', blast_cmd, name='blast_cmd'),
     path('expression_EFP_image/', expression_EFP_image, name='expression_EFP_image'),

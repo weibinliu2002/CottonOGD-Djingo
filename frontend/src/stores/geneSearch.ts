@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import httpInstance from '@/utils/http.js'
+import { searchGenes } from '@/utils/meilisearch.js'
 import { useUUIDStore } from './uuidStore.ts'
 import { useNavigationStore } from './navigationStore.ts'
 
@@ -43,6 +44,7 @@ export const useGeneSearchStore = defineStore('geneSearch', () => {
   const error = ref<string | null>(null)
   const sequenceCache = ref<Record<string, string>>({}) // 缓存序列数据，key: geneId|type|transcriptId|upLen|downLen
   const sequenceLoading = ref<Record<string, boolean>>({}) // 缓存加载状态
+  const useMeilisearch = ref(true) // 是否使用 Meilisearch 搜索
 
   // Actions
   async function performSearch(geneIds: string, genomeId: string[]) {
@@ -53,47 +55,76 @@ export const useGeneSearchStore = defineStore('geneSearch', () => {
     console.log('Request ID:', request_id);
     console.log('Search Input:', geneIds);
     console.log('Selected Genome:', genomeId);
+    console.log('Use Meilisearch:', useMeilisearch.value);
 
     try {
-      const params = {
-        gene_id: geneIds,
-        genome_id: genomeId.join(','),
-        request_id: request_id
-      };
-      console.log('API Request Params:', params);
-
-      const response = await httpInstance.post('/CottonOGD_api/geneid_summary/', params);
-      console.log('API Response:', response);
-
-      const data = response as any;
-      if (data && data.geneid_result) {
-        console.log('Search success');
-        searchResults.value = {
-          geneid_result: typeof data.geneid_result === 'string' ? JSON.parse(data.geneid_result) : data.geneid_result,
-          gene_info_result: typeof data.gene_info_result === 'string' ? JSON.parse(data.gene_info_result) : data.gene_info_result,
-          search_map: typeof data.search_map === 'string' ? JSON.parse(data.search_map) : data.search_map,
-          gene_go_result: data.gene_go_result || [],
-          gene_kegg_result: data.gene_kegg_result || []
-        };
-        console.log('Parsed Search Results:', searchResults.value);
-
-        const dbIds = searchResults.value?.search_map 
-          ? Object.values(searchResults.value.search_map).map((item: any) => item.db_id).filter(Boolean)
-          : [];
-        console.log('DB IDs:', dbIds);
-
-        navigationStore.setNavigationData('geneSearch', {
-          results: searchResults.value,
-          dbIds: dbIds,
-          requestId: request_id
+      // 如果启用 Meilisearch 搜索
+      if (useMeilisearch.value) {
+        console.log('Using Meilisearch for gene ID search');
+        
+        // 使用 Meilisearch 搜索基因
+        const meilisearchResults = await searchGenes(geneIds, {
+          limit: 100,
+          genome_id: genomeId.length > 0 ? genomeId[0] : null
         });
+        
+        console.log('Meilisearch Results:', meilisearchResults);
+        
+        if (meilisearchResults.success && meilisearchResults.results.length > 0) {
+          // 从 Meilisearch 结果中提取基因ID
+          const foundGeneIds = meilisearchResults.results.map(result => result.geneid).join('\n');
+          console.log('Found Gene IDs from Meilisearch:', foundGeneIds);
+          
+          // 使用找到的基因ID调用原有的API获取详细信息
+          const params = {
+            gene_id: foundGeneIds,
+            genome_id: genomeId.join(','),
+            request_id: request_id
+          };
+          console.log('API Request Params:', params);
 
-        router.push({
-          name: 'idSearchSummary'
-        });
+          const response = await httpInstance.post('/CottonOGD_api/geneid_summary/', params);
+          console.log('API Response:', response);
+
+          const data = response as any;
+          if (data && data.geneid_result) {
+            console.log('Search success');
+            searchResults.value = {
+              geneid_result: typeof data.geneid_result === 'string' ? JSON.parse(data.geneid_result) : data.geneid_result,
+              gene_info_result: typeof data.gene_info_result === 'string' ? JSON.parse(data.gene_info_result) : data.gene_info_result,
+              search_map: typeof data.search_map === 'string' ? JSON.parse(data.search_map) : data.search_map,
+              gene_go_result: data.gene_go_result || [],
+              gene_kegg_result: data.gene_kegg_result || []
+            };
+            console.log('Parsed Search Results:', searchResults.value);
+
+            const dbIds = searchResults.value?.search_map 
+              ? Object.values(searchResults.value.search_map).map((item: any) => item.db_id).filter(Boolean)
+              : [];
+            console.log('DB IDs:', dbIds);
+
+            navigationStore.setNavigationData('geneSearch', {
+              results: searchResults.value,
+              dbIds: dbIds,
+              requestId: request_id
+            });
+
+            router.push({
+              name: 'idSearchSummary'
+            });
+          } else {
+            console.error('Search failed: missing geneid_result');
+            throw new Error(data.message || 'Search failed: No data returned');
+          }
+        } else {
+          // Meilisearch 没有找到结果，回退到原有搜索方式
+          console.log('No results from Meilisearch, falling back to original search');
+          await performOriginalSearch(geneIds, genomeId, request_id);
+        }
       } else {
-        console.error('Search failed: missing geneid_result');
-        throw new Error(data.message || 'Search failed: No data returned');
+        // 使用原有的搜索方式
+        console.log('Using original search method');
+        await performOriginalSearch(geneIds, genomeId, request_id);
       }
     } catch (e: any) {
       console.error('Search failed with exception:', e);
@@ -102,6 +133,49 @@ export const useGeneSearchStore = defineStore('geneSearch', () => {
     } finally {
       isLoading.value = false;
       console.log('performSearch finished');
+    }
+  }
+
+  async function performOriginalSearch(geneIds: string, genomeId: string[], request_id: string) {
+    const params = {
+      gene_id: geneIds,
+      genome_id: genomeId.join(','),
+      request_id: request_id
+    };
+    console.log('API Request Params:', params);
+
+    const response = await httpInstance.post('/CottonOGD_api/geneid_summary/', params);
+    console.log('API Response:', response);
+
+    const data = response as any;
+    if (data && data.geneid_result) {
+      console.log('Search success');
+      searchResults.value = {
+        geneid_result: typeof data.geneid_result === 'string' ? JSON.parse(data.geneid_result) : data.geneid_result,
+        gene_info_result: typeof data.gene_info_result === 'string' ? JSON.parse(data.gene_info_result) : data.gene_info_result,
+        search_map: typeof data.search_map === 'string' ? JSON.parse(data.search_map) : data.search_map,
+        gene_go_result: data.gene_go_result || [],
+        gene_kegg_result: data.gene_kegg_result || []
+      };
+      console.log('Parsed Search Results:', searchResults.value);
+
+      const dbIds = searchResults.value?.search_map 
+        ? Object.values(searchResults.value.search_map).map((item: any) => item.db_id).filter(Boolean)
+        : [];
+      console.log('DB IDs:', dbIds);
+
+      navigationStore.setNavigationData('geneSearch', {
+        results: searchResults.value,
+        dbIds: dbIds,
+        requestId: request_id
+      });
+
+      router.push({
+        name: 'idSearchSummary'
+      });
+    } else {
+      console.error('Search failed: missing geneid_result');
+      throw new Error(data.message || 'Search failed: No data returned');
     }
   }
 
@@ -187,6 +261,7 @@ export const useGeneSearchStore = defineStore('geneSearch', () => {
     error,
     sequenceCache,
     sequenceLoading,
+    useMeilisearch,
     // actions
     performSearch,
     clearState,
