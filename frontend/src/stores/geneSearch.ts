@@ -72,7 +72,7 @@ export const useGeneSearchStore = defineStore('geneSearch', () => {
         
         if (meilisearchResults.success && meilisearchResults.results.length > 0) {
           // 从 Meilisearch 结果中提取基因ID
-          const foundGeneIds = meilisearchResults.results.map(result => result.geneid).join('\n');
+          const foundGeneIds = meilisearchResults.results.map((result: any) => result.geneid).join('\n');
           console.log('Found Gene IDs from Meilisearch:', foundGeneIds);
           
           // 使用找到的基因ID调用原有的API获取详细信息

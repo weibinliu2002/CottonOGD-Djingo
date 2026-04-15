@@ -33,8 +33,8 @@
               <img src="@/assets/images/favicon.png" alt="CottonOGD Logo" class="logo">
             </div>
             <div class="brand-text">
-              <h1 class="brand-title">CottonOGD</h1>
-              <p class="brand-subtitle">Cotton Orthogroups Database</p>
+              <h1 class="brand-title">CottonMGD</h1>
+              <p class="brand-subtitle">Cotton Mutation Genome Database</p>
             </div>
           </div>
         </div>
@@ -62,7 +62,7 @@
             
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                {{ t('Genome Brower') }}
+                {{ t('Genome_Browser') }}
               </a>
               <ul class="dropdown-menu">
                 <li><router-link class="dropdown-item" to="/jbrowse">{{ t('jbrowse_view') }}</router-link></li>
@@ -89,7 +89,7 @@
             </li>
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                {{ t('Graphical Tools') }}
+                {{ t('Graphical_Tools') }}
               </a>
               <ul class="dropdown-menu">
                 <li><router-link class="dropdown-item" to="/tools/clustergramme_heatmap">{{ t('clustergramme_heatmap') }}</router-link></li>

@@ -36,7 +36,7 @@
           <h2>{{ t('jbrowse_visualization') }}</h2>
           <div v-if="selectedGenomeInfo" class="genome-info">
             <p><strong>{{ t('genome') }}:</strong> {{ selectedGenomeInfo.name }}</p>
-            <p><strong>{{ t('version') }}:</strong> {{ selectedGenomeInfo.assembly }}</p>
+            <!--<p><strong>{{ t('version') }}:</strong> {{ selectedGenomeInfo. }}</p>-->
           </div>
           <div class="embed-container">
             <iframe :key="iframeKey" :src="currentIframeUrl" width="100%" height="800px" frameborder="0"></iframe>

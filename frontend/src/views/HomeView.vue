@@ -89,7 +89,7 @@ const performSearch = async () => {
         genome_id: advancedOptions.genomeId || undefined
       })
       console.log('results:', results)
-           if (results.success && results['total'] > 0) {
+          if (results.success && results.total > 0) {
         // 跳转到搜索结果页面
         router.push({
           path: '/tools/id-search/results',
@@ -139,10 +139,8 @@ const clearAdvancedOptions = () => {
         <div class="hero-content">
           <h1>{{ t('welcome_to_cottonogd') }}</h1>
           <p class="hero-subtitle">{{ t('a_comprehensive_cotton_orthogroups_database') }}</p>
-          <p class="hero-description">
-            CottonOGD provides integrated genomic, transcriptomic, and functional annotation resources for cotton research, 
-            enabling researchers to explore orthogroups, gene families, and evolutionary relationships across cotton species.
-          </p>
+          <p class="hero-description">{{ t('cottonogd_description') }}</p>
+         
           
           <!-- 水平布局搜索框 -->
           <div class="search-box-container">

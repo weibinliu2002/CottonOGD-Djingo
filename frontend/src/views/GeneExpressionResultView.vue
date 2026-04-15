@@ -454,8 +454,8 @@ const downloadExpressionData = () => {
     ...rows.map(row => row.join(','))
   ].join('\n')
   
-  // 创建下载链接
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+  const bom = new Uint8Array([0xEF, 0xBB, 0xBF])
+  const blob = new Blob([bom, csvContent], { type: 'text/csv;charset=utf-8;' })
   const link = document.createElement('a')
   
   if (link.download !== undefined) {
