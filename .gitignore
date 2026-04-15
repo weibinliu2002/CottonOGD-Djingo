@@ -3,7 +3,9 @@
 .trae/
 .vscode/
 .github/
-
+.idea/
+mysite/
+qiushi-skill/
 # Python相关文件
 *.sqlite3
 __pycache__/
