@@ -47,7 +47,7 @@ def kegg_annotation(request):
                     for gene_id in gene_list:
                         cursor.execute("""
                             SELECT seqid, start, end ,geneid_id
-                            FROM `GeneAssembly` 
+                            FROM `gene_assembly` 
                             WHERE genome_id = "G.kirkii_ISU_ISU_v3.0" and type = 'gene' AND geneid_id = %s
                         """, [gene_id])
                         annotation_data = cursor.fetchall()
