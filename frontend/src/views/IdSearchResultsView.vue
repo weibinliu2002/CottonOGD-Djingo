@@ -165,7 +165,7 @@
             stripe
             border
           >
-            <el-table-column label="{{ t('gene_id') }}" width="180">
+            <el-table-column label="Gene ID" width="180">
               <template #default="scope">
                 <router-link :to="{
                   path: '/tools/gene-expression-efp/',

@@ -92,8 +92,8 @@ export default defineConfig({
       },
       // 匹配 assets/jbrowse 路径
       '^/assets/jbrowse': {
-        //target: 'http://172.28.226.114:8000',
-        target: 'http://127.0.0.1:8000',
+        target: 'http://172.28.226.114:8000',
+        //target: 'http://127.0.0.1:8000',
         changeOrigin: true,
         secure: false,
         cookieDomainRewrite: 'localhost'
