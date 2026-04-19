@@ -336,7 +336,58 @@ const clearAdvancedOptions = () => {
         </div>
       </div>
     </section>
-    
+    <!-- 数据库统计区域 -->
+    <section class="stats-section bg-light">
+      <div class="container">
+        <h2 class="section-title">{{ t('database_statistics') }}</h2>
+        <el-row :gutter="30">
+          <el-col :span="6">
+            <div class="stats-card">
+              <div class="stats-icon">
+                <i class="fas fa-dna"></i>
+              </div>
+              <div class="stats-content">
+                <div class="stats-value">200+</div>
+                <div class="stats-label">Genomes</div>
+              </div>
+            </div>
+          </el-col>
+          <el-col :span="6">
+            <div class="stats-card">
+              <div class="stats-icon">
+                <i class="fas fa-gene"></i>
+              </div>
+              <div class="stats-content">
+                <div class="stats-value">200,000+</div>
+                <div class="stats-label">Annotated Genes</div>
+              </div>
+            </div>
+          </el-col>
+          <el-col :span="6">
+            <div class="stats-card">
+              <div class="stats-icon">
+                <i class="fas fa-users"></i>
+              </div>
+              <div class="stats-content">
+                <div class="stats-value">15,000+</div>
+                <div class="stats-label">Orthogroups</div>
+              </div>
+            </div>
+          </el-col>
+          <el-col :span="6">
+            <div class="stats-card">
+              <div class="stats-icon">
+                <i class="fas fa-book"></i>
+              </div>
+              <div class="stats-content">
+                <div class="stats-value">5,000+</div>
+                <div class="stats-label">Literature References</div>
+              </div>
+            </div>
+          </el-col>
+        </el-row>
+      </div>
+    </section>
     <!-- 核心功能区域 -->
     <section class="features-section">
       <div class="container">
@@ -411,61 +462,10 @@ const clearAdvancedOptions = () => {
       </div>
     </section>
     
-    <!-- 数据库统计区域 -->
-    <section class="stats-section bg-light">
-      <div class="container">
-        <h2 class="section-title">{{ t('database_statistics') }}</h2>
-        <el-row :gutter="30">
-          <el-col :span="6">
-            <div class="stats-card">
-              <div class="stats-icon">
-                <i class="fas fa-dna"></i>
-              </div>
-              <div class="stats-content">
-                <div class="stats-value">200+</div>
-                <div class="stats-label">Genomes</div>
-              </div>
-            </div>
-          </el-col>
-          <el-col :span="6">
-            <div class="stats-card">
-              <div class="stats-icon">
-                <i class="fas fa-gene"></i>
-              </div>
-              <div class="stats-content">
-                <div class="stats-value">200,000+</div>
-                <div class="stats-label">Annotated Genes</div>
-              </div>
-            </div>
-          </el-col>
-          <el-col :span="6">
-            <div class="stats-card">
-              <div class="stats-icon">
-                <i class="fas fa-users"></i>
-              </div>
-              <div class="stats-content">
-                <div class="stats-value">15,000+</div>
-                <div class="stats-label">Orthogroups</div>
-              </div>
-            </div>
-          </el-col>
-          <el-col :span="6">
-            <div class="stats-card">
-              <div class="stats-icon">
-                <i class="fas fa-book"></i>
-              </div>
-              <div class="stats-content">
-                <div class="stats-value">5,000+</div>
-                <div class="stats-label">Literature References</div>
-              </div>
-            </div>
-          </el-col>
-        </el-row>
-      </div>
-    </section>
+    
     
     <!-- 快速访问区域 -->
-    <section class="quick-access-section">
+    <!--<section class="quick-access-section">
       <div class="container">
         <h2 class="section-title">{{ t('quick_access') }}</h2>
         <el-row :gutter="24">
@@ -559,7 +559,7 @@ const clearAdvancedOptions = () => {
           </el-col>
         </el-row>
       </div>
-    </section>
+    </section>-->
     
     <!-- 回到顶部 -->
     <el-backtop :right="40" :bottom="40" />

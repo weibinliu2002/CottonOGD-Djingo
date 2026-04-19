@@ -33,8 +33,8 @@
               <img src="@/assets/images/favicon.png" alt="CottonOGD Logo" class="logo">
             </div>
             <div class="brand-text">
-              <h1 class="brand-title">CottonMGD</h1>
-              <p class="brand-subtitle">Cotton Mutation Genome Database</p>
+              <h1 class="brand-title">iCotton</h1>
+              <!--<p class="brand-subtitle">Cotton Mutation Genome Database</p>-->
             </div>
           </div>
         </div>
