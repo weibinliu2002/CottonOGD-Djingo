@@ -1,29 +1,6 @@
 <template>
   <div class="app">
-    <!-- 顶部信息栏 -->
-    <div class="top-info-bar">
-      <div class="container">
-        <div class="top-info-content">
-          <div class="info-left">
-            <!--<span class="database-status">Database version: v1.0 | Last updated: 2025-01-29</span>-->
-          </div>
-          <div class="info-right">
-            <!-- 语言切换 -->
-            <div class="language-selector">
-              <select 
-                v-model="currentLanguage"
-                class="language-select"
-              >
-                <option value="en-US">English</option>
-                <option value="zh-CN">中文</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 头部容器 -->
+        <!-- 头部容器 -->
     <header class="header">
       <div class="container">
         <div class="header-inner">
@@ -37,7 +14,19 @@
               <!--<p class="brand-subtitle">Cotton Mutation Genome Database</p>-->
             </div>
           </div>
+                     <!-- 语言切换 -->
+            <div class="language-selector">
+              <select 
+                v-model="currentLanguage"
+                class="language-select"
+              >
+                <option value="en-US">English</option>
+                <option value="zh-CN">中文</option>
+              </select>
+            </div>
+          
         </div>
+        
       </div>
     </header>
 
@@ -85,6 +74,7 @@
 
                 
                 <li><router-link class="dropdown-item" to="/tools/primer-design">{{ t('primer_design') }}</router-link></li>
+                <li><router-link class="dropdown-item" to="/tools/sequence-server">{{ t('sequence_server') }}</router-link></li>
               </ul>
             </li>
             <li class="nav-item dropdown">
@@ -398,7 +388,7 @@ onMounted(() => {
 
 .header-inner {
   display: flex;
-  justify-content: flex-start;
+  justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
 }
@@ -408,6 +398,8 @@ onMounted(() => {
   align-items: center;
   gap: 20px;
 }
+
+
 
 .logo-container {
   display: flex;

@@ -97,6 +97,13 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         cookieDomainRewrite: 'localhost'
+      },
+      '^/sequence-server': {
+        target: 'http://172.28.226.114:4567',
+        changeOrigin: true,
+        secure: false,
+        ws: true,
+        rewrite: (path) => path.replace(/^\/sequence-server/, '')
       }
     }
   },

@@ -290,6 +290,7 @@
     "sequence_not_found_at_this_position_or_empty": "在此位置未找到序列或为空",
     "sequence_not_found_or_empty": "未找到序列或为空",
     "sequence_will_be_displayed_here": "序列将显示在这里",
+    "sequence_server": "序列服务器",
     "show": "显示：",
     "specificity": "特异性",
     "start_position": "起始位置",
