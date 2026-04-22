@@ -1,7 +1,7 @@
-<template>
+﻿<template>
   <div class="container-fluid">
     <div class="row">
-      <!-- 左侧边栏 - 选择基因组 -->
+      <!-- 宸︿晶杈规爮 - 閫夋嫨鍩哄洜缁?-->
       <div class="col-md-3">
         <div class="sidebar">
           <h3>{{ t('jbrowse_views') }} <el-icon class="info-icon"><QuestionFilled /></el-icon></h3>
@@ -30,7 +30,7 @@
         </div>
       </div>
 
-      <!-- 主内容区域 - 展示JBrowse -->
+      <!-- 涓诲唴瀹瑰尯鍩?- 灞曠ずJBrowse -->
       <div class="col-md-9">
         <div class="main-content">
           <h2>{{ t('jbrowse_visualization') }}</h2>
@@ -45,7 +45,7 @@
       </div>
     </div>
     
-    <!-- 回到顶部 -->
+    <!-- 鍥炲埌椤堕儴 -->
     <el-backtop :right="40" :bottom="40" />
   </div>
 </template>
@@ -113,7 +113,7 @@ onMounted(async () => {
   min-height: 100vh;
 }
 
-/* 左侧边栏样式 */
+/* 宸︿晶杈规爮鏍峰紡 */
 .sidebar {
   background-color: white;
   padding: 20px;
@@ -148,7 +148,7 @@ onMounted(async () => {
   color: #e6a23c;
 }
 
-/* 基因组信息样式 */
+/* 鍩哄洜缁勪俊鎭牱寮?*/
 .genome-info {
   background-color: #f9f9f9;
   padding: 15px;
@@ -156,7 +156,7 @@ onMounted(async () => {
   font-size: 0.9rem;
 }
 
-/* 主内容区域样式 */
+/* 涓诲唴瀹瑰尯鍩熸牱寮?*/
 .main-content {
   background-color: white;
   padding: 20px;
@@ -170,7 +170,7 @@ onMounted(async () => {
   color: #333;
 }
 
-/* 嵌入容器样式 */
+/* 宓屽叆瀹瑰櫒鏍峰紡 */
 .embed-container {
   border: 1px solid #e0e0e0;
   border-radius: 6px;
@@ -178,7 +178,7 @@ onMounted(async () => {
   margin-top: 20px;
 }
 
-/* 响应式设计 */
+/* 鍝嶅簲寮忚璁?*/
 @media (max-width: 768px) {
   .container-fluid {
     padding: 10px;
@@ -191,3 +191,4 @@ onMounted(async () => {
   }
 }
 </style>
+

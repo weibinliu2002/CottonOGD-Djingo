@@ -30,6 +30,7 @@ import PPIView from '@/views/PPIView.vue'
 import PhylotreeView from '@/views/PhylotreeView.vue'
 import CircosView from '@/views/CircosView.vue'
 import CanvaspressView from '@/views/CanvaspressView.vue'
+import SequenceServerView from '@/views/sequence-server.vue'
 
 
 
@@ -213,6 +214,11 @@ const routes = [
     path: '/tools/canvaspress',
     name: 'Canvaspress',
     component: CanvaspressView
+  },
+  {
+    path: '/tools/sequence-server',
+    name: 'SequenceServer',
+    component: SequenceServerView
   },
   {
     path: '/download',
