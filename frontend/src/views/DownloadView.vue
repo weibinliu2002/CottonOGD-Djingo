@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useGenomeSelector } from '@/composables/useGenomeBrowser'
@@ -12,7 +12,7 @@ const isLoading = ref(false)
 const errorMessage = ref('')
 const selectedCategory = ref('')
 
-// 下载类型定义
+// 涓嬭浇绫诲瀷瀹氫箟
 const downloadTypes = [
   { value: 'genome', label: 'Genome', icon: 'File' },
   { value: 'cds', label: 'CDS', icon: 'File' },
@@ -21,10 +21,10 @@ const downloadTypes = [
   { value: 'gff3', label: 'GFF3', icon: 'File' }
 ]
 
-// Type映射定义（用户可自行填写映射内容）
+// Type鏄犲皠瀹氫箟锛堢敤鎴峰彲鑷濉啓鏄犲皠鍐呭锛?
 const typeMapping: Record<string, string> = {
-  // 示例：'genome': '基因组',
-  // 请根据需要添加映射内容
+  // 绀轰緥锛?genome': '鍩哄洜缁?,
+  // 璇锋牴鎹渶瑕佹坊鍔犳槧灏勫唴瀹?
   'genome': '.genome.fa.gz',
   'cds': '.cds.fa.gz',
   'protein': '.pro.fa.gz',
@@ -32,12 +32,12 @@ const typeMapping: Record<string, string> = {
   'gff3': '.gff.gz'
 }
 
-// 计算属性：按基因组类型分组的数据
+// 璁＄畻灞炴€э細鎸夊熀鍥犵粍绫诲瀷鍒嗙粍鐨勬暟鎹?
 const groupedGenomes = computed(() => {
   return genomeStore.genomeOptions
 })
 
-// 计算属性：获取所有分类
+// 璁＄畻灞炴€э細鑾峰彇鎵€鏈夊垎绫?
 const categories = computed(() => {
   return groupedGenomes.value.map(group => ({
     value: group.value,
@@ -45,12 +45,12 @@ const categories = computed(() => {
   }))
 })
 
-// 初始化数据
+// 鍒濆鍖栨暟鎹?
 onMounted(async () => {
   await loadGenomes()
 })
 
-// 加载基因组数据
+// 鍔犺浇鍩哄洜缁勬暟鎹?
 const loadGenomes = async () => {
   isLoading.value = true
   try {
@@ -62,14 +62,14 @@ const loadGenomes = async () => {
   }
 }
 
-// 下载文件
+// 涓嬭浇鏂囦欢
 const downloadFile = async (genomeId: string, type: string) => {
   try {
-    // 使用后端 API 下载文件
+    // 浣跨敤鍚庣 API 涓嬭浇鏂囦欢
     const apiUrl = `/download_genome/${genomeId}/${type}`
     console.log('Download API URL:', apiUrl)
     
-    // 创建下载链接
+    // 鍒涘缓涓嬭浇閾炬帴
     const link = document.createElement('a')
     link.href = apiUrl
     link.download = `${genomeId}${typeMapping[type] || type}`
@@ -85,7 +85,7 @@ const activeNames = ref<string[]>([])
 
 <template>
   <div class="download-page">
-    <!-- 页面头部 -->
+    <!-- 椤甸潰澶撮儴 -->
     <div class="page-header">
       <div class="container">
         <h1 class="page-title">{{ t('download_data') }}</h1>
@@ -93,9 +93,9 @@ const activeNames = ref<string[]>([])
       </div>
     </div>
     
-    <!-- 主要内容 -->
+    <!-- 涓昏鍐呭 -->
     <div class="container">
-      <!-- 操作栏 -->
+      <!-- 鎿嶄綔鏍?-->
       <!--<div class="action-bar mb-6">
         <el-row :gutter="20" align="middle">
           <el-col :span="8">
@@ -127,7 +127,7 @@ const activeNames = ref<string[]>([])
         </el-row>
       </div>-->
       
-      <!-- 错误信息 -->
+      <!-- 閿欒淇℃伅 -->
       <el-alert
         v-if="errorMessage"
         type="error"
@@ -138,7 +138,7 @@ const activeNames = ref<string[]>([])
         @close="errorMessage = ''"
       />
       
-      <!-- 加载状态 -->
+      <!-- 鍔犺浇鐘舵€?-->
       <div v-if="isLoading" class="mb-6">
         <el-skeleton :rows="10" animated />
       </div>
@@ -205,7 +205,7 @@ const activeNames = ref<string[]>([])
       </div>
     </div>
     
-    <!-- 回到顶部 -->
+    <!-- 鍥炲埌椤堕儴 -->
     <el-backtop :right="40" :bottom="40" />
   </div>
 </template>
@@ -361,3 +361,4 @@ const activeNames = ref<string[]>([])
   }
 }
 </style>
+

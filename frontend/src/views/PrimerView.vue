@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="container mt-6">
     <h1 class="page-title">{{ t('primer_design') }}</h1>
     <el-row :gutter="20">
@@ -348,7 +348,7 @@
       </el-col>
     </el-row>
     
-    <!-- 回到顶部 -->
+    <!-- 鍥炲埌椤堕儴 -->
     <el-backtop :right="40" :bottom="40" />
   </div>
 </template>
@@ -364,7 +364,7 @@ import { treemapResquarify } from 'd3'
 
 const { t } = useI18n()
 
-// 鍒濆鍖杝tore
+// 閸掓繂顫愰崠鏉漷ore
 const primerDesignStore = usePrimerDesignStore()
 const { genomeOptions: groupedGenomeOptions, ensureGenomesLoaded, pickDefaultGenome } = useGenomeSelector()
 
@@ -376,7 +376,7 @@ const sequenceType = computed({
   get: () => primerDesignStore.sequenceType,
   set: (val) => primerDesignStore.setSequenceType(val)
 })
-const inputMethod = ref('geneId') // 榛樿浣跨敤鍩哄洜ID杈撳叆鏂瑰紡
+const inputMethod = ref('geneId') // 姒涙顓绘担璺ㄦ暏閸╁搫娲淚D鏉堟挸鍙嗛弬鐟扮础
 const genomeAssembly = ref('G.hirsutumAD1_TM-1_HAU_v1.1')
 const genomePosition = reactive({
   chromosome: '',
@@ -416,11 +416,10 @@ const isSequenceEmpty = computed(() => {
   return !sequenceTemplate.value || sequenceTemplate.value.trim() === ''
 })
 
-// 璁＄畻琛ㄦ牸鏁版嵁
 const designTableData = computed(() => {
   const tableData = []
   designResults.value.forEach((result, index) => {
-    // 涓婃父寮曠墿
+    // 娑撳﹥鐖跺鏇犲⒖
     tableData.push({
       oligos: t('forward_primer'),
       startPosition: result.forward.START,
@@ -433,7 +432,7 @@ const designTableData = computed(() => {
       sequence: result.forward.SEQUENCE,
       penalty: result.penalty
     })
-    // 涓嬫父寮曠墿
+    // 娑撳鐖跺鏇犲⒖
     tableData.push({
       oligos: t('reverse_primer'),
       startPosition: result.reverse.START,
@@ -450,11 +449,9 @@ const designTableData = computed(() => {
   return tableData
 })
 
-// 璁＄畻鍩哄洜缁勯€夐」
 const computedGenomeOptions = computed(() => {
-  // 浠巊enomeStore鑾峰彇鎵€鏈夊熀鍥犵粍閫夐」
-  const allGenomes = groupedGenomeOptions.value.flatMap(option => 
-    option.children?.map(child => ({
+  const allGenomes = groupedGenomeOptions.value.flatMap((option) =>
+    option.children?.map((child) => ({
       value: child.value,
       label: child.label
     })) || []
@@ -481,7 +478,6 @@ const fetchChromosomes = async (genome) => {
     
     const text = await response.text()
     
-    // 检查返回的是否是 HTML 页面（如果包含 <html> 标签，则不是有效的 .fai 文件）
     if (text.includes('<html')) {
       throw new Error('Received HTML instead of .fai file content')
     }
@@ -511,11 +507,10 @@ const fetchChromosomes = async (genome) => {
 
 watch(genomeAssembly, async (newGenome) => {
   await fetchChromosomes(newGenome)
-  // 閲嶇疆鏌撹壊浣撻€夋嫨
   genomePosition.chromosome = ''
 })
 
-// 缁勪欢鎸傝浇鏃惰幏鍙栧熀鍥犵粍鏁版嵁
+// 缂佸嫪娆㈤幐鍌濇祰閺冩儼骞忛崣鏍х唨閸ョ姷绮嶉弫鐗堝祦
 onMounted(async () => {
   await ensureGenomesLoaded()
   if (!genomeAssembly.value) {
@@ -526,13 +521,11 @@ onMounted(async () => {
   }
 })
 
-// 鍔犺浇绀轰緥鏁版嵁
 const loadExample = () => {
-  // 璁剧疆绀轰緥鍩哄洜ID
+  // 鐠佸墽鐤嗙粈杞扮伐閸╁搫娲淚D
   sequenceId.value = 'Ghir_A01G000120.2'
   genomeAssembly.value = 'G.hirsutumAD1_TM-1_HAU_v1.1'
-  // 璁剧疆榛樿搴忓垪绫诲瀷
-  sequenceType.value = 'mrna'
+  // 鐠佸墽鐤嗘妯款吇鎼村繐鍨猾璇茬€?  sequenceType.value = 'mrna'
 }
 
 // Fetch sequence by gene ID
@@ -552,7 +545,7 @@ const fetchSequence = async () => {
   let sequence = ''
   
   try {
-    // 鐩存帴璋冪敤 extract_seq锛屼紶閫?gene_id 鍜?genome_id
+    // 閻╁瓨甯寸拫鍐暏 extract_seq閿涘奔绱堕柅?gene_id 閸?genome_id
     const seqResponse = await httpInstance.post('/CottonOGD_api/extract_seq/', {
       gene_id: sequenceId.value.trim(),
       genome_id: genomeAssembly.value
@@ -593,13 +586,13 @@ const fetchSequenceByPosition = async () => {
   error.value = null
   
   try {
-    // Call genome position sequence fetch API - 浣跨敤宸叉湁鐨?extract_seq_gff API
+    // Call genome position sequence fetch API - 娴ｈ法鏁ゅ鍙夋箒閻?extract_seq_gff API
     const response = await httpInstance.post('/CottonOGD_api/extract_seq_gff/', {
       genome_id: genomeAssembly.value,
       seqid: genomePosition.chromosome.trim(),
       start: genomePosition.start,
       end: genomePosition.end,
-      strand: '+' // 榛樿涓烘閾?
+      strand: '+' // 姒涙顓绘稉鐑橆劀闁?
     })
     
     if (response.sequence) {
@@ -713,7 +706,7 @@ const downloadResults = () => {
     csvContent += `${item.oligos},${item.tm},${item.gcPercent},${item.selfAny},${item.selfEnd},${item.hairpin},${item.sequence},${item.penalty}\n`
   })
   
-  // Add BOM标记，解决Excel打开中文乱码问题
+  // Add BOM鏍囪锛岃В鍐矱xcel鎵撳紑涓枃涔辩爜闂
   const bom = new Uint8Array([0xEF, 0xBB, 0xBF])
   const blob = new Blob([bom, csvContent], { type: 'text/csv;charset=utf-8;' })
   const link = document.createElement('a')
@@ -836,7 +829,7 @@ const downloadResults = () => {
   }
 }
 
-/* 鍝嶅簲寮忚璁?*/
+/* 閸濆秴绨插蹇氼啎鐠?*/
 @media (max-width: 1200px) {
   .container {
     max-width: 100%;

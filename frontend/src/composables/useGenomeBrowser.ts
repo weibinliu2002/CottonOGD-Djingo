@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+﻿import { computed, ref } from 'vue'
 import { useGenomeStore } from '@/stores/genome_info'
 
 const DEFAULT_GENOME = 'G.hirsutumAD1_TM-1_HAU_v1.1'
