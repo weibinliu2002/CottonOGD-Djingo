@@ -67,7 +67,7 @@ if (is.na(cdna_files) || cdna_files == "") {
 if (is.na(cds_files) || cds_files == "") {
     cds_files <- paste0(genome_path,'/', genome_id, ".cds.fa")
     print(paste0("gffread ", gff_files, " -g ", genome_files, " -x ", cds_files, " --w-nocds"))
-    system(paste0("gffread ", gff_files, " -g ", genome_files, " -x ", cds_files, " --w-nocds"))
+   system(paste0("gffread ", gff_files, " -g ", genome_files, " -x ", cds_files, " --w-nocds"))
 }
 if (is.na(pro_files) || pro_files == "") {
   pro_files <- paste0(genome_path,'/', genome_id, ".pro.fa")
@@ -109,13 +109,13 @@ if (!file.exists(gene_genome_files)){
 upstream_files <- paste0(genome_path,'/', genome_id, ".upstream20000.fa")
 if (!file.exists(upstream_files)) {
     print(paste0("java -cp /data/wbliu/soft/TBtools-II-2.311/TBtools_JRE1.6.jar biocjava.bioIO.GFF.ExtractFeaturefromGFF3andGenome --inGtf ", gff_files, " --inGenome ", genome_files, " --outFile ", upstream_files, " --targetFeature CDS --targetIdTag Parent --upStreamBases 20000 --onlyCheck false --onlyRetainFlank true"))
-  system(paste0("java -cp /data/wbliu/soft/TBtools-II-2.311/TBtools_JRE1.6.jar biocjava.bioIO.GFF.ExtractFeaturefromGFF3andGenome --inGtf ", gff_files, " --inGenome ", genome_files, " --outFile ", upstream_files, " --targetFeature CDS --targetIdTag Parent --upStreamBases 20000 --onlyCheck false --onlyRetainFlank true"))
+  system(paste0("java -cp /data/wbliu/soft/TBtools-II-2.311/TBtools_JRE1.6.jar biocjava.bioIO.GFF.ExtractFeaturefromGFF3andGenome --inGtf ", gff_files, " --inGenome ", genome_files, " --outFile ", upstream_files, " --targetFeature CDS --targetIdTag Parent --upStreamBases 2000 --onlyCheck false --onlyRetainFlank true"))
 }
 
 downstream_files <- paste0(genome_path,'/', genome_id, ".downstream20000.fa")
 if (!file.exists(downstream_files)) {
     print(paste0("java -cp /data/wbliu/soft/TBtools-II-2.311/TBtools_JRE1.6.jar biocjava.bioIO.GFF.ExtractFeaturefromGFF3andGenome --inGtf ", gff_files, " --inGenome ", genome_files, " --outFile ", downstream_files, " --targetFeature CDS --targetIdTag Parent --downStreamBases 20000 --onlyCheck false --onlyRetainFlank true"))
-  system(paste0("java -cp /data/wbliu/soft/TBtools-II-2.311/TBtools_JRE1.6.jar biocjava.bioIO.GFF.ExtractFeaturefromGFF3andGenome --inGtf ", gff_files, " --inGenome ", genome_files, " --outFile ", downstream_files, " --targetFeature CDS --targetIdTag Parent --downStreamBases 20000 --onlyCheck false --onlyRetainFlank true"))
+  system(paste0("java -cp /data/wbliu/soft/TBtools-II-2.311/TBtools_JRE1.6.jar biocjava.bioIO.GFF.ExtractFeaturefromGFF3andGenome --inGtf ", gff_files, " --inGenome ", genome_files, " --outFile ", downstream_files, " --targetFeature CDS --targetIdTag Parent --downStreamBases 2000 --onlyCheck false --onlyRetainFlank true"))
 }
 
 
@@ -129,8 +129,8 @@ pre<-function(x){
     da<-data.frame(id=names(fa),seq=as.character(fa))
     names(da)<-c('mrna_id','sequence')
     if (x=='gene_genome_files'){
-        da$gene_type<-paste0(gsub('_files','',x),'')
-        da$gene_type<-paste0(da$gene_type,'gene_')
+     #   da$gene_type<-paste0(gsub('_files','',x),'')
+        da$gene_type<-'genome'
     }else{
         da$gene_type<-paste0(gsub('_files','',x),'')
     }
@@ -147,7 +147,7 @@ for (i in lis) {
 fu$geneid_id<-gsub('\\.\\d+','',fu$mrna_id)
 fu$genome_id<-genome_id
 print(str(fu))
-#dat<-data.frame(mrna_id=fu$id,mrna_seq=fu$mrna_seq,cds_seq=fu$cds_seq,upstream_seq=fu$upstream_seq,downstream_seq=fu$downstream_seq,protein_seq=fu$pro_seq,gene_id=gsub('\\.\\d+','',fu$id))
+dat<-data.frame(mrna_id=fu$id,mrna_seq=fu$mrna_seq,cds_seq=fu$cds_seq,upstream_seq=fu$upstream_seq,downstream_seq=fu$downstream_seq,protein_seq=fu$pro_seq,gene_id=gsub('\\.\\d+','',fu$id))
 #print(str(dat))
 print('连接数据库')
 library(DBI)
@@ -161,10 +161,10 @@ con <- dbConnect(RMySQL::MySQL(),
                  password = "1234",
                  )
 print(paste0('数据表：',dbListTables(con)))
-genemaster<-dplyr::tbl(con,'genemaster')|>as.data.frame()
+genemaster<-dplyr::tbl(con,'genemaster')|>filter(genome_id==genome_id)|>select(geneid, genome_id,id)|>collect()
 fu <- fu |>
   left_join(
-    genemaster |> select(geneid, genome_id,id),
+    genemaster ,
     by = c("geneid_id" = "geneid", "genome_id" = "genome_id")
   ) 
 names(fu)[6]<-'id_id'
