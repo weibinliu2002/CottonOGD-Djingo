@@ -2,7 +2,7 @@
 本地方案：BLAST+
 """
 import time, tempfile, os, subprocess, re
-from .base import BaseSearcher, SearchResult, HitItem, SearchMethod
+from CottonOGD.server.base3D import BaseSearcher, SearchResult, HitItem, SearchMethod
 
 
 class BLASTSearcher(BaseSearcher):
