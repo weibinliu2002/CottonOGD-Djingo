@@ -31,3 +31,10 @@ backend/data/blast_db/
 backend/temp/
 backend/venv/
 frontend/node_modules/
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
