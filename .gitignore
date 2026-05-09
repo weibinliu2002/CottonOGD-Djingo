@@ -4,6 +4,13 @@
 .vscode/
 .github/
 .idea/
+
+# 以下路径不忽略（必须放在其他忽略规则之前）
+!Script/script/Biosql/
+!Script/script/update_EBI-PDB.sh
+!backend/CottonOGD/views/genome_api.py
+!backend/soft/hmmer/
+!backend/soft/mmseq2/
 # Python相关文件
 *.sqlite3
 __pycache__/
@@ -28,6 +35,7 @@ backend/soft/windows/primer3/kmer_lists/homo_sapiens_16.list
 backend/data/genome/
 backend/data/TF_family/
 backend/data/blast_db/
+backend/data/**
 backend/temp/
 backend/venv/
 frontend/node_modules/
