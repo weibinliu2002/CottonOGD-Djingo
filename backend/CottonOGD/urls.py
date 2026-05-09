@@ -14,6 +14,7 @@ from CottonOGD.views.DownloadGenome import download_genome_file
 from CottonOGD.views.gene_Go import go_annotation, go_enrichment
 from CottonOGD.views.gene_Kegg import kegg_annotation, kegg_enrichment
 from CottonOGD.views.Meilisearch import search_genes_meilisearch, search_genes
+from CottonOGD.views.protein3D import *
 
 
 
@@ -43,5 +44,7 @@ urlpatterns = [
     path('go_enrichment/', go_enrichment, name='go_enrichment'),
     path('kegg_annotation/', kegg_annotation, name='kegg_annotation'),
     path('kegg_enrichment/', kegg_enrichment, name='kegg_enrichment'),
+    path('search_similar_structure/', search_similar_structure, name='search_similar_structure'),
+    path('get_search_methods/', get_search_methods, name='get_search_methods'),
 
 ]
