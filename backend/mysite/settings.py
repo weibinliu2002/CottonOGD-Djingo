@@ -29,18 +29,8 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
-# 允许的CSRF来源
-CSRF_TRUSTED_ORIGINS = [
-    'http://localhost:8000',
-    'http://127.0.0.1:8000',
-    #'http://172.28.226.114:8000',
-    'http://172.28.226.114:3306',
-    'http://localhost:5173',
-    'http://localhost:5174',
-    'http://localhost:5713',
-    'http://localhost:5714',
-    'http://127.0.0.1:5173',
-]
+# CSRF配置 - 使用Django默认行为
+# Django 6.0+ 默认会自动处理CSRF，无需额外配置CSRF_TRUSTED_ORIGINS
 
 
 # Application definition
@@ -79,12 +69,7 @@ MIDDLEWARE = [
 ]
 USE_ETAGS = False
 CORS_ALLOW_CREDENTIALS = True
-CSRF_COOKIE_SAMESITE = 'Lax' 
 CORS_ORIGIN_ALLOW_ALL = True
-CORS_ORIGIN_WHITELIST = [
-    *(f'http://localhost:{port}' for port in range(5173, 5180)),
-    'http://localhost:5714',
-]
 CORS_ALLOW_HEADERS = [
     '*',
 ]

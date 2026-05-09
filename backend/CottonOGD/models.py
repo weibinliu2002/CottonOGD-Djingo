@@ -129,8 +129,8 @@ class GenomeTissue(models.Model):
         with connection.cursor() as cursor:
             # 清空并重新导入（或 INSERT IGNORE）
             cursor.execute("""
-                INSERT IGNORE INTO genome_tissue (genome, tissue)
-                SELECT DISTINCT genome, tissue FROM expression
+                INSERT IGNORE INTO genome_tissue (genome_id, tissue)
+                SELECT DISTINCT genome_id, tissue FROM expression
             """)
         return cls.objects.count()
     
@@ -224,3 +224,15 @@ class gene_kegg(models.Model):
         indexes = [
             models.Index(fields=['id_id']),
         ]
+
+
+class SearchCache(models.Model):
+    """比对结果缓存表"""
+    seq_hash = models.CharField(max_length=32, primary_key=True, verbose_name="序列MD5")
+    method = models.CharField(max_length=20, db_index=True, verbose_name="比对方法")
+    result_json = models.JSONField(verbose_name="结果JSON数据")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
+
+    class Meta:
+        db_table = "search_cache"
+        verbose_name = "搜索缓存"
