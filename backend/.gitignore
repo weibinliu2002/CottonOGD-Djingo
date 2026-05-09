@@ -36,3 +36,10 @@ backend/Lib/**
 
 # 忽略 Node.js 依赖
 node_modules/
+
+# 以下路径不忽略
+!Script/script/Biosql/
+!Script/script/update_EBI-PDB.sh
+!backend/CottonOGD/views/genome_api.py
+!backend/soft/hmmer/
+!backend/soft/mmseq2/

@@ -14,7 +14,7 @@ from CottonOGD.views.DownloadGenome import download_genome_file
 from CottonOGD.views.gene_Go import go_annotation, go_enrichment
 from CottonOGD.views.gene_Kegg import kegg_annotation, kegg_enrichment
 from CottonOGD.views.Meilisearch import search_genes_meilisearch, search_genes
-
+from CottonOGD.views.genome_api import *
 
 
 urlpatterns = [
@@ -43,5 +43,13 @@ urlpatterns = [
     path('go_enrichment/', go_enrichment, name='go_enrichment'),
     path('kegg_annotation/', kegg_annotation, name='kegg_annotation'),
     path('kegg_enrichment/', kegg_enrichment, name='kegg_enrichment'),
+    
+    # ========== 基因组API端点（对应Shiny应用功能） ==========
+   # path('search_by_gene_ids/', search_by_gene_ids, name='search_by_gene_ids'),
+    path('search_by_genome_location/', search_by_genome_location, name='search_by_genome_location'),
+    path('gene_genomic_distribution/', gene_genomic_distribution, name='gene_genomic_distribution'),
+   # path('transcription_factors/', transcription_factors, name='transcription_factors'),
+    path('genome_synteny/', genome_synteny, name='genome_synteny'),
+    path('structural_variations/', structural_variations, name='structural_variations'),
 
 ]
