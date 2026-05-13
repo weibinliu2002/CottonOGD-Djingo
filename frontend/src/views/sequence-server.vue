@@ -22,50 +22,17 @@
 </template>
 
 <script setup>
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 
-const LAST_URL_KEY = 'sequence_server_last_url_v2'
-const BASE_URL = 'http://172.28.226.114:4567/'
-const BASE_ORIGIN = 'http://172.28.226.114:4567'
-
-const iframeRef = ref(null)
-const iframeSrc = ref(BASE_URL)
+// Sequence Server 代理路径
+const iframeSrc = ref('/blast/')
 const loading = ref(true)
 const error = ref('')
-
-let trackTimer = null
-
-const getStoredUrl = () => {
-  const url = window.sessionStorage.getItem(LAST_URL_KEY)
-  if (!url) return BASE_URL
-  if (url.startsWith(BASE_ORIGIN)) return url
-  return BASE_URL
-}
-
-const storeUrl = (url) => {
-  if (!url || typeof url !== 'string') return
-  window.sessionStorage.setItem(LAST_URL_KEY, url)
-}
-
-const syncUrlFromIframe = () => {
-  if (!iframeRef.value?.contentWindow) return
-
-  try {
-    const href = iframeRef.value.contentWindow.location.href
-    if (href) {
-      storeUrl(href)
-    }
-  } catch {
-    // Cross-origin pages cannot expose location to parent.
-    // We still keep seamless embed and rely on postMessage if available.
-  }
-}
 
 const handleIframeLoad = () => {
   loading.value = false
   error.value = ''
-  syncUrlFromIframe()
 }
 
 const handleIframeError = () => {
@@ -77,34 +44,8 @@ const handleIframeError = () => {
 const retryLoad = () => {
   loading.value = true
   error.value = ''
-  iframeSrc.value = getStoredUrl()
+  iframeSrc.value = '/blast/'
 }
-
-const handleMessage = (event) => {
-  if (event.origin !== BASE_ORIGIN) return
-
-  const data = event.data
-  if (!data || typeof data !== 'object') return
-
-  const nextUrl = data.url || data.href || data.currentUrl
-  if (typeof nextUrl === 'string' && nextUrl.startsWith(BASE_ORIGIN)) {
-    storeUrl(nextUrl)
-  }
-}
-
-onMounted(() => {
-  iframeSrc.value = getStoredUrl()
-  trackTimer = window.setInterval(syncUrlFromIframe, 1000)
-  window.addEventListener('message', handleMessage)
-})
-
-onBeforeUnmount(() => {
-  if (trackTimer) {
-    window.clearInterval(trackTimer)
-    trackTimer = null
-  }
-  window.removeEventListener('message', handleMessage)
-})
 </script>
 
 <style scoped>
@@ -170,4 +111,3 @@ onBeforeUnmount(() => {
   }
 }
 </style>
-
