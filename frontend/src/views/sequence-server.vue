@@ -26,8 +26,8 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 
 const LAST_URL_KEY = 'sequence_server_last_url_v2'
-const BASE_URL = '/sequence-server/'
-const BASE_ORIGIN = window.location.origin
+const BASE_URL = 'http://172.28.226.114:4567/'
+const BASE_ORIGIN = 'http://172.28.226.114:4567'
 
 const iframeRef = ref(null)
 const iframeSrc = ref(BASE_URL)
@@ -39,8 +39,7 @@ let trackTimer = null
 const getStoredUrl = () => {
   const url = window.sessionStorage.getItem(LAST_URL_KEY)
   if (!url) return BASE_URL
-  if (url.startsWith('/sequence-server/')) return url
-  if (url.startsWith(`${BASE_ORIGIN}/sequence-server/`)) return url
+  if (url.startsWith(BASE_ORIGIN)) return url
   return BASE_URL
 }
 

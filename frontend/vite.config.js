@@ -1,4 +1,4 @@
-﻿import { fileURLToPath, URL } from 'node:url'
+import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import AutoImport from 'unplugin-auto-import/vite'
@@ -6,7 +6,6 @@ import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 
 const DJANGO_TARGET = 'http://172.28.226.114:8000'
-const SEQUENCE_SERVER_TARGET = 'http://172.28.226.114:4567'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -74,13 +73,6 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         cookieDomainRewrite: 'localhost'
-      },
-      '^/sequence-server': {
-        target: SEQUENCE_SERVER_TARGET,
-        changeOrigin: true,
-        secure: false,
-        ws: true,
-        rewrite: (path) => path.replace(/^\/sequence-server/, '')
       }
     }
   },
