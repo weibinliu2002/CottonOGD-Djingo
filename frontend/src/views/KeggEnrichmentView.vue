@@ -84,8 +84,8 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import axios from '@/utils/http'
 import { ElMessage } from 'element-plus'
+import { useEnrichmentStore } from '@/stores/enrichmentStore'
 
 const { t } = useI18n()
 const geneList = ref('')
@@ -93,6 +93,7 @@ const pValueThreshold = ref(0.05)
 const qValueThreshold = ref(0.05)
 const isLoading = ref(false)
 const router = useRouter()
+const enrichmentStore = useEnrichmentStore()
 
 const fillExample = () => {
   const exampleIDs = `Kirkii_Juiced.00g000010
@@ -146,13 +147,14 @@ const submitForm = async () => {
 
   isLoading.value = true
   try {
-    // 直接跳转到结果页面，并传递参数
+    // 使用Pinia store存储数据
+    enrichmentStore.geneList = geneList.value
+    enrichmentStore.pValue = pValueThreshold.value
+    enrichmentStore.qValue = qValueThreshold.value
+    
+    // 跳转到结果页面
     router.push({
-      path: '/tools/kegg-enrichment/results',
-      query: {
-        gene_id: geneList.value,
-        p_value_threshold: pValueThreshold.value
-      }
+      name: 'KeggEnrichmentResults'
     })
   } catch (error: any) {
     ElMessage.error(t('error') + ': ' + (error.message || 'Unknown error'));

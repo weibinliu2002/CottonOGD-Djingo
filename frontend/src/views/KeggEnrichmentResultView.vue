@@ -60,13 +60,13 @@
           </template>
           
           <!-- 表格区域 -->
-          <el-table :data="results" style="width: 100%">
+          <el-table :data="paginatedResults" style="width: 100%">
             <el-table-column prop="pathway_id" :label="t('pathway_id')" width="120"></el-table-column>
             <el-table-column prop="description.name" :label="t('description')">
               <template #default="scope">
                 <div>
-                  {{ scope.row.description.name || '' }}
-                  <el-tooltip v-if="scope.row.description.definition" :content="scope.row.description.definition" placement="top">
+                  {{ scope.row.description?.name || '' }}
+                  <el-tooltip v-if="scope.row.description?.definition" :content="scope.row.description.definition" placement="top">
                     <i class="el-icon-info text-muted ml-1"></i>
                   </el-tooltip>
                 </div>
@@ -76,26 +76,39 @@
             <el-table-column prop="bg_ratio" :label="t('bg_ratio')" width="120"></el-table-column>
             <el-table-column :label="t('rich_factor')" width="120">
               <template #default="scope">
-                {{ scope.row.rich_factor.toFixed(4) }}
+                {{ parseFloat(scope.row.rich_factor || 0).toFixed(4) }}
               </template>
             </el-table-column>
             <el-table-column :label="t('fold_enrichment')" width="150">
               <template #default="scope">
-                {{ scope.row.fold_enrichment.toFixed(4) }}
+                {{ parseFloat(scope.row.fold_enrichment || 0).toFixed(4) }}
               </template>
             </el-table-column>
             <el-table-column :label="t('z_score')" width="100">
               <template #default="scope">
-                {{ scope.row.z_score.toFixed(4) }}
+                {{ parseFloat(scope.row.z_score || 0).toFixed(4) }}
               </template>
             </el-table-column>
             <el-table-column :label="t('pvalue')" width="150">
               <template #default="scope">
-                {{ scope.row.p_value.toFixed(6) }}
+                {{ parseFloat(scope.row.p_value || 0).toFixed(6) }}
               </template>
             </el-table-column>
           </el-table>
         </el-card>
+        
+        <!-- 分页组件 (只有总数大于10时显示) -->
+        <div v-if="totalItems > 10" class="pagination-container">
+          <el-pagination
+            @size-change="handleSizeChange"
+            @current-change="handleCurrentChange"
+            :current-page="currentPage"
+            :page-sizes="[10, 25, 50]"
+            :page-size="perPage"
+            :total="totalItems"
+            layout="total, sizes, prev, pager, next, jumper"
+          />
+        </div>
       </div>
     </div>
     
@@ -105,23 +118,36 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, inject } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, computed, onMounted, inject } from 'vue'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { useEnrichmentStore } from '@/stores/enrichmentStore'
 
 const { t } = useI18n()
-const route = useRoute()
+const router = useRouter()
+const enrichmentStore = useEnrichmentStore()
 const showLoading = inject('showLoading') as (() => void) | undefined
 const hideLoading = inject('hideLoading') as (() => void) | undefined
 
 // 页面数据
-const results = ref<any[]>([])
+const allResults = ref<any[]>([])
 const hasResults = ref(true)
 const isLoading = ref(false)
 const errorMessage = ref('')
 const executionTime = ref(0)
 const plotImage = ref<string | null>(null)
 const totalItems = ref(0)
+
+// 分页数据
+const currentPage = ref(1)
+const perPage = ref(10)
+
+// 分页后的结果
+const paginatedResults = computed(() => {
+  const start = (currentPage.value - 1) * perPage.value
+  const end = start + perPage.value
+  return allResults.value.slice(start, end)
+})
 
 // 使用统一的axios实例
 import axios from '../utils/http'
@@ -130,22 +156,30 @@ const fetchResults = async () => {
   showLoading?.()
   isLoading.value = true
   try {
-    // 从URL参数获取gene_id和p_value_threshold
-    const geneId = route.query.gene_id as string || ''
-    const pValueThreshold = parseFloat(route.query.p_value_threshold as string || '0.05')
+    // 从Pinia store获取数据
+    const geneId = enrichmentStore.geneList || ''
+    const pValueThreshold = enrichmentStore.pValue || 0.05
+    const qValueThreshold = enrichmentStore.qValue || 0.05
+    
+    console.log('从store获取的数据:', { geneId, pValueThreshold, qValueThreshold })
     
     if (!geneId) {
       errorMessage.value = 'Missing gene_id parameter'
       hasResults.value = false
+      // 如果store中没有数据，返回上一页
+      router.push({ name: 'KeggEnrichment' })
       return
     }
     
+    // 使用multipart/form-data格式发送请求（根据API文档）
+    const formData = new FormData()
+    formData.append('gene_id', geneId)
+    formData.append('p_value_threshold', String(pValueThreshold))
+    formData.append('q_value_threshold', String(qValueThreshold))
+    
     // 使用配置好的axios实例调用后端API获取结果
-    const data = await axios.get('/CottonOGD_api/kegg_enrichment/', {
-      params: {
-        gene_id: geneId,
-        p_value_threshold: pValueThreshold
-      }
+    const data = await axios.post('/CottonOGD_api/kegg_enrichment/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
     }) as unknown as any
     console.log('KEGG富集API响应:', data)
     
@@ -153,11 +187,24 @@ const fetchResults = async () => {
     if (typeof data === 'object' && data !== null) {
       if (data.status === 'success') {
         const resultData = data.data
-        results.value = resultData.results || []
-        totalItems.value = results.value.length
-        hasResults.value = results.value.length > 0
+        // 解析description字段（如果是字符串）
+        allResults.value = (resultData.results || []).map((item: any) => {
+          if (typeof item.description === 'string') {
+            try {
+              item.description = JSON.parse(item.description)
+            } catch (error) {
+              console.error('解析description失败:', error)
+              item.description = { name: item.description, definition: '' }
+            }
+          }
+          return item
+        })
+        totalItems.value = allResults.value.length
+        hasResults.value = allResults.value.length > 0
         executionTime.value = 0
         plotImage.value = resultData.plot_image || null
+        
+        console.log('解析后的结果数据:', allResults.value)
       } else {
         errorMessage.value = data.error || 'Failed to get results'
         hasResults.value = false
@@ -176,6 +223,17 @@ const fetchResults = async () => {
   }
 }
 
+// 每页条数变更（前端分页，不重新请求）
+const handleSizeChange = (size: number) => {
+  perPage.value = size
+  currentPage.value = 1
+}
+
+// 当前页变更（前端分页，不重新请求）
+const handleCurrentChange = (page: number) => {
+  currentPage.value = page
+}
+
 // 生命周期
 onMounted(async () => {
   await fetchResults()
@@ -192,7 +250,9 @@ onMounted(async () => {
   margin-bottom: 0;
 }
 
-.pagination {
+.pagination-container {
+  display: flex;
+  justify-content: center;
   margin-top: 1rem;
 }
 

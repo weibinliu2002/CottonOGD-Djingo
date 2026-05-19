@@ -32,17 +32,32 @@
     
     <!-- 结果显示 -->
     <div v-else>
-      <!-- 无结果提示 -->
-      <el-alert
-        v-if="!hasResults"
-        type="warning"
-        :title="t('no_enrichment_results_found')"
-        show-icon
-        class="mb-4"
-      />
+      <!-- 图表区域 -->
+      <template v-for="(imageData, category) in plotImages" :key="category">
+        <el-card v-if="imageData" class="mb-4">
+          <template #header>
+            <div class="card-header">
+              <span>
+                <span v-if="category === 'MF'">{{ t('molecular_function') }}</span>
+                <span v-else-if="category === 'BP'">{{ t('biological_process') }}</span>
+                <span v-else-if="category === 'CC'">{{ t('cellular_component') }}</span>
+                {{ t('enrichment_plot') }}
+              </span>
+            </div>
+          </template>
+          <div class="text-center">
+            <el-image
+              :src="'data:image/png;base64,' + imageData"
+              :alt="t('go_enrichment_plot')"
+              fit="contain"
+              class="w-full"
+            />
+          </div>
+        </el-card>
+      </template>
       
       <!-- 按类别展示结果 -->
-      <template v-for="(categoryData, category) in results" :key="category">
+      <template v-for="(categoryData, category) in paginatedResults" :key="category">
         <div 
           class="mb-5" 
           v-if="categoryData.results.length > 0"
@@ -53,7 +68,7 @@
             <span v-else-if="category === 'BP'">{{ t('biological_process') }}</span>
             <span v-else-if="category === 'CC'">{{ t('cellular_component') }}</span>
             <small class="text-muted">
-              ({{ t('total') }} {{ categoryData.total }} {{ t('records') }})
+              ({{ t('total') }} {{ allResults[category].total }} {{ t('records') }})
             </small>
           </h4>
           
@@ -63,34 +78,47 @@
               <el-table-column prop="go_id" :label="t('go_id')" width="150"></el-table-column>
               <el-table-column prop="description" :label="t('description')">
                 <template #default="scope">
-                  {{ scope.row.description.name }}
+                  {{ scope.row.description?.name || '' }}
                 </template>
               </el-table-column>
               <el-table-column prop="gene_ratio" :label="t('gene_ratio')" width="120"></el-table-column>
               <el-table-column prop="bg_ratio" :label="t('bg_ratio')" width="120"></el-table-column>
               <el-table-column :label="t('rich_factor')" width="120">
                 <template #default="scope">
-                  {{ parseFloat(scope.row.rich_factor).toFixed(4) }}
+                  {{ parseFloat(scope.row.rich_factor || 0).toFixed(4) }}
                 </template>
               </el-table-column>
               <el-table-column :label="t('fold_enrichment')" width="120">
                 <template #default="scope">
-                  {{ parseFloat(scope.row.fold_enrichment).toFixed(4) }}
+                  {{ parseFloat(scope.row.fold_enrichment || 0).toFixed(4) }}
                 </template>
               </el-table-column>
               <el-table-column :label="t('z_score')" width="100">
                 <template #default="scope">
-                  {{ parseFloat(scope.row.z_score).toFixed(4) }}
+                  {{ parseFloat(scope.row.z_score || 0).toFixed(4) }}
                 </template>
               </el-table-column>
               <el-table-column :label="t('p_value')" width="120">
                 <template #default="scope">
-                  {{ parseFloat(scope.row.p_value).toFixed(6) }}
+                  {{ parseFloat(scope.row.p_value || 0).toFixed(6) }}
                 </template>
               </el-table-column>
               <el-table-column prop="genes" :label="t('number_of_genes')"></el-table-column>
             </el-table>
           </el-card>
+          
+          <!-- Element Plus 分页组件 -->
+          <div class="pagination-container">
+            <el-pagination
+              @size-change="handleSizeChange(category)"
+              @current-change="handleCurrentChange(category)"
+              :current-page="currentPages[category]"
+              :page-sizes="[5, 10, 25, 50]"
+              :page-size="perPage"
+              :total="allResults[category].total"
+              layout="total, sizes, prev, pager, next, jumper"
+            />
+          </div>
         </div>
       </template>
     </div>
@@ -102,11 +130,13 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, inject } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { useEnrichmentStore } from '@/stores/enrichmentStore'
 
-const route = useRoute()
+const router = useRouter()
 const { t } = useI18n()
+const enrichmentStore = useEnrichmentStore()
 const showLoading = inject('showLoading') as (() => void) | undefined
 const hideLoading = inject('hideLoading') as (() => void) | undefined
 
@@ -117,120 +147,92 @@ const currentPages = ref<Record<string, number>>({
   MF: 1,
   CC: 1
 })
-const results = ref<Record<string, any>>({
-  BP: { results: [], total: 0, num_pages: 1, current_page: 1, has_next: false, has_previous: false },
-  MF: { results: [], total: 0, num_pages: 1, current_page: 1, has_next: false, has_previous: false },
-  CC: { results: [], total: 0, num_pages: 1, current_page: 1, has_next: false, has_previous: false }
+
+// 完整的结果数据（不分页）
+const allResults = ref<Record<string, any>>({
+  BP: { results: [], total: 0 },
+  MF: { results: [], total: 0 },
+  CC: { results: [], total: 0 }
 })
-const plotImages = ref<Record<string, string>>({})
+
+// 图表数据
+const plotImages = ref<Record<string, string | null>>({
+  BP: null,
+  MF: null,
+  CC: null
+})
+
 const hasResults = ref(true)
 const isLoading = ref(false)
 const errorMessage = ref('')
-const executionTime = ref(0)
 
 // 使用配置好的axios实例
 import axios from '../utils/http'
 
-// 处理description对象，获取名称
-const getDescriptionName = (description: any) => {
-  if (typeof description === 'object' && description !== null && 'name' in description) {
-    return description.name
-  } else if (typeof description === 'string') {
-    return description
-  }
-  return ''
-}
-
-// 处理description对象，获取定义
-const getDescriptionDefinition = (description: any) => {
-  if (typeof description === 'object' && description !== null && 'definition' in description) {
-    return description.definition
-  }
-  return ''
-}
-
-// 处理图像加载错误
-const handleImageError = (event: Event) => {
-  const target = event.target as HTMLElement
-  if (target) {
-    target.style.display = 'none'
-  }
-}
-
-// 提交每页显示条数变更
-const handlePerPageChange = async () => {
-  // 重置所有类别到第一页
-  currentPages.value = {
-    BP: 1,
-    MF: 1,
-    CC: 1
+// 分页后的结果
+const paginatedResults = computed(() => {
+  const result: Record<string, any> = {
+    BP: { results: [], total: 0 },
+    MF: { results: [], total: 0 },
+    CC: { results: [], total: 0 }
   }
   
-  // 重新获取结果
-  await fetchResults()
-}
-
-// 切换页面
-const changePage = async (category: string, page: number) => {
-  // 更新当前类别页码
-  currentPages.value[category] = page
+  const categories = ['BP', 'MF', 'CC']
+  categories.forEach(category => {
+    const start = (currentPages.value[category] - 1) * perPage.value
+    const end = start + perPage.value
+    result[category] = {
+      results: allResults.value[category].results.slice(start, end),
+      total: allResults.value[category].total
+    }
+  })
   
-  // 重新获取结果
-  await fetchResults()
-}
+  return result
+})
 
-// 获取结果数据
+// 获取结果数据（只在初始化时调用一次）
 const fetchResults = async () => {
   showLoading?.()
   isLoading.value = true
   try {
-    // 从URL参数获取gene_id
-    const geneId = route.query.gene_id as string || ''
-    const pValueThreshold = parseFloat(route.query.p_value_threshold as string || '0.05')
+    // 从Pinia store获取数据
+    const geneId = enrichmentStore.geneList || ''
+    const genomeId = 'G.kirkii_ISU_ISU_v3.0'
+    const pValueThreshold = enrichmentStore.pValue || 0.05
+    const qValueThreshold = enrichmentStore.qValue || 0.05
+    
+    console.log('从store获取的数据:', { geneId, genomeId, pValueThreshold, qValueThreshold })
     
     if (!geneId) {
       errorMessage.value = 'Missing gene_id parameter'
       hasResults.value = false
+      // 如果store中没有数据，返回上一页
+      router.push({ name: 'GoEnrichment' })
       return
     }
     
-    // 使用直接导入的axios实例调用后端API获取结果
-    console.log('请求参数:', { gene_id: geneId, p_value_threshold: pValueThreshold })
-    const response = await axios.get('/CottonOGD_api/go_enrichment/', {
-      params: {
-        gene_id: geneId,
-        p_value_threshold: pValueThreshold
-      }
+    // 使用multipart/form-data格式发送请求（根据API文档）
+    const formData = new FormData()
+    formData.append('gene_id', geneId)
+    formData.append('genome_id', genomeId)
+    formData.append('p_value_threshold', String(pValueThreshold))
+    formData.append('q_value_threshold', String(qValueThreshold))
+    
+    console.log('请求参数:', { gene_id: geneId, genome_id: genomeId, p_value_threshold: pValueThreshold, q_value_threshold: qValueThreshold })
+    
+    const response = await axios.post('/CottonOGD_api/go_enrichment/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
     }) as any
     
-    // 详细打印后端返回的数据，包括所有字段
     console.log('完整的后端返回数据:', JSON.stringify(response, null, 2))
     
-    // 检查状态是否为成功
     if (response.status === 'success') {
       const data = response.data
-      console.log('处理后的结果对象:', data.results)
-      console.log('结果数量:', data.results ? data.results.length : 0)
-      
-      // 打印每个结果的go_type
-      if (data.results && data.results.length > 0) {
-        data.results.forEach((r: any, index: number) => {
-          console.log(`结果 ${index}: go_id=${r.go_id}, go_type=${r.go_type}, description=${r.description}`)
-        })
-      }
-      
-      // 初始化结果对象
-      results.value = {
-        BP: { results: [], total: 0, num_pages: 1, current_page: 1, has_next: false, has_previous: false },
-        MF: { results: [], total: 0, num_pages: 1, current_page: 1, has_next: false, has_previous: false },
-        CC: { results: [], total: 0, num_pages: 1, current_page: 1, has_next: false, has_previous: false }
-      }
       
       // 按GO类别组织结果
       const categories = ['BP', 'MF', 'CC']
       categories.forEach(category => {
         const categoryResults = data.results.filter((r: any) => r.go_type === category)
-        console.log(`类别 ${category} 的结果数量: ${categoryResults.length}`)
         
         // 解析每个结果中的description字段（如果是字符串）
         const parsedResults = categoryResults.map((result: any) => {
@@ -245,31 +247,29 @@ const fetchResults = async () => {
           return result
         })
         
-        results.value[category] = {
+        allResults.value[category] = {
           results: parsedResults,
-          total: categoryResults.length,
-          num_pages: 1,
-          current_page: 1,
-          has_next: false,
-          has_previous: false
+          total: categoryResults.length
+        }
+        
+        // 获取图表数据
+        if (data.plot_images && data.plot_images[category]) {
+          plotImages.value[category] = data.plot_images[category]
         }
       })
       
       // 检查是否有结果
       let anyResults = false
-      for (const category in results.value) {
-        if (results.value[category].results.length > 0) {
+      for (const category in allResults.value) {
+        if (allResults.value[category].results.length > 0) {
           anyResults = true
           break
         }
       }
       hasResults.value = anyResults
       
-      // 添加调试信息，查看最终结果数据
-      console.log('最终结果数据:', results.value)
-      
-      // 设置执行时间
-      executionTime.value = 0
+      console.log('最终结果数据:', allResults.value)
+      console.log('图表数据:', plotImages.value)
     } else {
       errorMessage.value = response.error || 'Failed to get results'
       hasResults.value = false
@@ -284,68 +284,56 @@ const fetchResults = async () => {
   }
 }
 
+// 每页条数变更（前端分页，不重新请求）
+const handleSizeChange = (category: string, size: number) => {
+  perPage.value = size
+  currentPages.value[category] = 1
+}
+
+// 当前页变更（前端分页，不重新请求）
+const handleCurrentChange = (category: string, page: number) => {
+  currentPages.value[category] = page
+}
+
 // 生命周期
 onMounted(async () => {
   await fetchResults()
-  // 这里可以添加工具提示的初始化逻辑
-  // 由于使用了Bootstrap，可以在模板中直接使用data-bs-toggle="tooltip"
 })
 </script>
 
 <style scoped>
-/* 全局样式 */
 .container {
   max-width: 1200px;
   margin: 0 auto;
 }
 
-/* 表格样式 */
-.table {
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.text-danger {
+  color: #dc3545;
+}
+
+.text-muted {
+  color: #6c757d;
+}
+
+.mb-3 {
   margin-bottom: 1rem;
 }
 
-.table-bordered {
-  border: 1px solid #dee2e6;
+.mb-4 {
+  margin-bottom: 1.5rem;
 }
 
-.table-bordered th,
-.table-bordered td {
-  border: 1px solid #dee2e6;
+.mb-5 {
+  margin-bottom: 3rem;
 }
 
-.table-hover tbody tr:hover {
-  background-color: rgba(0, 0, 0, 0.075);
-}
-
-.thead-light {
-  background-color: #f8f9fa;
-}
-
-/* 分页样式 */
-.pagination {
-  margin-top: 1rem;
-  justify-content: center;
-}
-
-.pagination-link {
-  cursor: pointer;
-}
-
-/* 加载状态 */
-.loading-cell {
-  text-align: center;
-}
-
-/* 工具提示 */
-.fas.fa-info-circle {
-  cursor: help;
-  margin-left: 5px;
-  font-size: 14px;
-}
-
-/* 结果图片 */
-.img-fluid {
-  max-width: 100%;
-  height: auto;
+.mt-4 {
+  margin-top: 1.5rem;
 }
 </style>
