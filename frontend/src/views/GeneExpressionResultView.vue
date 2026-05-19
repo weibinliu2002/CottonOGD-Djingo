@@ -347,16 +347,16 @@ const visualizationData = computed(() => {
 
 
 
-// 处理每页显示条数变更
+// 处理每页显示条数变更（前端分页，不重新请求）
 const handlePerPageChange = () => {
   currentPage.value = 1
-  loadResults()
+  // 不需要重新请求，只更新分页显示
 }
 
-// 切换页面
+// 切换页面（前端分页，不重新请求）
 const changePage = (page: number) => {
   currentPage.value = page
-  loadResults()
+  // 不需要重新请求，只更新分页显示
 }
 
 // 热图相关功能已迁移到后端，前端不再需要绘制热图
