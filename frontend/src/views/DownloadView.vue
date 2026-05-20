@@ -15,17 +15,19 @@ const selectedCategory = ref('')
 // 涓嬭浇绫诲瀷瀹氫箟
 const downloadTypes = [
   { value: 'genome', label: 'Genome', icon: 'File' },
+  { value: 'gene', label: 'Gene', icon: 'File' },
   { value: 'cds', label: 'CDS', icon: 'File' },
   { value: 'protein', label: 'Protein', icon: 'File' },
   { value: 'upstream2000', label: 'Upstream 2000', icon: 'File' },
   { value: 'gff3', label: 'GFF3', icon: 'File' }
 ]
 
-// Type鏄犲皠瀹氫箟锛堢敤鎴峰彲鑷濉啓鏄犲皠鍐呭锛?
+// Type鏄犲皠瀹氫箟锛堢敤鎴峰彲鑷仙啓鏄犲皠鍐呭锛?
 const typeMapping: Record<string, string> = {
   // 绀轰緥锛?genome': '鍩哄洜缁?,
   // 璇锋牴鎹渶瑕佹坊鍔犳槧灏勫唴瀹?
   'genome': '.genome.fa.gz',
+  'gene': '.gene_genome.fa.gz',
   'cds': '.cds.fa.gz',
   'protein': '.pro.fa.gz',
   'upstream2000': '.upstream.fa.gz',

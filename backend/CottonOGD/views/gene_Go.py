@@ -45,14 +45,14 @@ def go_annotation(request):
                 with connection.cursor() as cursor:
                     cursor.execute("""
                         SELECT seqid, start, end, geneid_id 
-                        FROM `gene_assembly` 
+                        FROM `GeneAssembly` 
                         WHERE genome_id = "G.kirkii_ISU_ISU_v3.0" and type = 'gene' AND geneid_id IN %s 
                     """, [tuple(gene_list)])
                     annotation_data = cursor.fetchall()
 
                     cursor.execute("""
                         SELECT go_type, go_description, go_id, geneid, go_type
-                        FROM `gene_go` 
+                        FROM `GeneGo` 
                         WHERE genome_id = "G.kirkii_ISU_ISU_v3.0" and geneid IN %s
                     """, [tuple(gene_list)])
                     enrichment_data = cursor.fetchall()
@@ -209,21 +209,21 @@ def go_enrichment(request):
                 
                 cursor.execute("""
                     SELECT go_type, go_description, go_id, geneid, go_type
-                    FROM gene_go 
+                    FROM `GeneGo` 
                     WHERE geneid IN %s
                 """, [tuple(gene_list)])
                 enrichment_data = cursor.fetchall()
                 
                 logger.info(f"GO富集分析 - 查询到 {len(enrichment_data)} 条富集数据")
 
-                cursor.execute("SELECT COUNT(*) FROM `gene_go`")
+                cursor.execute("SELECT COUNT(*) FROM `GeneGo`")
                 total_background_genes = cursor.fetchone()[0]
                 
                 logger.info(f"GO富集分析 - 背景基因总数: {total_background_genes}")
 
                 cursor.execute("""
                     SELECT `go_type`, `go_description`, `go_id`, `geneid`, `go_type`
-                    FROM `gene_go` 
+                    FROM `GeneGo` 
                     WHERE `go_type` IS NOT NULL 
                     AND `go_id` IS NOT NULL
                 """)

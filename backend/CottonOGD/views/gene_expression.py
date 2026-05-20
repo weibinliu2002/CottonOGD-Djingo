@@ -52,7 +52,6 @@ def get_tissues(request):
     try:
         # 获取genome_id参数
         genome_id = request.query_params.get('genome_id')
-        
         # 生成缓存键
         cache_key = f"tissues:{genome_id or 'all'}"
         
