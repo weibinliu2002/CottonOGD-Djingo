@@ -21,16 +21,19 @@ MAKEBLASTDB=$blast_path/makeblastdb
 
 # 仅当文件参数非空时创建blast数据库
 if [ -n "$genome" ]; then
-    $MAKEBLASTDB -in "$genome" -dbtype nucl -parse_seqids -out "$output/genome/${name}" &
+    $MAKEBLASTDB -in "$genome" -dbtype nucl -parse_seqids -out "$output/genome/${name}" -title "${name}_genome" &
 fi
+
 if [ -n "$mrna" ]; then
-    $MAKEBLASTDB -in "$mrna" -dbtype nucl -parse_seqids -out "$output/mrna/${name}" &
+    $MAKEBLASTDB -in "$mrna" -dbtype nucl -parse_seqids -out "$output/mrna/${name}" -title "${name}_mRNA" &
 fi
+
 if [ -n "$cds" ]; then
-    $MAKEBLASTDB -in "$cds" -dbtype nucl -parse_seqids -out "$output/cds/${name}" &
+    $MAKEBLASTDB -in "$cds" -dbtype nucl -parse_seqids -out "$output/cds/${name}" -title "${name}_CDS" &
 fi
+
 if [ -n "$protein" ]; then
-    $MAKEBLASTDB -in "$protein" -dbtype prot -parse_seqids -out "$output/protein/${name}" &
+    $MAKEBLASTDB -in "$protein" -dbtype prot -parse_seqids -out "$output/protein/${name}" -title "${name}_protein" &
 fi
 
 # 等待所有后台进程完成

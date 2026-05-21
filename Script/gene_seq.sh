@@ -76,7 +76,8 @@ genome_path=$workdir/backend/data/genome/$name
 blastdb_path=$workdir/backend/data/blast_db/CottonOGD/${name}
 jbrowse_path=$workdir/backend/static/jbrowse/data/$name
 Script_path=$workdir/Script/script
-blast_path=$workdir/backend/soft/UNIX/blast+/bin
+blast_path=/public2/wbliu/soft/software/blast/bin
+#blast_path=$workdir/backend/soft/UNIX/blast+/bin
 TF_gene_family=$workdir/backend/data/TF_family/$name
 if [ ! -d "$TF_gene_family" ]; then
     mkdir -p $TF_gene_family
@@ -244,7 +245,7 @@ echo '5 准备blastdb'
 #echo "$Script_path/add_blast_db.sh "$name" "$genome_file" "$mran_longest_files" "$cds_longest_files" "$pro_longest_files" "$blast_path" "$blastdb_path""
 
 #bash $Script_path/add_blast_db.sh "$name" "$genome_file" "$mran_longest_files" "$cds_longest_files" "$pro_longest_files" "$blast_path" "$blastdb_path"
-bash $Script_path/add_blast_db.sh "$name" "$genome_path/${name}.genome.fa.gz" "$mran_longest_files" "$cds_longest_files" "$pro_longest_files" "$blast_path" "$blastdb_path"
+bash $Script_path/add_blast_db.sh "$name" ""$genome "$mran_longest_files" "$cds_longest_files" "$pro_longest_files" "$blast_path" "$blastdb_path"
 echo '5 blastdb准备完成'
 
 #preapre TF_gene_family

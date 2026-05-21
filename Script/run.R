@@ -22,4 +22,4 @@ process_row <- function(i) {
 }
 
 # 使用mclapply进行并行处理
-mclapply(1:nrow(data), process_row, mc.cores=num_cores)
+mclapply(1:nrow(data), process_row, mc.cores=63)

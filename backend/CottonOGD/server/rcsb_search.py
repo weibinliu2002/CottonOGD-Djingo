@@ -3,7 +3,8 @@
 让 RCSB 服务器帮你做序列比对
 """
 import time
-from rcsbapi.search import SeqSimilarityQuery
+# 延迟导入 rcsbapi，避免模块加载时依赖外部服务
+# from rcsbapi.search import SeqSimilarityQuery
 from CottonOGD.server.base3D import BaseSearcher, SearchResult, HitItem, SearchMethod
 
 
@@ -17,6 +18,8 @@ class RCSBSearcher(BaseSearcher):
 
         start = time.time()
 
+        # 延迟导入 SeqSimilarityQuery
+        from rcsbapi.search import SeqSimilarityQuery
         query = SeqSimilarityQuery(
             seq,
             evalue_cutoff=evalue_cutoff,

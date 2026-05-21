@@ -2,7 +2,8 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from CottonOGD.views.base import UuidManager
-from CottonOGD.models import Species_info, Family, GeneMaster, gene_info, gene_seq, gene_annotation, gene_go, gene_kegg, gene_expression
+from CottonOGD.models import Species_info, Family, GeneMaster, gene_info,Genome_Synteny, gene_seq, gene_annotation, gene_go, gene_kegg, gene_expression
+from CottonOGD.views.location_ID import clean_gene_id
 import logging
 import json
 import re
@@ -26,9 +27,10 @@ def search_by_genome_location(request):
     - repeat_regions: 重复区域信息
     """
     uuid = request.headers.get('uuid')
+    '''
     if not uuid or uuid not in UuidManager.uuid_storage:
         return Response({'error': 'uuid is required'}, status=status.HTTP_400_BAD_REQUEST)
-    
+    '''
     genome_name = request.data.get('genome', '')
     region = request.data.get('region', '')
     
@@ -50,8 +52,9 @@ def search_by_genome_location(request):
             genome__name=genome_name,
             seqid=chr_name,
             start__lte=end,
-            end__gte=start
-        ).values()
+            end__gte=start,
+            type='gene',
+        ).values('geneid_id', 'seqid','start', 'end', 'strand', 'type','id_id')
         
         # 获取对应的gene_master以获取db_ids
         '''
@@ -94,10 +97,11 @@ def gene_genomic_distribution(request):
     - distribution: 基因在各染色体上的分布统计
     - gene_locations: 每个基因的具体位置
     """
+    '''
     uuid = request.headers.get('uuid')
     if not uuid or uuid not in UuidManager.uuid_storage:
         return Response({'error': 'uuid is required'}, status=status.HTTP_400_BAD_REQUEST)
-    
+    '''
     genome_name = request.data.get('genome', '')
     gene_ids_input = request.data.get('gene_ids', '')
     
@@ -107,8 +111,11 @@ def gene_genomic_distribution(request):
     # 解析基因ID列表
     gene_ids = []
     if gene_ids_input:
-        gene_ids = [g.strip() for g in re.split(r'[\n,;]+', gene_ids_input) if g.strip()]
-    
+        # 清理基因ID列表中的空格和换行符
+        
+        # 解析基因ID列表
+        gene_ids = [clean_gene_id(g) for g in re.split(r'[\n|,|;]+', gene_ids_input) if g.strip()]
+    logger.info(f"gene_genomic_distribution: gene_ids: {gene_ids}")
     try:
         if gene_ids:
             gene_masters = GeneMaster.objects.filter(geneid__in=gene_ids, genome__name=genome_name)
@@ -167,42 +174,37 @@ def genome_synteny(request):
     - reference_genes: 参考基因组基因
     - query_genes: 查询基因组基因
     """
+    '''
     uuid = request.headers.get('uuid')
     if not uuid or uuid not in UuidManager.uuid_storage:
         return Response({'error': 'uuid is required'}, status=status.HTTP_400_BAD_REQUEST)
-    
+    '''
     ref_genome = request.data.get('reference_genome', '')
     query_genome = request.data.get('query_genome', '')
     chromosome = request.data.get('chromosome', '')
+    Variation_type = request.data.get('Variation_type', '')
     
-    if not ref_genome or not query_genome:
-        return Response({'error': 'reference_genome and query_genome are required'}, status=status.HTTP_400_BAD_REQUEST)
-    
+    if not ref_genome or not query_genome or not chromosome or not Variation_type:
+        return Response({'error': 'reference_genome, query_genome, chromosome, and Variation_type are required'}, status=status.HTTP_400_BAD_REQUEST)
+    ref_genome_id = Species_info.objects.get(name=ref_genome).id
+    query_genome_id = Species_info.objects.get(name=query_genome).id
+    logger.info(f"genome_synteny: ref_genome_id: {ref_genome_id}, query_genome_id: {query_genome_id}, chromosome: {chromosome}, Variation_type: {Variation_type}")
     try:
         # 获取参考基因组的基因信息
-        ref_genes = gene_info.objects.filter(
-            genome__name=ref_genome,
-            type='gene'
-        )
-        if chromosome:
-            ref_genes = ref_genes.filter(seqid=chromosome)
-        ref_genes = ref_genes.values()
-        
-        # 获取查询基因组的基因信息
-        query_genes = gene_info.objects.filter(
-            genome__name=query_genome,
-            type='gene'
-        )
-        query_genes = query_genes.values()
-        
+        ref_genes = Genome_Synteny.objects.filter(
+            Ref_genome=ref_genome_id,
+            Query_genome=query_genome_id,
+            Ref_genome_chr=chromosome,
+            son_type=Variation_type,
+        ).values()
+        logger.info(f"genome_synteny: ref_genes count: {ref_genes.count()}")
+        ref_genes_list = list(ref_genes)
         results = {
             'reference_genome': ref_genome,
             'query_genome': query_genome,
             'chromosome': chromosome,
-            'reference_genes': list(ref_genes),
-            'query_genes': list(query_genes),
-            'ref_gene_count': len(list(ref_genes)),
-            'query_gene_count': len(list(query_genes))
+            'reference_genes': ref_genes_list,
+            'ref_gene_count': len(ref_genes_list),
         }
         
         return Response(results, status=status.HTTP_200_OK)
@@ -211,56 +213,3 @@ def genome_synteny(request):
         logger.error(f"Error in genome_synteny: {e}")
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-# ==================== 6. 结构变异 ====================
-@api_view(['POST'])
-def structural_variations(request):
-    """
-    获取结构变异信息
-    对应Shiny应用中的"Structural variations"功能
-    
-    请求参数:
-    - reference_genome: 参考基因组
-    - query_genome: 查询基因组
-    - chromosome: 染色体（可选）
-    - sv_type: 变异类型（可选，如: deletion, duplication, inversion等）
-    
-    返回:
-    - sv_list: 结构变异列表
-    - sv_summary: 变异类型统计
-    """
-    uuid = request.headers.get('uuid')
-    if not uuid or uuid not in UuidManager.uuid_storage:
-        return Response({'error': 'uuid is required'}, status=status.HTTP_400_BAD_REQUEST)
-    
-    ref_genome = request.data.get('reference_genome', '')
-    query_genome = request.data.get('query_genome', '')
-    chromosome = request.data.get('chromosome', '')
-    sv_type = request.data.get('sv_type', '')
-    
-    if not ref_genome or not query_genome:
-        return Response({'error': 'reference_genome and query_genome are required'}, status=status.HTTP_400_BAD_REQUEST)
-    
-    try:
-        # 由于结构变异数据可能存储在不同的表中，这里返回空结果作为占位
-        # 实际实现需要根据实际数据模型调整
-        results = {
-            'reference_genome': ref_genome,
-            'query_genome': query_genome,
-            'chromosome': chromosome,
-            'sv_type': sv_type,
-            'sv_list': [],
-            'sv_summary': {},
-            'count': 0
-        }
-        
-        return Response(results, status=status.HTTP_200_OK)
-    
-    except Exception as e:
-        logger.error(f"Error in structural_variations: {e}")
-        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-# ==================== 辅助函数 ====================
-def get_genome_list():
-    """获取所有可用的基因组列表"""
-    species_list = Species_info.objects.all().values('name', 'alias', 'Category', 'Genome_type')
-    return list(species_list)

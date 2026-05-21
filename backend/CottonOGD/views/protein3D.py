@@ -8,6 +8,7 @@ from rest_framework import status
 from CottonOGD.server.serializers import SearchRequestSerializer
 # 导入模型
 from CottonOGD.models import SearchCache
+from django.conf import settings
 # 导入统一基类和具体方法
 from CottonOGD.server.base3D import SearchMethod
 from CottonOGD.server.rcsb_search import RCSBSearcher
@@ -16,15 +17,33 @@ from CottonOGD.server.mmseqs_search import MMseqs2Searcher
 from CottonOGD.server.blast_search import BLASTSearcher
 
 # ---------------------------------------------
-# 1. 初始化搜索器（放在函数外面，服务启动时只加载一次）
+# 1. 搜索器字典（延迟初始化，避免服务启动时依赖外部服务）
 # ---------------------------------------------
 SEARCHERS = {
-    SearchMethod.RCSB_API: RCSBSearcher(),
+    # RCSB_API 延迟初始化，避免服务启动时失败
+    # SearchMethod.RCSB_API: RCSBSearcher(),
     # 注意：替换成你服务器上真实的路径
-    SearchMethod.HMMER:    HMMERSearcher("/data/pdb_local/pdb_seqres.fasta"),
-    SearchMethod.MMSEQS2:  MMseqs2Searcher("/data/pdb_local/pdb_seqres_db"),
-    SearchMethod.BLAST:    BLASTSearcher("/data/pdb_local/pdb_seqres_blastdb"),
+    SearchMethod.HMMER:    HMMERSearcher(settings.BASE_DIR / "data/EBI-PDB/pdb_seqres.fasta"),
+    SearchMethod.MMSEQS2:  MMseqs2Searcher(settings.BASE_DIR / "data/EBI-PDB/mmseq2"),
+    SearchMethod.BLAST:    BLASTSearcher(settings.BASE_DIR / "data/EBI-PDB/blast"),
 }
+
+# RCSB搜索器延迟初始化缓存
+_rcsb_searcher = None
+
+def get_rcsb_searcher():
+    """延迟初始化RCSB搜索器，避免服务启动时依赖外部服务"""
+    global _rcsb_searcher
+    if _rcsb_searcher is None:
+        try:
+            _rcsb_searcher = RCSBSearcher()
+        except RuntimeError as e:
+            # 如果初始化失败（如RCSB服务不可用），记录错误但不崩溃
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"RCSB搜索器初始化失败，将在请求时返回错误: {e}")
+            _rcsb_searcher = None  # 标记为失败
+    return _rcsb_searcher
 
 # ---------------------------------------------
 # 2. 辅助函数：清理 FASTA 序列
@@ -62,6 +81,17 @@ def search_similar_structure(request):
 
     # 3. 执行搜索（核心逻辑）
     searcher = SEARCHERS.get(method)
+    
+    # 如果是RCSB_API方法，使用延迟初始化
+    if method == SearchMethod.RCSB_API:
+        searcher = get_rcsb_searcher()
+        if not searcher:
+            return Response({
+                "error": "RCSB服务不可用",
+                "detail": "RCSB蛋白质数据库服务当前不可用，请稍后重试或选择本地搜索方法",
+                "suggestion": "建议切换到本地搜索方法：HMMER、MMseqs2 或 BLAST"
+            }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+    
     if not searcher:
         return Response({"error": "不支持的方法"}, status=400)
 
@@ -74,8 +104,17 @@ def search_similar_structure(request):
             identity_cutoff=req_data['identity_cutoff'],
         )
         result_data = search_result.to_dict()
+    except RuntimeError as e:
+        # 捕获外部服务不可用错误（如 RCSB API 503 错误）
+        if "Failed to fetch search API schema" in str(e) or "503" in str(e):
+            return Response({
+                "error": "外部服务暂时不可用",
+                "detail": "RCSB 蛋白质数据库服务当前不可用，请稍后重试或选择本地搜索方法（HMMER、MMseqs2、BLAST）",
+                "suggestion": "建议切换到本地搜索方法：HMMER、MMseqs2 或 BLAST"
+            }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        return Response({"error": f"比对执行失败: {str(e)}"}, status=500)
     except Exception as e:
-        # 捕获本地命令行执行报错（比如 mmseqs 路径不对）
+        # 捕获其他错误（比如 mmseqs 路径不对）
         return Response({"error": f"比对执行失败: {str(e)}"}, status=500)
 
     # 4. 写入缓存
