@@ -47,7 +47,7 @@
           </div>
         </template>
         <div class="chart-container" style="height: 400px;">
-          <canvas id="keggChart"></canvas>
+          <canvas ref="chartCanvas"></canvas>
         </div>
       </el-card>
       
@@ -78,12 +78,16 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
-import { ref, computed, onMounted, watch, nextTick, inject } from 'vue'
+import { ref, onMounted, nextTick, inject, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import Chart from 'chart.js/auto'
 
 const route = useRoute()
 const showLoading = inject('showLoading') as (() => void) | undefined
 const hideLoading = inject('hideLoading') as (() => void) | undefined
+
+// 使用 ref 获取 canvas 元素
+const chartCanvas = ref<HTMLCanvasElement | null>(null)
 
 // 页面数据
 const results = ref<any[]>([])
@@ -144,7 +148,8 @@ const fetchResults = async () => {
         console.log('图表标签数量:', chartData.value.labels.length)
         console.log('图表数据数量:', chartData.value.data.length)
         
-        // 渲染图表
+        // 在DOM更新后再渲染图表
+        await nextTick()
         renderChart()
     } else {
       errorMessage.value = responseData.error || '获取结果失败'
@@ -160,17 +165,14 @@ const fetchResults = async () => {
   }
 }
 
-// 引入Chart.js
-import Chart from 'chart.js/auto'
-
 const renderChart = () => {
   console.log('渲染KEGG通路分布图表...')
   console.log('图表数据:', chartData.value)
   
-  // 获取canvas元素
-  const canvas = document.getElementById('keggChart') as HTMLCanvasElement
+  // 获取canvas元素（使用ref）
+  const canvas = chartCanvas.value
   if (!canvas) {
-    console.error('没有找到keggChart元素')
+    console.error('没有找到chartCanvas元素')
     return
   }
   
@@ -290,9 +292,10 @@ onMounted(async () => {
 .chart-container {
   position: relative;
   height: 400px;
+  width: 100%;
 }
 
-canvas#keggChart {
+canvas {
   height: 100% !important;
   width: 100% !important;
 }

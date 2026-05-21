@@ -31,6 +31,9 @@ import PhylotreeView from '@/views/PhylotreeView.vue'
 import CircosView from '@/views/CircosView.vue'
 import CanvaspressView from '@/views/CanvaspressView.vue'
 import SequenceServerView from '@/views/sequence-server.vue'
+import RegionSearchView from '@/views/RegionSearchView.vue'
+import GenomeSyntenyView from '@/views/GenomeSyntenyView.vue'
+import GeneLocationView from '@/views/GeneLocationView.vue'
 
 
 
@@ -219,6 +222,21 @@ const routes = [
     path: '/tools/sequence-server',
     name: 'SequenceServer',
     component: SequenceServerView
+  },
+  {
+    path: '/tools/region-search',
+    name: 'RegionSearch',
+    component: RegionSearchView
+  },
+  {
+    path: '/tools/genome-synteny',
+    name: 'GenomeSynteny',
+    component: GenomeSyntenyView
+  },
+  {
+    path: '/tools/gene-location',
+    name: 'GeneLocation',
+    component: GeneLocationView
   },
   {
     path: '/download',

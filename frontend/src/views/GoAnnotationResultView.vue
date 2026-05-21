@@ -36,18 +36,18 @@
     </el-form>
     
     <div v-loading="loading" :element-loading-text="t('loading')" class="mb-4">
-      <div v-if="results.length > 0">
+      <div v-if="allResults.length > 0">
         <el-card class="mb-4">
           <template #header>
             <div class="card-header">
               <span>{{ t('annotation_results') }}</span>
             </div>
           </template>
-          <el-table :data="results" style="width: 100%">
+          <el-table :data="paginatedResults" style="width: 100%">
             <el-table-column prop="Chr" :label="t('chromosome')" width="80"></el-table-column>
             <el-table-column prop="Start" :label="t('start_position')" width="100"></el-table-column>
             <el-table-column prop="End" :label="t('end_position')" width="100"></el-table-column>
-            <el-table-column prop="ID" :label="t('gene_id')" width="150"></el-table-column>
+            <el-table-column prop="Gene_ID" :label="t('gene_id')" width="150"></el-table-column>
             <el-table-column prop="GO_ID" :label="t('go_id')" width="150"></el-table-column>
             <el-table-column prop="Description" :label="t('description')"></el-table-column>
             <el-table-column prop="Gene_Ontology" :label="t('go_category')" width="150"></el-table-column>
@@ -90,9 +90,8 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
-import { ref, onMounted, computed, inject } from 'vue'
+import { ref, computed, onMounted, inject } from 'vue'
 import { useRoute } from 'vue-router'
-import axios from '../utils/http'
 import httpInstance from '../utils/http'
 
 const route = useRoute()
@@ -102,31 +101,36 @@ const hideLoading = inject('hideLoading') as (() => void) | undefined
 // 页面数据
 const perPage = ref(10)
 const geneList = ref('')
-const results = ref<any[]>([])
+const allResults = ref<any[]>([])  // 存储全部数据
 const loading = ref(false)
 const currentPage = ref(1)
 const total = ref(0)
 const chart = ref<string>('')
 const hasResults = ref<boolean>(true)
 
+// 分页后的结果（前端分页，不重新请求）
+const paginatedResults = computed(() => {
+  const start = (currentPage.value - 1) * perPage.value
+  const end = start + perPage.value
+  return allResults.value.slice(start, end)
+})
+
 // 总页数
 const totalPages = computed(() => Math.ceil(total.value / perPage.value))
 
-
-
-// 处理每页显示条数变更
+// 处理每页显示条数变更（前端分页，不重新请求）
 const handlePerPageChange = () => {
   currentPage.value = 1
-  loadResults()
+  // 不需要重新请求，只更新分页显示
 }
 
-// 切换页面
+// 切换页面（前端分页，不重新请求）
 const changePage = (page: number) => {
   currentPage.value = page
-  loadResults()
+  // 不需要重新请求，只更新分页显示
 }
 
-// 加载结果数据
+// 加载结果数据（只在初始化时调用一次）
 const loadResults = async () => {
   showLoading?.()
   loading.value = true
@@ -145,14 +149,14 @@ const loadResults = async () => {
     // 检查是否有基因列表参数
     if (!geneListParam) {
       console.log('没有获取到gene_list参数')
-      results.value = []
+      allResults.value = []
       total.value = 0
       chart.value = ''
       hasResults.value = false
       return
     }
     
-    // 调用后端API获取数据
+    // 调用后端API获取数据（只调用一次）
     console.log('准备调用API')
     const responseData = await httpInstance.get('/CottonOGD_api/go_annotation/', {
       params: {
@@ -171,24 +175,26 @@ const loadResults = async () => {
       console.log('结果数组:', data.results)
       console.log('结果数量:', data.results ? data.results.length : 0)
       console.log('是否有图表:', data.chart ? '是' : '否')
-      results.value = data.results || []
-      total.value = data.results.length || 0
+      
+      // 存储全部结果数据（用于前端分页）
+      allResults.value = data.results || []
+      total.value = allResults.value.length || 0
       chart.value = data.chart || ''
       
       // 更新hasResults变量
-      hasResults.value = results.value.length > 0
+      hasResults.value = allResults.value.length > 0
       console.log('是否有结果:', hasResults.value)
     } else {
       console.log('API响应失败或success为false')
       console.log('响应数据:', responseData)
-      results.value = []
+      allResults.value = []
       total.value = 0
       chart.value = ''
       hasResults.value = false
     }
   } catch (error) {
     console.error('加载结果失败:', error)
-    results.value = []
+    allResults.value = []
     total.value = 0
     chart.value = ''
     hasResults.value = false
@@ -198,7 +204,7 @@ const loadResults = async () => {
   }
 }
 
-// 组件挂载时加载数据
+// 组件挂载时加载数据（只加载一次）
 onMounted(() => {
   loadResults()
 })

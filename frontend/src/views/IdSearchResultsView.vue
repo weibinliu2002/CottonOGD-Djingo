@@ -909,7 +909,7 @@ const handleShowSequence = async (eventData: { type: string; title: string; cont
       // 根据类型和长度截取序列
       let processedSeq = seq
       if (type === 'upstream') {
-        processedSeq = seq.slice(0, upLen)
+        processedSeq = seq.slice(20000 - upLen, seq.length)
       } else if (type === 'downstream') {
         processedSeq = seq.slice(0, downLen)
       }

@@ -90,17 +90,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, getCurrentInstance } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Search } from '@element-plus/icons-vue'
+import { useEnrichmentStore } from '@/stores/enrichmentStore'
 
 const router = useRouter()
 const { t } = useI18n()
-
-// 获取全局属性
-const app = getCurrentInstance()
-const $http = app?.appContext.config.globalProperties.$http
+const enrichmentStore = useEnrichmentStore()
 
 // 表单数据
 const geneList = ref('')
@@ -148,14 +146,14 @@ const handleSubmit = async () => {
   }
   
   try {
-    // 直接跳转到结果页面，并传递参数
+    // 使用Pinia store存储数据
+    enrichmentStore.geneList = geneList.value
+    enrichmentStore.pValue = pValue.value
+    enrichmentStore.qValue = qValue.value
+    
+    // 跳转到结果页面
     router.push({
-      path: '/tools/go-enrichment/results',
-      query: {
-        gene_id: geneList.value,
-        p_value_threshold: pValue.value,
-        per_page: perPage.value
-      }
+      name: 'goEnrichmentResults'
     })
   } catch (err) {
     error.value = 'Submission failed, please try again'

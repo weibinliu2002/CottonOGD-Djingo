@@ -14,7 +14,7 @@
               <!--<p class="brand-subtitle">Cotton Mutation Genome Database</p>-->
             </div>
           </div>
-                     <!-- 语言切换 -->
+          <!-- 语言切换 -->
             <div class="language-selector">
               <select 
                 v-model="currentLanguage"

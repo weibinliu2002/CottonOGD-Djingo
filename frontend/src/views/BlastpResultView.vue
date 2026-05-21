@@ -556,7 +556,7 @@ const loadResults = async () => {
                   if (hit.protein_id || hit.subject_id || hit.subject) {
                     formattedResults.push({
                       query: value.query_def || decodedResults.query_def,
-                      subject: hit.description || hit.subject_id || hit.subject,
+                      subject: hit.subject_id || hit.description || hit.subject,
                       identity: hit.identity,
                       alignment_length: hit.length || hit.alignment_length,
                       mismatches: hit.mismatches,
