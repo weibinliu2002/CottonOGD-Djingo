@@ -128,7 +128,7 @@ fi
 if  [ -n "$gff" ]; then
     echo '1 准备genemaster'
     echo "Rscript $Script_path/genemaster.R "$name" "$gff_file""
-    Rscript $Script_path/genemaster.R "$name" "$gff_file"
+#    Rscript $Script_path/genemaster.R "$name" "$gff_file"
     
     echo '1 genemaster准备完成'
 fi
@@ -137,7 +137,7 @@ if  [ -n "$annoation" ]; then
 #add annotation
     echo '1.2 添加注释'
     echo "$Script_path/add_annoation.R "$name" "$annoation_file""
-    Rscript $Script_path/add_annoation.R "$name" "$annoation_file"
+ #   Rscript $Script_path/add_annoation.R "$name" "$annoation_file"
 fi
 #add jbrowes
 if [ -n "$genome" ] && [ -n "$gff" ]; then
@@ -203,7 +203,7 @@ if [ -n "$protein" ]; then
     protein_file=$genome_path/${name}.pro.fa
      echo $protein_file
 fi
-Rscript $Script_path/longest.R $protein_file $pro_longest_files 
+#Rscript $Script_path/longest.R $protein_file $pro_longest_files 
 if [ -f "$pro_longest_files" ]; then
     echo '4 最长蛋白质序列准备完成'
 fi
@@ -216,7 +216,7 @@ if [ -n "$cdna" ]; then
     cdna_file=$genome_path/${name}.cdna.fa
     echo $cdna_file
 fi
- Rscript $Script_path/longest.R $cdna_file $cds_longest_files 
+# Rscript $Script_path/longest.R $cdna_file $cds_longest_files 
     if [ -f "$cds_longest_files" ]; then
         echo '4 最长cds序列准备完成'
     fi
@@ -230,7 +230,7 @@ if [ -n "$mrna" ]; then
     mrna_file=$genome_path/${name}.mrna.fa
     echo $mrna_file
 fi
- Rscript $Script_path/longest.R $mrna_file $mran_longest_files  
+# Rscript $Script_path/longest.R $mrna_file $mran_longest_files  
     if [ -f "$mran_longest_files" ]; then
         echo '4 最长mrna序列准备完成'
     fi
@@ -241,15 +241,17 @@ echo '4 最长序列准备完成'
 
 #prepare blastdb genome ,longest_mrna,longest_cds,longest_protein
 echo '5 准备blastdb'
-echo "$Script_path/add_blast_db.sh "$name" "$genome_file" "$mran_longest_files" "$cds_longest_files" "$pro_longest_files" "$blast_path" "$blastdb_path""
+#echo "$Script_path/add_blast_db.sh "$name" "$genome_file" "$mran_longest_files" "$cds_longest_files" "$pro_longest_files" "$blast_path" "$blastdb_path""
+
 #bash $Script_path/add_blast_db.sh "$name" "$genome_file" "$mran_longest_files" "$cds_longest_files" "$pro_longest_files" "$blast_path" "$blastdb_path"
+bash $Script_path/add_blast_db.sh "$name" "$genome_path/${name}.genome.fa.gz" "$mran_longest_files" "$cds_longest_files" "$pro_longest_files" "$blast_path" "$blastdb_path"
 echo '5 blastdb准备完成'
 
 #preapre TF_gene_family
-if [ -n "$protein" ] && [ -n "$gff" ]; then
+if  [ -n "$gff" ]; then
     echo '6 鉴定转录因子和转录响应因子家族 '
     pro_longest_blast=$blastdb_path/protein/${name}
     echo "Rscript $Script_path/TF.R "$protein_file" "$new_gff_file" "$name" "$TF_gene_family" "$pro_longest_blast" "$Script_path" "
-    #Rscript $Script_path/TF.R "$protein_file" "$new_gff_file" "$name" "$TF_gene_family" "$pro_longest_blast" "$Script_path"
+#    Rscript $Script_path/TF.R "$protein_file" "$new_gff_file" "$name" "$TF_gene_family" "$pro_longest_blast" "$Script_path"
     echo '6 转录因子和转录响应因子家族鉴定完成'
 fi
