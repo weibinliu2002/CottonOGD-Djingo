@@ -68,7 +68,7 @@
             <span v-else-if="category === 'BP'">{{ t('biological_process') }}</span>
             <span v-else-if="category === 'CC'">{{ t('cellular_component') }}</span>
             <small class="text-muted">
-              ({{ t('total') }} {{ allResults[category].total }} {{ t('records') }})
+              ({{ t('total') }} {{ allResults[category]?.total || 0 }} {{ t('records') }})
             </small>
           </h4>
           
@@ -110,12 +110,12 @@
           <!-- Element Plus 分页组件 -->
           <div class="pagination-container">
             <el-pagination
-              @size-change="handleSizeChange(category)"
-              @current-change="handleCurrentChange(category)"
-              :current-page="currentPages[category]"
+              @size-change="(size: number) => handleSizeChange(category, size)"
+              @current-change="(page: number) => handleCurrentChange(category, page)"
+              :current-page="currentPages[category] ?? 1"
               :page-sizes="[5, 10, 25, 50]"
               :page-size="perPage"
-              :total="allResults[category].total"
+              :total="allResults[category]?.total || 0"
               layout="total, sizes, prev, pager, next, jumper"
             />
           </div>
@@ -179,11 +179,12 @@ const paginatedResults = computed(() => {
   
   const categories = ['BP', 'MF', 'CC']
   categories.forEach(category => {
-    const start = (currentPages.value[category] - 1) * perPage.value
+    const currentPage = currentPages.value[category] ?? 1
+    const start = (currentPage - 1) * perPage.value
     const end = start + perPage.value
     result[category] = {
-      results: allResults.value[category].results.slice(start, end),
-      total: allResults.value[category].total
+      results: allResults.value[category]?.results.slice(start, end) || [],
+      total: allResults.value[category]?.total || 0
     }
   })
   
