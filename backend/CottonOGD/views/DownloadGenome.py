@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 # 文件类型映射
 FILE_TYPE_MAPPING = {
     'genome': '.genome.fa.gz',
+    'gene': '.gene_genome.fa.gz',
     'cds': '.cds.fa.gz',
     'protein': '.pro.fa.gz',
     'upstream2000': '.upstream.fa.gz',

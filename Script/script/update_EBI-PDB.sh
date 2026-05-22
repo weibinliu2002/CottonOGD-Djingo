@@ -1,5 +1,5 @@
 #/usr/bin/bash
-DB=../../backend/data/EBI-PDB
+DB=../backend/data/EBI-PDB
 cd $DB
 mkdir tmp_index
 wget https://files.rcsb.org/pub/pdb/derived_data/pdb_seqres.txt.gz -O pdb_seqres.fasta.gz 
