@@ -320,8 +320,6 @@
       :modal-content="modalContent"
       :current-seq-type="currentSeqType"
       :current-gene-id="currentGeneId"
-      @download="handleDownload"
-      @copy="handleCopy"
     />
   </div>
   
@@ -935,82 +933,6 @@ const handleShowSequence = async (eventData: { type: string; title: string; cont
       type,
       realGeneId
     )
-  }
-}
-
-// 处理下载事件
-const handleDownload = ({ content, type, geneId }: { content: string; type: string; geneId: string }) => {
-  const fastaContent = `${content}`
-  
-  const blob = new Blob([fastaContent], { type: 'text/plain' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `${geneId}_${type}.fasta`
-  // 使用document.createEvent来创建一个自定义事件，避免触发页面刷新
-  const event = new MouseEvent('click', {
-    bubbles: true,
-    cancelable: true,
-    view: window
-  })
-  document.body.appendChild(a)
-  a.dispatchEvent(event)
-  document.body.removeChild(a)
-  URL.revokeObjectURL(url)
-}
-
-// 处理复制事件
-const handleCopy = ({ content, type, geneId }: { content: string; type: string; geneId: string }) => {
-  // 按照FASTA格式复制序列，包含基因ID和序列类型
-  const fastaContent = `${content}`
-  
-  // 尝试使用现代剪贴板API
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(fastaContent)
-      .then(() => {
-        ElMessage.success('序列已复制到剪贴板')
-      })
-      .catch(async (err) => {
-        console.warn('现代剪贴板API失败，尝试降级方案:', err)
-        // 降级到传统方法
-        fallbackCopyToClipboard(fastaContent)
-      })
-  } else {
-    // 浏览器不支持现代剪贴板API，使用传统方法
-    fallbackCopyToClipboard(fastaContent)
-  }
-}
-
-// 降级复制方法：使用textarea和execCommand
-const fallbackCopyToClipboard = (text: string) => {
-  // 创建临时textarea元素
-  const textarea = document.createElement('textarea')
-  textarea.value = text
-  textarea.style.position = 'fixed'
-  textarea.style.left = '-9999px'
-  textarea.style.top = '-9999px'
-  textarea.style.width = '1px'
-  textarea.style.height = '1px'
-  document.body.appendChild(textarea)
-  
-  // 选中textarea内容
-  textarea.select()
-  textarea.setSelectionRange(0, text.length) // 支持移动设备
-  
-  try {
-    // 执行复制命令
-    const successful = document.execCommand('copy')
-    if (successful) {
-      ElMessage.success('序列已复制到剪贴板')
-    } else {
-      ElMessage.error('复制失败，请手动复制')
-    }
-  } catch (err) {
-    console.error('降级复制方法失败:', err)
-    ElMessage.error('复制失败，请手动复制')
-  } finally {
-    // 清理临时元素
-    document.body.removeChild(textarea)
   }
 }
 

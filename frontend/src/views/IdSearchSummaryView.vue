@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="container mt-4">
     <el-card class="mt-4">
       <template #header>
@@ -99,8 +99,6 @@
       :modal-content="modalContent"
       :current-seq-type="currentSeqType"
       :current-gene-id="currentGeneId"
-      @download="handleDownload"
-      @copy="handleCopy"
     />
     
     <!-- 鍥炲埌椤堕儴 -->
@@ -737,25 +735,6 @@ export default {
 
       this.modalContent = allFastaContent.trim() || this.t('no_sequence_of_this_type_found')
       this.showModal = true
-    },
-
-    handleDownload({ content, type, geneId }) {
-      const blob = new Blob([content], { type: 'text/plain' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `${geneId}_${type}_all_transcripts.fasta`
-      a.click()
-      URL.revokeObjectURL(url)
-    },
-
-    handleCopy({ content }) {
-      navigator.clipboard.writeText(content).then(() => {
-        this.$message.success(this.t('sequence_copied_to_clipboard'))
-      }).catch(err => {
-        console.error('澶嶅埗澶辫触:', err)
-        this.$message.error(this.t('copy_failed_please_copy_manually'))
-      })
     },
 
     async downloadAllSequences() {

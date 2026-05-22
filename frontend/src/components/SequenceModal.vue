@@ -19,8 +19,8 @@
   </el-dialog>
 </template>
 
-<script setup>
-import { ref } from 'vue'
+<script setup lang="ts">
+import {} from 'vue'
 import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 
@@ -49,31 +49,99 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['update:showModal', 'close', 'download', 'copy'])
+const emit = defineEmits(['update:showModal', 'close'])
 
 const closeModal = () => {
   emit('update:showModal', false)
   emit('close')
 }
 
-const handleModalUpdate = (value) => {
+const handleModalUpdate = (value: boolean) => {
   emit('update:showModal', value)
 }
 
+// 下载FASTA文件
 const downloadFasta = () => {
-  emit('download', {
-    content: props.modalContent,
-    type: props.currentSeqType,
-    geneId: props.currentGeneId
-  })
+  const content = props.modalContent
+  if (!content) {
+    ElMessage.warning('没有可下载的序列内容')
+    return
+  }
+  
+  // 构建文件名
+  const geneId = props.currentGeneId || 'sequence'
+  const seqType = props.currentSeqType || 'unknown'
+  const filename = `${geneId}_${seqType}.fasta`
+  
+  // 创建下载链接
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+  
+  ElMessage.success('序列文件已下载')
 }
 
+// 复制序列到剪贴板
 const copySequence = () => {
-  emit('copy', {
-    content: props.modalContent,
-    type: props.currentSeqType,
-    geneId: props.currentGeneId
-  })
+  const content = props.modalContent
+  if (!content) {
+    ElMessage.warning('没有可复制的序列内容')
+    return
+  }
+  
+  // 尝试使用现代剪贴板API
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(content)
+      .then(() => {
+        ElMessage.success('序列已复制到剪贴板')
+      })
+      .catch((err) => {
+        console.warn('现代剪贴板API失败，尝试降级方案:', err)
+        fallbackCopyToClipboard(content)
+      })
+  } else {
+    // 浏览器不支持现代剪贴板API，使用传统方法
+    fallbackCopyToClipboard(content)
+  }
+}
+
+// 降级复制方法：使用textarea和execCommand
+const fallbackCopyToClipboard = (text: string) => {
+  // 创建临时textarea元素
+  const textarea = document.createElement('textarea')
+  textarea.value = text
+  textarea.style.position = 'fixed'
+  textarea.style.left = '-9999px'
+  textarea.style.top = '-9999px'
+  textarea.style.width = '1px'
+  textarea.style.height = '1px'
+  document.body.appendChild(textarea)
+  
+  // 选中textarea内容
+  textarea.select()
+  textarea.setSelectionRange(0, text.length) // 支持移动设备
+  
+  try {
+    // 执行复制命令
+    const successful = document.execCommand('copy')
+    if (successful) {
+      ElMessage.success('序列已复制到剪贴板')
+    } else {
+      ElMessage.error('复制失败，请手动复制')
+    }
+  } catch (err) {
+    console.error('降级复制方法失败:', err)
+    ElMessage.error('复制失败，请手动复制')
+  } finally {
+    // 清理临时元素
+    document.body.removeChild(textarea)
+  }
 }
 </script>
 
