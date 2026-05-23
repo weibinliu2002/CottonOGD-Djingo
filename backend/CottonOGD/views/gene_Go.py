@@ -534,7 +534,7 @@ def execute_r_enrichment(gene_list, gene2go_dict, background_gene2go_dict, go_te
 
 
 def execute_python_enrichment(gene_list, gene_id_map, gene_go_data, background_go_data, go_term_info, p_value_threshold, genome_id):
-    """使用Python执行GO富集分析"""
+    """使用Python执行GO富集分析（优先gseapy，失败则回退Fisher）"""
     gene_ids = list(gene_id_map.values())
     
     if not gene_ids:
@@ -547,9 +547,10 @@ def execute_python_enrichment(gene_list, gene_id_map, gene_go_data, background_g
             }
         })
     
-    
     # 获取背景基因总数
     total_background_genes = len(set([row[0] for row in background_go_data]))
+    # 构建id->gene_name映射
+    gene_id_to_name = {v: k for k, v in gene_id_map.items()}
     
     # 构建background_data
     background_data = [(row[1], '', '') for row in background_go_data]
@@ -606,7 +607,67 @@ def execute_python_enrichment(gene_list, gene_id_map, gene_go_data, background_g
             if go_id not in background_descriptions:
                 background_descriptions[go_id] = description
     
-    # 计算富集结果
+    # 优先使用gseapy.enrich进行富集
+    try:
+        import gseapy as gp
+        gene_sets = defaultdict(set)
+        for gene_id, go_id, _, _ in gene_go_data:
+            if go_id and gene_id in gene_id_to_name:
+                gene_sets[go_id].add(gene_id_to_name[gene_id])
+
+        bg_gene_sets = defaultdict(set)
+        for gene_id, go_id in background_go_data:
+            if go_id and gene_id in gene_id_to_name:
+                bg_gene_sets[go_id].add(gene_id_to_name[gene_id])
+
+        gene_sets = {k: sorted(list(v)) for k, v in bg_gene_sets.items() if v}
+        valid_query = [g for g in gene_list if g in set(gene_id_to_name.values())]
+
+        if gene_sets and valid_query:
+            enr = gp.enrich(
+                gene_list=valid_query,
+                gene_sets=gene_sets,
+                background=sorted(set(gene_id_to_name.values())),
+                no_plot=True,
+                outdir=None,
+            )
+            if enr is not None and hasattr(enr, "results") and not enr.results.empty:
+                enrichment_results = []
+                for _, row in enr.results.iterrows():
+                    go_id = row.get('Term', '')
+                    go_info = go_term_info.get(go_id, {'name': '', 'namespace': ''})
+                    enrichment_results.append({
+                        'go_id': go_id,
+                        'description': {
+                            'name': go_info.get('name', go_id),
+                            'definition': ''
+                        },
+                        'gene_ratio': row.get('Overlap', ''),
+                        'bg_ratio': '',
+                        'rich_factor': 0,
+                        'fold_enrichment': row.get('Odds Ratio', 0),
+                        'z_score': row.get('Combined Score', 0),
+                        'p_value': row.get('P-value', 1),
+                        'corrected_p_value': row.get('Adjusted P-value', row.get('P-value', 1)),
+                        'genes': str(row.get('Genes', '')).split(';') if row.get('Genes', '') else [],
+                        'go_type': normalize_go_type(go_info.get('namespace', ''))
+                    })
+                enrichment_results.sort(key=lambda x: x['p_value'])
+                filtered_results = [r for r in enrichment_results if r.get('p_value', 1.0) <= p_value_threshold]
+                logger.info(f"Python GO(gseapy)富集分析结果: {len(filtered_results)} 条显著富集项")
+                return JsonResponse({
+                    'status': 'success',
+                    'data': {
+                        'results': filtered_results,
+                        'input_gene_count': len(valid_query),
+                        'background_gene_count': total_background_genes,
+                        'method': 'Python_gseapy'
+                    }
+                })
+    except Exception as e:
+        logger.warning(f"gseapy GO富集失败，回退到Fisher: {str(e)}")
+
+    # 回退：Fisher精确检验
     enrichment_results = []
     for go_id, genes in input_go_terms.items():
         a = len(genes)
