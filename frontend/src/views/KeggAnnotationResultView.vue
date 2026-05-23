@@ -81,8 +81,10 @@ const { t } = useI18n()
 import { ref, onMounted, nextTick, inject, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import Chart from 'chart.js/auto'
+import { useEnrichmentStore } from '@/stores/enrichmentStore'
 
 const route = useRoute()
+const enrichmentStore = useEnrichmentStore()
 const showLoading = inject('showLoading') as (() => void) | undefined
 const hideLoading = inject('hideLoading') as (() => void) | undefined
 
@@ -110,6 +112,9 @@ const fetchResults = async () => {
   try {
     // 从URL参数获取gene_id
     const geneId = route.query.gene_id as string || ''
+    // 从Pinia store获取基因组信息
+    const genomeId = enrichmentStore.selectedGenome || ''
+    
     if (!geneId) {
       errorMessage.value = '缺少基因ID'
       hasResults.value = false
@@ -119,7 +124,8 @@ const fetchResults = async () => {
     // 使用配置好的axios实例调用后端API获取结果
     const responseData = await axios.get('/CottonOGD_api/kegg_annotation/', {
       params: {
-        gene_id: geneId
+        gene_id: geneId,
+        genome_id: genomeId
       }
     }) as any
     

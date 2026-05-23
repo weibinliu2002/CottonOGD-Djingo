@@ -104,8 +104,8 @@ DATABASES = {
         "NAME": "cottonogd-ortho",
         "USER": "root",
         "PASSWORD": "1234",
-        "HOST": "localhost",
-       #"HOST": "172.28.226.114",
+        #"HOST": "localhost",
+        "HOST": "172.28.226.114",
         "PORT": "3306",
          'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
@@ -154,15 +154,18 @@ AUTH_PASSWORD_VALIDATORS = [
 # 缓存配置
 CACHES = {
     'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'unique-snowflake',
-        'TIMEOUT': 300,  # 默认缓存过期时间为5分钟
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': 'redis://localhost:6379',
+        'TIMEOUT': None,  # 默认缓存过期时间为5分钟
         'OPTIONS': {
+            'db': 1,
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'KEY_PREFIX': 'cottonogd:',
             'MAX_ENTRIES': 1000  # 最大缓存条目数
         }
     }
 }
-
+SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 

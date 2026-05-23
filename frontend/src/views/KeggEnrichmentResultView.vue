@@ -158,10 +158,11 @@ const fetchResults = async () => {
   try {
     // 从Pinia store获取数据
     const geneId = enrichmentStore.geneList || ''
+    const genomeId = enrichmentStore.selectedGenome || ''
     const pValueThreshold = enrichmentStore.pValue || 0.05
     const qValueThreshold = enrichmentStore.qValue || 0.05
     
-    console.log('从store获取的数据:', { geneId, pValueThreshold, qValueThreshold })
+    console.log('从store获取的数据:', { geneId, genomeId, pValueThreshold, qValueThreshold })
     
     if (!geneId) {
       errorMessage.value = 'Missing gene_id parameter'
@@ -174,6 +175,7 @@ const fetchResults = async () => {
     // 使用multipart/form-data格式发送请求（根据API文档）
     const formData = new FormData()
     formData.append('gene_id', geneId)
+    formData.append('genome_id', genomeId)
     formData.append('p_value_threshold', String(pValueThreshold))
     formData.append('q_value_threshold', String(qValueThreshold))
     

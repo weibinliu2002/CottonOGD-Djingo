@@ -93,10 +93,12 @@ const { t } = useI18n()
 import { ref, computed, onMounted, inject } from 'vue'
 import { useRoute } from 'vue-router'
 import httpInstance from '../utils/http'
+import { useEnrichmentStore } from '@/stores/enrichmentStore'
 
 const route = useRoute()
 const showLoading = inject('showLoading') as (() => void) | undefined
 const hideLoading = inject('hideLoading') as (() => void) | undefined
+const enrichmentStore = useEnrichmentStore()
 
 // 页面数据
 const perPage = ref(10)
@@ -156,11 +158,16 @@ const loadResults = async () => {
       return
     }
     
+    // 从 store 获取基因组信息
+    const genomeId = enrichmentStore.selectedGenome || ''
+    console.log('获取的基因组:', genomeId)
+    
     // 调用后端API获取数据（只调用一次）
     console.log('准备调用API')
     const responseData = await httpInstance.get('/CottonOGD_api/go_annotation/', {
       params: {
-        gene_id: geneListParam
+        gene_id: geneListParam,
+        genome_id: genomeId
       }
     }) as any
     

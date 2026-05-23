@@ -98,6 +98,7 @@ export const useEnrichmentStore = defineStore('enrichment', () => {
   const geneList = ref('');
   const pValue = ref(0.05);
   const qValue = ref(0.05);
+  const selectedGenome = ref('');
   const enrichmentResults = ref<GoEnrichmentResult | KeggEnrichmentResult | null>(null);
   const loading = ref(false);
   const error = ref<string | null>(null);
@@ -319,6 +320,7 @@ Gh_D01G0005`;
     geneList,
     pValue,
     qValue,
+    selectedGenome,
     enrichmentResults,
     loading,
     error,

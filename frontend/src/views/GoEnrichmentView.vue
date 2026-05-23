@@ -23,6 +23,23 @@
             </el-button>
           </div>
         </el-form-item>
+
+        <el-form-item :label="t('select_genome')">
+          <el-select
+            v-model="selectedGenome"
+            :placeholder="t('select_genome')"
+            style="width: 100%"
+            :loading="genomeLoading"
+            filterable
+          >
+            <el-option
+              v-for="genome in genomeOptions"
+              :key="genome.value"
+              :label="genome.label"
+              :value="genome.value"
+            />
+          </el-select>
+        </el-form-item>
         
         <el-form-item>
           <el-row :gutter="20">
@@ -90,15 +107,28 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Search } from '@element-plus/icons-vue'
 import { useEnrichmentStore } from '@/stores/enrichmentStore'
+import { useGenomeSelector } from '@/composables/useGenomeBrowser'
 
 const router = useRouter()
 const { t } = useI18n()
 const enrichmentStore = useEnrichmentStore()
+
+// 基因组选择
+const { genomeOptions, genomeLoading, ensureGenomesLoaded, pickDefaultGenome } = useGenomeSelector()
+const selectedGenome = ref('')
+
+onMounted(async () => {
+  await ensureGenomesLoaded()
+  const defaultGenome = pickDefaultGenome()
+  if (defaultGenome) {
+    selectedGenome.value = defaultGenome
+  }
+})
 
 // 表单数据
 const geneList = ref('')
@@ -145,11 +175,17 @@ const handleSubmit = async () => {
     return
   }
   
+  if (!selectedGenome.value) {
+    error.value = 'Please select genome'
+    return
+  }
+  
   try {
     // 使用Pinia store存储数据
     enrichmentStore.geneList = geneList.value
     enrichmentStore.pValue = pValue.value
     enrichmentStore.qValue = qValue.value
+    enrichmentStore.selectedGenome = selectedGenome.value
     
     // 跳转到结果页面
     router.push({

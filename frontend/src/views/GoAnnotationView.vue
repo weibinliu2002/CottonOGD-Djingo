@@ -23,6 +23,23 @@
             </el-button>
           </div>
         </el-form-item>
+
+        <el-form-item :label="t('select_genome')">
+          <el-select
+            v-model="selectedGenome"
+            :placeholder="t('select_genome')"
+            style="width: 100%"
+            :loading="genomeLoading"
+            filterable
+          >
+            <el-option
+              v-for="genome in genomeOptions"
+              :key="genome.value"
+              :label="genome.label"
+              :value="genome.value"
+            />
+          </el-select>
+        </el-form-item>
         
         <el-form-item label="Results per page">
           <el-select
@@ -61,13 +78,28 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Search } from '@element-plus/icons-vue'
+import { useEnrichmentStore } from '@/stores/enrichmentStore'
+import { useGenomeSelector } from '@/composables/useGenomeBrowser'
 
 const router = useRouter()
 const { t } = useI18n()
+const enrichmentStore = useEnrichmentStore()
+
+// 基因组选择
+const { genomeOptions, genomeLoading, ensureGenomesLoaded, pickDefaultGenome } = useGenomeSelector()
+const selectedGenome = ref('')
+
+onMounted(async () => {
+  await ensureGenomesLoaded()
+  const defaultGenome = pickDefaultGenome()
+  if (defaultGenome) {
+    selectedGenome.value = defaultGenome
+  }
+})
 
 const geneList = ref('')
 const perPage = ref(20)
@@ -99,15 +131,21 @@ const handleSubmit = async () => {
     return
   }
   
+  if (!selectedGenome.value) {
+    error.value = 'Please select genome'
+    return
+  }
+  
   try {
-    // 处理基因列表，将换行符替换为空格，确保URL参数正确传递
-    const processedGeneList = geneList.value.trim().replace(/\n/g, ' ').replace(/\s+/g, ' ')
+    // 使用Pinia store存储数据
+    enrichmentStore.geneList = geneList.value
+    enrichmentStore.selectedGenome = selectedGenome.value
     
     // 直接跳转到结果页面，并传递参数
     router.push({
       path: '/tools/go-annotation/results',
       query: {
-        gene_id: processedGeneList,
+        gene_id: geneList.value.trim().replace(/\n/g, ' ').replace(/\s+/g, ' '),
         per_page: perPage.value
       }
     })

@@ -9,7 +9,7 @@
         </div>
       </template>
       
-      <el-form @submit.prevent="submitForm" label-width="350px">
+      <el-form @submit.prevent="submitForm" label-width="250px">
         <el-form-item label="Enter Gene IDs (one per line or space/comma separated)">
           <el-input
             type="textarea"
@@ -28,6 +28,23 @@
               {{ t('load_example') }}
             </el-button>
           </div>
+        </el-form-item>
+
+        <el-form-item :label="t('select_genome')">
+          <el-select
+            v-model="selectedGenome"
+            :placeholder="t('select_genome')"
+            style="width: 100%"
+            :loading="genomeLoading"
+            filterable
+          >
+            <el-option
+              v-for="genome in genomeOptions"
+              :key="genome.value"
+              :label="genome.label"
+              :value="genome.value"
+            />
+          </el-select>
         </el-form-item>
         
         <el-form-item>
@@ -49,17 +66,30 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from '../utils/http'
 import { ElMessage } from 'element-plus'
+import { useGenomeSelector } from '@/composables/useGenomeBrowser'
 
 const geneIds = ref('')
 const isLoading = ref(false)
 const router = useRouter()
+
+// 基因组选择
+const { genomeOptions, genomeLoading, ensureGenomesLoaded, pickDefaultGenome } = useGenomeSelector()
+const selectedGenome = ref('')
+
+onMounted(async () => {
+  await ensureGenomesLoaded()
+  const defaultGenome = pickDefaultGenome()
+  if (defaultGenome) {
+    selectedGenome.value = defaultGenome
+  }
+})
 
 const fillExample = () => {
   const exampleIDs = `Kirkii_Juiced.00g000010
@@ -94,8 +124,18 @@ const submitForm = async () => {
     return;
   }
 
+  if (!selectedGenome.value) {
+    ElMessage.error(t('please_select_genome'));
+    return;
+  }
+
   isLoading.value = true
   try {
+    // 使用 Pinia store 存储基因组信息
+    const { useEnrichmentStore } = await import('@/stores/enrichmentStore')
+    const enrichmentStore = useEnrichmentStore()
+    enrichmentStore.selectedGenome = selectedGenome.value
+    
     // 直接跳转到结果页面，并传递参数
     router.push({
       path: '/tools/kegg-annotation/results',
@@ -103,7 +143,7 @@ const submitForm = async () => {
         gene_id: geneIds.value
       }
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error(t('error') + ' submitting form:', error)
     ElMessage.error(t('error') + ' submitting form: ' + (error.message || 'Unknown error'));
   } finally {

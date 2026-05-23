@@ -29,6 +29,23 @@
             </el-button>
           </div>
         </el-form-item>
+
+        <el-form-item :label="t('select_genome')">
+          <el-select
+            v-model="selectedGenome"
+            :placeholder="t('select_genome')"
+            style="width: 100%"
+            :loading="genomeLoading"
+            filterable
+          >
+            <el-option
+              v-for="genome in genomeOptions"
+              :key="genome.value"
+              :label="genome.label"
+              :value="genome.value"
+            />
+          </el-select>
+        </el-form-item>
         
         <el-form-item>
           <el-row :gutter="20">
@@ -81,11 +98,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { useEnrichmentStore } from '@/stores/enrichmentStore'
+import { useGenomeSelector } from '@/composables/useGenomeBrowser'
 
 const { t } = useI18n()
 const geneList = ref('')
@@ -94,6 +112,18 @@ const qValueThreshold = ref(0.05)
 const isLoading = ref(false)
 const router = useRouter()
 const enrichmentStore = useEnrichmentStore()
+
+// 基因组选择
+const { genomeOptions, genomeLoading, ensureGenomesLoaded, pickDefaultGenome } = useGenomeSelector()
+const selectedGenome = ref('')
+
+onMounted(async () => {
+  await ensureGenomesLoaded()
+  const defaultGenome = pickDefaultGenome()
+  if (defaultGenome) {
+    selectedGenome.value = defaultGenome
+  }
+})
 
 const fillExample = () => {
   const exampleIDs = `Kirkii_Juiced.00g000010
@@ -135,6 +165,11 @@ const submitForm = async () => {
     return;
   }
 
+  if (!selectedGenome.value) {
+    ElMessage.error(t('please_select_genome'));
+    return;
+  }
+
   if (pValueThreshold.value < 0 || pValueThreshold.value > 1) {
     ElMessage.error(t('p_value_threshold_must_be_between_0_and_1'));
     return;
@@ -151,6 +186,7 @@ const submitForm = async () => {
     enrichmentStore.geneList = geneList.value
     enrichmentStore.pValue = pValueThreshold.value
     enrichmentStore.qValue = qValueThreshold.value
+    enrichmentStore.selectedGenome = selectedGenome.value
     
     // 跳转到结果页面
     router.push({

@@ -198,7 +198,7 @@ const fetchResults = async () => {
   try {
     // 从Pinia store获取数据
     const geneId = enrichmentStore.geneList || ''
-    const genomeId = 'G.kirkii_ISU_ISU_v3.0'
+    const genomeId = enrichmentStore.selectedGenome || 'G.kirkii_ISU_ISU_v3.0'
     const pValueThreshold = enrichmentStore.pValue || 0.05
     const qValueThreshold = enrichmentStore.qValue || 0.05
     
