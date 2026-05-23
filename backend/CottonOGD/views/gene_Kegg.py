@@ -13,27 +13,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 from io import BytesIO
 import base64
-from scipy.stats import fisher_exact
-from statsmodels.stats.multitest import multipletests
 from matplotlib.gridspec import GridSpec
 import pandas as pd
 from textwrap import wrap
-import math
 
-_logger = logging.getLogger(__name__)
-
-_clusterProfiler_cache = None
-
-def _get_clusterProfiler():
-    global _clusterProfiler_cache
-    if _clusterProfiler_cache is None:
-        from rpy2.robjects.packages import importr
-        _clusterProfiler_cache = importr('clusterProfiler')
-        _logger.info("clusterProfiler 包已缓存")
-    return _clusterProfiler_cache
 from CottonOGD.models import GeneMaster
 
 logger = logging.getLogger(__name__)
+
 
 @api_view(['GET'])
 def kegg_annotation(request):
@@ -66,8 +53,6 @@ def kegg_annotation(request):
                 }
             })
 
-        # 获取基因ID映射（geneid -> id）
-        
         gene_masters = GeneMaster.objects.filter(genome_id=genome_id, geneid__in=gene_list)
         gene_id_map = {gm.geneid: gm.id for gm in gene_masters}
         gene_id_list = list(gene_id_map.values())
@@ -233,10 +218,11 @@ def kegg_annotation(request):
         'error': 'Method not allowed'
     })
 
+
 @api_view(['POST'])
 def kegg_enrichment(request):
     """
-    KEGG富集分析API - 先提取数据，再决定使用R或Python进行富集分析
+    KEGG富集分析API - 使用gseapy进行富集分析
     """
     if request.method == 'POST':
         gene_input = request.POST.get('gene_id', '').strip()
@@ -316,254 +302,52 @@ def kegg_enrichment(request):
                     'category_name': category_name
                 }
 
-            background_gene_ids = set([row[0] for row in background_kegg_data])
-            if background_gene_ids and genome_id:
-                cursor.execute("""
-                    SELECT gm.id, gm.geneid
-                    FROM genemaster gm
-                    WHERE gm.id IN %s AND gm.genome_id = %s
-                """, [tuple(background_gene_ids), genome_id])
-            elif background_gene_ids:
-                cursor.execute("""
-                    SELECT gm.id, gm.geneid
-                    FROM genemaster gm
-                    WHERE gm.id IN %s
-                """, [tuple(background_gene_ids)])
-            else:
-                cursor.execute("SELECT 1 FROM DUAL WHERE 1=0")
+        gene_id_to_name = {v: k for k, v in gene_id_map.items()}
 
-            background_gene_name_map = {row[0]: row[1] for row in cursor.fetchall()}
+        input_kegg_terms = defaultdict(list)
+        input_genes = set()
 
-        gene2kegg_dict = {}
         for gene_id, kegg_id in gene_kegg_data:
             gene_name = next((k for k, v in gene_id_map.items() if v == gene_id), str(gene_id))
-            if gene_name not in gene2kegg_dict:
-                gene2kegg_dict[gene_name] = []
+            input_genes.add(gene_name)
             if kegg_id:
-                gene2kegg_dict[gene_name].append(kegg_id)
+                input_kegg_terms[kegg_id].append(gene_name)
 
-        background_gene2kegg_dict = {}
-        for gene_id, kegg_id in background_kegg_data:
-            gene_name = background_gene_name_map.get(gene_id, str(gene_id))
-            if gene_name not in background_gene2kegg_dict:
-                background_gene2kegg_dict[gene_name] = []
-            if kegg_id:
-                background_gene2kegg_dict[gene_name].append(kegg_id)
+        total_input_genes = len(input_genes)
+        total_background_genes = len(set([row[0] for row in background_kegg_data]))
 
-        background_keggs = set([row[1] for row in background_kegg_data if row[1]])
-
-        logger.info(f"KEGG富集分析 - 输入基因数: {len(gene_list)}")
-        logger.info(f"KEGG富集分析 - 有KEGG注释的基因数: {len(gene2kegg_dict)}")
-        logger.info(f"KEGG富集分析 - 背景通路数: {len(background_keggs)}")
-
-        if not gene2kegg_dict:
+        if total_input_genes == 0:
             return JsonResponse({
                 'status': 'success',
                 'data': {
                     'results': [],
-                    'input_gene_count': len(gene_list),
-                    'background_gene_count': len(background_gene2kegg_dict)
+                    'input_gene_count': 0,
+                    'background_gene_count': total_background_genes
                 }
             })
 
         try:
-            import rpy2.robjects as ro
+            import gseapy as gp
 
-            logger.info("R环境可用，调用R富集分析...")
+            logger.info("使用gseapy进行KEGG富集分析...")
 
-            return execute_r_kegg_enrichment(
-                gene_list, gene2kegg_dict, background_gene2kegg_dict,
-                pathway_info, p_value_threshold
-            )
+            kegg_gene_sets = defaultdict(set)
+            for gene_id, kegg_id in background_kegg_data:
+                if kegg_id and gene_id in gene_id_to_name:
+                    kegg_gene_sets[kegg_id].add(gene_id_to_name[gene_id])
 
-        except ImportError as e:
-            logger.warning(f"R环境不可用，使用Python实现: {str(e)}")
-            return execute_python_kegg_enrichment(
-                gene_list, gene_id_map, gene_kegg_data,
-                background_kegg_data, pathway_info,
-                p_value_threshold, genome_id
-            )
-        except Exception as e:
-            logger.error(f"R执行失败，回退到Python: {str(e)}")
-            return execute_python_kegg_enrichment(
-                gene_list, gene_id_map, gene_kegg_data,
-                background_kegg_data, pathway_info,
-                p_value_threshold, genome_id
-            )
+            if not kegg_gene_sets or not input_genes:
+                logger.warning("没有有效的KEGG基因集数据")
+                return JsonResponse({
+                    'status': 'success',
+                    'data': {
+                        'results': [],
+                        'input_gene_count': total_input_genes,
+                        'background_gene_count': total_background_genes,
+                        'method': 'Python_gseapy'
+                    }
+                })
 
-    return JsonResponse({
-        'status': 'error',
-        'error': 'Method not allowed'
-    })
-
-
-def execute_r_kegg_enrichment(gene_list, gene2kegg_dict, background_gene2kegg_dict, pathway_info, p_value_threshold):
-    """使用R的clusterProfiler执行KEGG富集分析"""
-    import rpy2.robjects as ro
-    from rpy2.robjects import pandas2ri
-    from rpy2.robjects.conversion import localconverter
-    from rpy2.robjects.packages import importr
-    import pandas as pd
-
-    converter = ro.default_converter + pandas2ri.converter
-
-    valid_genes = [g for g in gene_list if g in gene2kegg_dict]
-    logger.info(f"准备调用clusterProfiler::enricher，基因数量: {len(valid_genes)}")
-
-    if len(valid_genes) == 0:
-        logger.warning("没有有效的基因数据")
-        raise ValueError("没有有效的基因数据")
-
-    term2gene_df = pd.DataFrame([
-        {'gene': gene, 'kegg_id': kegg_id}
-        for gene, keggs in background_gene2kegg_dict.items()
-        for kegg_id in keggs
-    ])
-
-    if term2gene_df.empty:
-        logger.warning("没有有效的KEGG注释数据")
-        raise ValueError("没有有效的KEGG注释数据")
-
-    term2gene_df = term2gene_df[['kegg_id', 'gene']].rename(columns={'kegg_id': 'term'})
-
-    term2name_df = pd.DataFrame([
-        {'term': ko_id, 'name': info.get('name', '')}
-        for ko_id, info in pathway_info.items()
-    ])
-
-    with localconverter(converter):
-        r_term2gene = ro.conversion.py2rpy(term2gene_df)
-
-        r_term2name = ro.NULL
-        if not term2name_df.empty:
-            r_term2name = ro.conversion.py2rpy(term2name_df)
-
-        r_gene_list = ro.StrVector(valid_genes)
-        background_genes = list(background_gene2kegg_dict.keys())
-        r_universe = ro.StrVector(background_genes)
-
-        logger.info(f"背景基因数量: {len(background_genes)}")
-        logger.info(f"KEGG通路-基因关系数量: {len(term2gene_df)}")
-
-        clusterProfiler = _get_clusterProfiler()
-
-        try:
-            kegg_result = clusterProfiler.enricher(
-                gene = r_gene_list,
-                universe = r_universe,
-                pAdjustMethod = ro.StrVector(['fdr']),
-                qvalueCutoff = ro.FloatVector([p_value_threshold]),
-                TERM2GENE = r_term2gene,
-                TERM2NAME = r_term2name,
-                minGSSize = ro.IntVector([1]),
-                maxGSSize = ro.IntVector([10000])
-            )
-        except Exception as e:
-            logger.error(f"R enricher调用失败: {str(e)}")
-            raise
-
-        logger.info("R富集分析完成")
-
-        if kegg_result is None or ro.r['is.null'](kegg_result)[0]:
-            logger.warning("R富集分析返回NULL，没有找到显著富集的通路")
-            raise ValueError("R富集分析没有找到显著富集的通路")
-
-        kegg_df = ro.r['as.data.frame'](kegg_result)
-
-    enrichment_results = []
-    for _, row in kegg_df.iterrows():
-        kegg_id = row.get('ID', '')
-        pathway = pathway_info.get(kegg_id, {})
-
-        gene_ratio = row.get('GeneRatio', '')
-        bg_ratio = row.get('BgRatio', '')
-
-        match = gene_ratio.split('/')
-        a = int(match[0]) if match and match[0].isdigit() else 0
-        total_input = int(match[1]) if len(match) > 1 and match[1].isdigit() else 0
-
-        match_bg = bg_ratio.split('/')
-        c = int(match_bg[0]) if match_bg and match_bg[0].isdigit() else 0
-        total_bg = int(match_bg[1]) if len(match_bg) > 1 and match_bg[1].isdigit() else 0
-
-        fold_enrichment = (a / c) if c > 0 else 0
-
-        enrichment_results.append({
-            'pathway_id': kegg_id,
-            'description': {
-                'name': pathway.get('name', kegg_id),
-                'definition': pathway.get('full_name', '')
-            },
-            'gene_ratio': gene_ratio,
-            'bg_ratio': bg_ratio,
-            'rich_factor': fold_enrichment,
-            'fold_enrichment': fold_enrichment,
-            'p_value': row.get('pvalue', 1.0),
-            'corrected_p_value': row.get('qvalue', 1.0),
-            'gene_count': a,
-            'category_id': pathway.get('category_id', ''),
-            'category_name': pathway.get('category_name', '')
-        })
-
-    plot_image = None
-    if enrichment_results:
-        enrichment_results.sort(key=lambda x: x['p_value'])
-        plot_image = plot_kegg_enrichment(enrichment_results)
-
-    logger.info(f"R KEGG富集分析结果: {len(enrichment_results)} 条显著富集项")
-
-    return JsonResponse({
-        'status': 'success',
-        'data': {
-            'results': enrichment_results,
-            'input_gene_count': len(valid_genes),
-            'background_gene_count': len(background_genes),
-            'plot_image': plot_image,
-            'method': 'R_clusterProfiler'
-        }
-    })
-
-
-def execute_python_kegg_enrichment(gene_list, gene_id_map, gene_kegg_data, background_kegg_data, pathway_info, p_value_threshold, genome_id):
-    """使用Python执行KEGG富集分析（优先gseapy，失败则回退Fisher）"""
-    gene_id_to_name = {v: k for k, v in gene_id_map.items()}
-
-    input_kegg_terms = defaultdict(list)
-    input_genes = set()
-
-    for gene_id, kegg_id in gene_kegg_data:
-        gene_name = next((k for k, v in gene_id_map.items() if v == gene_id), str(gene_id))
-        input_genes.add(gene_name)
-        if kegg_id:
-            input_kegg_terms[kegg_id].append(gene_name)
-
-    background_gene2kegg = defaultdict(list)
-    for gene_id, kegg_id in background_kegg_data:
-        if kegg_id:
-            background_gene2kegg[kegg_id].append(gene_id)
-
-    total_input_genes = len(input_genes)
-    total_background_genes = len(background_gene2kegg)
-
-    if total_input_genes == 0:
-        return JsonResponse({
-            'status': 'success',
-            'data': {
-                'results': [],
-                'input_gene_count': 0,
-                'background_gene_count': total_background_genes
-            }
-        })
-
-    # 优先使用gseapy
-    try:
-        import gseapy as gp
-        kegg_gene_sets = defaultdict(set)
-        for gene_id, kegg_id in background_kegg_data:
-            if kegg_id and gene_id in gene_id_to_name:
-                kegg_gene_sets[kegg_id].add(gene_id_to_name[gene_id])
-
-        if kegg_gene_sets and input_genes:
             enr = gp.enrich(
                 gene_list=sorted(list(input_genes)),
                 gene_sets={k: sorted(list(v)) for k, v in kegg_gene_sets.items() if v},
@@ -571,112 +355,80 @@ def execute_python_kegg_enrichment(gene_list, gene_id_map, gene_kegg_data, backg
                 no_plot=True,
                 outdir=None
             )
-            if enr is not None and hasattr(enr, "results") and not enr.results.empty:
-                enrichment_results = []
-                for _, row in enr.results.iterrows():
-                    pathway_id = row.get('Term', '')
-                    pathway = pathway_info.get(pathway_id, {})
-                    enrichment_results.append({
-                        'pathway_id': pathway_id,
-                        'description': {
-                            'name': pathway.get('name', pathway_id),
-                            'definition': pathway.get('full_name', '')
-                        },
-                        'gene_ratio': row.get('Overlap', ''),
-                        'bg_ratio': '',
-                        'rich_factor': 0,
-                        'fold_enrichment': row.get('Odds Ratio', 0),
-                        'p_value': row.get('P-value', 1),
-                        'corrected_p_value': row.get('Adjusted P-value', row.get('P-value', 1)),
-                        'gene_count': int(str(row.get('Overlap', '0/0')).split('/')[0]) if row.get('Overlap') else 0,
-                        'genes': str(row.get('Genes', '')).split(';') if row.get('Genes', '') else [],
-                        'category_id': pathway.get('category_id', ''),
-                        'category_name': pathway.get('category_name', '')
-                    })
-                enrichment_results.sort(key=lambda x: x['p_value'])
-                filtered_results = [r for r in enrichment_results if r.get('p_value', 1.0) <= p_value_threshold]
-                plot_image = plot_kegg_enrichment(filtered_results) if filtered_results else None
+
+            if enr is None or not hasattr(enr, "results") or enr.results.empty:
+                logger.warning("gseapy没有返回富集结果")
                 return JsonResponse({
                     'status': 'success',
                     'data': {
-                        'results': filtered_results,
+                        'results': [],
                         'input_gene_count': total_input_genes,
                         'background_gene_count': total_background_genes,
-                        'plot_image': plot_image,
                         'method': 'Python_gseapy'
                     }
                 })
-    except Exception as e:
-        logger.warning(f"gseapy KEGG富集失败，回退到Fisher: {str(e)}")
 
-    enrichment_results = []
+            enrichment_results = []
+            for _, row in enr.results.iterrows():
+                pathway_id = row.get('Term', '')
+                pathway = pathway_info.get(pathway_id, {})
+                
+                overlap_str = str(row.get('Overlap', '0/0'))
+                match = overlap_str.split('/')
+                gene_count = int(match[0]) if match and match[0].isdigit() else 0
 
-    for kegg_id, genes in input_kegg_terms.items():
-        a = len(genes)
-        b = total_input_genes - a
-        c = len(background_gene2kegg.get(kegg_id, []))
-        d = total_background_genes - c
+                enrichment_results.append({
+                    'pathway_id': pathway_id,
+                    'description': {
+                        'name': pathway.get('name', pathway_id),
+                        'definition': pathway.get('full_name', '')
+                    },
+                    'gene_ratio': overlap_str,
+                    'bg_ratio': '',
+                    'rich_factor': row.get('Odds Ratio', 0),
+                    'fold_enrichment': row.get('Odds Ratio', 0),
+                    'p_value': row.get('P-value', 1),
+                    'corrected_p_value': row.get('Adjusted P-value', row.get('P-value', 1)),
+                    'gene_count': gene_count,
+                    'genes': str(row.get('Genes', '')).split(';') if row.get('Genes', '') else [],
+                    'category_id': pathway.get('category_id', ''),
+                    'category_name': pathway.get('category_name', '')
+                })
 
-        if c == 0:
-            continue
+            enrichment_results.sort(key=lambda x: x['p_value'])
+            filtered_results = [r for r in enrichment_results if r.get('p_value', 1.0) <= p_value_threshold]
+            
+            plot_image = plot_kegg_enrichment(filtered_results) if filtered_results else None
 
-        try:
-            _, p_value = fisher_exact([[a, b], [c, d]], alternative='greater')
+            logger.info(f"gseapy KEGG富集分析结果: {len(filtered_results)} 条显著富集项")
 
-            fold_enrichment = (a / (a + b)) / (c / (c + d)) if (c + d) > 0 else 0
+            return JsonResponse({
+                'status': 'success',
+                'data': {
+                    'results': filtered_results,
+                    'input_gene_count': total_input_genes,
+                    'background_gene_count': total_background_genes,
+                    'plot_image': plot_image,
+                    'method': 'Python_gseapy'
+                }
+            })
 
-            pathway = pathway_info.get(kegg_id, {})
-
-            enrichment_results.append({
-                'pathway_id': kegg_id,
-                'description': {
-                    'name': pathway.get('name', kegg_id),
-                    'definition': pathway.get('full_name', '')
-                },
-                'gene_ratio': f"{a}/{total_input_genes}",
-                'bg_ratio': f"{c}/{total_background_genes}",
-                'rich_factor': a / c if c > 0 else 0,
-                'fold_enrichment': fold_enrichment,
-                'p_value': p_value,
-                'gene_count': a,
-                'genes': genes,
-                'category_id': pathway.get('category_id', ''),
-                'category_name': pathway.get('category_name', '')
+        except ImportError as e:
+            logger.error(f"gseapy未安装: {str(e)}")
+            return JsonResponse({
+                'status': 'error',
+                'error': 'gseapy is not installed'
             })
         except Exception as e:
-            logger.error(f"Error calculating enrichment for {kegg_id}: {str(e)}")
-            continue
-
-    if enrichment_results:
-        p_values = [r['p_value'] for r in enrichment_results]
-        try:
-            _, corrected_p_values, _, _ = multipletests(p_values, method='fdr_bh')
-            for i, p in enumerate(corrected_p_values):
-                enrichment_results[i]['corrected_p_value'] = p
-        except Exception as e:
-            logger.error(f"Error in multiple testing correction: {str(e)}")
-            for r in enrichment_results:
-                r['corrected_p_value'] = r['p_value']
-
-        enrichment_results.sort(key=lambda x: x['p_value'])
-
-    filtered_results = [r for r in enrichment_results if r.get('p_value', 1.0) <= p_value_threshold]
-
-    plot_image = None
-    if filtered_results:
-        plot_image = plot_kegg_enrichment(filtered_results)
-
-    logger.info(f"Python KEGG富集分析结果: {len(filtered_results)} 条显著富集项")
+            logger.error(f"gseapy KEGG富集分析失败: {str(e)}")
+            return JsonResponse({
+                'status': 'error',
+                'error': str(e)
+            })
 
     return JsonResponse({
-        'status': 'success',
-        'data': {
-            'results': filtered_results,
-            'input_gene_count': total_input_genes,
-            'background_gene_count': total_background_genes,
-            'plot_image': plot_image,
-            'method': 'Python_fisher_exact'
-        }
+        'status': 'error',
+        'error': 'Method not allowed'
     })
 
 
