@@ -525,7 +525,8 @@ def execute_r_kegg_enrichment(gene_list, gene2kegg_dict, background_gene2kegg_di
 
 
 def execute_python_kegg_enrichment(gene_list, gene_id_map, gene_kegg_data, background_kegg_data, pathway_info, p_value_threshold, genome_id):
-    """使用Python执行KEGG富集分析"""
+    """使用Python执行KEGG富集分析（优先gseapy，失败则回退Fisher）"""
+    gene_id_to_name = {v: k for k, v in gene_id_map.items()}
 
     input_kegg_terms = defaultdict(list)
     input_genes = set()
@@ -553,6 +554,60 @@ def execute_python_kegg_enrichment(gene_list, gene_id_map, gene_kegg_data, backg
                 'background_gene_count': total_background_genes
             }
         })
+
+    # 优先使用gseapy
+    try:
+        import gseapy as gp
+        kegg_gene_sets = defaultdict(set)
+        for gene_id, kegg_id in background_kegg_data:
+            if kegg_id and gene_id in gene_id_to_name:
+                kegg_gene_sets[kegg_id].add(gene_id_to_name[gene_id])
+
+        if kegg_gene_sets and input_genes:
+            enr = gp.enrich(
+                gene_list=sorted(list(input_genes)),
+                gene_sets={k: sorted(list(v)) for k, v in kegg_gene_sets.items() if v},
+                background=sorted(set(gene_id_to_name.values())),
+                no_plot=True,
+                outdir=None
+            )
+            if enr is not None and hasattr(enr, "results") and not enr.results.empty:
+                enrichment_results = []
+                for _, row in enr.results.iterrows():
+                    pathway_id = row.get('Term', '')
+                    pathway = pathway_info.get(pathway_id, {})
+                    enrichment_results.append({
+                        'pathway_id': pathway_id,
+                        'description': {
+                            'name': pathway.get('name', pathway_id),
+                            'definition': pathway.get('full_name', '')
+                        },
+                        'gene_ratio': row.get('Overlap', ''),
+                        'bg_ratio': '',
+                        'rich_factor': 0,
+                        'fold_enrichment': row.get('Odds Ratio', 0),
+                        'p_value': row.get('P-value', 1),
+                        'corrected_p_value': row.get('Adjusted P-value', row.get('P-value', 1)),
+                        'gene_count': int(str(row.get('Overlap', '0/0')).split('/')[0]) if row.get('Overlap') else 0,
+                        'genes': str(row.get('Genes', '')).split(';') if row.get('Genes', '') else [],
+                        'category_id': pathway.get('category_id', ''),
+                        'category_name': pathway.get('category_name', '')
+                    })
+                enrichment_results.sort(key=lambda x: x['p_value'])
+                filtered_results = [r for r in enrichment_results if r.get('p_value', 1.0) <= p_value_threshold]
+                plot_image = plot_kegg_enrichment(filtered_results) if filtered_results else None
+                return JsonResponse({
+                    'status': 'success',
+                    'data': {
+                        'results': filtered_results,
+                        'input_gene_count': total_input_genes,
+                        'background_gene_count': total_background_genes,
+                        'plot_image': plot_image,
+                        'method': 'Python_gseapy'
+                    }
+                })
+    except Exception as e:
+        logger.warning(f"gseapy KEGG富集失败，回退到Fisher: {str(e)}")
 
     enrichment_results = []
 
