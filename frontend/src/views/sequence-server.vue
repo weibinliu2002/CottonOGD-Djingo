@@ -1,22 +1,24 @@
 ﻿<template>
-  <div class="sequence-shell">
-    <iframe
-      ref="iframeRef"
-      class="sequence-frame"
-      :src="iframeSrc"
-      frameborder="0"
-      @load="handleIframeLoad"
-      @error="handleIframeError"
-    />
+  <div class="sequence-full-wrapper">
+    <div class="sequence-shell">
+      <iframe
+        ref="iframeRef"
+        class="sequence-frame"
+        :src="iframeSrc"
+        frameborder="0"
+        @load="handleIframeLoad"
+        @error="handleIframeError"
+      />
 
     <div v-if="loading" class="state-layer loading-layer">
       <div class="spinner" />
       <p>Loading Sequence Server...</p>
     </div>
 
-    <div v-if="error" class="state-layer error-layer">
-      <p>{{ error }}</p>
-      <el-button type="primary" @click="retryLoad">Retry</el-button>
+      <div v-if="error" class="state-layer error-layer">
+        <p>{{ error }}</p>
+        <el-button type="primary" @click="retryLoad">Retry</el-button>
+      </div>
     </div>
   </div>
 </template>
@@ -49,10 +51,22 @@ const retryLoad = () => {
 </script>
 
 <style scoped>
+.sequence-full-wrapper {
+  width: 100vw;
+  position: relative;
+  left: 50%;
+  right: 50%;
+  margin-left: -50vw;
+  margin-right: -50vw;
+  max-width: 100vw;
+  padding: 0;
+}
+
 .sequence-shell {
   position: relative;
   width: 100%;
-  min-height: calc(100vh - 110px);
+  min-height: calc(100vh - 160px);
+  height: calc(100vh - 160px);
   background: #ffffff;
   overflow: hidden;
 }
@@ -60,7 +74,8 @@ const retryLoad = () => {
 .sequence-frame {
   display: block;
   width: 100%;
-  height: calc(100vh - 110px);
+  min-height: calc(100vh - 160px);
+  height: calc(100vh - 160px);
   border: 0;
   background: #ffffff;
 }
@@ -103,11 +118,19 @@ const retryLoad = () => {
   }
 }
 
+@media (max-width: 992px) {
+  .sequence-shell,
+  .sequence-frame {
+    min-height: calc(100vh - 140px);
+    height: calc(100vh - 140px);
+  }
+}
+
 @media (max-width: 768px) {
   .sequence-shell,
   .sequence-frame {
-    min-height: calc(100vh - 90px);
-    height: calc(100vh - 90px);
+    min-height: calc(100vh - 120px);
+    height: calc(100vh - 120px);
   }
 }
 </style>
