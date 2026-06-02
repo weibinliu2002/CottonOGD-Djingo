@@ -532,11 +532,15 @@ const currentTranscriptGffData = computed(() => {
   }
   
   // 过滤当前转录本的GFF数据
+  // 保留两种数据：1) gene类型的数据 2) 与当前ID匹配的数据
   const filtered = gffData.value.filter((item: GffItem) => {
+    // 始终保留gene类型的数据
+    if (item.type && item.type.toLowerCase() === 'gene') {
+      return true
+    }
+    // 保留与当前ID匹配的数据
     if (item.attributes && currentId) {
-      const matches = item.attributes.indexOf(currentId) !== -1
-      //console.log(`GFF item attributes: ${item.attributes}, currentId: ${currentId}, matches: ${matches}`)
-      return matches
+      return item.attributes.indexOf(currentId) !== -1
     }
     return false
   })
