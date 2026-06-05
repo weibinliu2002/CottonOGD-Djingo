@@ -1,10 +1,8 @@
 <template>
   <div class="container mt-4">
+    <!-- 返回按钮 -->
     <el-row :gutter="20" class="mb-4">
-      <el-col :span="18">
-        <h2>{{ t('search_results') }}</h2>
-      </el-col>
-      <el-col :span="6" class="text-right">
+      <el-col :span="24" class="text-right">
         <router-link to="/tools/id-search/id-search-summary/">
           <el-button type="default">{{ t('return_to_search') }}</el-button>
         </router-link>
@@ -27,81 +25,301 @@
     
     <!-- 结果展示 -->
     <div v-else-if="result" class="result-container">
-      <!-- 左侧固定锚点导航 -->
-      <div class="anchor-sidebar">
-        <el-anchor direction="vertical" :offset="80">
-          <el-anchor-link href="#basic-info" :title="t('gene_basic_information')" />
-          <el-anchor-link v-if="jbrowse_url" href="#jbrowse-view" :title="t('jbrowse_view')" />
-          <el-anchor-link href="#sequence" :title="t('sequence')" />
-          <el-anchor-link v-if="expressionData.length > 0" href="#expression" :title="t('gene_expression')" />
-          <el-anchor-link v-if="Object.keys(annotations).length > 0" href="#annotations" :title="'Annotations'" />
-          <el-anchor-link v-if="hasGffData" href="#gff-data" :title="'GFF Data'" />
-        </el-anchor>
-      </div>
-      
-      <!-- 主内容区域 -->
-      <div class="main-content">
-          <!-- 基本信息卡片 - 使用 GeneInfoCard 组件 -->
+      <!-- 顶部区域：基因信息 + 功能注释交集 -->
+      <el-row :gutter="20" class="mb-6">
+        <!-- 左上：基因信息 -->
+        <el-col :span="14">
           <gene-info-card 
             :gene-data="result" 
             :title="t('gene_basic_information')"
-            class="mb-4"
-            id="basic-info"
+            class="h-full"
           />
-      
-          <!-- JBrowse View -->
-          <el-card v-if="jbrowse_url" class="mb-4" id="jbrowse-view">
+        </el-col>
+        
+        <!-- 右上：功能注释交集 -->
+        <el-col :span="10">
+          <el-card title="Function" class="h-full">
             <template #header>
-              <div class="d-flex justify-content-between align-items-center">
-                <h3>{{ t('jbrowse_view') }}</h3>
-              </div>
+              <h3 class="card-title">Function</h3>
             </template>
-            <div class="card-body">
-              <iframe :src="jbrowse_url" style="width: 100%; height: 400px; border: 1px solid #ddd; border-radius: 4px;"></iframe>
+            <div class="function-content">
+              <!-- GO注释交集 -->
+              <div v-if="intersectionAnnotations.go.length > 0" class="annotation-section">
+                <div class="section-header">
+                  <el-tag type="primary" size="small">GO</el-tag>
+                </div>
+                <ul class="annotation-list">
+                  <li 
+                    v-for="(item, index) in intersectionAnnotations.go.slice(0, 5)" 
+                    :key="'go-' + index"
+                    class="annotation-list-item"
+                  >
+                    <a 
+                      :href="`https://www.ebi.ac.uk/QuickGO/term/${item.id}`" 
+                      target="_blank"
+                      class="annotation-link"
+                    >
+                      {{ item.id }}: {{ item.term }}
+                    </a>
+                  </li>
+                  <li v-if="intersectionAnnotations.go.length > 5" class="annotation-list-item text-muted text-sm">
+                    +{{ intersectionAnnotations.go.length - 5 }} more
+                  </li>
+                </ul>
+              </div>
+              
+              <!-- KEGG注释交集 -->
+              <div v-if="intersectionAnnotations.kegg.length > 0" class="annotation-section">
+                <div class="section-header">
+                  <el-tag type="success" size="small">KEGG</el-tag>
+                </div>
+                <ul class="annotation-list">
+                  <li 
+                    v-for="(item, index) in intersectionAnnotations.kegg.slice(0, 5)" 
+                    :key="'kegg-' + index"
+                    class="annotation-list-item"
+                  >
+                    <a 
+                      :href="`https://www.genome.jp/dbget-bin/www_bget?ko+${item.id}`" 
+                      target="_blank"
+                      class="annotation-link"
+                    >
+                      {{ item.id }}: {{ item.description }}
+                    </a>
+                  </li>
+                  <li v-if="intersectionAnnotations.kegg.length > 5" class="annotation-list-item text-muted text-sm">
+                    +{{ intersectionAnnotations.kegg.length - 5 }} more
+                  </li>
+                </ul>
+              </div>
+              
+              <!-- 其他注释交集 -->
+              <div v-if="intersectionAnnotations.other.length > 0" class="annotation-section">
+                <div class="section-header">
+                  <el-tag type="info" size="small">Other</el-tag>
+                </div>
+                <ul class="annotation-list">
+                  <li 
+                    v-for="(item, index) in intersectionAnnotations.other.slice(0, 5)" 
+                    :key="'other-' + index"
+                    class="annotation-list-item"
+                  >
+                    <span class="annotation-text">{{ item.annotation }}</span>
+                  </li>
+                  <li v-if="intersectionAnnotations.other.length > 5" class="annotation-list-item text-muted text-sm">
+                    +{{ intersectionAnnotations.other.length - 5 }} more
+                  </li>
+                </ul>
+              </div>
+              
+              <!-- 无数据提示 -->
+              <div v-if="isEmptyAnnotations" class="empty-state">
+                <el-empty description="No annotation data available" />
+              </div>
             </div>
           </el-card>
-          
-          <!-- 序列信息卡片 -->
-          <el-card  class="mb-4" id="sequence">
+        </el-col>
+      </el-row>
+      
+      <!-- 下方区域：功能模块导航 -->
+      <el-card class="mb-4">
         <template #header>
-          <div class="d-flex justify-content-between align-items-center">
-            <h3>{{ t('sequence') }}</h3>
+          <div class="nav-tabs-container">
+            <el-tabs 
+              v-model="activeTab" 
+              type="card"
+              class="nav-tabs"
+            >
+              <el-tab-pane label="JBrowse" name="jbrowse" v-if="jbrowse_url">
+                <template #label>
+                  <span class="tab-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="2" />
+                      <line x1="9" y1="9" x2="15" y2="9" />
+                      <line x1="9" y1="15" x2="15" y2="15" />
+                    </svg>
+                  </span>
+                  JBrowse
+                </template>
+              </el-tab-pane>
+              <el-tab-pane label="GFF" name="gff" v-if="hasGffData">
+                <template #label>
+                  <span class="tab-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                      <polyline points="14 2 14 8 20 8" />
+                      <line x1="16" y1="13" x2="8" y2="13" />
+                      <line x1="16" y1="17" x2="8" y2="17" />
+                      <polyline points="10 9 9 9 8 9" />
+                    </svg>
+                  </span>
+                  GFF
+                </template>
+              </el-tab-pane>
+              <el-tab-pane label="Expression" name="expression" v-if="expressionData.length > 0">
+                <template #label>
+                  <span class="tab-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M18 20V10" />
+                      <path d="M12 20V4" />
+                      <path d="M6 20v-6" />
+                    </svg>
+                  </span>
+                  Expression
+                </template>
+              </el-tab-pane>
+              <el-tab-pane label="Sequence" name="sequence">
+                <template #label>
+                  <span class="tab-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="4 7 4 4 20 4 20 7" />
+                      <line x1="9" y1="20" x2="15" y2="20" />
+                      <line x1="12" y1="4" x2="12" y2="20" />
+                    </svg>
+                  </span>
+                  Sequence
+                </template>
+              </el-tab-pane>
+              <el-tab-pane label="Annotations" name="annotations" v-if="Object.keys(annotations).length > 0">
+                <template #label>
+                  <span class="tab-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M7 21h10" />
+                      <path d="M17 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z" />
+                      <path d="M9 7h6" />
+                      <path d="M9 11h6" />
+                      <path d="M9 15h6" />
+                    </svg>
+                  </span>
+                  Annotations
+                </template>
+              </el-tab-pane>
+            </el-tabs>
           </div>
         </template>
-        <div class="card-body">
-            <!-- 转录本选择器 -->
-            <div v-if="hasMultipleTranscripts" class="mb-4">
-              <h4 class="h6 mb-2">{{ t('transcript_selector') }}</h4>
-              <el-select v-model="selectedTranscriptIndex" @change="switchTranscript" class="w-auto" style="min-width: 400px;">
-                <el-option
-                  v-for="(transcript, index) in result.mrna_transcripts"
-                  :key="index"
-                  :label="`${transcript.id} (Protein Length: ${transcript.protein_seq && transcript.protein_seq !== 'N/A' && transcript.protein_seq !== 'unavailable' && transcript.protein_seq !== 'Protein sequence not found' ? transcript.protein_seq.length : 'N/A'} aa)`"
-                  :value="index"
-                />
-              </el-select>
+        
+        <!-- JBrowse 内容 -->
+        <div v-if="activeTab === 'jbrowse'" class="tab-content">
+          <div class="jbrowse-container">
+            <iframe :src="jbrowse_url" class="jbrowse-iframe"></iframe>
+          </div>
+        </div>
+        
+        <!-- GFF 内容 -->
+        <div v-if="activeTab === 'gff'" class="tab-content">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <span class="table-info">
+              Showing {{ (currentPage - 1) * pageSize + 1 }} to {{ Math.min(currentPage * pageSize, gffData.length) }} of {{ gffData.length }} entries
+            </span>
+            <div>
+              <el-button type="success" size="small" @click="downloadGff('txt')">Download as TXT</el-button>
+              <el-button type="success" size="small" class="ml-2" @click="downloadGff('gff')">Download as GFF</el-button>
             </div>
-            
-           
-            
-           <!-- 使用通用序列展示组件 -->
-              <sequence-display
-                display-mode="buttons"
-                :gene_seq="result.gene_seq"
-                :mrna_seq="result.mrna_seq"
-                :upstream_seq="result.upstream_seq"
-                :downstream_seq="result.downstream_seq"
-                :cdna_seq="result.cdna_seq"
-                :cds_seq="result.cds_seq"
-                :protein_seq="result.protein_seq"
-                :gene_id="result.IDs"
-                :current-transcript="currentTranscript || undefined"
-                :loading="isLoading"
-                @show-sequence="handleShowSequence"
-                @length-change="handleLengthChange"
+          </div>
+          <el-table
+            :data="currentPageGffData"
+            style="width: 100%"
+            stripe
+            border
+            :default-sort="{ prop: 'start', order: 'ascending' }"
+          >
+            <el-table-column prop="seqid" label="Seqid" min-width="100" />
+            <el-table-column prop="source" label="Source" min-width="100" />
+            <el-table-column prop="type" label="Type" min-width="100" />
+            <el-table-column prop="start" label="Start" min-width="100" />
+            <el-table-column prop="end" label="End" min-width="100" />
+            <el-table-column prop="score" label="Score" min-width="50" />
+            <el-table-column prop="strand" label="Strand" min-width="50" />
+            <el-table-column prop="phase" label="Phase" min-width="50" />
+            <el-table-column prop="attributes" label="Attributes" min-width="200" />
+          </el-table>
+          <el-pagination
+            v-model:current-page="currentPage"
+            v-model:page-size="pageSize"
+            :page-sizes="[10, 20, 50, 100]"
+            layout="total, sizes, prev, pager, next, jumper"
+            :total="currentTranscriptGffData.length"
+            class="mt-3"
+          />
+        </div>
+        
+        <!-- Expression 内容 -->
+        <div v-if="activeTab === 'expression'" class="tab-content">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <span class="table-info">Gene Expression Data</span>
+            <el-button type="success" size="small" @click="downloadExpressionData">
+              {{ t('download_data') }}
+            </el-button>
+          </div>
+          <el-table
+            :data="expressionData"
+            style="width: 100%"
+            stripe
+            border
+          >
+            <el-table-column label="Gene ID" width="180">
+              <template #default="scope">
+                <router-link :to="{
+                  path: '/tools/gene-expression-efp/',
+                  query: {
+                    gene_id: scope.row.geneid,
+                    genome_id: result?.genome_id
+                  }
+                }">
+                  {{ scope.row.geneid }}
+                </router-link>
+              </template>
+            </el-table-column>
+            <el-table-column 
+              v-for="tissue in expressionTissues" 
+              :key="tissue"
+              :prop="tissue" 
+              :label="tissue"
+              min-width="100"
+            >
+              <template #default="scope">
+                <div v-if="scope.row[tissue] !== undefined">
+                  {{ scope.row[tissue].toFixed(4) }}
+                </div>
+                <div v-else>-</div>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+        
+        <!-- Sequence 内容 -->
+        <div v-if="activeTab === 'sequence'" class="tab-content">
+          <!-- 转录本选择器 -->
+          <div v-if="hasMultipleTranscripts" class="mb-4">
+            <h4 class="h6 mb-2">{{ t('transcript_selector') }}</h4>
+            <el-select v-model="selectedTranscriptIndex" @change="switchTranscript" class="w-auto" style="min-width: 400px;">
+              <el-option
+                v-for="(transcript, index) in result.mrna_transcripts"
+                :key="index"
+                :label="`${transcript.id} (Protein Length: ${transcript.protein_seq && transcript.protein_seq !== 'N/A' && transcript.protein_seq !== 'unavailable' && transcript.protein_seq !== 'Protein sequence not found' ? transcript.protein_seq.length : 'N/A'} aa)`"
+                :value="index"
               />
-            
-          <div class="mb-3">
+            </el-select>
+          </div>
+          
+          <!-- 使用通用序列展示组件 -->
+          <sequence-display
+            display-mode="buttons"
+            :gene_seq="result.gene_seq"
+            :mrna_seq="result.mrna_seq"
+            :upstream_seq="result.upstream_seq"
+            :downstream_seq="result.downstream_seq"
+            :cdna_seq="result.cdna_seq"
+            :cds_seq="result.cds_seq"
+            :protein_seq="result.protein_seq"
+            :gene_id="result.IDs"
+            :current-transcript="currentTranscript || undefined"
+            :loading="isLoading"
+            @show-sequence="handleShowSequence"
+            @length-change="handleLengthChange"
+          />
+        
+          <div class="mb-3 mt-4">
             <el-button type="success" @click="showDownloadDialog">Download Data</el-button>
             <el-button
               v-if="hasMultipleTranscripts"
@@ -146,71 +364,14 @@
             </template>
           </el-dialog>
         </div>
-      </el-card>
-      
-      <!-- 基因表达量表格 -->
-      <el-card v-if="expressionData.length > 0" class="mb-4" id="expression">
-        <template #header>
-          <div class="d-flex justify-content-between align-items-center">
-            <h3>{{ t('gene_expression') }}</h3>
-            <el-button type="success" size="small" @click="downloadExpressionData">
-              {{ t('download_data') }}
-            </el-button>
-          </div>
-        </template>
-        <div class="card-body">
-          <el-table
-            :data="expressionData"
-            style="width: 100%"
-            stripe
-            border
-          >
-            <el-table-column label="Gene ID" width="180">
-              <template #default="scope">
-                <router-link :to="{
-                  path: '/tools/gene-expression-efp/',
-                  query: {
-                    gene_id: scope.row.geneid,
-                    genome_id: result?.genome_id
-                  }
-                }">
-                  {{ scope.row.geneid }}
-                </router-link>
-              </template>
-            </el-table-column>
-            <el-table-column 
-              v-for="tissue in expressionTissues" 
-              :key="tissue"
-              :prop="tissue" 
-              :label="tissue"
-              min-width="100"
-            >
-              <template #default="scope">
-                <div v-if="scope.row[tissue] !== undefined">
-                  {{ scope.row[tissue].toFixed(4) }}
-                </div>
-                <div v-else>-</div>
-              </template>
-            </el-table-column>
-          </el-table>
-        </div>
-      </el-card>
-      
-      <!-- 注释信息卡片 -->
-      <el-card
-        v-if="Object.keys(annotations).length > 0"
-        class="mb-4"
-        id="annotations"
-      >
-        <template #header>
-          <div class="d-flex justify-content-between align-items-center">
-            <h3>Annotations</h3>
-          </div>
-        </template>
-        <div class="card-body">
-          <!-- 特殊处理GO注释，使用表格展示 -->
-          <div v-if="parsedGoAnnotations.length > 0" class="mb-3">
-            <h4>GO annotation</h4>
+        
+        <!-- Annotations 内容 -->
+        <div v-if="activeTab === 'annotations'" class="tab-content">
+          <!-- GO注释 -->
+          <div v-if="parsedGoAnnotations.length > 0" class="mb-4">
+            <h4 class="annotation-title">
+              <el-tag type="primary" size="small">GO Annotation</el-tag>
+            </h4>
             <el-table :data="parsedGoAnnotations" border>
               <el-table-column label="GO ID" width="150">
                 <template #default="scope">
@@ -224,13 +385,15 @@
             </el-table>
           </div>
           
-          <!-- 特殊处理KEGG注释，使用表格展示 -->
-          <div v-if="parsedKeggAnnotations.length > 0" class="mb-3">
-            <h4>KEGG annotation</h4>
+          <!-- KEGG注释 -->
+          <div v-if="parsedKeggAnnotations.length > 0" class="mb-4">
+            <h4 class="annotation-title">
+              <el-tag type="success" size="small">KEGG Annotation</el-tag>
+            </h4>
             <el-table :data="parsedKeggAnnotations" border>
               <el-table-column label="KEGG ID" width="150">
                 <template #default="scope">
-                  <a :href="`https://www.ebi.ac.uk/QuickGO/term/${scope.row.id}`" target="_blank" rel="noopener noreferrer">
+                  <a :href="`https://www.genome.jp/dbget-bin/www_bget?ko+${scope.row.id}`" target="_blank" rel="noopener noreferrer">
                     {{ scope.row.id }}
                   </a>
                 </template>
@@ -239,10 +402,12 @@
             </el-table>
           </div>
           
-          <!-- 其他注释类型使用表格展示 -->
-          <div v-for="(annotationList, annotationType) in annotations" :key="annotationType" class="mb-3">
+          <!-- 其他注释类型 -->
+          <div v-for="(annotationList, annotationType) in annotations" :key="annotationType" class="mb-4">
             <div v-if="annotationType !== 'GO_annotation' && annotationType !== 'KEGG_annotation' && annotationList.length > 0">
-              <h4>{{ String(annotationType).replace(/_/g, ' ') }}</h4>
+              <h4 class="annotation-title">
+                <el-tag type="info" size="small">{{ String(annotationType).replace(/_/g, ' ') }}</el-tag>
+              </h4>
               <el-table :data="annotationList" border>
                 <el-table-column label="Annotation ID" width="150">
                   <template #default="scope">
@@ -263,55 +428,7 @@
           </div>
         </div>
       </el-card>
-      
-      <!-- GFF数据表格 -->
-      <el-card v-if="hasGffData" class="mb-4" id="gff-data">
-        <template #header>
-          <div class="d-flex justify-content-between align-items-center">
-            <h3>GFF Data</h3>
-            <div>
-              <el-button type="success" size="small" @click="downloadGff('txt')">Download as TXT</el-button>
-              <el-button type="success" size="small" class="ml-2" @click="downloadGff('gff')">Download as GFF</el-button>
-            </div>
-          </div>
-        </template>
-        <div class="card-body">
-          <!-- 表格内容 -->
-          <el-table
-            :data="currentPageGffData"
-            style="width: 100%"
-            stripe
-            border
-            :default-sort="{ prop: 'start', order: 'ascending' }"
-          >
-            <el-table-column prop="seqid" label="Seqid" min-width="100" />
-            <el-table-column prop="source" label="Source" min-width="100" />
-            <el-table-column prop="type" label="Type" min-width="100" />
-            <el-table-column prop="start" label="Start" min-width="100" />
-            <el-table-column prop="end" label="End" min-width="100" />
-            <el-table-column prop="score" label="Score" min-width="50" />
-            <el-table-column prop="strand" label="Strand" min-width="50" />
-            <el-table-column prop="phase" label="Phase" min-width="50" />
-            <el-table-column prop="attributes" label="Attributes" min-width="200" />
-          </el-table>
-
-          <!-- 分页 -->
-          <div class="d-flex justify-content-between align-items-center mt-3">
-            <span class="table-info">
-              Showing {{ (currentPage - 1) * pageSize + 1 }} to {{ Math.min(currentPage * pageSize, gffData.length) }} of {{ gffData.length }} entries
-            </span>
-            <el-pagination
-              v-model:current-page="currentPage"
-              v-model:page-size="pageSize"
-              :page-sizes="[10, 20, 50, 100]"
-              layout="total, sizes, prev, pager, next, jumper"
-              :total="currentTranscriptGffData.length"
-            />
-          </div>
-        </div>
-      </el-card>
     </div>
-  </div>
     
     <!-- 序列弹窗组件 -->
     <sequence-modal
@@ -321,10 +438,10 @@
       :current-seq-type="currentSeqType"
       :current-gene-id="currentGeneId"
     />
+    
+    <!-- 回到顶部 -->
+    <el-backtop :right="40" :bottom="40" />
   </div>
-  
-  <!-- 回到顶部 -->
-  <el-backtop :right="40" :bottom="40" />
 </template>
 
 <script setup lang="ts">
@@ -347,27 +464,17 @@ interface Annotation {
   annotation: string
   annoation_id?: string
   annotation_source?: string
-  geneid_id?: number
-  genome_id?: number
-  id_id?: number
-}
-
-interface Transcript {
-  id: string
-  mrna_seq?: string
-  upstream_seq?: string
-  downstream_seq?: string
-  cdna_seq?: string
-  cds_seq?: string
-  protein_seq?: string
+  geneid_id?: string
+  genome_id?: string
+  id_id?: string
 }
 
 interface GffItem {
   seqid?: string
   source?: string
   type?: string
-  start?: number
-  end?: number
+  start?: number | string
+  end?: number | string
   score?: string
   strand?: string
   phase?: string
@@ -376,27 +483,25 @@ interface GffItem {
 
 interface Result {
   IDs: string
+  geneid?: string
+  id?: string
   seqid?: string
-  start?: number
-  end?: number
+  start?: number | string
+  end?: number | string
   strand?: string
   gene_seq?: string
   mrna_seq?: string
+  mrna_transcripts?: any[]
   upstream_seq?: string
   downstream_seq?: string
   cdna_seq?: string
   cds_seq?: string
   protein_seq?: string
-  geneid?: string
-  id?: string
   genome_id?: string
-  mrna_transcripts?: Transcript[]
   gene_go_result?: any[]
   gene_kegg_result?: any[]
+  geneid_result?: any[]
 }
-
-// 初始化路由
-const route = useRoute()
 
 // 获取store
 const geneSearchStore = useGeneSearchStore()
@@ -410,14 +515,14 @@ const jbrowse_url = ref('')
 const isLoading = ref(false)
 const errorMessage = ref('')
 
+// 当前激活的标签页
+const activeTab = ref('sequence')
+
 // 计算是否有序列信息
 const has_sequences = computed(() => {
   if (!result.value) return false
-  // 检查是否有直接的序列属性
   const hasDirectSequences = !!(result.value.gene_seq || result.value.mrna_seq || result.value.upstream_seq || result.value.downstream_seq || result.value.cdna_seq || result.value.cds_seq || result.value.protein_seq)
-  // 检查是否有转录本序列
   const hasTranscriptSequences = !!(result.value.mrna_transcripts && result.value.mrna_transcripts.length > 0)
-  // 检查是否有基因ID（确保至少有基因信息）
   const hasGeneId = !!(result.value.IDs)
   return hasDirectSequences || hasTranscriptSequences || hasGeneId
 })
@@ -444,18 +549,24 @@ const currentGeneId = ref('')
 const svgWidth = ref(800)
 
 // 上下游序列长度
-const upstreamLength = ref(500) // 默认值
-const downstreamLength = ref(500) // 默认值
+const upstreamLength = ref(500)
+const downstreamLength = ref(500)
 
 // 基因表达量数据
 const expressionData = ref<any[]>([])
 const expressionTissues = ref<string[]>([])
 const expressionLoading = ref(false)
 
+// 下载相关
+const downloadDialogVisible = ref(false)
+const downloadForm = ref({
+  dataTypes: ['genomic', 'mrna', 'cdna', 'cds', 'protein'],
+  format: 'fasta'
+})
+
 // 计算属性
 const parsedGoAnnotations = computed(() => {
   const goAnnotations = result.value?.gene_go_result || []
-  console.log('goAnnotations:', goAnnotations)
   const parsed: { type: string; term: string; id: string }[] = []
   
   goAnnotations.forEach((item: any) => {
@@ -493,10 +604,9 @@ const currentTranscript = computed(() => {
   if (!result.value || !result.value.mrna_transcripts || result.value.mrna_transcripts.length === 0) {
     return null
   }
-  //console.log('selectedTranscriptIndex.value:', selectedTranscriptIndex.value)
   return result.value.mrna_transcripts[selectedTranscriptIndex.value]
 })
-console.log('currentTranscript:', currentTranscript)
+
 // 转录本数量
 const hasMultipleTranscripts = computed(() => {
   return result.value && result.value.mrna_transcripts && result.value.mrna_transcripts.length > 1
@@ -515,7 +625,6 @@ const currentTranscriptGffData = computed(() => {
     return []
   }
   
-  // 获取当前转录本ID或基因ID
   let currentId: string | null = null
   if (currentTranscript.value && currentTranscript.value.id) {
     currentId = currentTranscript.value.id
@@ -531,84 +640,41 @@ const currentTranscriptGffData = computed(() => {
     })
   }
   
-  // 过滤当前转录本的GFF数据
-  // 保留两种数据：1) gene类型的数据 2) 与当前ID匹配的数据
   const filtered = gffData.value.filter((item: GffItem) => {
-    // 始终保留gene类型的数据
     if (item.type && item.type.toLowerCase() === 'gene') {
       return true
     }
-    // 保留与当前ID匹配的数据
     if (item.attributes && currentId) {
       return item.attributes.indexOf(currentId) !== -1
     }
     return false
   })
   
-  console.log('currentTranscriptGffData - filtered count:', filtered.length)
-  
   return filtered.sort((a: GffItem, b: GffItem) => {
     return (Number(a.start) || 0) - (Number(b.start) || 0)
   })
 })
-console.log('currentTranscriptGffData',currentTranscriptGffData)
 
-// 有效转录本GFF数据（确保所有必要属性都存在）
-interface ValidGffItem {
-  seqid?: string
-  source?: string
-  type?: string
-  start: number
-  end: number
-  score?: string
-  strand?: string
-  phase?: string
-  attributes?: string
-}
-
-const validTranscriptGffData = computed(() => {
-  return currentTranscriptGffData.value
-    .filter((item: GffItem) => item.start !== undefined && item.end !== undefined) as ValidGffItem[]
-})
-
-// 基因起始位置
-const geneStart = computed(() => {
-  if (!validTranscriptGffData.value || validTranscriptGffData.value.length === 0) {
-    return 0
-  }
-  return Math.min(...validTranscriptGffData.value.map((item: ValidGffItem) => Number(item.start)))
-})
-
-// 基因结束位置
-const geneEnd = computed(() => {
-  if (!validTranscriptGffData.value || validTranscriptGffData.value.length === 0) {
-    return 0
-  }
-  return Math.max(...validTranscriptGffData.value.map((item: ValidGffItem) => Number(item.end)))
-})
-
-// 基因长度
-const geneLength = computed(() => {
-  return geneEnd.value - geneStart.value + 1
-})
-
-// 缩放比例
-const scale = computed(() => {
-  const availableWidth = svgWidth.value - 40
-  return availableWidth / Math.max(geneLength.value, 1)
-})
-//console.log('result.value:', result.IDs)
-// 基本信息列表
-const basicInfoList = computed(() => {
-  if (!result.value) return []
+// 注释交集数据
+const intersectionAnnotations = computed(() => {
+  const go = parsedGoAnnotations.value.slice(0, 10)
+  const kegg = parsedKeggAnnotations.value.slice(0, 10)
   
-  return [
-    { label: 'Gene ID', value: result.value.IDs },
-    { label: 'Chromosome', value: result.value.seqid || 'N/A' },
-    { label: 'Start Position', value: result.value.start || 'N/A' },
-    { label: 'End Position', value: result.value.end || 'N/A' },
-    { label: 'Strand', value: result.value.strand || 'N/A' }
-  ]
+  const other: Annotation[] = []
+  for (const [type, items] of Object.entries(annotations.value)) {
+    if (type !== 'GO_annotation' && type !== 'KEGG_annotation' && items.length > 0) {
+      other.push(...items.slice(0, 5))
+    }
+  }
+  
+  return { go, kegg, other }
+})
+
+// 是否为空注释
+const isEmptyAnnotations = computed(() => {
+  return intersectionAnnotations.value.go.length === 0 && 
+         intersectionAnnotations.value.kegg.length === 0 && 
+         intersectionAnnotations.value.other.length === 0
 })
 
 // 方法
@@ -616,8 +682,6 @@ const handleLengthChange = (eventData: { upstreamLength: number; downstreamLengt
   const { upstreamLength: newUpstream, downstreamLength: newDownstream } = eventData
   upstreamLength.value = newUpstream
   downstreamLength.value = newDownstream
-  
-  // 当长度变化时，清除所有相关缓存，确保下次请求时使用新长度
   geneSearchStore.clearSequenceCache()
 }
 
@@ -625,7 +689,6 @@ const processAnnotations = (geneidResult: any[]) => {
   const newAnnotations: Record<string, Annotation[]> = {}
   if (Array.isArray(geneidResult)) {
     geneidResult.forEach(item => {
-      // 注意：后端字段名是 annoation_source（拼写错误，少了一个 't'）
       const annotationSource = item.annoation_source || item.annotation_source
       if (annotationSource && item.annotation) {
         if (!newAnnotations[annotationSource]) {
@@ -646,38 +709,26 @@ const processAnnotations = (geneidResult: any[]) => {
 }
 
 const fetchGeneData = async (db_id: string) => {
-  // 添加延迟显示加载状态，避免快速请求时显示不必要的加载动画
   const loadingTimeout = setTimeout(() => {
     isLoading.value = true
-  }, 300) // 300ms延迟，只有请求超过这个时间才显示加载状态
+  }, 300)
   
   errorMessage.value = ''
-  selectedTranscriptIndex.value = 0 // 重置为默认选择第一个转录本
+  selectedTranscriptIndex.value = 0
   
   try {
-    // 首先检查 navigationStore 中是否有基因数据（从上一个组件传递过来）
     const navigationData = navigationStore.getNavigationData('geneDetail')
-    
-    // 检查是否需要从后端获取数据
-    // 根据 jbrowse_url 是否为空来决定是否从后端获取数据
-    // 如果 jbrowse_url 不为空，说明是从 summary 继承的数据，直接使用
-    // 如果 jbrowse_url 为空，说明需要从后端获取数据
     const needFetchFromBackend = !navigationData || !navigationData.results || !navigationData.results.jbrowse_url
     
     if (navigationData && navigationData.results && !needFetchFromBackend) {
-      console.log('从 navigationStore 获取基因数据（从 summary 继承）:', navigationData.results)
-      
-      // 直接使用 navigationStore 中的数据
       result.value = navigationData.results
       
-      // 处理注释数据（如果有的话）
       if (navigationData.results.geneid_result && Array.isArray(navigationData.results.geneid_result)) {
         processAnnotations(navigationData.results.geneid_result)
       } else {
         processAnnotations([])
       }
       
-      // 处理 GO 注释数据（如果有的话）
       if (navigationData.results.gene_go_result && Array.isArray(navigationData.results.gene_go_result)) {
         const goAnnotations = navigationData.results.gene_go_result.map((item: any) => ({
           annotation: `${item.go_type}: ${item.go_description} (${item.go_id})`,
@@ -691,7 +742,6 @@ const fetchGeneData = async (db_id: string) => {
         annotations.value.GO_annotation = [...annotations.value.GO_annotation, ...goAnnotations]
       }
       
-      // 处理 KEGG 注释数据（如果有的话）
       if (navigationData.results.gene_kegg_result && Array.isArray(navigationData.results.gene_kegg_result)) {
         const keggAnnotations = navigationData.results.gene_kegg_result.map((item: any) => ({
           annotation: `${item.kegg_type}: ${item.kegg_description} (${item.kegg_id})`,
@@ -705,140 +755,11 @@ const fetchGeneData = async (db_id: string) => {
         annotations.value.KEGG_annotation = [...annotations.value.KEGG_annotation, ...keggAnnotations]
       }
       
-      // 设置jbrowse_url
       jbrowse_url.value = navigationData.results.jbrowse_url || ''
-      
-      // 设置GFF数据
       gffData.value = navigationData.results.gff_data || []
       hasGffData.value = gffData.value.length > 0
-      // 重置页码到第一页
       currentPage.value = 1
       
-      // 清除加载超时定时器
-      clearTimeout(loadingTimeout)
-      isLoading.value = false
-      
-      // 加载基因表达量数据
-      const geneId = result.value?.IDs
-      if (geneId) {
-        loadExpressionData(geneId)
-      }
-      return
-    }
-    
-    // 从后端获取数据
-    console.log('从后端获取基因数据，db_id:', db_id)
-    const formData = {
-      db_id: db_id
-    }
-    
-    const req_uuid = uuidv4()
-    await httpInstance.post('/CottonOGD_api/login/', {}, {
-      headers: {
-        'Content-Type': 'application/json',
-        'uuid': req_uuid
-      }
-    })
-    
-    const response = await httpInstance.post(
-      '/CottonOGD_api/geneid_result/',
-      formData,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'uuid': req_uuid
-        }
-      }
-    )
-
-    // 清除加载超时定时器
-    clearTimeout(loadingTimeout)
-    
-    // 注意：axios interceptor returns response.data directly
-    const responseData = response as any
-    const data = JSON.parse(responseData.results) as any
-    console.log('从后端获取基因数据，响应数据:', data)
-    console.log('从后端获取基因数据，mrna_transcripts:', data.mrna_transcripts)
-    if (data.status === 'error' || data.status === 'not_found') {
-      throw new Error(data.error || 'Gene information not found')
-    }
-    
-    // 更新数据 - 从results数组中获取type为gene的数据
-    if (data.gff_data && data.gff_data.length > 0) {
-      // 查找 type 为 gene 的基因信息
-      const geneInfo = data.gff_data.find((item: any) => item.type === 'gene') || data.gff_data[0]
-      
-      // 如果有导航数据，合并导航数据和后端数据，确保所有字段都存在
-      if (navigationData && navigationData.results) {
-        result.value = {
-          ...navigationData.results,
-          ...geneInfo,
-          gene_seq: data.gene_seq || '',
-          IDs: data.IDs || geneInfo.IDs || '',
-          jbrowse_url: data.jbrowse_url || '',
-          gff_data: data.gff_data || [],
-          mrna_transcripts: data.mrna_transcripts || [],
-          gene_go_result: data.gene_go_result || [],
-          gene_kegg_result: data.gene_kegg_result || []
-        }
-      } else {
-        result.value = {
-          ...geneInfo,
-          gene_seq: data.gene_seq || '',
-          IDs: data.IDs || geneInfo.IDs || '',
-          jbrowse_url: data.jbrowse_url || '',
-          gff_data: data.gff_data || [],
-          mrna_transcripts: data.mrna_transcripts || [],
-          gene_go_result: data.gene_go_result || [],
-          gene_kegg_result: data.gene_kegg_result || []
-        }
-      }
-      
-      // 处理注释数据
-      processAnnotations(data.geneid_result || [])
-      
-      // 处理 GO 注释数据
-      if (data.gene_go_result && data.gene_go_result.length > 0) {
-        const goAnnotations = data.gene_go_result.map((item: any) => ({
-          annotation: `${item.go_type}: ${item.go_description} (${item.go_id})`,
-          geneid_id: item.geneid_id,
-          genome_id: item.genome_id,
-          id_id: item.id_id
-        }))
-        if (!annotations.value.GO_annotation) {
-          annotations.value.GO_annotation = []
-        }
-        annotations.value.GO_annotation = [...annotations.value.GO_annotation, ...goAnnotations]
-      }
-      
-      // 处理 KEGG 注释数据
-      if (data.gene_kegg_result && data.gene_kegg_result.length > 0) {
-        const keggAnnotations = data.gene_kegg_result.map((item: any) => ({
-          annotation: `${item.kegg_type}: ${item.kegg_description} (${item.kegg_id})`,
-          geneid_id: item.geneid_id,
-          genome_id: item.genome_id,
-          id_id: item.id_id
-        }))
-        if (!annotations.value.KEGG_annotation) {
-          annotations.value.KEGG_annotation = []
-        }
-        annotations.value.KEGG_annotation = [...annotations.value.KEGG_annotation, ...keggAnnotations]
-      }
-      
-      jbrowse_url.value = data.jbrowse_url || ''
-      
-    } else {
-      throw new Error('No gene information found')
-    }
-    
-    // 设置GFF数据 - 检查是否有专门的gff数据字段
-    gffData.value = data.gff_data || data.gene_info_result || []
-    hasGffData.value = gffData.value.length > 0
-    // 重置页码到第一页
-    currentPage.value = 1
-    
-    // 存储基因详细信息到 navigationStore 的 geneDetail 中，确保返回时数据不丢失
-    if (result.value) {
       navigationStore.setNavigationData('geneDetail', {
         results: {
           ...result.value,
@@ -847,17 +768,75 @@ const fetchGeneData = async (db_id: string) => {
         },
         dbId: db_id
       })
-      console.log('基因数据已存储到 navigationStore:', result.value.IDs)
       
-      // 加载基因表达量数据
       const geneId = result.value?.IDs
       if (geneId) {
         loadExpressionData(geneId, undefined, db_id)
       }
-    }
+    } else {
+      const response = await httpInstance.get(`/CottonOGD_api/gene_id/${db_id}/`)
+      const data = response.data
+      
+      if (data && data.results) {
+        result.value = data.results
+        
+        if (data.results.geneid_result && Array.isArray(data.results.geneid_result)) {
+          processAnnotations(data.results.geneid_result)
+        }
+        
+        if (data.results.gene_go_result && data.results.gene_go_result.length > 0) {
+          const goAnnotations = data.results.gene_go_result.map((item: any) => ({
+            annotation: `${item.go_type}: ${item.go_description} (${item.go_id})`,
+            geneid_id: item.geneid_id,
+            genome_id: item.genome_id,
+            id_id: item.id_id
+          }))
+          if (!annotations.value.GO_annotation) {
+            annotations.value.GO_annotation = []
+          }
+          annotations.value.GO_annotation = [...annotations.value.GO_annotation, ...goAnnotations]
+        }
+        
+        if (data.results.gene_kegg_result && data.results.gene_kegg_result.length > 0) {
+          const keggAnnotations = data.results.gene_kegg_result.map((item: any) => ({
+            annotation: `${item.kegg_type}: ${item.kegg_description} (${item.kegg_id})`,
+            geneid_id: item.geneid_id,
+            genome_id: item.genome_id,
+            id_id: item.id_id
+          }))
+          if (!annotations.value.KEGG_annotation) {
+            annotations.value.KEGG_annotation = []
+          }
+          annotations.value.KEGG_annotation = [...annotations.value.KEGG_annotation, ...keggAnnotations]
+        }
+        
+        jbrowse_url.value = data.results.jbrowse_url || ''
+      } else {
+        throw new Error('No gene information found')
+      }
+      
+      gffData.value = data.gff_data || data.gene_info_result || []
+      hasGffData.value = gffData.value.length > 0
+      currentPage.value = 1
+      
+      if (result.value) {
+        navigationStore.setNavigationData('geneDetail', {
+          results: {
+            ...result.value,
+            jbrowse_url: jbrowse_url.value,
+            gff_data: gffData.value
+          },
+          dbId: db_id
+        })
+        
+        const geneId = result.value?.IDs
+        if (geneId) {
+          loadExpressionData(geneId, undefined, db_id)
+        }
+      }
                                 
+    }
   } catch (error: any) {
-    // 清除加载超时定时器
     clearTimeout(loadingTimeout)
     errorMessage.value = error.message
     console.error('获取基因数据错误:', error)
@@ -866,12 +845,37 @@ const fetchGeneData = async (db_id: string) => {
   }
 }
 
-// 切换转录本
+const loadExpressionData = async (geneId: string, tissue?: string, db_id?: string) => {
+  expressionLoading.value = true
+  try {
+    const response = await httpInstance.get('/CottonOGD_api/gene_expression/', {
+      params: {
+        gene_id: geneId,
+        tissue: tissue || '',
+        db_id: db_id || ''
+      }
+    })
+    const data = response.data
+    if (data && data.results) {
+      expressionData.value = data.results
+      if (data.results.length > 0) {
+        const firstRow = data.results[0]
+        expressionTissues.value = Object.keys(firstRow).filter(key => 
+          key !== 'geneid' && key !== 'genome_id' && key !== 'id'
+        )
+      }
+    }
+  } catch (error) {
+    console.error('获取基因表达数据失败:', error)
+  } finally {
+    expressionLoading.value = false
+  }
+}
+
 const switchTranscript = (index: number) => {
   selectedTranscriptIndex.value = index
 }
 
-// 显示序列弹窗
 const showSequenceModal = (title: string, content: string, seqType: string, geneId: string) => {
   modalTitle.value = title
   modalContent.value = content
@@ -880,15 +884,11 @@ const showSequenceModal = (title: string, content: string, seqType: string, gene
   showModal.value = true
 }
 
-// 处理SequenceDisplay组件的show-sequence事件
 const handleShowSequence = async (eventData: { type: string; title: string; content: string; id: string }) => {
   const { type, title, content, id } = eventData
 
-  // 获取真正的基因ID，而不是可能的转录本ID
   const realGeneId = result.value?.IDs || ''
-  // 使用mrnaid替代transcriptId，与后端字段名保持一致
   const mrnaid = currentTranscript.value?.id || id
-  // 对于上下游序列，需要包含长度信息
   const upLen = upstreamLength.value
   const downLen = downstreamLength.value
 
@@ -897,18 +897,14 @@ const handleShowSequence = async (eventData: { type: string; title: string; cont
     let seq = content
     let isFromContent = true
     
-    // 如果content为空，使用store获取序列
     if (!seq) {
       isFromContent = false
       seq = await geneSearchStore.fetchSequence(realGeneId, mrnaid, type, upLen, downLen)
     }
     
-    // 如果返回的是有效序列，添加FASTA格式头部
     if (seq && seq !== 'Sequence not found' && seq !== 'N/A') {
-      // 构建FASTA头部，基因组序列使用realGeneId，其他使用mrnaid
       const headerId = type === 'genomic' ? realGeneId : mrnaid
       
-      // 根据类型和长度截取序列
       let processedSeq = seq
       if (type === 'upstream') {
         processedSeq = seq.slice(20000 - upLen, seq.length)
@@ -919,11 +915,9 @@ const handleShowSequence = async (eventData: { type: string; title: string; cont
       const lengthInfo = (type === 'upstream' || type === 'downstream') ? ` (${processedSeq.length}bp)` : ''
       fastaContent = `>${headerId} ${type}${lengthInfo}\n${processedSeq}\n`
     } else {
-      // 无效序列直接使用
       fastaContent = seq
     }
 
-    // 打开弹窗，显示FASTA格式序列
     showSequenceModal(
       title,
       fastaContent,
@@ -940,783 +934,183 @@ const handleShowSequence = async (eventData: { type: string; title: string; cont
   }
 }
 
-// 辅助函数：将序列按每行80个字符换行
-const formatSequence = (seq: string) => {
-  if (!seq) return ''
-  return seq.replace(/(.{1,80})/g, '$1\n')
-}
-
-// 下载当前转录本的所有序列
-const downloadCurrentTranscriptSequences = () => {
-  if (!result.value || !currentTranscript.value) {
-    ElMessage.error('无法获取基因序列数据')
-    return
-  }
-  
-  let transcriptSequences = ''
-  const geneId = result.value.IDs
-  const transcriptId = currentTranscript.value.id
-  
-  // 收集当前转录本的所有可用序列
-  
-  // 添加基因组序列
-  if (result.value.gene_seq && result.value.gene_seq !== 'N/A') {
-    transcriptSequences += `>${geneId} genomic\n${formatSequence(result.value.gene_seq)}\n\n`
-  }
-  
-  // 添加当前转录本的mRNA序列
-  if (currentTranscript.value.mrna_seq && currentTranscript.value.mrna_seq !== 'N/A') {
-    transcriptSequences += `>${transcriptId} mRNA\n${formatSequence(currentTranscript.value.mrna_seq)}\n\n`
-  }
-  
-  // 添加当前转录本的上游序列
-  if (currentTranscript.value.upstream_seq && currentTranscript.value.upstream_seq !== 'N/A') {
-    transcriptSequences += `>${transcriptId} upstream\n${formatSequence(currentTranscript.value.upstream_seq)}\n\n`
-  }
-  
-  // 添加当前转录本的下游序列
-  if (currentTranscript.value.downstream_seq && currentTranscript.value.downstream_seq !== 'N/A') {
-    transcriptSequences += `>${transcriptId} downstream\n${formatSequence(currentTranscript.value.downstream_seq)}\n\n`
-  }
-  
-  // 添加当前转录本的cDNA序列
-  if (currentTranscript.value.cdna_seq && currentTranscript.value.cdna_seq !== 'N/A' && currentTranscript.value.cdna_seq !== 'unavailable') {
-    transcriptSequences += `>${transcriptId} cDNA\n${formatSequence(currentTranscript.value.cdna_seq)}\n\n`
-  }
-  
-  // 添加其他序列类型（使用当前转录本的序列）
-  const transcriptSequenceTypes = [
-    { key: 'cds_seq', type: 'cds', label: 'CDS Sequence' },
-    { key: 'protein_seq', type: 'protein', label: 'Protein Sequence' }
-  ]
-  
-  transcriptSequenceTypes.forEach(item => {
-    // @ts-ignore
-    const sequence = currentTranscript.value[item.key]
-    if (sequence && sequence !== 'N/A' && sequence !== 'unavailable' && sequence !== 'CDS sequence not found' && sequence !== 'Protein sequence not found') {
-      transcriptSequences += `>${transcriptId} ${item.type}\n${formatSequence(sequence)}\n\n`
-    }
-  })
-  
-  if (!transcriptSequences) {
-    ElMessage.error('No sequence data available')
-    return
-  }
-  
-  // 创建并下载文件
-  const blob = new Blob([transcriptSequences], { type: 'text/plain' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `${transcriptId}_all_sequences.fasta`
-  // 使用document.createEvent来创建一个自定义事件，避免触发页面刷新
-  const event = new MouseEvent('click', {
-    bubbles: true,
-    cancelable: true,
-    view: window
-  })
-  document.body.appendChild(a)
-  a.dispatchEvent(event)
-  document.body.removeChild(a)
-  URL.revokeObjectURL(url)
-  
-  ElMessage.success('All sequences for the current transcript have been downloaded')
-}
-
-// 下载参数弹窗相关
-const downloadDialogVisible = ref(false)
-const downloadForm = ref({
-  dataTypes: [],
-  format: 'fasta'
-})
-
-// 显示下载参数弹窗
 const showDownloadDialog = () => {
-  // 重置下载模式为默认（所有转录本）
-  downloadMode.value = 'all'
   downloadDialogVisible.value = true
 }
 
-// 显示当前转录本的下载参数弹窗
 const showCurrentTranscriptDownloadDialog = () => {
-  // 设置下载模式为当前转录本
-  downloadMode.value = 'current'
   downloadDialogVisible.value = true
 }
 
-// 下载模式：'all' 表示下载所有转录本，'current' 表示只下载当前转录本
-const downloadMode = ref('all')
-
-// 下载选定的数据
 const downloadSelectedData = () => {
-  if (!result.value) {
-    ElMessage.error('无法获取基因数据')
-    return
+  const dataTypes = downloadForm.value.dataTypes
+  const format = downloadForm.value.format
+  let content = ''
+  
+  if (!result.value) return
+  
+  if (dataTypes.includes('genomic') && result.value.gene_seq) {
+    content += `>${result.value.IDs} genomic\n${result.value.gene_seq}\n\n`
+  }
+  if (dataTypes.includes('mrna') && result.value.mrna_seq) {
+    content += `>${result.value.IDs} mrna\n${result.value.mrna_seq}\n\n`
+  }
+  if (dataTypes.includes('upstream') && result.value.upstream_seq) {
+    content += `>${result.value.IDs} upstream\n${result.value.upstream_seq}\n\n`
+  }
+  if (dataTypes.includes('downstream') && result.value.downstream_seq) {
+    content += `>${result.value.IDs} downstream\n${result.value.downstream_seq}\n\n`
+  }
+  if (dataTypes.includes('cdna') && result.value.cdna_seq) {
+    content += `>${result.value.IDs} cdna\n${result.value.cdna_seq}\n\n`
+  }
+  if (dataTypes.includes('cds') && result.value.cds_seq) {
+    content += `>${result.value.IDs} cds\n${result.value.cds_seq}\n\n`
+  }
+  if (dataTypes.includes('protein') && result.value.protein_seq) {
+    content += `>${result.value.IDs} protein\n${result.value.protein_seq}\n\n`
   }
   
-  const { dataTypes, format } = downloadForm.value
-  if (dataTypes.length === 0) {
-    ElMessage.error('请选择至少一种数据类型')
-    return
-  }
-  
-  // 这里可以根据选择的参数实现下载逻辑
-  // 每种类型一个文件，包含该基因该类型的所有数据
-  dataTypes.forEach(type => {
-    let sequences = ''
-    if (!result.value) return
-    
-    const geneId = result.value.IDs
-    
-    // 收集该类型的所有序列
-  if (type === 'genomic') {
-    // 基因组序列 - 只有一个
-    if (result.value.gene_seq && result.value.gene_seq !== 'N/A') {
-      sequences += `>${geneId} genomic\n${formatSequence(result.value.gene_seq)}\n\n`
-    }
-  } else if (result.value.mrna_transcripts) {
-    // 根据下载模式决定处理哪些转录本
-    if (downloadMode.value === 'current') {
-      // 只处理当前转录本
-      if (currentTranscript.value) {
-        let sequence: string = ''
-        
-        switch (type) {
-          case 'mrna':
-            sequence = currentTranscript.value.mrna_seq || ''
-            break
-          case 'upstream':
-            sequence = currentTranscript.value.upstream_seq || ''
-            break
-          case 'downstream':
-            sequence = currentTranscript.value.downstream_seq || ''
-            break
-          case 'cdna':
-            sequence = currentTranscript.value.cdna_seq || ''
-            break
-          case 'cds':
-            sequence = currentTranscript.value.cds_seq || ''
-            break
-          case 'protein':
-            sequence = currentTranscript.value.protein_seq || ''
-            break
-        }
-        
-        if (sequence && sequence !== 'N/A' && sequence !== 'unavailable' && sequence !== 'CDS sequence not found' && sequence !== 'Protein sequence not found') {
-          sequences += `>${currentTranscript.value.id} ${type}\n${formatSequence(sequence)}\n\n`
-        }
-      }
-    } else {
-      // 处理所有转录本
-      result.value.mrna_transcripts.forEach(transcript => {
-        let sequence: string = ''
-        
-        switch (type) {
-          case 'mrna':
-            sequence = transcript.mrna_seq || ''
-            break
-          case 'upstream':
-            sequence = transcript.upstream_seq || ''
-            break
-          case 'downstream':
-            sequence = transcript.downstream_seq || ''
-            break
-          case 'cdna':
-            sequence = transcript.cdna_seq || ''
-            break
-          case 'cds':
-            sequence = transcript.cds_seq || ''
-            break
-          case 'protein':
-            sequence = transcript.protein_seq || ''
-            break
-        }
-        
-        if (sequence && sequence !== 'N/A' && sequence !== 'unavailable' && sequence !== 'CDS sequence not found' && sequence !== 'Protein sequence not found') {
-          sequences += `>${transcript.id} ${type}\n${formatSequence(sequence)}\n\n`
-        }
-      })
-    }
-  }
-    
-    if (sequences) {
-      // 创建并下载文件
-      const blob = new Blob([sequences], { type: 'text/plain' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      // 根据下载模式调整文件名
-      const fileName = downloadMode.value === 'current' && currentTranscript.value 
-        ? `${currentTranscript.value.id}_${type}.${format}` 
-        : `${geneId}_${type}.${format}`
-      a.download = fileName
-      const event = new MouseEvent('click', {
-        bubbles: true,
-        cancelable: true,
-        view: window
-      })
-      document.body.appendChild(a)
-      a.dispatchEvent(event)
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
-    }
-  })
-  
+  downloadFile(content, `${result.value.IDs}_sequences.${format}`, format === 'fasta' ? 'text/fasta' : 'text/plain')
   downloadDialogVisible.value = false
-  ElMessage.success(`已下载 ${dataTypes.length} 个文件`)
 }
 
-// 下载所有序列
-const downloadAllSequences = async () => {
-  if (!result.value) {
-    ElMessage.error('Cannot retrieve gene sequence data')
-    return
-  }
-  
-  isLoading.value = true
-  let allSequences = ''
-  const geneId = result.value.IDs
-  
-  // 定义所有需要下载的序列类型
-  const allSeqTypes = ['genomic', 'mrna', 'upstream', 'downstream', 'cdna', 'cds', 'protein']
-  
-  // 获取所有转录本
-  const transcripts = result.value.mrna_transcripts || []
-  
-  try {
-    // 添加基因组序列（直接从result获取，不需要请求后端）
-    if (result.value.gene_seq && result.value.gene_seq !== 'N/A') {
-      const formattedSeq = formatSequence(result.value.gene_seq)
-      allSequences += `>${geneId} genomic\n${formattedSeq}\n\n`
-    }
-    
-    // 为每个转录本处理所有序列类型
-    for (const transcript of transcripts) {
-      const transcriptId = transcript.id
-      
-      // 为每种序列类型获取序列
-      for (const seqType of allSeqTypes) {
-        // 跳过基因组序列，因为已经添加过了
-        if (seqType === 'genomic') continue
-        
-        // 尝试从当前转录本获取序列
-        let seqContent = ''
-        let foundInResult = false
-        
-        // 根据序列类型从transcript或result中获取
-        switch (seqType) {
-          case 'mrna':
-            if (transcript.mrna_seq && transcript.mrna_seq !== 'N/A') {
-              seqContent = transcript.mrna_seq
-              foundInResult = true
-            }
-            break
-          case 'upstream':
-            if (transcript.upstream_seq && transcript.upstream_seq !== 'N/A') {
-              seqContent = transcript.upstream_seq
-              foundInResult = true
-            }
-            break
-          case 'downstream':
-            if (transcript.downstream_seq && transcript.downstream_seq !== 'N/A') {
-              seqContent = transcript.downstream_seq
-              foundInResult = true
-            }
-            break
-          case 'cdna':
-            if (transcript.cdna_seq && transcript.cdna_seq !== 'N/A' && transcript.cdna_seq !== 'unavailable') {
-              seqContent = transcript.cdna_seq
-              foundInResult = true
-            }
-            break
-          case 'cds':
-            if (transcript.cds_seq && transcript.cds_seq !== 'N/A' && transcript.cds_seq !== 'unavailable' && transcript.cds_seq !== 'CDS sequence not found') {
-              seqContent = transcript.cds_seq
-              foundInResult = true
-            }
-            break
-          case 'protein':
-            if (transcript.protein_seq && transcript.protein_seq !== 'N/A' && transcript.protein_seq !== 'unavailable' && transcript.protein_seq !== 'Protein sequence not found') {
-              seqContent = transcript.protein_seq
-              foundInResult = true
-            }
-            break
-        }
-        
-        // 如果在result中没有找到，使用store获取序列
-        if (!foundInResult) {
-          // 使用store获取序列，自动处理缓存
-          seqContent = await geneSearchStore.fetchSequence(geneId, transcriptId, seqType, upstreamLength.value, downstreamLength.value)
-        }
-        
-        // 如果获取到了序列，添加到结果中
-        if (seqContent && seqContent !== 'Sequence not found' && seqContent !== 'N/A') {
-          const formattedSeq = formatSequence(seqContent)
-          // 基因组序列使用gene_id，其他使用transcriptId
-          const headerId = seqType === 'genomic' ? geneId : transcriptId
-          allSequences += `>${headerId} ${seqType}\n${formattedSeq}\n\n`
-        }
-      }
-    }
-    
-    // 如果没有获取到任何序列
-    if (!allSequences) {
-      ElMessage.error('No sequence data available')
-      return
-    }
-    
-    // 创建并下载文件
-    const blob = new Blob([allSequences], { type: 'text/plain' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${geneId}_all_sequences.fasta`
-    // 使用document.createEvent来创建一个自定义事件，避免触发页面刷新
-    const event = new MouseEvent('click', {
-      bubbles: true,
-      cancelable: true,
-      view: window
-    })
-    document.body.appendChild(a)
-    a.dispatchEvent(event)
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-    
-    ElMessage.success('All sequences downloaded successfully')
-  } catch (error) {
-    console.error('Failed to download sequences:', error)
-    ElMessage.error('Failed to download sequences, please try again')
-  } finally {
-    isLoading.value = false
-  }
-}
-
-// 下载GFF数据
-const downloadGff = (format: string) => {
-  const geneId = currentGeneId.value || result.value?.IDs || ''
-  
-  if (format === 'txt') {
-    // 生成TXT格式文本
-    let txtContent = ''
-    
-    gffData.value.forEach((item: GffItem) => {
-      const fields = [
-        item.seqid || '',
-        item.source || '',
-        item.type || '',
-        item.start || '',
-        item.end || '',
-        item.score || '',
-        item.strand || '',
-        item.phase || '',
-        item.attributes || ''
-      ]
-      txtContent += fields.join('\t') + '\n'
-    })
-    
-    const blob = new Blob([txtContent], { type: 'text/plain' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${geneId}_gff.txt`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-    
-    ElMessage.success('GFF data has been downloaded as TXT format')
-  } else if (format === 'gff') {
-    // 生成标准GFF格式文本
-    let gffContent = ''
-    
-    gffData.value.forEach((item: GffItem) => {
-      const fields = [
-        item.seqid || '',
-        item.source || '.',
-        item.type || '.',
-        item.start || '.',
-        item.end || '.',
-        item.score || '.',
-        item.strand || '.',
-        item.phase || '.',
-        item.attributes || '.'
-      ]
-      gffContent += fields.join('\t') + '\n'
-    })
-    
-    const blob = new Blob([gffContent], { type: 'text/plain' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${geneId}_gff.gff`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-    
-    ElMessage.success('GFF data has been downloaded as GFF format')
-  }
-}
-
-// 加载基因表达量数据
-const loadExpressionData = async (geneId: string, genomeId?: string, dbId?: string) => {
-  if (!geneId && !dbId) return
-  
-  expressionLoading.value = true
-  try {
-    const params: any = {}
-    if (dbId) {
-      params.db_id = dbId
-    } else {
-      params.gene_id = geneId
-      params.genome_id = genomeId || route.query.genome_id
-    }
-    
-    const response = await httpInstance.post('/CottonOGD_api/extract_expression/', params) as any
-    
-    if (response.expression && response.expression.length > 0) {
-      expressionData.value = response.expression
-      // 提取组织列表（排除id_id和geneid列）
-      if (response.expression.length > 0) {
-        const firstItem = response.expression[0]
-        expressionTissues.value = Object.keys(firstItem).filter(key => 
-          key !== 'id_id' && key !== 'geneid' && typeof firstItem[key] === 'number'
-        )
-      }
-    }
-  } catch (error) {
-    console.error('获取基因表达量数据失败:', error)
-  } finally {
-    expressionLoading.value = false
-  }
-}
-
-// 下载表达量数据
-const downloadExpressionData = () => {
-  if (expressionData.value.length === 0) {
-    ElMessage.warning('No expression data available for download')
-    return
-  }
-
-  // 获取所有组织列名
-  const tissueColumns = expressionTissues.value
-  
-  // 构建CSV表头
-  const headers = ['Gene ID', ...tissueColumns]
-  
-  // 构建CSV行
-  const rows = expressionData.value.map(item => {
-    const row = [item.geneid]
-    tissueColumns.forEach(col => {
-      row.push(item[col] !== undefined ? item[col] : '-')
-    })
-    return row
-  })
-  
-  // 组合表头和行
-  const csvContent = [
-    headers.join(','),
-    ...rows.map(row => row.join(','))
-  ].join('\n')
-  
-  // 添加BOM标记，解决Excel打开中文乱码问题
-  const bom = new Uint8Array([0xEF, 0xBB, 0xBF])
-  const blob = new Blob([bom, csvContent], { type: 'text/csv;charset=utf-8;' })
+const downloadFile = (content: string, filename: string, type: string) => {
+  const blob = new Blob([content], { type: type })
+  const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
-  
-  if (link.download !== undefined) {
-    const url = URL.createObjectURL(blob)
-    link.setAttribute('href', url)
-    link.setAttribute('download', 'gene_expression_data.csv')
-    link.style.visibility = 'hidden'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
 }
 
-// 处理基因ID和基因组ID的函数
-const fetchGeneDataWithGeneId = async (gene_id: string, genome_id: string) => {
-  // 添加延迟显示加载状态
-  const loadingTimeout = setTimeout(() => {
-    isLoading.value = true
-  }, 300)
-  
-  errorMessage.value = ''
-  selectedTranscriptIndex.value = 0
-  
-  try {
-    console.log('从后端获取基因数据，gene_id:', gene_id, 'genome_id:', genome_id)
-    const formData = {
-      gene_id: gene_id,
-      genome_id: genome_id
-    }
-    
-    const req_uuid = uuidv4()
-    await httpInstance.post('/CottonOGD_api/login/', {}, {
-      headers: {
-        'Content-Type': 'application/json',
-        'uuid': req_uuid
-      }
+const downloadGff = (format: string) => {
+  let content = ''
+  if (format === 'gff') {
+    content = '##gff-version 3\n'
+    gffData.value.forEach(item => {
+      content += `${item.seqid || '.'}\t${item.source || '.'}\t${item.type || '.'}\t${item.start || '.'}\t${item.end || '.'}\t${item.score || '.'}\t${item.strand || '.'}\t${item.phase || '.'}\t${item.attributes || '.'}\n`
     })
-    
-    const response = await httpInstance.post(
-      '/CottonOGD_api/geneid_result/',
-      formData,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'uuid': req_uuid
-        }
-      }
-    )
-
-    // 清除加载超时定时器
-    clearTimeout(loadingTimeout)
-    
-    // 注意：axios interceptor returns response.data directly
-    const responseData = response as any
-    const data = JSON.parse(responseData.results) as any
-    console.log('从后端获取基因数据，响应数据:', data)
-    
-    if (data.status === 'error' || data.status === 'not_found') {
-      throw new Error(data.error || 'Gene information not found')
-    }
-    
-    // 更新数据 - 从results数组中获取type为gene的数据
-    if (data.gff_data && data.gff_data.length > 0) {
-      // 查找 type 为 gene 的基因信息
-      const geneInfo = data.gff_data.find((item: any) => item.type === 'gene') || data.gff_data[0]
-      
-      result.value = {
-        ...geneInfo,
-        gene_seq: data.gene_seq || '',
-        IDs: data.IDs || geneInfo.IDs || '',
-        jbrowse_url: data.jbrowse_url || '',
-        gff_data: data.gff_data || [],
-        mrna_transcripts: data.mrna_transcripts || [],
-        gene_go_result: data.gene_go_result || [],
-        gene_kegg_result: data.gene_kegg_result || []
-      }
-    } else {
-      throw new Error('No gene information found')
-    }
-    
-    // 处理注释数据
-    processAnnotations(data.geneid_result || [])
-    
-    jbrowse_url.value = data.jbrowse_url || ''
-    
-    // 设置GFF数据
-    gffData.value = data.gff_data || data.gene_info_result || []
-    hasGffData.value = gffData.value.length > 0
-    // 重置页码到第一页
-    currentPage.value = 1
-    
-    // 存储基因详细信息到 navigationStore 的 geneDetail 中
-    if (result.value) {
-      navigationStore.setNavigationData('geneDetail', {
-        results: {
-          ...result.value,
-          jbrowse_url: jbrowse_url.value,
-          gff_data: gffData.value
-        },
-        dbId: gene_id
-      })
-      console.log('基因数据已存储到 navigationStore:', result.value.IDs)
-    }
-                                
-  } catch (error: any) {
-    // 清除加载超时定时器
-    clearTimeout(loadingTimeout)
-    errorMessage.value = error.message
-    console.error('获取基因数据错误:', error)
-  } finally {
-    isLoading.value = false
+  } else {
+    content = 'seqid\tsource\ttype\tstart\tend\tscore\tstrand\tphase\tattributes\n'
+    gffData.value.forEach(item => {
+      content += `${item.seqid || ''}\t${item.source || ''}\t${item.type || ''}\t${item.start || ''}\t${item.end || ''}\t${item.score || ''}\t${item.strand || ''}\t${item.phase || ''}\t${item.attributes || ''}\n`
+    })
   }
+  downloadFile(content, `gene_gff.${format}`, 'text/plain')
 }
 
-// 生命周期钩子
+const downloadExpressionData = () => {
+  if (expressionData.value.length === 0) return
+  
+  let content = 'Gene ID\t' + expressionTissues.value.join('\t') + '\n'
+  expressionData.value.forEach(row => {
+    const values = expressionTissues.value.map(tissue => row[tissue] !== undefined ? row[tissue].toFixed(4) : '-')
+    content += `${row.geneid}\t${values.join('\t')}\n`
+  })
+  downloadFile(content, 'gene_expression.txt', 'text/plain')
+}
+
+const router = useRouter()
+const route = useRoute()
+
 onMounted(() => {
-  // 首先检查 URL 参数
-  const db_id = route.query.db_id as string
-  const gene_id = route.query.gene_id as string
-  const genome_id = route.query.genome_id as string
-  
-  console.log('URL params:', { db_id, gene_id, genome_id })
-  
-  // 然后检查 navigationStore 中的基因详细信息
-  const geneDetailData = navigationStore.getNavigationData('geneDetail')
-  console.log('从 navigationStore 获取基因详细信息:', geneDetailData)
-  
-  if (db_id && !hasFetched.value) {
-    // 如果有 URL 参数，使用参数获取数据
-    hasFetched.value = true
+  const db_id = route.query.db_id as string || route.params.id as string
+  if (db_id) {
     fetchGeneData(db_id)
-    // 加载基因表达量数据
-    if (gene_id) {
-      loadExpressionData(gene_id, genome_id)
-    }
-  } else if (gene_id && genome_id && !hasFetched.value) {
-    // 如果有基因ID和基因组ID参数，使用这些参数获取数据
-    hasFetched.value = true
-    fetchGeneDataWithGeneId(gene_id, genome_id)
-    // 加载基因表达量数据
-    loadExpressionData(gene_id, genome_id)
-  } else if (geneDetailData && geneDetailData.results) {
-    // 如果没有 URL 参数但有导航数据，使用导航数据
-    console.log('从 navigationStore 加载基因数据:', geneDetailData.results.IDs)
-    
-    // 直接使用导航数据
-    result.value = geneDetailData.results
-    
-    // 处理注释数据
-    processAnnotations([])
-    
-    // 设置 jbrowse_url
-    jbrowse_url.value = geneDetailData.results.jbrowse_url || ''
-    
-    // 设置 GFF 数据
-    gffData.value = geneDetailData.results.gff_data || []
-    hasGffData.value = gffData.value.length > 0
-    
-    // 重置页码到第一页
-    currentPage.value = 1
-    
-    // 加载基因表达量数据
-    const geneId = geneDetailData.results.IDs
-    const genomeIdFromResult = geneDetailData.results.genome_id || route.query.genome_id
-    if (geneId) {
-      loadExpressionData(geneId, genomeIdFromResult as string)
-    }
-    
-    // 标记为已获取
-    hasFetched.value = true
-  } else {
-    // 既没有 URL 参数也没有导航数据
-    errorMessage.value = 'Database ID not provided'
   }
 })
 </script>
 
 <style scoped>
-/* 自定义样式 */
-.container {
-  max-width: 1300px;
-  margin: 0 auto;
-  padding: 0 15px;
+.result-container {
+  position: relative;
 }
 
-.mt-4 {
-  margin-top: 1.5rem;
+.function-content {
+  max-height: 400px;
+  overflow-y: auto;
 }
 
-.mb-3 {
-  margin-bottom: 1rem;
+.annotation-section {
+  margin-bottom: 16px;
 }
 
-.mb-4 {
-  margin-bottom: 1.5rem;
+.section-header {
+  margin-bottom: 8px;
 }
 
-.ml-2 {
-  margin-left: 0.5rem;
+.annotation-link {
+  color: #409eff;
+  text-decoration: none;
+  font-size: 14px;
 }
 
-.text-center {
+.annotation-link:hover {
+  text-decoration: underline;
+}
+
+.annotation-text {
+  font-size: 14px;
+  color: #666;
+}
+
+.annotation-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.annotation-list-item {
+  padding: 4px 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.empty-state {
+  padding: 20px;
   text-align: center;
 }
 
-.py-5 {
-  padding: 3rem 0;
+.nav-tabs-container {
+  width: 100%;
 }
 
-.card-header {
-  font-size: 16px;
-  font-weight: 500;
+.nav-tabs {
+  border-bottom: none;
 }
 
-.gene-structure-container {
-  overflow-x: auto;
+.tab-icon {
+  margin-right: 4px;
 }
 
-.gene-structure-svg {
-  display: block;
-  margin: 0 auto;
+.tab-content {
+  padding: 16px 0;
+}
+
+.jbrowse-container {
+  width: 100%;
+  height: 400px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.jbrowse-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.annotation-title {
+  margin-bottom: 12px;
 }
 
 .table-info {
   font-size: 14px;
   color: #666;
-}
-
-.dialog-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-}
-
-/* 注释列表样式 */
-.annotation-list {
-  background-color: #f5f7fa;
-  border-radius: 4px;
-  padding: 12px;
-}
-
-.annotation-item {
-  padding: 8px 0;
-  border-bottom: 1px solid #e4e7ed;
-}
-
-.annotation-item:last-child {
-  border-bottom: none;
-}
-
-/* 结果容器样式 */
-.result-container {
-  position: relative;
-}
-
-/* 锚点侧边栏样式 */
-.anchor-sidebar {
-  position: fixed;
-  left: 10px;
-  top: 280px;
-  width: 140px;
-  z-index: 200;
-}
-
-/* 主内容区域样式 */
-.main-content {
-  margin-left: 0;
-  width: 100%;
-}
-
-/* 锚点导航样式 */
-:deep(.el-anchor) {
-  background: #fff;
-  padding: 8px;
-  border-radius: 4px;
-  box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.1);
-  font-size: 24px;
-}
-
-:deep(.el-anchor-link) {
-  padding: 4px 0;
-}
-
-:deep(.el-anchor-link__title) {
-  font-size: 18px;
-}
-
-:deep(.el-anchor__marker) {
-  display: none;
-}
-
-/* 响应式布局：小屏幕时隐藏锚点 */
-@media (max-width: 1400px) {
-  .anchor-sidebar {
-    display: none;
-  }
 }
 </style>

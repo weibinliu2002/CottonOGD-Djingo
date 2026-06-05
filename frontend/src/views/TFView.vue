@@ -127,8 +127,8 @@ import { useNavigationStore } from '@/stores/navigationStore'
 export default {
   name: 'TFView',
   components: {
-    //QuestionFilled,
-    //VideoPlay,
+    QuestionFilled,
+    VideoPlay,
     Search
   },
   setup() {
