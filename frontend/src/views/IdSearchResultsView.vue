@@ -1,14 +1,5 @@
 <template>
   <div class="container mt-4">
-    <!-- 返回按钮 -->
-    <el-row :gutter="20" class="mb-4">
-      <el-col :span="24" class="text-right">
-        <router-link to="/tools/id-search/id-search-summary/">
-          <el-button type="default">{{ t('return_to_search') }}</el-button>
-        </router-link>
-      </el-col>
-    </el-row>
-    
     <!-- 加载状态 -->
     <div v-if="isLoading" class="mb-4">
       <el-skeleton :rows="10" animated />
@@ -721,6 +712,7 @@ const fetchGeneData = async (db_id: string) => {
     const needFetchFromBackend = !navigationData || !navigationData.results || !navigationData.results.jbrowse_url
     
     if (navigationData && navigationData.results && !needFetchFromBackend) {
+      clearTimeout(loadingTimeout)
       result.value = navigationData.results
       
       if (navigationData.results.geneid_result && Array.isArray(navigationData.results.geneid_result)) {
@@ -760,79 +752,94 @@ const fetchGeneData = async (db_id: string) => {
       hasGffData.value = gffData.value.length > 0
       currentPage.value = 1
       
-      navigationStore.setNavigationData('geneDetail', {
-        results: {
-          ...result.value,
-          jbrowse_url: jbrowse_url.value,
-          gff_data: gffData.value
-        },
-        dbId: db_id
-      })
-      
       const geneId = result.value?.IDs
       if (geneId) {
         loadExpressionData(geneId, undefined, db_id)
       }
     } else {
-      const response = await httpInstance.get(`/CottonOGD_api/gene_id/${db_id}/`)
-      const data = response.data
+      console.log('=== 开始获取基因数据 ===')
+      console.log('db_id:', db_id)
       
-      if (data && data.results) {
-        result.value = data.results
+      try {
+        const response = await httpInstance.post('/CottonOGD_api/geneid_result/', { db_id: db_id })
+        console.log('response 对象:', response)
+        console.log('response 类型:', typeof response)
         
-        if (data.results.geneid_result && Array.isArray(data.results.geneid_result)) {
-          processAnnotations(data.results.geneid_result)
-        }
+        const data = response.data !== undefined ? response.data : response
+        console.log('数据对象:', data)
+        console.log('数据类型:', typeof data)
+        console.log('data.results 存在:', data && !!data.results)
         
-        if (data.results.gene_go_result && data.results.gene_go_result.length > 0) {
-          const goAnnotations = data.results.gene_go_result.map((item: any) => ({
-            annotation: `${item.go_type}: ${item.go_description} (${item.go_id})`,
-            geneid_id: item.geneid_id,
-            genome_id: item.genome_id,
-            id_id: item.id_id
-          }))
-          if (!annotations.value.GO_annotation) {
-            annotations.value.GO_annotation = []
+        if (data && data.results) {
+          console.log('开始解析JSON:', data.results)
+          try {
+            result.value = JSON.parse(data.results)
+            console.log('JSON解析成功:', result.value)
+            console.log('result.value.geneid_result:', result.value.geneid_result)
+          } catch (parseError) {
+            console.error('JSON解析失败:', parseError)
+            throw new Error('Failed to parse gene data')
           }
-          annotations.value.GO_annotation = [...annotations.value.GO_annotation, ...goAnnotations]
-        }
-        
-        if (data.results.gene_kegg_result && data.results.gene_kegg_result.length > 0) {
-          const keggAnnotations = data.results.gene_kegg_result.map((item: any) => ({
-            annotation: `${item.kegg_type}: ${item.kegg_description} (${item.kegg_id})`,
-            geneid_id: item.geneid_id,
-            genome_id: item.genome_id,
-            id_id: item.id_id
-          }))
-          if (!annotations.value.KEGG_annotation) {
-            annotations.value.KEGG_annotation = []
+          
+          if (result.value.geneid_result && Array.isArray(result.value.geneid_result)) {
+            processAnnotations(result.value.geneid_result)
           }
-          annotations.value.KEGG_annotation = [...annotations.value.KEGG_annotation, ...keggAnnotations]
+          
+          if (result.value.gene_go_result && result.value.gene_go_result.length > 0) {
+            const goAnnotations = result.value.gene_go_result.map((item: any) => ({
+              annotation: `${item.go_type}: ${item.go_description} (${item.go_id})`,
+              geneid_id: item.geneid_id,
+              genome_id: item.genome_id,
+              id_id: item.id_id
+            }))
+            if (!annotations.value.GO_annotation) {
+              annotations.value.GO_annotation = []
+            }
+            annotations.value.GO_annotation = [...annotations.value.GO_annotation, ...goAnnotations]
+          }
+          
+          if (result.value.gene_kegg_result && result.value.gene_kegg_result.length > 0) {
+            const keggAnnotations = result.value.gene_kegg_result.map((item: any) => ({
+              annotation: `${item.kegg_type}: ${item.kegg_description} (${item.kegg_id})`,
+              geneid_id: item.geneid_id,
+              genome_id: item.genome_id,
+              id_id: item.id_id
+            }))
+            if (!annotations.value.KEGG_annotation) {
+              annotations.value.KEGG_annotation = []
+            }
+            annotations.value.KEGG_annotation = [...annotations.value.KEGG_annotation, ...keggAnnotations]
+          }
+          
+          jbrowse_url.value = result.value.jbrowse_url || ''
+        } else {
+          throw new Error('No gene information found')
         }
         
-        jbrowse_url.value = data.results.jbrowse_url || ''
-      } else {
-        throw new Error('No gene information found')
-      }
-      
-      gffData.value = data.gff_data || data.gene_info_result || []
-      hasGffData.value = gffData.value.length > 0
-      currentPage.value = 1
-      
-      if (result.value) {
-        navigationStore.setNavigationData('geneDetail', {
-          results: {
-            ...result.value,
-            jbrowse_url: jbrowse_url.value,
-            gff_data: gffData.value
-          },
-          dbId: db_id
-        })
+        gffData.value = result.value.gff_data || []
+        hasGffData.value = gffData.value.length > 0
+        currentPage.value = 1
         
-        const geneId = result.value?.IDs
-        if (geneId) {
-          loadExpressionData(geneId, undefined, db_id)
+        if (result.value) {
+          navigationStore.setNavigationData('geneDetail', {
+            results: {
+              ...result.value,
+              jbrowse_url: jbrowse_url.value,
+              gff_data: gffData.value
+            },
+            dbId: db_id
+          })
+          
+          const geneId = result.value?.IDs
+          if (geneId) {
+            loadExpressionData(geneId, undefined, db_id)
+          }
         }
+        
+        clearTimeout(loadingTimeout)
+      } catch (requestError) {
+        console.error('请求失败:', requestError)
+        throw requestError
       }
                                 
     }
@@ -846,6 +853,9 @@ const fetchGeneData = async (db_id: string) => {
 }
 
 const loadExpressionData = async (geneId: string, tissue?: string, db_id?: string) => {
+  console.log('=== 开始加载Expression数据 ===')
+  console.log('geneId:', geneId, 'tissue:', tissue, 'db_id:', db_id)
+  
   expressionLoading.value = true
   try {
     const response = await httpInstance.get('/CottonOGD_api/gene_expression/', {
@@ -855,15 +865,23 @@ const loadExpressionData = async (geneId: string, tissue?: string, db_id?: strin
         db_id: db_id || ''
       }
     })
-    const data = response.data
+    console.log('Expression响应:', response)
+    
+    const data = response.data !== undefined ? response.data : response
+    console.log('Expression数据:', data)
+    
     if (data && data.results) {
       expressionData.value = data.results
+      console.log('Expression数据设置成功:', expressionData.value.length, '条')
       if (data.results.length > 0) {
         const firstRow = data.results[0]
         expressionTissues.value = Object.keys(firstRow).filter(key => 
           key !== 'geneid' && key !== 'genome_id' && key !== 'id'
         )
+        console.log('Expression tissues:', expressionTissues.value)
       }
+    } else {
+      console.log('Expression数据为空')
     }
   } catch (error) {
     console.error('获取基因表达数据失败:', error)
