@@ -171,6 +171,34 @@
                   Sequence
                 </template>
               </el-tab-pane>
+              <el-tab-pane label="GO annotation" name="goAnnotation" v-if="goAnnotationData.length > 0">
+                  <template #label>
+                  <span class="tab-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                      <polyline points="14 2 14 8 20 8" />
+                      <line x1="16" y1="13" x2="8" y2="13" />
+                      <line x1="16" y1="17" x2="8" y2="17" />
+                      <polyline points="10 9 9 9 8 9" />
+                    </svg>
+                  </span>
+                  GO annotation
+                </template>
+              </el-tab-pane>
+              <el-tab-pane label="KEGG annotation" name="keggAnnotation" v-if="keggAnnotationData.length > 0">
+                  <template #label>
+                  <span class="tab-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                      <polyline points="14 2 14 8 20 8" />
+                      <line x1="16" y1="13" x2="8" y2="13" />
+                      <line x1="16" y1="17" x2="8" y2="17" />
+                      <polyline points="10 9 9 9 8 9" />
+                    </svg>
+                  </span>
+                  KEGG annotation
+                </template>
+              </el-tab-pane>
               <el-tab-pane label="Annotations" name="annotations" v-if="Object.keys(annotations).length > 0">
                 <template #label>
                   <span class="tab-icon">
@@ -220,7 +248,7 @@
             <el-table-column prop="start" label="Start" min-width="100" />
             <el-table-column prop="end" label="End" min-width="100" />
             <el-table-column prop="score" label="Score" min-width="50" />
-            <el-table-column prop="strand" label="Strand" min-width="50" />
+            <el-table-column prop="Strand" label="Strand" min-width="50" />
             <el-table-column prop="phase" label="Phase" min-width="50" />
             <el-table-column prop="attributes" label="Attributes" min-width="200" />
           </el-table>
@@ -356,14 +384,10 @@
           </el-dialog>
         </div>
         
-        <!-- Annotations 内容 -->
-        <div v-if="activeTab === 'annotations'" class="tab-content">
-          <!-- GO注释 -->
-          <div v-if="parsedGoAnnotations.length > 0" class="mb-4">
-            <h4 class="annotation-title">
-              <el-tag type="primary" size="small">GO Annotation</el-tag>
-            </h4>
-            <el-table :data="parsedGoAnnotations" border>
+        <!-- GO Annotation 内容 -->
+        <div v-if="activeTab === 'goAnnotation'" class="tab-content">
+          <div class="mb-4">
+            <el-table :data="goAnnotationData" border stripe max-height="600">
               <el-table-column label="GO ID" width="150">
                 <template #default="scope">
                   <a :href="`https://www.ebi.ac.uk/QuickGO/term/${scope.row.id}`" target="_blank" rel="noopener noreferrer">
@@ -371,17 +395,16 @@
                   </a>
                 </template>
               </el-table-column>
-              <el-table-column prop="type" label="GO Type" width="150" />
+              <el-table-column prop="type" label="GO Type" width="120" />
               <el-table-column prop="term" label="Term" />
             </el-table>
           </div>
-          
-          <!-- KEGG注释 -->
-          <div v-if="parsedKeggAnnotations.length > 0" class="mb-4">
-            <h4 class="annotation-title">
-              <el-tag type="success" size="small">KEGG Annotation</el-tag>
-            </h4>
-            <el-table :data="parsedKeggAnnotations" border>
+        </div>
+        
+        <!-- KEGG Annotation 内容 -->
+        <div v-if="activeTab === 'keggAnnotation'" class="tab-content">
+          <div class="mb-4">
+            <el-table :data="keggAnnotationData" border stripe max-height="600">
               <el-table-column label="KEGG ID" width="150">
                 <template #default="scope">
                   <a :href="`https://www.genome.jp/dbget-bin/www_bget?ko+${scope.row.id}`" target="_blank" rel="noopener noreferrer">
@@ -392,10 +415,13 @@
               <el-table-column prop="description" label="Description" />
             </el-table>
           </div>
-          
+        </div>
+        
+        <!-- Annotations 内容 -->
+        <div v-if="activeTab === 'annotations'" class="tab-content">
           <!-- 其他注释类型 -->
           <div v-for="(annotationList, annotationType) in annotations" :key="annotationType" class="mb-4">
-            <div v-if="annotationType !== 'GO_annotation' && annotationType !== 'KEGG_annotation' && annotationList.length > 0">
+            <div v-if="annotationList.length > 0">
               <h4 class="annotation-title">
                 <el-tag type="info" size="small">{{ String(annotationType).replace(/_/g, ' ') }}</el-tag>
               </h4>
@@ -416,6 +442,11 @@
                 <el-table-column prop="annotation" label="Annotation" />
               </el-table>
             </div>
+          </div>
+          
+          <!-- 如果没有其他注释类型 -->
+          <div v-if="Object.keys(annotations).length === 0" class="text-muted">
+            No additional annotations available.
           </div>
         </div>
       </el-card>
@@ -453,11 +484,19 @@ const { t } = useI18n()
 // 定义类型
 interface Annotation {
   annotation: string
-  annoation_id?: string
+  annotation_id?: string
   annotation_source?: string
   geneid_id?: string
   genome_id?: string
   id_id?: string
+  id?: string
+  type?: string
+  go_id?: string
+  go_type?: string
+  go_description?: string
+  kegg_id?: string
+  kegg_type?: string
+  kegg_description?: string
 }
 
 interface GffItem {
@@ -561,12 +600,22 @@ const parsedGoAnnotations = computed(() => {
   const parsed: { type: string; term: string; id: string }[] = []
   
   goAnnotations.forEach((item: any) => {
-    if (item && item.go_type && item.go_description && item.go_id) {
-      parsed.push({
-        type: item.go_type,
-        term: item.go_description,
-        id: item.go_id
-      })
+    if (item && item.go_id) {
+      // 如果有完整的GO信息，使用完整信息
+      if (item.go_type && item.go_description) {
+        parsed.push({
+          type: item.go_type,
+          term: item.go_description,
+          id: item.go_id
+        })
+      } else {
+        // 如果只有go_id，只显示GO ID
+        parsed.push({
+          type: 'GO',
+          term: 'Click to view details',
+          id: item.go_id
+        })
+      }
     }
   })
   
@@ -579,15 +628,34 @@ const parsedKeggAnnotations = computed(() => {
   const parsed: { id: string; description: string }[] = []
   
   keggAnnotations.forEach((item: any) => {
-    if (item && item.kegg_id && item.kegg_description) {
-      parsed.push({
-        id: item.kegg_id,
-        description: item.kegg_description
-      })
+    if (item && item.kegg_id) {
+      // 如果有完整的KEGG信息，使用完整信息
+      if (item.kegg_description) {
+        parsed.push({
+          id: item.kegg_id,
+          description: item.kegg_description
+        })
+      } else {
+        // 如果只有kegg_id，只显示KEGG ID
+        parsed.push({
+          id: item.kegg_id,
+          description: 'Click to view details'
+        })
+      }
     }
   })
   
   return parsed
+})
+
+// 模板中使用的GO注释数据
+const goAnnotationData = computed(() => {
+  return parsedGoAnnotations.value
+})
+
+// 模板中使用的KEGG注释数据
+const keggAnnotationData = computed(() => {
+  return parsedKeggAnnotations.value
 })
 
 // 当前选择的转录本
@@ -680,18 +748,35 @@ const processAnnotations = (geneidResult: any[]) => {
   const newAnnotations: Record<string, Annotation[]> = {}
   if (Array.isArray(geneidResult)) {
     geneidResult.forEach(item => {
-      const annotationSource = item.annoation_source || item.annotation_source
-      if (annotationSource && item.annotation) {
+      const annotationSource = item.annotation_source || item.annoation_source || item.type || 'other'
+      let annotationText = item.annotation
+      
+      // 如果有GO或KEGG特定字段，构建完整的注释文本
+      if (item.go_id || item.go_type || item.go_description) {
+        annotationText = `${item.go_type || ''}: ${item.go_description || ''} (${item.go_id || ''})`.trim()
+      } else if (item.kegg_id || item.kegg_type || item.kegg_description) {
+        annotationText = `${item.kegg_type || ''}: ${item.kegg_description || ''} (${item.kegg_id || ''})`.trim()
+      }
+      
+      if (annotationText) {
         if (!newAnnotations[annotationSource]) {
           newAnnotations[annotationSource] = []
         }
         newAnnotations[annotationSource].push({
-          annotation: item.annotation,
-          annoation_id: item.annoation_id,
+          annotation: annotationText,
+          annotation_id: item.annotation_id || item.annoation_id,
           annotation_source: annotationSource,
           geneid_id: item.geneid_id,
           genome_id: item.genome_id,
-          id_id: item.id_id
+          id_id: item.id_id,
+          id: item.id,
+          type: item.type,
+          go_id: item.go_id,
+          go_type: item.go_type,
+          go_description: item.go_description,
+          kegg_id: item.kegg_id,
+          kegg_type: item.kegg_type,
+          kegg_description: item.kegg_description
         })
       }
     })
@@ -776,6 +861,10 @@ const fetchGeneData = async (db_id: string) => {
             result.value = JSON.parse(data.results)
             console.log('JSON解析成功:', result.value)
             console.log('result.value.geneid_result:', result.value.geneid_result)
+            console.log('result.value.gene_go_result:', result.value.gene_go_result)
+            console.log('result.value.gene_kegg_result:', result.value.gene_kegg_result)
+            console.log('parsedGoAnnotations:', parsedGoAnnotations.value)
+            console.log('parsedKeggAnnotations:', parsedKeggAnnotations.value)
           } catch (parseError) {
             console.error('JSON解析失败:', parseError)
             throw new Error('Failed to parse gene data')
