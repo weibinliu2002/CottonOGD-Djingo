@@ -41,20 +41,16 @@
                 </div>
                 <ul class="annotation-list">
                   <li 
-                    v-for="(item, index) in intersectionAnnotations.go.slice(0, 5)" 
-                    :key="'go-' + index"
+                    v-for="(item, index) in deduplicatedGoAnnotations.slice(0, 5)" 
+                    :key="'go-' + item.id"
                     class="annotation-list-item"
                   >
-                    <a 
-                      :href="`https://www.ebi.ac.uk/QuickGO/term/${item.id}`" 
-                      target="_blank"
-                      class="annotation-link"
-                    >
-                      {{ item.id }}: {{ item.term }}
-                    </a>
+                    <span class="annotation-text">
+                      {{ item.type }}: {{ item.term }}
+                    </span>
                   </li>
-                  <li v-if="intersectionAnnotations.go.length > 5" class="annotation-list-item text-muted text-sm">
-                    +{{ intersectionAnnotations.go.length - 5 }} more
+                  <li v-if="deduplicatedGoAnnotations.length > 5" class="annotation-list-item text-muted text-sm">
+                    +{{ deduplicatedGoAnnotations.length - 5 }} more
                   </li>
                 </ul>
               </div>
@@ -66,20 +62,16 @@
                 </div>
                 <ul class="annotation-list">
                   <li 
-                    v-for="(item, index) in intersectionAnnotations.kegg.slice(0, 5)" 
-                    :key="'kegg-' + index"
+                    v-for="(item, index) in deduplicatedKeggAnnotations.slice(0, 5)" 
+                    :key="'kegg-' + item.id"
                     class="annotation-list-item"
                   >
-                    <a 
-                      :href="`https://www.genome.jp/dbget-bin/www_bget?ko+${item.id}`" 
-                      target="_blank"
-                      class="annotation-link"
-                    >
+                    <span class="annotation-text">
                       {{ item.id }}: {{ item.description }}
-                    </a>
+                    </span>
                   </li>
-                  <li v-if="intersectionAnnotations.kegg.length > 5" class="annotation-list-item text-muted text-sm">
-                    +{{ intersectionAnnotations.kegg.length - 5 }} more
+                  <li v-if="deduplicatedKeggAnnotations.length > 5" class="annotation-list-item text-muted text-sm">
+                    +{{ deduplicatedKeggAnnotations.length - 5 }} more
                   </li>
                 </ul>
               </div>
@@ -429,14 +421,14 @@
                 <el-table-column label="Annotation ID" width="150">
                   <template #default="scope">
                     <a 
-                      v-if="scope.row.annotation_source === 'InterProScan' && scope.row.annoation_id"
-                      :href="`https://www.ebi.ac.uk/interpro/entry/InterPro/${scope.row.annoation_id}`" 
+                      v-if="scope.row.annotation_source === 'InterProScan' && scope.row.annotation_id"
+                      :href="`https://www.ebi.ac.uk/interpro/entry/InterPro/${scope.row.annotation_id}`" 
                       target="_blank" 
                       rel="noopener noreferrer"
                     >
-                      {{ scope.row.annoation_id }}
+                      {{ scope.row.annotation_id }}
                     </a>
-                    <span v-else>{{ scope.row.annoation_id || '-' }}</span>
+                    <span v-else>{{ scope.row.annotation_id || '-' }}</span>
                   </template>
                 </el-table-column>
                 <el-table-column prop="annotation" label="Annotation" />
@@ -658,6 +650,26 @@ const keggAnnotationData = computed(() => {
   return parsedKeggAnnotations.value
 })
 
+// GO注释去重（按id去重）
+const deduplicatedGoAnnotations = computed(() => {
+  const seen = new Set()
+  return parsedGoAnnotations.value.filter(item => {
+    if (seen.has(item.id)) return false
+    seen.add(item.id)
+    return true
+  })
+})
+
+// KEGG注释去重（按id去重）
+const deduplicatedKeggAnnotations = computed(() => {
+  const seen = new Set()
+  return parsedKeggAnnotations.value.filter(item => {
+    if (seen.has(item.id)) return false
+    seen.add(item.id)
+    return true
+  })
+})
+
 // 当前选择的转录本
 const currentTranscript = computed(() => {
   if (!result.value || !result.value.mrna_transcripts || result.value.mrna_transcripts.length === 0) {
@@ -750,6 +762,37 @@ const processAnnotations = (geneidResult: any[]) => {
     geneidResult.forEach(item => {
       const annotationSource = item.annotation_source || item.annoation_source || item.type || 'other'
       let annotationText = item.annotation
+      let extractedAnnotationId = item.annotation_id || item.annoation_id
+      
+      // 如果annotation是对象或JSON字符串，解析它并提取字段
+      if (annotationText) {
+        let parsedAnnotation: any = null
+        
+        if (typeof annotationText === 'object') {
+          parsedAnnotation = annotationText
+        } else if (typeof annotationText === 'string' && annotationText.startsWith('{')) {
+          try {
+            parsedAnnotation = JSON.parse(annotationText)
+          } catch {
+            // 不是有效的JSON，保持原样
+          }
+        }
+        
+        // 从解析的JSON中提取字段
+        if (parsedAnnotation) {
+          // 优先从JSON中提取annotation_id
+          if (parsedAnnotation.annotation_id || parsedAnnotation.id) {
+            extractedAnnotationId = parsedAnnotation.annotation_id || parsedAnnotation.id
+          }
+          // 优先从JSON中提取description
+          if (parsedAnnotation.description) {
+            annotationText = parsedAnnotation.description
+          } else {
+            // 否则显示格式化的JSON
+            annotationText = JSON.stringify(parsedAnnotation, null, 2)
+          }
+        }
+      }
       
       // 如果有GO或KEGG特定字段，构建完整的注释文本
       if (item.go_id || item.go_type || item.go_description) {
@@ -764,7 +807,7 @@ const processAnnotations = (geneidResult: any[]) => {
         }
         newAnnotations[annotationSource].push({
           annotation: annotationText,
-          annotation_id: item.annotation_id || item.annoation_id,
+          annotation_id: extractedAnnotationId,
           annotation_source: annotationSource,
           geneid_id: item.geneid_id,
           genome_id: item.genome_id,
