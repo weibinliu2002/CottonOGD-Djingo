@@ -378,8 +378,12 @@
         
         <!-- GO Annotation 内容 -->
         <div v-if="activeTab === 'goAnnotation'" class="tab-content">
-          <div class="mb-4">
-            <el-table :data="goAnnotationData" border stripe max-height="600">
+          <!-- Molecular Function -->
+          <div v-if="molecularFunctionAnnotations.length > 0" class="mb-4">
+            <h4 class="annotation-title">
+              <el-tag type="primary" size="small">Molecular Function</el-tag>
+            </h4>
+            <el-table :data="molecularFunctionAnnotations" border stripe max-height="400">
               <el-table-column label="GO ID" width="150">
                 <template #default="scope">
                   <a :href="`https://www.ebi.ac.uk/QuickGO/term/${scope.row.id}`" target="_blank" rel="noopener noreferrer">
@@ -387,9 +391,47 @@
                   </a>
                 </template>
               </el-table-column>
-              <el-table-column prop="type" label="GO Type" width="120" />
               <el-table-column prop="term" label="Term" />
             </el-table>
+          </div>
+          
+          <!-- Biological Process -->
+          <div v-if="biologicalProcessAnnotations.length > 0" class="mb-4">
+            <h4 class="annotation-title">
+              <el-tag type="success" size="small">Biological Process</el-tag>
+            </h4>
+            <el-table :data="biologicalProcessAnnotations" border stripe max-height="400">
+              <el-table-column label="GO ID" width="150">
+                <template #default="scope">
+                  <a :href="`https://www.ebi.ac.uk/QuickGO/term/${scope.row.id}`" target="_blank" rel="noopener noreferrer">
+                    {{ scope.row.id }}
+                  </a>
+                </template>
+              </el-table-column>
+              <el-table-column prop="term" label="Term" />
+            </el-table>
+          </div>
+          
+          <!-- Cellular Component -->
+          <div v-if="cellularComponentAnnotations.length > 0" class="mb-4">
+            <h4 class="annotation-title">
+              <el-tag type="warning" size="small">Cellular Component</el-tag>
+            </h4>
+            <el-table :data="cellularComponentAnnotations" border stripe max-height="400">
+              <el-table-column label="GO ID" width="150">
+                <template #default="scope">
+                  <a :href="`https://www.ebi.ac.uk/QuickGO/term/${scope.row.id}`" target="_blank" rel="noopener noreferrer">
+                    {{ scope.row.id }}
+                  </a>
+                </template>
+              </el-table-column>
+              <el-table-column prop="term" label="Term" />
+            </el-table>
+          </div>
+          
+          <!-- 如果没有GO数据 -->
+          <div v-if="molecularFunctionAnnotations.length === 0 && biologicalProcessAnnotations.length === 0 && cellularComponentAnnotations.length === 0" class="text-muted">
+            No GO annotations available.
           </div>
         </div>
         
@@ -411,20 +453,26 @@
         
         <!-- Annotations 内容 -->
         <div v-if="activeTab === 'annotations'" class="tab-content">
-          <!-- 其他注释类型 -->
-          <div v-for="(annotationList, annotationType) in annotations" :key="annotationType" class="mb-4">
+          <!-- 按注释类型分组显示（排除GO和KEGG，它们有专门的标签页） -->
+          <div 
+            v-for="(annotationList, annotationType) in annotations" 
+            :key="annotationType" 
+            class="mb-4"
+            v-show="annotationType !== 'GO_annotation' && annotationType !== 'KEGG_annotation'"
+          >
             <div v-if="annotationList.length > 0">
               <h4 class="annotation-title">
-                <el-tag type="info" size="small">{{ String(annotationType).replace(/_/g, ' ') }}</el-tag>
+                <el-tag type="info" size="small">{{ getAnnotationLabel(annotationType) }}</el-tag>
               </h4>
               <el-table :data="annotationList" border>
                 <el-table-column label="Annotation ID" width="150">
                   <template #default="scope">
                     <a 
-                      v-if="scope.row.annotation_source === 'InterProScan' && scope.row.annotation_id"
-                      :href="`https://www.ebi.ac.uk/interpro/entry/InterPro/${scope.row.annotation_id}`" 
+                      v-if="scope.row.annotation_id && getAnnotationUrl(annotationType, scope.row.annotation_id)"
+                      :href="getAnnotationUrl(annotationType, scope.row.annotation_id)" 
                       target="_blank" 
                       rel="noopener noreferrer"
+                      class="annotation-link"
                     >
                       {{ scope.row.annotation_id }}
                     </a>
@@ -594,10 +642,10 @@ const parsedGoAnnotations = computed(() => {
   goAnnotations.forEach((item: any) => {
     if (item && item.go_id) {
       // 如果有完整的GO信息，使用完整信息
-      if (item.go_type && item.go_description) {
+      if (item.name && item.namespace) {
         parsed.push({
-          type: item.go_type,
-          term: item.go_description,
+          type: item.namespace,
+          term: item.name,
           id: item.go_id
         })
       } else {
@@ -622,10 +670,10 @@ const parsedKeggAnnotations = computed(() => {
   keggAnnotations.forEach((item: any) => {
     if (item && item.kegg_id) {
       // 如果有完整的KEGG信息，使用完整信息
-      if (item.kegg_description) {
+      if (item.description) {
         parsed.push({
           id: item.kegg_id,
-          description: item.kegg_description
+          description: item.description
         })
       } else {
         // 如果只有kegg_id，只显示KEGG ID
@@ -669,6 +717,145 @@ const deduplicatedKeggAnnotations = computed(() => {
     return true
   })
 })
+
+// 格式化GO类型名称
+const formatGoType = (type: string) => {
+  if (!type) return ''
+  // 将下划线替换为空格，然后首字母大写
+  return type
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ')
+}
+
+// 按GO类型分组
+const goAnnotationsByType = computed(() => {
+  const grouped: Record<string, any[]> = {
+    'molecular_function': [],
+    'biological_process': [],
+    'cellular_component': []
+  }
+  
+  deduplicatedGoAnnotations.value.forEach(item => {
+    const type = item.type || 'molecular_function'
+    if (grouped[type]) {
+      grouped[type].push(item)
+    }
+  })
+  
+  return grouped
+})
+
+// Molecular Function GO注释
+const molecularFunctionAnnotations = computed(() => {
+  return goAnnotationsByType.value['molecular_function'] || []
+})
+
+// Biological Process GO注释
+const biologicalProcessAnnotations = computed(() => {
+  return goAnnotationsByType.value['biological_process'] || []
+})
+
+// Cellular Component GO注释
+const cellularComponentAnnotations = computed(() => {
+  return goAnnotationsByType.value['cellular_component'] || []
+})
+
+// 注释类型到URL模板的映射
+// 格式: { 注释类型: { urlTemplate: string, label: string } }
+// urlTemplate中可以使用 {id} 作为占位符
+const annotationUrlMap: Record<string, { urlTemplate: string; label: string }> = {
+  // InterProScan - 蛋白质结构域数据库
+  InterProScan: {
+    urlTemplate: 'https://www.ebi.ac.uk/interpro/entry/InterPro/{id}',
+    label: 'InterPro'
+  },
+  // UniProt - 蛋白质序列数据库
+  UniProt: {
+    urlTemplate: 'https://www.uniprot.org/uniprotkb/{id}',
+    label: 'UniProt'
+  },
+  // CDD - Conserved Domain Database
+  CDD: {
+    urlTemplate: 'https://www.ncbi.nlm.nih.gov/Structure/cdd/cddsrv.cgi?uid={id}',
+    label: 'CDD'
+  },
+  // Pfam - Protein families database
+  Pfam: {
+    urlTemplate: 'https://pfam.xfam.org/family/{id}',
+    label: 'Pfam'
+  },
+  // GO - Gene Ontology
+  GO: {
+    urlTemplate: 'https://www.ebi.ac.uk/QuickGO/term/{id}',
+    label: 'GO'
+  },
+  // KEGG - Kyoto Encyclopedia of Genes and Genomes
+  KEGG: {
+    urlTemplate: 'https://www.genome.jp/dbget-bin/www_bget?ko+{id}',
+    label: 'KEGG'
+  },
+  // SMART - Simple Modular Architecture Research Tool
+  SMART: {
+    urlTemplate: 'https://smart.embl-heidelberg.de/smart/do_annotation.pl?DOMAIN={id}',
+    label: 'SMART'
+  },
+  // PROSITE - Protein domains and families
+  PROSITE: {
+    urlTemplate: 'https://prosite.expasy.org/{id}',
+    label: 'PROSITE'
+  },
+  // NCBI Conserved Domain
+  NCBI_CDD: {
+    urlTemplate: 'https://www.ncbi.nlm.nih.gov/Structure/cdd/cddsrv.cgi?uid={id}',
+    label: 'NCBI CDD'
+  }
+}
+
+// 获取注释的URL链接
+const getAnnotationUrl = (annotationType: string, annotationId: string): string | null => {
+  // 尝试精确匹配
+  if (annotationUrlMap[annotationType]) {
+    return annotationUrlMap[annotationType].urlTemplate.replace('{id}', annotationId)
+  }
+  
+  // 尝试不区分大小写匹配
+  const lowerType = annotationType.toLowerCase()
+  const matchedKey = Object.keys(annotationUrlMap).find(key => key.toLowerCase() === lowerType)
+  if (matchedKey) {
+    return annotationUrlMap[matchedKey].urlTemplate.replace('{id}', annotationId)
+  }
+  
+  // 尝试部分匹配（例如 annotation_source 包含 InterProScan）
+  for (const [key, value] of Object.entries(annotationUrlMap)) {
+    if (annotationType.includes(key) || key.includes(annotationType)) {
+      return value.urlTemplate.replace('{id}', annotationId)
+    }
+  }
+  
+  return null
+}
+
+// 获取注释类型的显示名称
+const getAnnotationLabel = (annotationType: string): string => {
+  // 尝试精确匹配
+  if (annotationUrlMap[annotationType]) {
+    return annotationUrlMap[annotationType].label
+  }
+  
+  // 尝试不区分大小写匹配
+  const lowerType = annotationType.toLowerCase()
+  const matchedKey = Object.keys(annotationUrlMap).find(key => key.toLowerCase() === lowerType)
+  if (matchedKey) {
+    return annotationUrlMap[matchedKey].label
+  }
+  
+  // 默认格式化（下划线改空格，首字母大写）
+  return annotationType
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ')
+}
 
 // 当前选择的转录本
 const currentTranscript = computed(() => {
@@ -760,7 +947,16 @@ const processAnnotations = (geneidResult: any[]) => {
   const newAnnotations: Record<string, Annotation[]> = {}
   if (Array.isArray(geneidResult)) {
     geneidResult.forEach(item => {
-      const annotationSource = item.annotation_source || item.annoation_source || item.type || 'other'
+      // 优先从嵌套的source对象获取类型（如 {"name": "uniprot"}）
+      let annotationSource = ''
+      if (item.source && item.source.name) {
+        annotationSource = item.source.name
+      }
+      // 如果没有从source获取到，再尝试其他字段
+      if (!annotationSource) {
+        annotationSource = item.annotation_source || item.annoation_source || item.type || ''
+      }
+      
       let annotationText = item.annotation
       let extractedAnnotationId = item.annotation_id || item.annoation_id
       
@@ -784,9 +980,11 @@ const processAnnotations = (geneidResult: any[]) => {
           if (parsedAnnotation.annotation_id || parsedAnnotation.id) {
             extractedAnnotationId = parsedAnnotation.annotation_id || parsedAnnotation.id
           }
-          // 优先从JSON中提取description
+          // 优先从JSON中提取description或protein_name
           if (parsedAnnotation.description) {
             annotationText = parsedAnnotation.description
+          } else if (parsedAnnotation.protein_name) {
+            annotationText = parsedAnnotation.protein_name
           } else {
             // 否则显示格式化的JSON
             annotationText = JSON.stringify(parsedAnnotation, null, 2)
@@ -794,12 +992,28 @@ const processAnnotations = (geneidResult: any[]) => {
         }
       }
       
-      // 如果有GO或KEGG特定字段，构建完整的注释文本
-      if (item.go_id || item.go_type || item.go_description) {
-        annotationText = `${item.go_type || ''}: ${item.go_description || ''} (${item.go_id || ''})`.trim()
-      } else if (item.kegg_id || item.kegg_type || item.kegg_description) {
-        annotationText = `${item.kegg_type || ''}: ${item.kegg_description || ''} (${item.kegg_id || ''})`.trim()
+      // 如果有GO特定字段，标记为GO类型
+      if (item.go_id) {
+        annotationSource = 'GO_annotation'
       }
+      // 如果有KEGG特定字段，标记为KEGG类型
+      else if (item.kegg_id) {
+        annotationSource = 'KEGG_annotation'
+      }
+      
+      // 根据annotation_id自动检测类型（如果还没有确定类型）
+      if (!annotationSource && extractedAnnotationId) {
+        annotationSource = detectAnnotationType(extractedAnnotationId, annotationSource)
+      }
+      
+      // 如果还是没有类型，使用默认值
+      if (!annotationSource) {
+        annotationSource = 'other'
+      }
+      
+      // 标准化类型名称（如 uniprot -> UniProt）
+      annotationSource = annotationSource.toLowerCase() === 'uniprot' ? 'UniProt' : annotationSource
+      annotationSource = annotationSource.toLowerCase() === 'interpro' ? 'InterProScan' : annotationSource
       
       if (annotationText) {
         if (!newAnnotations[annotationSource]) {
@@ -835,11 +1049,20 @@ const fetchGeneData = async (db_id: string) => {
   errorMessage.value = ''
   selectedTranscriptIndex.value = 0
   
+  // 重置所有数据，避免使用旧数据
+  result.value = null
+  annotations.value = {}
+  parsedGoAnnotations.value = []
+  parsedKeggAnnotations.value = []
+  
   try {
     const navigationData = navigationStore.getNavigationData('geneDetail')
-    const needFetchFromBackend = !navigationData || !navigationData.results || !navigationData.results.jbrowse_url
+    // 检查缓存数据是否属于当前请求的基因
+    const isSameGene = navigationData && navigationData.dbId === db_id
+    const needFetchFromBackend = !navigationData || !navigationData.results || !navigationData.results.jbrowse_url || !isSameGene
     
     if (navigationData && navigationData.results && !needFetchFromBackend) {
+      console.log(`=== 使用缓存数据，db_id: ${db_id} ===`)
       clearTimeout(loadingTimeout)
       result.value = navigationData.results
       
@@ -847,32 +1070,6 @@ const fetchGeneData = async (db_id: string) => {
         processAnnotations(navigationData.results.geneid_result)
       } else {
         processAnnotations([])
-      }
-      
-      if (navigationData.results.gene_go_result && Array.isArray(navigationData.results.gene_go_result)) {
-        const goAnnotations = navigationData.results.gene_go_result.map((item: any) => ({
-          annotation: `${item.go_type}: ${item.go_description} (${item.go_id})`,
-          geneid_id: item.geneid_id,
-          genome_id: item.genome_id,
-          id_id: item.id_id
-        }))
-        if (!annotations.value.GO_annotation) {
-          annotations.value.GO_annotation = []
-        }
-        annotations.value.GO_annotation = [...annotations.value.GO_annotation, ...goAnnotations]
-      }
-      
-      if (navigationData.results.gene_kegg_result && Array.isArray(navigationData.results.gene_kegg_result)) {
-        const keggAnnotations = navigationData.results.gene_kegg_result.map((item: any) => ({
-          annotation: `${item.kegg_type}: ${item.kegg_description} (${item.kegg_id})`,
-          geneid_id: item.geneid_id,
-          genome_id: item.genome_id,
-          id_id: item.id_id
-        }))
-        if (!annotations.value.KEGG_annotation) {
-          annotations.value.KEGG_annotation = []
-        }
-        annotations.value.KEGG_annotation = [...annotations.value.KEGG_annotation, ...keggAnnotations]
       }
       
       jbrowse_url.value = navigationData.results.jbrowse_url || ''
