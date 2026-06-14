@@ -5,10 +5,13 @@ import { createPinia } from 'pinia'
 import { v4 as uuidv4 } from 'uuid'
 import '@fortawesome/fontawesome-free/css/all.min.css'
 import httpInstance from './utils/http.js'
-import { useGenomeStore } from './stores/genome_info.ts'
-import { useFamilyStore } from './stores/familyInfo.ts'
+import { useGenomeStore } from './stores/modules/genome'
+import { useFamilyStore } from './stores/modules/family'
 import ElementPlus from 'element-plus'
 import { i18n, initLocale } from './locales/i18n-config'
+
+// Import global styles
+import './styles/global.css'
 
 const pinia = createPinia()
 const app = createApp(App)

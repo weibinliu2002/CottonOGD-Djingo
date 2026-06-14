@@ -46,6 +46,7 @@
               <ul class="dropdown-menu">
                 <li><router-link class="dropdown-item" to="/browse/tf">{{ t('transcription_factors_') }}</router-link></li>
                 <li><router-link class="dropdown-item" to="/browse/tr">{{ t('transposons') }}</router-link></li>
+                <li><router-link class="dropdown-item" to="/genome/browse">{{ t('genome_browser') }}</router-link></li>
               </ul>
             </li>
             
@@ -54,8 +55,9 @@
                 {{ t('Genome_Browser') }}
               </a>
               <ul class="dropdown-menu">
-                <li><router-link class="dropdown-item" to="/jbrowse">{{ t('jbrowse_view') }}</router-link></li>
-                <li><router-link class="dropdown-item" to="/IGV">{{ t('igv_view') }}</router-link></li>
+                <li><router-link class="dropdown-item" to="/genome/jbrowse">{{ t('jbrowse_view') }}</router-link></li>
+                <li><router-link class="dropdown-item" to="/genome/igv">{{ t('igv_view') }}</router-link></li>
+                <li><router-link class="dropdown-item" to="/genome/synteny">{{ t('genome_synteny') || 'Genome Synteny' }}</router-link></li>
               </ul>
             </li>
             <li class="nav-item dropdown">
@@ -63,18 +65,14 @@
                 {{ t('tools') }}
               </a>
               <ul class="dropdown-menu">
-                <li><router-link class="dropdown-item" to="/tools/id-search">{{ t('id_search') }}</router-link></li>
-                <li><router-link class="dropdown-item" to="/tools/blastp">BLASTP</router-link></li>
-
-                <li><router-link class="dropdown-item" to="/tools/go-annotation">{{ t('go_annotation') }}</router-link></li>
-                <li><router-link class="dropdown-item" to="/tools/kegg-annotation">{{ t('kegg_annotation') }}</router-link></li>
-
-                <li><router-link class="dropdown-item" to="/tools/go-enrichment">{{ t('go_enrichment') }}</router-link></li>
-                <li><router-link class="dropdown-item" to="/tools/kegg-enrichment">{{ t('kegg_enrichment') }}</router-link></li>
-
-                
+                <li><router-link class="dropdown-item" to="/sequence/search">{{ t('id_search') }}</router-link></li>
+                <li><router-link class="dropdown-item" to="/sequence/blast">BLASTP</router-link></li>
+                <li><router-link class="dropdown-item" to="/annotation/go">{{ t('go_annotation') }}</router-link></li>
+                <li><router-link class="dropdown-item" to="/annotation/kegg">{{ t('kegg_annotation') }}</router-link></li>
+                <li><router-link class="dropdown-item" to="/enrichment/go">{{ t('go_enrichment') }}</router-link></li>
+                <li><router-link class="dropdown-item" to="/enrichment/kegg">{{ t('kegg_enrichment') }}</router-link></li>
                 <li><router-link class="dropdown-item" to="/tools/primer-design">{{ t('primer_design') }}</router-link></li>
-                <li><router-link class="dropdown-item" to="/tools/sequence-server">{{ t('sequence_server') }}</router-link></li>
+                <li><router-link class="dropdown-item" to="/sequence/server">{{ t('sequence_server') }}</router-link></li>
               </ul>
             </li>
             <li class="nav-item dropdown">
@@ -82,11 +80,11 @@
                 {{ t('Graphical_Tools') }}
               </a>
               <ul class="dropdown-menu">
-                <li><router-link class="dropdown-item" to="/tools/clustergramme_heatmap">{{ t('clustergramme_heatmap') }}</router-link></li>
-                 <li><router-link class="dropdown-item" to="/tools/canvaspress">{{ t('canvaspress') }}</router-link></li>
-                <li><router-link class="dropdown-item" to="/tools/ppi">{{ t('ppi') }}</router-link></li>
-                <li><router-link class="dropdown-item" to="/tools/phylotree">{{ t('phylotree') }}</router-link></li>
-                <li><router-link class="dropdown-item" to="/tools/circos">{{ t('circos') }}</router-link></li>            
+                <li><router-link class="dropdown-item" to="/visualization/heatmap">{{ t('clustergramme_heatmap') }}</router-link></li>
+                <li><router-link class="dropdown-item" to="/visualization/canvaspress">{{ t('canvaspress') }}</router-link></li>
+                <li><router-link class="dropdown-item" to="/visualization/ppi">{{ t('ppi') }}</router-link></li>
+                <li><router-link class="dropdown-item" to="/visualization/phylotree">{{ t('phylotree') }}</router-link></li>
+                <li><router-link class="dropdown-item" to="/visualization/circos">{{ t('circos') }}</router-link></li>            
               </ul>
             </li>
             <li class="nav-item dropdown">
@@ -94,19 +92,18 @@
                 {{ t('Expression') }}
               </a>
               <ul class="dropdown-menu">
-                <li><router-link class="dropdown-item" to="/tools/gene-expression">{{ t('gene_expression') }}</router-link></li>
-        
-                <li><router-link class="dropdown-item" to="/tools/gene-expression-efp">{{ t('gene_expression_in_efp') }}</router-link></li>
+                <li><router-link class="dropdown-item" to="/expression/gene">{{ t('gene_expression') }}</router-link></li>
+                <li><router-link class="dropdown-item" to="/expression/efp">{{ t('gene_expression_in_efp') }}</router-link></li>
               </ul>
-          </li>
+            </li>
             <li class="nav-item">
               <router-link class="nav-link" to="/download">{{ t('download') }}</router-link>
             </li>
             <li class="nav-item">
-              <router-link class="nav-link" to="/about-us">{{ t('about') }}</router-link>
+              <router-link class="nav-link" to="/about">{{ t('about') }}</router-link>
             </li>
             <li class="nav-item">
-              <router-link class="nav-link" to="/contact-us">{{ t('contact_us') }}</router-link>
+              <router-link class="nav-link" to="/contact">{{ t('contact_us') }}</router-link>
             </li>
           </ul>
         </div>
@@ -192,11 +189,11 @@
 </template>
 
 <script setup>
-import { ref, provide, onMounted, computed, watch } from 'vue'
+import { ref, provide, onMounted, computed } from 'vue'
 import { ArrowUp } from '@element-plus/icons-vue'
-import httpInstance from './utils/http.js'
+import httpInstance from '@/utils/http.js'
 import { useRouter } from 'vue-router'
-import { setLocale, getLocale } from './locales/i18n-config'
+import { setLocale, getLocale } from '@/locales/i18n-config'
 import { useI18n } from 'vue-i18n'
 
 const router = useRouter()
@@ -220,6 +217,11 @@ const currentLanguage = computed({
     setLocale(value)
     console.log('Switched to language:', value)
   }
+})
+
+onMounted(() => {
+  httpInstance.post('/CottonOGD_api/login/')
+  addVisitorMapScript()
 })
 
 // 定义加载状态管理方法
