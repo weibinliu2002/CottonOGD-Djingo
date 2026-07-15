@@ -100,7 +100,8 @@ export function useSequenceCache(): UseSequenceCacheReturn {
         // 根据类型和长度截取序列
         let processedSeq = seq
         if (type === 'upstream' && length) {
-          processedSeq = seq.slice(0, length)
+          const startIndex = Math.max(0, seq.length - length)
+          processedSeq = seq.slice(startIndex, seq.length)
         } else if (type === 'downstream' && length) {
           processedSeq = seq.slice(0, length)
         }

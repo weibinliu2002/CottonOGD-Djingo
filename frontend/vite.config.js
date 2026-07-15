@@ -5,7 +5,7 @@ import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 
-const DJANGO_TARGET = 'http://172.28.226.114:8000'
+const DJANGO_TARGET = 'http://172.28.226.114:8002'
 //const DJANGO_TARGET = 'http://127.0.0.1:8000'
 
 // https://vite.dev/config/

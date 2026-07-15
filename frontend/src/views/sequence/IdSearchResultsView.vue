@@ -239,8 +239,12 @@
             <el-table-column prop="type" label="Type" min-width="100" />
             <el-table-column prop="start" label="Start" min-width="100" />
             <el-table-column prop="end" label="End" min-width="100" />
-            <el-table-column prop="score" label="Score" min-width="50" />
-            <el-table-column prop="Strand" label="Strand" min-width="50" />
+            <el-table-column label="Score" min-width="50">
+              <template #default="scope">
+                {{ scope.row.value || scope.row.score || '-' }}
+              </template>
+            </el-table-column>
+            <el-table-column prop="strand" label="Strand" min-width="50" />
             <el-table-column prop="phase" label="Phase" min-width="50" />
             <el-table-column prop="attributes" label="Attributes" min-width="200" />
           </el-table>
@@ -1187,7 +1191,13 @@ const fetchGeneData = async (db_id: string) => {
         } else {
           throw new Error('No gene information found')
         }
-        
+        // 从gff_data中提取strand信息（基因类型）
+          if (result.value.gff_data && Array.isArray(result.value.gff_data)) {
+            const geneItem = result.value.gff_data.find((item: any) => item.type && item.type.toLowerCase() === 'gene')
+            if (geneItem && geneItem.strand) {
+              result.value.strand = geneItem.strand
+            }
+          }
         gffData.value = result.value.gff_data || []
         hasGffData.value = gffData.value.length > 0
         currentPage.value = 1
@@ -1297,7 +1307,8 @@ const handleShowSequence = async (eventData: { type: string; title: string; cont
       
       let processedSeq = seq
       if (type === 'upstream') {
-        processedSeq = seq.slice(20000 - upLen, seq.length)
+        const startIndex = Math.max(0, seq.length - upLen)
+        processedSeq = seq.slice(startIndex, seq.length)
       } else if (type === 'downstream') {
         processedSeq = seq.slice(0, downLen)
       }
