@@ -550,6 +550,7 @@ interface GffItem {
   start?: number | string
   end?: number | string
   score?: string
+  value?: string
   strand?: string
   phase?: string
   attributes?: string
@@ -1059,22 +1060,25 @@ const processAnnotations = (geneidResult: any[]) => {
         if (!newAnnotations[annotationSource]) {
           newAnnotations[annotationSource] = []
         }
-        newAnnotations[annotationSource].push({
-          annotation: annotationText,
-          annotation_id: extractedAnnotationId,
-          annotation_source: annotationSource,
-          geneid_id: item.geneid_id,
-          genome_id: item.genome_id,
-          id_id: item.id_id,
-          id: item.id,
-          type: item.type,
-          go_id: item.go_id,
-          go_type: item.go_type,
-          go_description: item.go_description,
-          kegg_id: item.kegg_id,
-          kegg_type: item.kegg_type,
-          kegg_description: item.kegg_description
-        })
+        const arr = newAnnotations[annotationSource]
+        if (arr) {
+          arr.push({
+            annotation: annotationText,
+            annotation_id: extractedAnnotationId,
+            annotation_source: annotationSource,
+            geneid_id: item.geneid_id,
+            genome_id: item.genome_id,
+            id_id: item.id_id,
+            id: item.id,
+            type: item.type,
+            go_id: item.go_id,
+            go_type: item.go_type,
+            go_description: item.go_description,
+            kegg_id: item.kegg_id,
+            kegg_type: item.kegg_type,
+            kegg_description: item.kegg_description
+          })
+        }
       }
     })
   }
@@ -1115,10 +1119,10 @@ const fetchGeneData = async (db_id: string) => {
       hasGffData.value = gffData.value.length > 0
       currentPage.value = 1
       
-      if (gffData.value.length > 0) {
-        console.log('gffData from navigation[0] fields:', Object.keys(gffData.value[0]))
-        console.log('gffData from navigation[0] score/value:', gffData.value[0].score, gffData.value[0].value)
-        console.log('gffData from navigation[0] strand:', gffData.value[0].strand)
+      if (gffData.value.length > 0 && gffData.value[0]) {
+        console.log('gffData from navigation[0] fields:', Object.keys(gffData.value[0] || {}))
+        console.log('gffData from navigation[0] score/value:', gffData.value[0]?.score, gffData.value[0]?.value)
+        console.log('gffData from navigation[0] strand:', gffData.value[0]?.strand)
       }
       
       const geneId = result.value?.IDs
@@ -1199,10 +1203,10 @@ const fetchGeneData = async (db_id: string) => {
         hasGffData.value = gffData.value.length > 0
         currentPage.value = 1
         
-        if (gffData.value.length > 0) {
-          console.log('gffData[0] fields:', Object.keys(gffData.value[0]))
-          console.log('gffData[0] score/value:', gffData.value[0].score, gffData.value[0].value)
-          console.log('gffData[0] strand:', gffData.value[0].strand)
+        if (gffData.value.length > 0 && gffData.value[0]) {
+          console.log('gffData[0] fields:', Object.keys(gffData.value[0] || {}))
+          console.log('gffData[0] score/value:', gffData.value[0]?.score, gffData.value[0]?.value)
+          console.log('gffData[0] strand:', gffData.value[0]?.strand)
         }
         
         if (result.value) {
