@@ -46,7 +46,7 @@
               <ul class="dropdown-menu">
                 <li><router-link class="dropdown-item" to="/browse/tf">{{ t('transcription_factors_') }}</router-link></li>
                 <li><router-link class="dropdown-item" to="/browse/tr">{{ t('transposons') }}</router-link></li>
-                <li><router-link class="dropdown-item" to="/genome/browse">{{ t('genome_browser') }}</router-link></li>
+                <!--<li><router-link class="dropdown-item" to="/genome/browse">{{ t('genome_browser') }}</router-link></li>-->
               </ul>
             </li>
             
@@ -57,7 +57,7 @@
               <ul class="dropdown-menu">
                 <li><router-link class="dropdown-item" to="/genome/jbrowse">{{ t('jbrowse_view') }}</router-link></li>
                 <li><router-link class="dropdown-item" to="/genome/igv">{{ t('igv_view') }}</router-link></li>
-                <li><router-link class="dropdown-item" to="/genome/synteny">{{ t('genome_synteny') || 'Genome Synteny' }}</router-link></li>
+                
               </ul>
             </li>
             <li class="nav-item dropdown">
@@ -96,6 +96,11 @@
                 <li><router-link class="dropdown-item" to="/expression/efp">{{ t('gene_expression_in_efp') }}</router-link></li>
               </ul>
             </li>
+            <li class="nav-item">
+              <router-link class="nav-link" to="/genome/synteny">{{ t('genome_synteny') || 'Genome Synteny' }}</router-link>
+            </li>
+            
+            
             <li class="nav-item">
               <router-link class="nav-link" to="/download">{{ t('download') }}</router-link>
             </li>

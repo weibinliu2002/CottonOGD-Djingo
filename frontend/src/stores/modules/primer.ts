@@ -1,16 +1,22 @@
 // 引入Pinia
 import { defineStore } from 'pinia'
 
-// 定义并导出引物设计的store
+interface Parameters {
+  productSizeMin: number
+  productSizeMax: number
+  primerSizeMin: number
+  primerSizeMax: number
+  primerTmMin: number
+  primerTmMax: number
+  primerGCMin: number
+  primerGCMax: number
+}
+
 export const usePrimerDesignStore = defineStore('primerDesign', {
-  // 状态
   state: () => ({
-    // 序列信息
     sequenceId: '',
-    sequenceType: 'mrna', // mrna或cds
+    sequenceType: 'mrna' as const,
     sequenceTemplate: '',
-    
-    // 设计参数
     parameters: {
       productSizeMin: 100,
       productSizeMax: 250,
@@ -20,62 +26,48 @@ export const usePrimerDesignStore = defineStore('primerDesign', {
       primerTmMax: 63,
       primerGCMin: 20,
       primerGCMax: 80
-    },
-    
-    // 设计结果
+    } as Parameters,
     designResults: [],
-    
-    // 状态
     isLoading: false,
     isFetching: false,
-    error: null
+    error: null as string | null
   }),
   
-  // 操作
   actions: {
-    // 设置序列信息
-    setSequence(sequenceId, sequenceTemplate) {
+    setSequence(sequenceId: string, sequenceTemplate: string) {
       this.sequenceId = sequenceId
       this.sequenceTemplate = sequenceTemplate
     },
     
-    // 设置序列类型
-    setSequenceType(type) {
+    setSequenceType(type: 'mrna' | 'cds') {
       this.sequenceType = type
     },
     
-    // 设置设计参数
-    setParameters(newParams) {
+    setParameters(newParams: Partial<Parameters>) {
       this.parameters = { ...this.parameters, ...newParams }
     },
     
-    // 设置设计结果
-    setDesignResults(results) {
+    setDesignResults(results: any[]) {
       this.designResults = results
     },
     
-    // 设置加载状态
-    setLoading(isLoading) {
+    setLoading(isLoading: boolean) {
       this.isLoading = isLoading
     },
     
-    // 设置获取序列状态
-    setFetching(isFetching) {
+    setFetching(isFetching: boolean) {
       this.isFetching = isFetching
     },
     
-    // 设置错误信息
-    setError(error) {
+    setError(error: string | null) {
       this.error = error
     },
     
-    // 清空设计结果
     clearDesignResults() {
       this.designResults = []
       this.error = null
     },
     
-    // 清空所有状态
     clearState() {
       this.sequenceId = ''
       this.sequenceType = 'mrna'

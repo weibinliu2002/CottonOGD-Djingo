@@ -13,8 +13,6 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     ElAlert: typeof import('element-plus/es')['ElAlert']
-    ElAnchor: typeof import('element-plus/es')['ElAnchor']
-    ElAnchorLink: typeof import('element-plus/es')['ElAnchorLink']
     ElBacktop: typeof import('element-plus/es')['ElBacktop']
     ElButton: typeof import('element-plus/es')['ElButton']
     ElCard: typeof import('element-plus/es')['ElCard']
@@ -36,8 +34,6 @@ declare module 'vue' {
     ElInput: typeof import('element-plus/es')['ElInput']
     ElInputNumber: typeof import('element-plus/es')['ElInputNumber']
     ElLink: typeof import('element-plus/es')['ElLink']
-    ElList: typeof import('element-plus/es')['ElList']
-    ElListItem: typeof import('element-plus/es')['ElListItem']
     ElLoading: typeof import('element-plus/es')['ElLoading']
     ElOption: typeof import('element-plus/es')['ElOption']
     ElPagination: typeof import('element-plus/es')['ElPagination']
@@ -82,8 +78,6 @@ declare module 'vue' {
 // For TSX support
 declare global {
   const ElAlert: typeof import('element-plus/es')['ElAlert']
-  const ElAnchor: typeof import('element-plus/es')['ElAnchor']
-  const ElAnchorLink: typeof import('element-plus/es')['ElAnchorLink']
   const ElBacktop: typeof import('element-plus/es')['ElBacktop']
   const ElButton: typeof import('element-plus/es')['ElButton']
   const ElCard: typeof import('element-plus/es')['ElCard']
@@ -105,8 +99,6 @@ declare global {
   const ElInput: typeof import('element-plus/es')['ElInput']
   const ElInputNumber: typeof import('element-plus/es')['ElInputNumber']
   const ElLink: typeof import('element-plus/es')['ElLink']
-  const ElList: typeof import('element-plus/es')['ElList']
-  const ElListItem: typeof import('element-plus/es')['ElListItem']
   const ElLoading: typeof import('element-plus/es')['ElLoading']
   const ElOption: typeof import('element-plus/es')['ElOption']
   const ElPagination: typeof import('element-plus/es')['ElPagination']

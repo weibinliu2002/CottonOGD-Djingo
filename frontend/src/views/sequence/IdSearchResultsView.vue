@@ -473,7 +473,7 @@
                   <template #default="scope">
                     <a 
                       v-if="scope.row.annotation_id && getAnnotationUrl(annotationType, scope.row.annotation_id)"
-                      :href="getAnnotationUrl(annotationType, scope.row.annotation_id)" 
+                      :href="getAnnotationUrl(annotationType, scope.row.annotation_id) || undefined" 
                       target="_blank" 
                       rel="noopener noreferrer"
                       class="annotation-link"
@@ -818,26 +818,22 @@ const annotationUrlMap: Record<string, { urlTemplate: string; label: string }> =
 
 // 获取注释的URL链接
 const getAnnotationUrl = (annotationType: string, annotationId: string): string | null => {
-  // 尝试精确匹配
   if (annotationUrlMap[annotationType]) {
     return annotationUrlMap[annotationType].urlTemplate.replace('{id}', annotationId)
   }
   
-  // 尝试不区分大小写匹配
   const lowerType = annotationType.toLowerCase()
   const matchedKey = Object.keys(annotationUrlMap).find(key => key.toLowerCase() === lowerType)
-  if (matchedKey) {
+  if (matchedKey && annotationUrlMap[matchedKey]) {
     return annotationUrlMap[matchedKey].urlTemplate.replace('{id}', annotationId)
   }
   
-  // 尝试部分匹配（例如 annotation_source 包含 InterProScan）
   for (const [key, value] of Object.entries(annotationUrlMap)) {
     if (annotationType.includes(key) || key.includes(annotationType)) {
       return value.urlTemplate.replace('{id}', annotationId)
     }
   }
   
-  // 最后尝试根据annotation_id格式识别数据库类型
   const identifiedType = detectAnnotationType(annotationId, '')
   if (identifiedType && annotationUrlMap[identifiedType]) {
     return annotationUrlMap[identifiedType].urlTemplate.replace('{id}', annotationId)
@@ -848,19 +844,16 @@ const getAnnotationUrl = (annotationType: string, annotationId: string): string 
 
 // 获取注释类型的显示名称
 const getAnnotationLabel = (annotationType: string): string => {
-  // 尝试精确匹配
   if (annotationUrlMap[annotationType]) {
     return annotationUrlMap[annotationType].label
   }
   
-  // 尝试不区分大小写匹配
   const lowerType = annotationType.toLowerCase()
   const matchedKey = Object.keys(annotationUrlMap).find(key => key.toLowerCase() === lowerType)
-  if (matchedKey) {
+  if (matchedKey && annotationUrlMap[matchedKey]) {
     return annotationUrlMap[matchedKey].label
   }
   
-  // 默认格式化（下划线改空格，首字母大写）
   return annotationType
     .split('_')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
@@ -1099,8 +1092,6 @@ const fetchGeneData = async (db_id: string) => {
   // 重置所有数据，避免使用旧数据
   result.value = null
   annotations.value = {}
-  parsedGoAnnotations.value = []
-  parsedKeggAnnotations.value = []
   
   try {
     const navigationData = navigationStore.getNavigationData('geneDetail')
@@ -1123,6 +1114,12 @@ const fetchGeneData = async (db_id: string) => {
       gffData.value = navigationData.results.gff_data || []
       hasGffData.value = gffData.value.length > 0
       currentPage.value = 1
+      
+      if (gffData.value.length > 0) {
+        console.log('gffData from navigation[0] fields:', Object.keys(gffData.value[0]))
+        console.log('gffData from navigation[0] score/value:', gffData.value[0].score, gffData.value[0].value)
+        console.log('gffData from navigation[0] strand:', gffData.value[0].strand)
+      }
       
       const geneId = result.value?.IDs
       if (geneId) {
@@ -1201,6 +1198,12 @@ const fetchGeneData = async (db_id: string) => {
         gffData.value = result.value.gff_data || []
         hasGffData.value = gffData.value.length > 0
         currentPage.value = 1
+        
+        if (gffData.value.length > 0) {
+          console.log('gffData[0] fields:', Object.keys(gffData.value[0]))
+          console.log('gffData[0] score/value:', gffData.value[0].score, gffData.value[0].value)
+          console.log('gffData[0] strand:', gffData.value[0].strand)
+        }
         
         if (result.value) {
           navigationStore.setNavigationData('geneDetail', {

@@ -5,7 +5,7 @@ export const useGeneListStore = defineStore('geneList', {
     geneList: '',
   }),
   actions: {
-    setGeneList(genes) {
+    setGeneList(genes: string) {
       this.geneList = genes
     },
   },
