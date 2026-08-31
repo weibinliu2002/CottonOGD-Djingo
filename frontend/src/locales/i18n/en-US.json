@@ -94,6 +94,7 @@
     "fpkm": "FPKM",
     "gc_content": "GC Content",
     "gc_percent": "GC percent",
+    "gene": "Gene",
     "gene_basic_information": "Gene Basic Information",
     "gene_expression": "Gene Expression",
     "gene_expression_analysis": "Gene Expression Analysis",

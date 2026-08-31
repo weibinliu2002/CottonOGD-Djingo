@@ -1,39 +1,56 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
-import BrowseGenomeView from '@/views/BrowseGenomeView.vue'
-import IdSearchView from '@/views/IdSearchView.vue'
-import IdSearchResultsView from '@/views/IdSearchResultsView.vue'
-import IdSearchSummaryView from '@/views/IdSearchSummaryView.vue'
-import JbrowseView from '@/views/JbrowseView.vue'
-import IGVView from '@/views/IGVView.vue'
-import DownloadView from '@/views/DownloadView.vue'
-import Contact_usView from '@/views/Contact_usView.vue'
-import AboutView from '@/views/AboutView.vue'
-import BlastpView from '@/views/BlastpView.vue'
-import BlastpResultView from '@/views/BlastpResultView.vue'
-import GoEnrichmentView from '@/views/GoEnrichmentView.vue'
-import GoEnrichmentResultView from '@/views/GoEnrichmentResultView.vue'
-import GoAnnotationView from '@/views/GoAnnotationView.vue'
-import GoAnnotationResultView from '@/views/GoAnnotationResultView.vue'
-import GeneExpressionView from '@/views/GeneExpressionView.vue'
-import GeneExpressionResultView from '@/views/GeneExpressionResultView.vue'
-import GeneExpressionEfpView from '@/views/GeneExpressionEfpView.vue'
-import KeggAnnotationView from '@/views/KeggAnnotationView.vue'
-import KeggAnnotationResultView from '@/views/KeggAnnotationResultView.vue'
-import KeggEnrichmentView from '@/views/KeggEnrichmentView.vue'
-import KeggEnrichmentResultView from '@/views/KeggEnrichmentResultView.vue'
-import TFView from '@/views/TFView.vue'
-import TRView from '@/views/TRView.vue'
-import PrimerView from '@/views/PrimerView.vue'
-import Clustergramme_heatmapView from '@/views/Clustergramme_heatmap.vue'
-import PPIView from '@/views/PPIView.vue'
-import PhylotreeView from '@/views/PhylotreeView.vue'
-import CircosView from '@/views/CircosView.vue'
-import CanvaspressView from '@/views/CanvaspressView.vue'
-import SequenceServerView from '@/views/sequence-server.vue'
-import RegionSearchView from '@/views/RegionSearchView.vue'
-import GenomeSyntenyView from '@/views/GenomeSyntenyView.vue'
-import GeneLocationView from '@/views/GeneLocationView.vue'
+
+// Common views
+import HomeView from '@/views/common/HomeView.vue'
+import AboutView from '@/views/common/AboutView.vue'
+import Contact_usView from '@/views/common/Contact_usView.vue'
+import DownloadView from '@/views/common/DownloadView.vue'
+import PlaceholderView from '@/views/common/PlaceholderView.vue'
+
+// Genome module
+import BrowseGenomeView from '@/views/genome/BrowseGenomeView.vue'
+import JbrowseView from '@/views/genome/JbrowseView.vue'
+import IGVView from '@/views/genome/IGVView.vue'
+import GenomeSyntenyView from '@/views/genome/GenomeSyntenyView.vue'
+import GeneLocationView from '@/views/genome/GeneLocationView.vue'
+
+// Annotation module
+import GoAnnotationView from '@/views/annotation/GoAnnotationView.vue'
+import GoAnnotationResultView from '@/views/annotation/GoAnnotationResultView.vue'
+import KeggAnnotationView from '@/views/annotation/KeggAnnotationView.vue'
+import KeggAnnotationResultView from '@/views/annotation/KeggAnnotationResultView.vue'
+
+// Enrichment module
+import GoEnrichmentView from '@/views/enrichment/GoEnrichmentView.vue'
+import GoEnrichmentResultView from '@/views/enrichment/GoEnrichmentResultView.vue'
+import KeggEnrichmentView from '@/views/enrichment/KeggEnrichmentView.vue'
+import KeggEnrichmentResultView from '@/views/enrichment/KeggEnrichmentResultView.vue'
+
+// Expression module
+import GeneExpressionView from '@/views/expression/GeneExpressionView.vue'
+import GeneExpressionResultView from '@/views/expression/GeneExpressionResultView.vue'
+import GeneExpressionEfpView from '@/views/expression/GeneExpressionEfpView.vue'
+
+// Sequence module
+import IdSearchView from '@/views/sequence/IdSearchView.vue'
+import IdSearchResultsView from '@/views/sequence/IdSearchResultsView.vue'
+import IdSearchSummaryView from '@/views/sequence/IdSearchSummaryView.vue'
+import BlastpView from '@/views/sequence/BlastpView.vue'
+import BlastpResultView from '@/views/sequence/BlastpResultView.vue'
+import RegionSearchView from '@/views/sequence/RegionSearchView.vue'
+import SequenceServerView from '@/views/sequence/sequence-server.vue'
+
+// Visualization module
+import CircosView from '@/views/visualization/CircosView.vue'
+import PhylotreeView from '@/views/visualization/PhylotreeView.vue'
+import PPIView from '@/views/visualization/PPIView.vue'
+import Clustergramme_heatmapView from '@/views/visualization/Clustergramme_heatmap.vue'
+import CanvaspressView from '@/views/visualization/CanvaspressView.vue'
+
+// Tools module
+import TFView from '@/views/tools/TFView.vue'
+import TRView from '@/views/tools/TRView.vue'
+import PrimerView from '@/views/tools/PrimerView.vue'
 
 
 
@@ -47,20 +64,59 @@ const SimpleView = {
 }
 
 const routes = [
+  // Common routes
   {
     path: '/',
     name: 'home',
     component: HomeView
   },
   {
-    path: '/browse/genome',
+    path: '/about',
+    name: 'about',
+    component: AboutView
+  },
+  {
+    path: '/contact',
+    name: 'contact',
+    component: Contact_usView
+  },
+  {
+    path: '/download',
+    name: 'download',
+    component: DownloadView
+  },
+
+  // Genome browser routes (with redirects for backward compatibility)
+  {
+    path: '/genome/browse',
     name: 'BrowseGenome',
     component: BrowseGenomeView
   },
   {
-    path: '/browse/species',
-    name: 'BrowseSpecies',
-    component: () => ({ ...SimpleView, propsData: { title: 'Browse Species' } })
+    path: '/genome/jbrowse',
+    name: 'jbrowse',
+    component: JbrowseView
+  },
+  {
+    path: '/genome/igv',
+    name: 'IGV',
+    component: IGVView
+  },
+  {
+    path: '/genome/synteny',
+    name: 'GenomeSynteny',
+    component: GenomeSyntenyView
+  },
+  {
+    path: '/genome/gene-location',
+    name: 'GeneLocation',
+    component: GeneLocationView
+  },
+
+  // Browse routes (legacy - will redirect to new paths)
+  {
+    path: '/browse/genome',
+    redirect: '/genome/browse'
   },
   {
     path: '/browse/tf',
@@ -73,185 +129,266 @@ const routes = [
     component: TRView
   },
   {
-    path: '/jbrowse',
-    name: 'jbrowse',
-    component: JbrowseView
+    path: '/browse/species',
+    redirect: '/genome/browse'
   },
+
+  // Sequence analysis routes
   {
-    path: '/IGV',
-    name: 'IGV',
-    component: IGVView
-  },
-  {    path: '/tools/id-search',
+    path: '/sequence/search',
     name: 'idSearch',
     component: IdSearchView
   },
-  {    path: '/tools/id-search/results',
+  {
+    path: '/sequence/search/results',
     name: 'idSearchResults',
     component: IdSearchResultsView
   },
-  {    path: '/tools/id-search/id-search-summary/',
+  {
+    path: '/sequence/search/summary',
     name: 'idSearchSummary',
     component: IdSearchSummaryView
   },
-  // 其他工具页面使用简单占位组件
   {
-    path: '/tools/blastp',
+    path: '/sequence/blast',
     name: 'Blastp',
     component: BlastpView
   },
   {
-    path: '/tools/blastp/results',
+    path: '/sequence/blast/results',
     name: 'blastpResults',
     component: BlastpResultView
   },
   {
-    path: '/tools/go-enrichment',
-    name: 'GoEnrichment',
-    component: GoEnrichmentView
+    path: '/sequence/region',
+    name: 'RegionSearch',
+    component: RegionSearchView
   },
   {
-    path: '/tools/go-enrichment/results',
-    name: 'goEnrichmentResults',
-    component: GoEnrichmentResultView
+    path: '/sequence/server',
+    name: 'SequenceServer',
+    component: SequenceServerView
+  },
+
+  // Legacy sequence routes (redirects)
+  {
+    path: '/tools/id-search',
+    redirect: '/sequence/search'
   },
   {
-    path: '/tools/go-annotation',
+    path: '/tools/id-search/results',
+    redirect: '/sequence/search/results'
+  },
+  {
+    path: '/tools/id-search/id-search-summary/',
+    redirect: '/sequence/search/summary'
+  },
+  {
+    path: '/tools/blastp',
+    redirect: '/sequence/blast'
+  },
+  {
+    path: '/tools/blastp/results',
+    redirect: '/sequence/blast/results'
+  },
+  {
+    path: '/tools/region-search',
+    redirect: '/sequence/region'
+  },
+  {
+    path: '/tools/sequence-server',
+    redirect: '/sequence/server'
+  },
+
+  // Annotation routes
+  {
+    path: '/annotation/go',
     name: 'GoAnnotation',
     component: GoAnnotationView
   },
   {
-    path: '/tools/go-annotation/results',
+    path: '/annotation/go/results',
     name: 'goAnnotationResults',
     component: GoAnnotationResultView
   },
-  {    path: '/tools/kegg-annotation',
+  {
+    path: '/annotation/kegg',
     name: 'KeggAnnotation',
     component: KeggAnnotationView
   },
-  {    path: '/tools/kegg-annotation/results',
+  {
+    path: '/annotation/kegg/results',
     name: 'KeggAnnotationResults',
     component: KeggAnnotationResultView
   },
-  {    path: '/tools/kegg-enrichment',
+
+  // Legacy annotation routes (redirects)
+  {
+    path: '/tools/go-annotation',
+    redirect: '/annotation/go'
+  },
+  {
+    path: '/tools/go-annotation/results',
+    redirect: '/annotation/go/results'
+  },
+  {
+    path: '/tools/kegg-annotation',
+    redirect: '/annotation/kegg'
+  },
+  {
+    path: '/tools/kegg-annotation/results',
+    redirect: '/annotation/kegg/results'
+  },
+
+  // Enrichment routes
+  {
+    path: '/enrichment/go',
+    name: 'GoEnrichment',
+    component: GoEnrichmentView
+  },
+  {
+    path: '/enrichment/go/results',
+    name: 'goEnrichmentResults',
+    component: GoEnrichmentResultView
+  },
+  {
+    path: '/enrichment/kegg',
     name: 'KeggEnrichment',
     component: KeggEnrichmentView
   },
-  {    path: '/tools/kegg-enrichment/results',
+  {
+    path: '/enrichment/kegg/results',
     name: 'KeggEnrichmentResults',
     component: KeggEnrichmentResultView
   },
+
+  // Legacy enrichment routes (redirects)
   {
-    path: '/tools/heatmap',
-    name: 'Heatmap',
-    component: () => ({ ...SimpleView, propsData: { title: 'Heatmap Analysis' } })
+    path: '/tools/go-enrichment',
+    redirect: '/enrichment/go'
   },
-  {    path: '/tools/gene-expression',
+  {
+    path: '/tools/go-enrichment/results',
+    redirect: '/enrichment/go/results'
+  },
+  {
+    path: '/tools/kegg-enrichment',
+    redirect: '/enrichment/kegg'
+  },
+  {
+    path: '/tools/kegg-enrichment/results',
+    redirect: '/enrichment/kegg/results'
+  },
+
+  // Expression routes
+  {
+    path: '/expression/gene',
     name: 'GeneExpression',
     component: GeneExpressionView
   },
-  {    path: '/tools/gene-expression/results',
+  {
+    path: '/expression/gene/results',
     name: 'geneExpressionResults',
     component: GeneExpressionResultView
   },
-  {    path: '/tools/gene-expression-efp',
+  {
+    path: '/expression/efp',
     name: 'GeneExpressionEfp',
     component: GeneExpressionEfpView
   },
+
+  // Legacy expression routes (redirects)
+  {
+    path: '/tools/gene-expression',
+    redirect: '/expression/gene'
+  },
+  {
+    path: '/tools/gene-expression/results',
+    redirect: '/expression/gene/results'
+  },
+  {
+    path: '/tools/gene-expression-efp',
+    redirect: '/expression/efp'
+  },
+
+  // Visualization routes
+  {
+    path: '/visualization/circos',
+    name: 'Circos',
+    component: CircosView
+  },
+  {
+    path: '/visualization/phylotree',
+    name: 'Phylotree',
+    component: PhylotreeView
+  },
+  {
+    path: '/visualization/ppi',
+    name: 'PPI',
+    component: PPIView
+  },
+  {
+    path: '/visualization/heatmap',
+    name: 'Clustergramme_heatmap',
+    component: Clustergramme_heatmapView
+  },
+  {
+    path: '/visualization/canvaspress',
+    name: 'Canvaspress',
+    component: CanvaspressView
+  },
+
+  // Legacy visualization routes (redirects)
+  {
+    path: '/tools/circos',
+    redirect: '/visualization/circos'
+  },
+  {
+    path: '/tools/phylotree',
+    redirect: '/visualization/phylotree'
+  },
+  {
+    path: '/tools/ppi',
+    redirect: '/visualization/ppi'
+  },
+  {
+    path: '/tools/clustergramme_heatmap',
+    redirect: '/visualization/heatmap'
+  },
+  {
+    path: '/tools/canvaspress',
+    redirect: '/visualization/canvaspress'
+  },
+  {
+    path: '/tools/heatmap',
+    redirect: '/visualization/heatmap'
+  },
+
+  // Tools routes
   {
     path: '/tools/primer-design',
     name: 'PrimerDesign',
     component: PrimerView
   },
+
+  // Placeholder routes for future features
   {
     path: '/tools/ks-calculator',
     name: 'KsCalculator',
-    component: () => ({ ...SimpleView, propsData: { title: 'KS Calculator' } })
-  },
-  {
-    path: '/tools/ks-calculator/results',
-    name: 'KsCalculatorResults',
-    component: () => ({ ...SimpleView, propsData: { title: 'KS Calculator Results' } })
+    component: PlaceholderView,
+    props: { title: 'KS Calculator' }
   },
   {
     path: '/tools/orthogroup',
     name: 'Orthogroup',
-    component: () => ({ ...SimpleView, propsData: { title: 'Orthogroup Analysis' } })
-  },
-  {
-    path: '/tools/orthogroup/results',
-    name: 'OrthogroupResults',
-    component: () => ({ ...SimpleView, propsData: { title: 'Orthogroup Analysis Results' } })
+    component: PlaceholderView,
+    props: { title: 'Orthogroup Analysis' }
   },
   {
     path: '/tools/msa',
     name: 'Msa',
-    component: () => ({ ...SimpleView, propsData: { title: '多序列比对' } })
-  },
-  {
-    path: '/tools/msa/results',
-    name: 'MsaResults',
-    component: () => ({ ...SimpleView, propsData: { title: '多序列比对结果' } })
-  },
-  {
-    path: '/tools/clustergramme_heatmap',
-    name: 'Clustergramme_heatmap',
-    component: Clustergramme_heatmapView
-  },
-  {
-    path: '/tools/ppi',
-    name: 'PPI',
-    component: PPIView
-  },
-  {
-    path: '/tools/phylotree',
-    name: 'Phylotree',
-    component: PhylotreeView
-  },
-  {
-    path: '/tools/circos',
-    name: 'Circos',
-    component: CircosView
-  },
-  {
-    path: '/tools/canvaspress',
-    name: 'Canvaspress',
-    component: CanvaspressView
-  },
-  {
-    path: '/tools/sequence-server',
-    name: 'SequenceServer',
-    component: SequenceServerView
-  },
-  {
-    path: '/tools/region-search',
-    name: 'RegionSearch',
-    component: RegionSearchView
-  },
-  {
-    path: '/tools/genome-synteny',
-    name: 'GenomeSynteny',
-    component: GenomeSyntenyView
-  },
-  {
-    path: '/tools/gene-location',
-    name: 'GeneLocation',
-    component: GeneLocationView
-  },
-  {
-    path: '/download',
-    name: 'Download',
-    component: DownloadView
-  },
-  {
-    path: '/contact-us',
-    name: 'Contact_us',
-    component: Contact_usView
-  },
-  {    
-    path: '/about-us',
-    name: 'About_us',
-    component: AboutView
+    component: PlaceholderView,
+    props: { title: 'Multiple Sequence Alignment' }
   },
 ]
 

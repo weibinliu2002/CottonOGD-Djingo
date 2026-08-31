@@ -1,9 +1,9 @@
-﻿﻿﻿﻿<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useGenomeSelector } from '@/composables/features/useGenomeBrowser'
 import { Download, RefreshLeft, Folder, Files, Loading } from '@element-plus/icons-vue'
-import axios from '@/utils/http'
+import axios from '@/utils/http.js'
 
 const { t } = useI18n()
 

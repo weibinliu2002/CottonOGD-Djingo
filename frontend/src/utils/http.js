@@ -3,7 +3,7 @@ import axios from 'axios'
 
 // 创建统一的axios实例
 const httpInstance = axios.create({
-  timeout: 1000000000000,
+  timeout: 30000, // 30秒超时
   withCredentials: true,
   headers: {
     'uuid': 'test_uuid' // 默认UUID，实际应用中应该从登录状态获取

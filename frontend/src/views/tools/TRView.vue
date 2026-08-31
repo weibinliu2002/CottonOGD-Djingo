@@ -4,7 +4,7 @@
       <!-- 宸︿晶杈规爮 -->
       <div class="col-md-3">
         <div class="sidebar">
-          <h3>{{ t('transcription_regulators_factors') }}<el-icon class="info-icon"><QuestionFilled /></el-icon></h3>
+          <h3>Transcription Regulators factors<el-icon class="info-icon"><QuestionFilled /></el-icon></h3>
           <div class="mt-4">
             <h4 class="sidebar-title"><el-icon class="play-icon"><VideoPlay /></el-icon> {{ t('select_genome') }}</h4>
             <el-cascader
@@ -120,8 +120,8 @@ import { QuestionFilled, VideoPlay, Search } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import router from '@/router'
 import httpInstance from '@/utils/http.js'
-import { useGenomeSelector } from '@/composables/useGenomeBrowser'
-import { useFamilyStore } from '@/stores/familyInfo'
+import { useGenomeSelector } from '@/composables/features/useGenomeBrowser'
+import { useFamilyStore } from '@/stores/modules/family'
 
 export default {
   name: 'TRView',
