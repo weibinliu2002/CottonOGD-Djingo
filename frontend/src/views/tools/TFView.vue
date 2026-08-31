@@ -118,6 +118,7 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { QuestionFilled, VideoPlay, Search } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 import router from '@/router'
 import httpInstance from '@/utils/http.js'
 import { useGenomeSelector } from '@/composables/features/useGenomeBrowser'
@@ -133,6 +134,7 @@ export default {
   },
   setup() {
     const { t } = useI18n()
+    const route = useRoute()
     // 鑾峰彇鍩哄洜缁剆tore
     const { selectedGenome, genomeOptions, genomeLoading, cascaderProps, ensureGenomesLoaded, pickDefaultGenome, setSelectedGenome } = useGenomeSelector()
     const navigationStore = useNavigationStore()
@@ -339,7 +341,10 @@ export default {
     // 缁勪欢鎸傝浇鏃跺姞杞芥暟鎹?
     onMounted(async () => {
       await ensureGenomesLoaded()
-      const targetGenome = pickDefaultGenome()
+      // 优先使用 URL query 中的 genome 参数（从详情页快捷跳转过来）
+      const queryGenome = typeof route.query.genome === 'string' ? route.query.genome : ''
+      const targetGenome =
+        queryGenome && allGenomes.value.includes(queryGenome) ? queryGenome : pickDefaultGenome()
       if (targetGenome) {
         setSelectedGenome(targetGenome)
         handleGenomeChange()

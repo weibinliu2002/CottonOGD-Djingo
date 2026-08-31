@@ -169,6 +169,8 @@
     "news": "News",
     "news_updates": "News & Updates",
     "next": "Next",
+    "data_visualization": "Data Visualization",
+    "genome_browser": "Genome Browser",
     "no_data": "No data available",
     "no_enrichment_results_found": "No enrichment results found",
     "no_genome_data_available": "No Genome Data Available",

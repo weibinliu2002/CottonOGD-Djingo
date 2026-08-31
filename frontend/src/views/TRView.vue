@@ -118,6 +118,7 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { QuestionFilled, VideoPlay, Search } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 import router from '@/router'
 import httpInstance from '@/utils/http.js'
 import { useGenomeSelector } from '@/composables/useGenomeBrowser'
@@ -130,7 +131,8 @@ export default {
   },
   setup() {
     const { t } = useI18n()
-    const { selectedGenome, genomeOptions, genomeLoading, cascaderProps, ensureGenomesLoaded, pickDefaultGenome, setSelectedGenome } = useGenomeSelector('G.anomalumB1_HAU_v1')
+    const route = useRoute()
+    const { selectedGenome, genomeOptions, genomeLoading, cascaderProps, ensureGenomesLoaded, pickDefaultGenome, setSelectedGenome, allGenomes } = useGenomeSelector('G.anomalumB1_HAU_v1')
     const familyStore = useFamilyStore()
     
     const familyInfo = computed(() => familyStore.familyInfo)
@@ -284,7 +286,10 @@ export default {
     
     onMounted(async () => {
       await ensureGenomesLoaded()
-      const targetGenome = pickDefaultGenome()
+      // 优先使用 URL query 中的 genome 参数（从详情页快捷跳转过来）
+      const queryGenome = typeof route.query.genome === 'string' ? route.query.genome : ''
+      const targetGenome =
+        queryGenome && allGenomes.value.includes(queryGenome) ? queryGenome : pickDefaultGenome()
       if (targetGenome) {
         setSelectedGenome(targetGenome)
         handleGenomeChange()

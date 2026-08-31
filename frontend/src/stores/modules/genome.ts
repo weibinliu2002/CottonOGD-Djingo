@@ -3,24 +3,34 @@ import { defineStore } from 'pinia'
 import httpInstance from '@/utils/http.js'
 
 // 定义类型
-interface GenomeOption {
+export interface GenomeOption {
   value: string
   label: string
   children?: GenomeItem[]
 }
 
-interface GenomeItem {
+export interface GenomeItem {
   value: string
   label: string
   article?: string
 }
 
-interface Species {
+export interface Species {
+  id?: number
   Genome_type?: string
   alias?: string
   name?: string
   Cotton_Species?: string
   Article?: string
+  Busco?: string
+  Genome_size?: number | null
+  Category?: string
+  Accession?: string | null
+  Ploidy?: string
+  Assembling_institution?: string
+  Website?: string | null
+  LAI_value?: string
+  description?: string | null
 }
 
 interface ApiResponse {

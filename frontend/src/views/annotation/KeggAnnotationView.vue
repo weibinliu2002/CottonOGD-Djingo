@@ -70,7 +70,7 @@
 import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import axios from '@/utils/http.js'
 import { ElMessage } from 'element-plus'
 import { useGenomeSelector } from '@/composables/features/useGenomeBrowser'
@@ -79,14 +79,18 @@ import { useEnrichmentStore } from '@/stores/modules/enrichment'
 const geneIds = ref('')
 const isLoading = ref(false)
 const router = useRouter()
+const route = useRoute()
 
 // 基因组选择
-const { genomeOptions, genomeLoading, ensureGenomesLoaded, pickDefaultGenome } = useGenomeSelector()
+const { genomeOptions, genomeLoading, ensureGenomesLoaded, pickDefaultGenome, allGenomes } = useGenomeSelector()
 const selectedGenome = ref('')
 
 onMounted(async () => {
   await ensureGenomesLoaded()
-  const defaultGenome = pickDefaultGenome()
+  const queryGenome = typeof route.query.genome === 'string' ? route.query.genome : ''
+  const defaultGenome = queryGenome && allGenomes.value.includes(queryGenome)
+    ? queryGenome
+    : pickDefaultGenome()
   if (defaultGenome) {
     selectedGenome.value = defaultGenome
   }

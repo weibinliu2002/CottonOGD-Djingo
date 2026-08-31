@@ -1,10 +1,401 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { Search, ArrowDown, Setting } from '@element-plus/icons-vue'
 import { searchGenes } from '@/utils/meilisearch'
+import { useGenomeStore } from '@/stores/modules/genome'
+import * as echarts from 'echarts'
+
+const genomeStore = useGenomeStore()
+
+// ECharts 实例
+let pieChart: echarts.ECharts | null = null
+let barChart: echarts.ECharts | null = null
+let scatterChart: echarts.ECharts | null = null
+const pieChartRef = ref<HTMLElement>()
+const barChartRef = ref<HTMLElement>()
+const scatterChartRef = ref<HTMLElement>()
+
+// 统计数据（从 genome store 动态计算，后续可扩展）
+const stats = computed(() => {
+  const genomeCount = genomeStore.allGenomes.length
+  const genomeTypeCount = genomeStore.genomeOptions.length
+  const speciesCount = genomeStore.speciesData.length
+
+  return [
+    {
+      icon: 'fas fa-dna',
+      value: genomeCount > 0 ? genomeCount.toString() : '...',
+      label: 'Genomes',
+    },
+    {
+      icon: 'fas fa-leaf',
+      value: speciesCount > 0 ? speciesCount.toString() : '...',
+      label: 'Cotton Species',
+    },
+    {
+      icon: 'fas fa-layer-group',
+      value: genomeTypeCount > 0 ? genomeTypeCount.toString() : '...',
+      label: 'Genome Types',
+    },
+    // 预留：基因数、转录因子数等，后续接入新 API 后填充
+    {
+      icon: 'fas fa-gene',
+      value: '200,000+',
+      label: 'Annotated Genes',
+    },
+    {
+      icon: 'fas fa-users',
+      value: '15,000+',
+      label: 'Orthogroups',
+    },
+    {
+      icon: 'fas fa-book',
+      value: '5,000+',
+      label: 'Literature References',
+    },
+  ]
+})
+
+onMounted(() => {
+  genomeStore.fetchGenomes()
+})
+
+// BUSCO 分布（饼图用）：按 ≥95 / 90-95 / 80-90 / 70-80 / <70 五区间统计
+const pieBuscoData = computed(() => {
+  const buckets = [
+    { name: '≥95', min: 95, max: Infinity, count: 0 },
+    { name: '90-95', min: 90, max: 95, count: 0 },
+    { name: '80-90', min: 80, max: 90, count: 0 },
+    { name: '70-80', min: 70, max: 80, count: 0 },
+    { name: '<70', min: -Infinity, max: 70, count: 0 },
+  ]
+  genomeStore.speciesData.forEach((s) => {
+    if (!s.Busco) return
+    const v = parseFloat(s.Busco)
+    if (isNaN(v)) return
+    const pct = v <= 1 ? v * 100 : v
+    for (const b of buckets) {
+      // 区间为左闭右开：[95, ∞) / [90,95) / [80,90) / [70,80) / (-∞,70)
+      if (pct >= b.min && pct < b.max) {
+        b.count++
+        break
+      }
+    }
+  })
+  return buckets.filter((b) => b.count > 0).map((b) => ({ name: b.name, value: b.count }))
+})
+
+// 各棉花物种的基因组数量（柱状图用）：按 Cotton_Species 聚合，降序排列
+const barSpeciesData = computed(() => {
+  const count: Record<string, number> = {}
+  genomeStore.speciesData.forEach((s) => {
+    const name = s.Cotton_Species || s.name || s.alias || 'Unknown'
+    count[name] = (count[name] || 0) + 1
+  })
+  const sorted = Object.entries(count).sort((a, b) => b[1] - a[1])
+  return {
+    species: sorted.map(([name]) => name),
+    counts: sorted.map(([, c]) => c),
+  }
+})
+
+// 各基因组的 Genome Size 与 BUSCO（散点图用，按物种分组）
+const scatterSizeData = computed(() => {
+  return genomeStore.speciesData
+    .map((s) => {
+      const genomeName = s.alias || s.name || 'Unknown'
+      const species = s.Cotton_Species || 'Unknown'
+      // 基因组大小 bp → Gb
+      const sizeGb =
+        typeof s.Genome_size === 'number' && s.Genome_size > 0
+          ? +(s.Genome_size / 1e9).toFixed(3)
+          : null
+      // BUSCO "0.952" → 95.2 (%)
+      let buscoPct: number | null = null
+      if (s.Busco) {
+        const v = parseFloat(s.Busco)
+        if (!isNaN(v)) {
+          buscoPct = v <= 1 ? +(v * 100).toFixed(2) : +v.toFixed(2)
+        }
+      }
+      return { species, genomeName, sizeGb, buscoPct }
+    })
+    .filter((it) => it.sizeGb !== null)
+})
+
+// 散点图 x 轴：去重后的物种列表（Cotton_Species）
+const scatterSpecies = computed(() => {
+  const set = new Set<string>()
+  scatterSizeData.value.forEach((it) => set.add(it.species))
+  return Array.from(set)
+})
+
+/** 初始化饼图：BUSCO 分布（5 区间） */
+function initPieChart() {
+  if (!pieChartRef.value || pieBuscoData.value.length === 0) return
+  pieChart = echarts.init(pieChartRef.value)
+  pieChart.setOption({
+    title: {
+      text: 'BUSCO Distribution',
+      left: 'center',
+      textStyle: { fontSize: 16 },
+    },
+    tooltip: {
+      trigger: 'item',
+      formatter: '{a} <br/>{b}: {c} ({d}%)',
+    },
+    legend: {
+      orient: 'vertical',
+      left: 'left',
+      top: 'middle',
+      textStyle: { fontSize: 12 },
+    },
+    // 颜色由高到低：绿、蓝、橙、红、灰
+    color: ['#67C23A', '#409EFF', '#E6A23C', '#F56C6C', '#909399'],
+    series: [
+      {
+        name: 'BUSCO',
+        type: 'pie',
+        radius: ['40%', '70%'],
+        center: ['60%', '55%'],
+        avoidLabelOverlap: false,
+        itemStyle: {
+          borderRadius: 6,
+          borderColor: '#fff',
+          borderWidth: 2,
+        },
+        label: {
+          show: true,
+          formatter: '{b}: {c}',
+        },
+        data: pieBuscoData.value,
+      },
+    ],
+  })
+}
+
+/** 初始化柱状图：各棉花物种的基因组数量 */
+function initBarChart() {
+  if (!barChartRef.value || barSpeciesData.value.species.length === 0) return
+  barChart = echarts.init(barChartRef.value)
+  barChart.setOption({
+    title: {
+      text: 'Genomes per Cotton Species',
+      left: 'center',
+      textStyle: { fontSize: 16 },
+    },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+    },
+    grid: {
+      left: '3%',
+      right: '5%',
+      bottom: '20%',
+      containLabel: true,
+    },
+    // 基因组数量较多时支持横向缩放
+    dataZoom: [
+      { type: 'inside', start: 0, end: 100 },
+      { type: 'slider', height: 18, bottom: 8, start: 0, end: 100 },
+    ],
+    xAxis: {
+      type: 'category',
+      data: barSpeciesData.value.species,
+      axisLabel: {
+        rotate: 45,
+        fontSize: 11,
+        interval: 0,
+      },
+    },
+    yAxis: {
+      type: 'value',
+      name: 'Count',
+      minInterval: 1,
+    },
+    series: [
+      {
+        name: 'Genomes',
+        type: 'bar',
+        data: barSpeciesData.value.counts,
+        itemStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: '#409EFF' },
+            { offset: 1, color: '#67C23A' },
+          ]),
+          borderRadius: [4, 4, 0, 0],
+        },
+        label: {
+          show: true,
+          position: 'top',
+          fontSize: 12,
+        },
+      },
+    ],
+  })
+}
+
+/** 响应窗口大小变化 */
+function handleResize() {
+  pieChart?.resize()
+  barChart?.resize()
+  scatterChart?.resize()
+}
+
+/** 初始化散点图（类火山图）：按物种分组聚集，每点为一个基因组，y=Genome Size (Gb)，颜色按 BUSCO 映射 */
+function initScatterChart() {
+  if (!scatterChartRef.value || scatterSizeData.value.length === 0) return
+  scatterChart = echarts.init(scatterChartRef.value)
+  const speciesList = scatterSpecies.value
+  // 同物种点之间的间距（数值 x 轴单位）：点数多时自动缩小，保证聚簇不超出 ±1 边界
+  const maxCount = Math.max(
+    ...scatterSizeData.value.reduce((acc: number[], it) => {
+      const i = speciesList.indexOf(it.species)
+      acc[i] = (acc[i] || 0) + 1
+      return acc
+    }, []),
+  )
+  const step = maxCount > 1 ? Math.min(0.18, 1.8 / (maxCount - 1)) : 0.18
+
+  // 先统计每个物种的基因组总数，用于居中散布
+  const speciesCounts: Record<string, number> = {}
+  scatterSizeData.value.forEach((it) => {
+    speciesCounts[it.species] = (speciesCounts[it.species] || 0) + 1
+  })
+  const speciesSeen: Record<string, number> = {}
+
+  // 数据项：name=基因组名（tooltip 显示），value=[x, Genome Size (Gb), BUSCO (%), 物种名]
+  // x 轴为类目轴，类目 i 的槽中心在 i + 0.5；同物种点在槽内居中散开并叠加随机左右抖动
+  const data = scatterSizeData.value.map((it) => {
+    const speciesIdx = speciesList.indexOf(it.species)
+    const total = speciesCounts[it.species] || 0
+    const j = speciesSeen[it.species] || 0
+    speciesSeen[it.species] = j + 1
+    const jitter = (Math.random() - 0.5) * 1.8
+    const x = speciesIdx + 0.5 + (j - (total - 1) / 2) * step + jitter
+    return {
+      name: it.genomeName,
+      value: [x, it.sizeGb, it.buscoPct, it.species],
+    }
+  })
+
+  scatterChart.setOption({
+    title: {
+      text: 'Genome Size per Species (colored by BUSCO)',
+      left: 'center',
+      textStyle: { fontSize: 16 },
+    },
+    tooltip: {
+      trigger: 'item',
+      formatter: (p: any) => {
+        const [, size, busco, species] = p.value as [number, number, number | null, string]
+        const buscoTxt = busco === null || busco === undefined ? 'N/A' : `${busco}%`
+        // 鼠标悬停显示基因组名称（p.name）
+        return `${p.name}<br/>Species: ${species}<br/>Genome Size: <b>${size} Gb</b><br/>BUSCO: <b>${buscoTxt}</b>`
+      },
+    },
+    grid: {
+      left: '4%',
+      right: '12%',
+      bottom: '18%',
+      top: '15%',
+      containLabel: true,
+    },
+    dataZoom: [
+      { type: 'inside', start: 0, end: 100 },
+      { type: 'slider', height: 18, bottom: 8, start: 0, end: 100 },
+    ],
+    xAxis: {
+      type: 'category',
+      data: speciesList,
+      // 类目轴 boundaryGap 两端自动各留半槽宽（比例边距），首尾物种不贴 y 轴
+      axisLabel: {
+        rotate: 30,
+        fontSize: 11,
+        interval: 0,
+      },
+      axisTick: { alignWithLabel: true },
+      // y 轴线不画在第一个类目处，而是贴绘图区左边缘
+      axisLine: { onZero: false },
+      splitLine: { show: false },
+    },
+    yAxis: {
+      type: 'value',
+      // 不从 0 开始：取数据最小值向下留 0.2 Gb 边距（保留一位小数），避免规整到 0
+      min: (value: { min: number; max: number }) =>
+        Math.floor((value.min - 0.2) * 10) / 10,
+      name: 'Genome Size (Gb)',
+      nameTextStyle: { color: '#3a6ea5' },
+      axisLabel: { color: '#3a6ea5', formatter: '{value} Gb' },
+      splitLine: { lineStyle: { type: 'dashed', color: '#eee' } },
+    },
+    // 按 BUSCO（value[2]）映射颜色：红 → 橙 → 蓝 → 绿
+    visualMap: {
+      min: 70,
+      max: 100,
+      dimension: 2,
+      orient: 'vertical',
+      right: 10,
+      top: 'middle',
+      text: ['High', 'Low'],
+      calculable: true,
+      itemHeight: 120,
+      inRange: {
+        color: ['#F56C6C', '#E6A23C', '#409EFF', '#67C23A'],
+      },
+    },
+    series: [
+      {
+        name: 'Genome Size',
+        type: 'scatter',
+        data,
+        symbolSize: 12,
+        clip: false,
+        itemStyle: { opacity: 0.85 },
+        emphasis: {
+          focus: 'self',
+          itemStyle: { borderWidth: 2, borderColor: '#333', shadowBlur: 6, shadowColor: 'rgba(0,0,0,0.3)' },
+        },
+      },
+    ],
+  })
+}
+
+// 当 genome 数据加载完成后初始化图表
+watch(
+  () => genomeStore.genomeOptions,
+  (newVal) => {
+    if (newVal.length > 0) {
+      nextTick(() => {
+        initPieChart()
+        initBarChart()
+        initScatterChart()
+      })
+    }
+  },
+)
+
+onMounted(() => {
+  window.addEventListener('resize', handleResize)
+  // 如果数据已加载，直接初始化
+  if (genomeStore.genomeOptions.length > 0) {
+    nextTick(() => {
+      initPieChart()
+      initBarChart()
+      initScatterChart()
+    })
+  }
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', handleResize)
+  pieChart?.dispose()
+  barChart?.dispose()
+  scatterChart?.dispose()
+})
 
 const searchQuery = ref('')
 const selectedDatabase = ref('all')
@@ -337,53 +728,47 @@ const clearAdvancedOptions = () => {
       </div>
     </section>
     <!-- 数据库统计区域 -->
-    <section class="stats-section bg-light">
+     <!--
+      <section class="stats-section bg-light">
       <div class="container">
         <h2 class="section-title">{{ t('database_statistics') }}</h2>
         <el-row :gutter="30">
-          <el-col :span="6">
+          <el-col v-for="(stat, index) in stats" :key="index" :xs="12" :sm="8" :md="4">
             <div class="stats-card">
               <div class="stats-icon">
-                <i class="fas fa-dna"></i>
+                <i :class="stat.icon"></i>
               </div>
               <div class="stats-content">
-                <div class="stats-value">200+</div>
-                <div class="stats-label">Genomes</div>
+                <div class="stats-value">{{ stat.value }}</div>
+                <div class="stats-label">{{ stat.label }}</div>
               </div>
             </div>
           </el-col>
-          <el-col :span="6">
-            <div class="stats-card">
-              <div class="stats-icon">
-                <i class="fas fa-gene"></i>
-              </div>
-              <div class="stats-content">
-                <div class="stats-value">200,000+</div>
-                <div class="stats-label">Annotated Genes</div>
-              </div>
-            </div>
+        </el-row>
+      </div>
+    </section>
+    -->
+    <!-- 图表可视化区域 -->
+    <section class="charts-section">
+      <div class="container">
+        <h2 class="section-title">{{ t('data_visualization') || 'Data Visualization' }}</h2>
+        <el-row :gutter="30">
+          <el-col :xs="24" :md="12">
+            <el-card shadow="hover">
+              <div ref="pieChartRef" class="chart-container"></div>
+            </el-card>
           </el-col>
-          <el-col :span="6">
-            <div class="stats-card">
-              <div class="stats-icon">
-                <i class="fas fa-users"></i>
-              </div>
-              <div class="stats-content">
-                <div class="stats-value">15,000+</div>
-                <div class="stats-label">Orthogroups</div>
-              </div>
-            </div>
+          <el-col :xs="24" :md="12">
+            <el-card shadow="hover">
+              <div ref="barChartRef" class="chart-container"></div>
+            </el-card>
           </el-col>
-          <el-col :span="6">
-            <div class="stats-card">
-              <div class="stats-icon">
-                <i class="fas fa-book"></i>
-              </div>
-              <div class="stats-content">
-                <div class="stats-value">5,000+</div>
-                <div class="stats-label">Literature References</div>
-              </div>
-            </div>
+        </el-row>
+        <el-row :gutter="30" class="mt-3">
+          <el-col :span="24">
+            <el-card shadow="hover">
+              <div ref="scatterChartRef" class="chart-container chart-container-wide"></div>
+            </el-card>
           </el-col>
         </el-row>
       </div>
@@ -569,6 +954,25 @@ const clearAdvancedOptions = () => {
 <style scoped>
 .home {
   padding-bottom: 0;
+}
+
+/* 图表区域 */
+.charts-section {
+  padding: 60px 0;
+  background-color: #f8f9fa;
+}
+
+.chart-container {
+  width: 100%;
+  height: 400px;
+}
+
+.chart-container-wide {
+  height: 460px;
+}
+
+.mt-3 {
+  margin-top: 20px;
 }
 
 /* 英雄区域 */

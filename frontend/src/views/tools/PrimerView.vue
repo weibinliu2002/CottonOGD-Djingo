@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="container mt-6">
     <h1 class="page-title">{{ t('primer_design') }}</h1>
     <el-row :gutter="20">
@@ -356,6 +356,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 import { usePrimerDesignStore } from '@/stores/modules/primer'
 import { useGenomeSelector } from '@/composables/features/useGenomeBrowser'
 import { Loading } from '@element-plus/icons-vue'
@@ -363,10 +364,11 @@ import httpInstance from '@/utils/http.js'
 import { treemapResquarify } from 'd3'
 
 const { t } = useI18n()
+const route = useRoute()
 
-// 閸掓繂顫愰崠鏉漷ore
+// Store
 const primerDesignStore = usePrimerDesignStore()
-const { genomeOptions: groupedGenomeOptions, ensureGenomesLoaded, pickDefaultGenome } = useGenomeSelector()
+const { genomeOptions: groupedGenomeOptions, ensureGenomesLoaded, pickDefaultGenome, allGenomes } = useGenomeSelector()
 
 const sequenceId = computed({
   get: () => primerDesignStore.sequenceId,
@@ -510,10 +512,13 @@ watch(genomeAssembly, async (newGenome) => {
   genomePosition.chromosome = ''
 })
 
-// 缂佸嫪娆㈤幐鍌濇祰閺冩儼骞忛崣鏍х唨閸ョ姷绮嶉弫鐗堝祦
+// mounted
 onMounted(async () => {
   await ensureGenomesLoaded()
-  if (!genomeAssembly.value) {
+  const queryGenome = typeof route.query.genome === 'string' ? route.query.genome : ''
+  if (queryGenome && allGenomes.value.includes(queryGenome)) {
+    genomeAssembly.value = queryGenome
+  } else if (!genomeAssembly.value) {
     genomeAssembly.value = pickDefaultGenome()
   }
   if (genomeAssembly.value) {
