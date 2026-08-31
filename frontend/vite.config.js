@@ -17,11 +17,13 @@ export default defineConfig({
           'element-plus': ['element-plus'],
           'chart-js': ['chart.js'],
           d3: ['d3'],
-          tools: ['heatmap.js']
+          tools: ['heatmap.js'],
+          'vue-vendor': ['vue', 'vue-router', 'pinia', 'vue-i18n'],
+          'utils': ['axios', '@element-plus/icons-vue']
         }
       }
     },
-    chunkSizeWarningLimit: 1000
+    chunkSizeWarningLimit: 2000
   },
   publicDir: 'public',
   plugins: [

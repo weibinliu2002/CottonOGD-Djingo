@@ -74,6 +74,7 @@ import { useRouter } from 'vue-router'
 import axios from '@/utils/http.js'
 import { ElMessage } from 'element-plus'
 import { useGenomeSelector } from '@/composables/features/useGenomeBrowser'
+import { useEnrichmentStore } from '@/stores/modules/enrichment'
 
 const geneIds = ref('')
 const isLoading = ref(false)
@@ -132,7 +133,6 @@ const submitForm = async () => {
   isLoading.value = true
   try {
     // 使用 Pinia store 存储基因组信息
-    const { useEnrichmentStore } = await import('@/stores/modules/enrichment')
     const enrichmentStore = useEnrichmentStore()
     enrichmentStore.selectedGenome = selectedGenome.value
     
