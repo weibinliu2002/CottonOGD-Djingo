@@ -576,6 +576,8 @@ interface Result {
   gene_go_result?: any[]
   gene_kegg_result?: any[]
   geneid_result?: any[]
+  jbrowse_url?: string
+  gff_data?: GffItem[]
 }
 
 // 获取store
@@ -1145,25 +1147,27 @@ const fetchGeneData = async (db_id: string) => {
         
         if (data && data.results) {
           console.log('开始解析JSON:', data.results)
+          let parsedResult: Result
           try {
-            result.value = JSON.parse(data.results)
+            parsedResult = JSON.parse(data.results)
+            result.value = parsedResult
             console.log('JSON解析成功:', result.value)
-            console.log('result.value.geneid_result:', result.value.geneid_result)
-            console.log('result.value.gene_go_result:', result.value.gene_go_result)
-            console.log('result.value.gene_kegg_result:', result.value.gene_kegg_result)
+            console.log('result.value.geneid_result:', parsedResult.geneid_result)
+            console.log('result.value.gene_go_result:', parsedResult.gene_go_result)
+            console.log('result.value.gene_kegg_result:', parsedResult.gene_kegg_result)
             console.log('parsedGoAnnotations:', parsedGoAnnotations.value)
             console.log('parsedKeggAnnotations:', parsedKeggAnnotations.value)
           } catch (parseError) {
             console.error('JSON解析失败:', parseError)
             throw new Error('Failed to parse gene data')
           }
-          
-          if (result.value.geneid_result && Array.isArray(result.value.geneid_result)) {
-            processAnnotations(result.value.geneid_result)
+
+          if (parsedResult.geneid_result && Array.isArray(parsedResult.geneid_result)) {
+            processAnnotations(parsedResult.geneid_result)
           }
-          
-          if (result.value.gene_go_result && result.value.gene_go_result.length > 0) {
-            const goAnnotations = result.value.gene_go_result.map((item: any) => ({
+
+          if (parsedResult.gene_go_result && parsedResult.gene_go_result.length > 0) {
+            const goAnnotations = parsedResult.gene_go_result.map((item: any) => ({
               annotation: `${item.go_type}: ${item.go_description} (${item.go_id})`,
               geneid_id: item.geneid_id,
               genome_id: item.genome_id,
@@ -1174,9 +1178,9 @@ const fetchGeneData = async (db_id: string) => {
             }
             annotations.value.GO_annotation = [...annotations.value.GO_annotation, ...goAnnotations]
           }
-          
-          if (result.value.gene_kegg_result && result.value.gene_kegg_result.length > 0) {
-            const keggAnnotations = result.value.gene_kegg_result.map((item: any) => ({
+
+          if (parsedResult.gene_kegg_result && parsedResult.gene_kegg_result.length > 0) {
+            const keggAnnotations = parsedResult.gene_kegg_result.map((item: any) => ({
               annotation: `${item.kegg_type}: ${item.kegg_description} (${item.kegg_id})`,
               geneid_id: item.geneid_id,
               genome_id: item.genome_id,
@@ -1187,26 +1191,29 @@ const fetchGeneData = async (db_id: string) => {
             }
             annotations.value.KEGG_annotation = [...annotations.value.KEGG_annotation, ...keggAnnotations]
           }
-          
-          jbrowse_url.value = result.value.jbrowse_url || ''
+
+          jbrowse_url.value = parsedResult.jbrowse_url || ''
         } else {
           throw new Error('No gene information found')
         }
         // 从gff_data中提取strand信息（基因类型）
-          if (result.value.gff_data && Array.isArray(result.value.gff_data)) {
-            const geneItem = result.value.gff_data.find((item: any) => item.type && item.type.toLowerCase() === 'gene')
+        const currentResult = result.value
+        if (currentResult) {
+          if (currentResult.gff_data && Array.isArray(currentResult.gff_data)) {
+            const geneItem = currentResult.gff_data.find((item: any) => item.type && item.type.toLowerCase() === 'gene')
             if (geneItem && geneItem.strand) {
-              result.value.strand = geneItem.strand
+              currentResult.strand = geneItem.strand
             }
           }
-        gffData.value = result.value.gff_data || []
-        hasGffData.value = gffData.value.length > 0
-        currentPage.value = 1
-        
-        if (gffData.value.length > 0 && gffData.value[0]) {
-          console.log('gffData[0] fields:', Object.keys(gffData.value[0] || {}))
-          console.log('gffData[0] score/value:', gffData.value[0]?.score, gffData.value[0]?.value)
-          console.log('gffData[0] strand:', gffData.value[0]?.strand)
+          gffData.value = currentResult.gff_data || []
+          hasGffData.value = gffData.value.length > 0
+          currentPage.value = 1
+
+          if (gffData.value.length > 0 && gffData.value[0]) {
+            console.log('gffData[0] fields:', Object.keys(gffData.value[0] || {}))
+            console.log('gffData[0] score/value:', gffData.value[0]?.score, gffData.value[0]?.value)
+            console.log('gffData[0] strand:', gffData.value[0]?.strand)
+          }
         }
         
         if (result.value) {

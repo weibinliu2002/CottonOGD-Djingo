@@ -15,7 +15,7 @@ interface Parameters {
 export const usePrimerDesignStore = defineStore('primerDesign', {
   state: () => ({
     sequenceId: '',
-    sequenceType: 'mrna' as const,
+    sequenceType: 'mrna' as 'mrna' | 'cds',
     sequenceTemplate: '',
     parameters: {
       productSizeMin: 100,
@@ -27,7 +27,7 @@ export const usePrimerDesignStore = defineStore('primerDesign', {
       primerGCMin: 20,
       primerGCMax: 80
     } as Parameters,
-    designResults: [],
+    designResults: [] as any[],
     isLoading: false,
     isFetching: false,
     error: null as string | null
