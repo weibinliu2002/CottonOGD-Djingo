@@ -29,7 +29,7 @@
     "element-plus": "^2.13.2",
     "heatmap.js": "^2.0.5",
     "igv": "^3.7.3",
-    "phylotree": "^2.5.0",
+    "phylotree": "^2.6.0",
     "pinia": "^3.0.4",
     "uuid": "^13.0.0",
     "vue": "^3.5.27",
