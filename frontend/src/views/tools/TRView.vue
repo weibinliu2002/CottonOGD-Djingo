@@ -23,9 +23,11 @@
       <!-- 涓诲唴瀹瑰尯鍩?-->
       <div class="col-md-9">
         <div class="main-content">
+          <el-tabs v-model="activeTab" type="border-card" class="tf-tabs">
+            <el-tab-pane :label="t('family_list')" name="family">
           <h2>Annotated transcription regulators factors</h2>
           
-          <!-- 杞綍鍥犲瓙瀹舵棌澶嶉€夋 -->
+          <!-- 杞綍鍥犲瓙瀹舵棌澶嶉€夋 */
           <div class="tf-families mt-4">
             <div class="row">
               <div class="col-md-3" v-for="family in tfFamilies" :key="family.name">
@@ -105,6 +107,17 @@
               />
             </div>
           </div>
+            </el-tab-pane>
+            <el-tab-pane :label="t('phylotree')" name="phylotree">
+              <PhyloTreeViewer
+                v-if="selectedGenomeName"
+                :key="treeKey"
+                :genome="selectedGenomeName"
+                category="TR"
+              />
+              <el-empty v-else :description="t('select_genome_first')" />
+            </el-tab-pane>
+          </el-tabs>
         </div>
       </div>
     </div>
@@ -117,6 +130,7 @@
 <script>
 import { ref, onMounted, computed, watch } from 'vue'
 import { QuestionFilled, VideoPlay, Search } from '@element-plus/icons-vue'
+import PhyloTreeViewer from '@/components/data-display/PhyloTreeViewer.vue'
 import { useI18n } from 'vue-i18n'
 import router from '@/router'
 import httpInstance from '@/utils/http.js'
@@ -126,12 +140,21 @@ import { useFamilyStore } from '@/stores/modules/family'
 export default {
   name: 'TRView',
   components: {
-    Search
+    Search,
+    PhyloTreeViewer
   },
   setup() {
     const { t } = useI18n()
-    const { selectedGenome, genomeOptions, genomeLoading, cascaderProps, ensureGenomesLoaded, pickDefaultGenome, setSelectedGenome } = useGenomeSelector('G.anomalumB1_HAU_v1')
+    const { selectedGenome, genomeOptions, genomeLoading, cascaderProps, allGenomes, ensureGenomesLoaded, pickDefaultGenome, setSelectedGenome } = useGenomeSelector('G.anomalumB1_HAU_v1')
     const familyStore = useFamilyStore()
+
+    const activeTab = ref('family')
+    const treeKey = ref(0)
+
+    const selectedGenomeName = computed(() => {
+      if (!selectedGenome.value.length) return ''
+      return selectedGenome.value[selectedGenome.value.length - 1]
+    })
     
     const familyInfo = computed(() => familyStore.familyInfo)
     const familyList = computed(() => familyStore.familyList)
@@ -293,6 +316,10 @@ export default {
     
     return {
       t,
+      activeTab,
+      treeKey,
+      selectedGenomeName,
+      allGenomes,
       selectedGenome,
       genomeOptions,
       genomeLoading,

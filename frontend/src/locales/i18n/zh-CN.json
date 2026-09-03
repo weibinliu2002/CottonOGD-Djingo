@@ -432,6 +432,19 @@
     "chromosome_distribution": "染色体分布",
     "total_genes": "基因总数",
     "gene_location_details": "基因位置详情",
-    "please_enter_gene_ids": "请输入基因ID"
+    "please_enter_gene_ids": "请输入基因ID",
+    "phylotree": "系统发生树",
+    "phylotree_desc": "选择基因组和转录因子家族，查看其系统发生树。每个叶子节点代表一个基因，点击可查看基因详情。",
+    "transcription_factor_phylotree": "转录因子系统发生树",
+    "select_genome_first": "请先选择基因组",
+    "category": "类别",
+    "family": "家族",
+    "loading_tree": "正在加载系统发生树...",
+    "tree_not_found": "未找到该家族的进化树数据",
+    "tree_parse_error": "树文件格式异常",
+    "tree_empty": "树文件为空",
+    "radial": "径向布局",
+    "rectangular": "矩形布局",
+    "family_list": "家族列表"
   }
 }

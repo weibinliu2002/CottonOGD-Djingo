@@ -23,9 +23,11 @@
       <!-- 涓诲唴瀹瑰尯鍩?-->
       <div class="col-md-9">
         <div class="main-content">
+          <el-tabs v-model="activeTab" type="border-card" class="tf-tabs">
+            <el-tab-pane :label="t('family_list')" name="family">
           <h2>{{ t('annotated_transcription_factors') }}</h2>
           
-          <!-- 杞綍鍥犲瓙瀹舵棌澶嶉€夋 -->
+          <!-- 杞綍鍥犲瓙瀹舵棌澶嶉€夋 */
           <div class="tf-families mt-4">
             <div class="row">
               <div class="col-md-3" v-for="family in tfFamilies" :key="family.name">
@@ -34,7 +36,7 @@
                 </el-checkbox>
               </div>
             </div>
-          </div>
+          </div>-->
 
           <!-- 琛ㄦ牸 -->
           <div class="tf-table mt-4">
@@ -105,6 +107,17 @@
               />
             </div>
           </div>
+            </el-tab-pane>
+            <el-tab-pane :label="t('phylotree')" name="phylotree">
+              <PhyloTreeViewer
+                v-if="selectedGenomeName"
+                :key="treeKey"
+                :genome="selectedGenomeName"
+                category="TF"
+              />
+              <el-empty v-else :description="t('select_genome_first')" />
+            </el-tab-pane>
+          </el-tabs>
         </div>
       </div>
     </div>
@@ -117,6 +130,7 @@
 <script>
 import { ref, onMounted, computed, watch } from 'vue'
 import { QuestionFilled, VideoPlay, Search } from '@element-plus/icons-vue'
+import PhyloTreeViewer from '@/components/data-display/PhyloTreeViewer.vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import router from '@/router'
@@ -130,15 +144,26 @@ export default {
   components: {
     QuestionFilled,
     VideoPlay,
-    Search
+    Search,
+    PhyloTreeViewer
   },
   setup() {
     const { t } = useI18n()
     const route = useRoute()
     // 鑾峰彇鍩哄洜缁剆tore
-    const { selectedGenome, genomeOptions, genomeLoading, cascaderProps, ensureGenomesLoaded, pickDefaultGenome, setSelectedGenome } = useGenomeSelector()
+    const { selectedGenome, genomeOptions, genomeLoading, cascaderProps, allGenomes, ensureGenomesLoaded, pickDefaultGenome, setSelectedGenome } = useGenomeSelector()
     const navigationStore = useNavigationStore()
     const familyStore = useFamilyStore()
+
+    // Tab 切换
+    const activeTab = ref('family')
+    const treeKey = ref(0)
+
+    // 当前选中的基因组名称
+    const selectedGenomeName = computed(() => {
+      if (!selectedGenome.value.length) return ''
+      return selectedGenome.value[selectedGenome.value.length - 1]
+    })
     
     // 閫変腑鐨勫熀鍥犵粍锛堢骇鑱旈€夋嫨鍣ㄤ娇鐢ㄦ暟缁勬牸寮忥級
     // 浠巗tore鑾峰彇瀹舵棌淇℃伅
@@ -353,6 +378,10 @@ export default {
     
     return {
       t,
+      activeTab,
+      treeKey,
+      selectedGenomeName,
+      allGenomes,
       selectedGenome,
       genomeOptions,
       genomeLoading,

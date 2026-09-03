@@ -429,6 +429,19 @@
     "chromosome_distribution": "Chromosome Distribution",
     "total_genes": "Total Genes",
     "gene_location_details": "Gene Location Details",
-    "please_enter_gene_ids": "Please enter gene IDs"
+    "please_enter_gene_ids": "Please enter gene IDs",
+    "phylotree": "Phylogenetic Tree",
+    "phylotree_desc": "Select a genome and transcription factor family to view its phylogenetic tree. Each leaf node represents a gene; click to view gene details.",
+    "transcription_factor_phylotree": "Transcription Factor Phylogenetic Tree",
+    "select_genome_first": "Please select a genome first",
+    "category": "Category",
+    "family": "Family",
+    "loading_tree": "Loading phylogenetic tree...",
+    "tree_not_found": "Phylogenetic tree data not found for this family",
+    "tree_parse_error": "Tree file format error",
+    "tree_empty": "Tree file is empty",
+    "radial": "Radial",
+    "rectangular": "Rectangular",
+    "family_list": "Family List"
   }
 }
