@@ -48,27 +48,13 @@
 
       <!-- 右侧主内容：上方进化树，下方基因列表 -->
       <div class="col-md-9">
-        <!-- 上方：系统发生树 -->
-        <div class="main-content tree-panel">
-          <h2>{{ t('phylotree') }}</h2>
-          <PhyloTreeViewer
-            v-if="selectedGenomeName && selectedFamilyName"
-            :key="treeKey"
-            :genome="selectedGenomeName"
-            category="TF"
-            :family="selectedFamilyName"
-            :highlight-genes="highlightGenes"
-          />
-          <el-empty v-else-if="!selectedGenomeName" :description="t('select_genome_first')" />
-          <el-empty v-else :description="t('select_family_first')" />
-        </div>
 
         <!-- 下方：基因列表 -->
         <div class="main-content mt-3" v-if="selectedFamilyName">
           <h2>{{ t('gene_list') }}</h2>
           <div class="tf-table mt-2">
             <div class="d-flex justify-content-between align-items-center mb-3">
-              <div class="table-pagination">
+              <!--<div class="table-pagination">
                 <el-pagination
                   v-model:current-page="currentPage"
                   v-model:page-size="pageSize"
@@ -78,7 +64,7 @@
                   @current-change="handlePageChange"
                   @update:page-size="handlePageSizeChange"
                 />
-              </div>
+              </div>-->
               <div class="table-search">
                 <el-input
                   v-model="searchQuery"
@@ -139,6 +125,20 @@
               </div>
             </template>
           </div>
+          <!-- 上方：系统发生树 -->
+        <div class="main-content tree-panel">
+          <h2>{{ t('phylotree') }}</h2>
+          <PhyloTreeViewer
+            v-if="selectedGenomeName && selectedFamilyName"
+            :key="treeKey"
+            :genome="selectedGenomeName"
+            category="TF"
+            :family="selectedFamilyName"
+            :highlight-genes="highlightGenes"
+          />
+          <el-empty v-else-if="!selectedGenomeName" :description="t('select_genome_first')" />
+          <el-empty v-else :description="t('select_family_first')" />
+        </div>
         </div>
       </div>
     </div>
