@@ -236,6 +236,19 @@ interface DetailNodeInfo {
   geneId: string
 }
 
+// 带可选 tag 的树节点（搜索命中 / 外部表格选中高亮标记）
+interface TaggedNode extends PhylotreeNode {
+  tag?: boolean
+}
+
+// phylotree.nodes 集合的运行时形态（.each 遍历）
+interface NodeCollection {
+  each: (fn: (n: TaggedNode) => void) => void
+}
+
+// TreeRender.links 数组的运行时形态
+interface LinkArray extends Array<PhyloEdge> {}
+
 // ==================== Props ====================
 const props = defineProps<{
   genome: string
@@ -591,7 +604,8 @@ function setupLeafInteractions(tree: InstanceType<typeof phylotree>, _display: a
   const opts: AddEventListenerOptions = { signal: leafEventsAbort.signal }
 
   container.addEventListener('click', (e: MouseEvent) => {
-    const r = resolveLeafNode(tree, e.target)
+    const target: EventTarget | null = e.target
+    const r = resolveLeafNode(tree, target)
     if (!r) return
     e.stopPropagation()
     const geneId = extractGeneId(r.node.data.name || r.el.getAttribute('data-node-name') || '')
@@ -601,7 +615,8 @@ function setupLeafInteractions(tree: InstanceType<typeof phylotree>, _display: a
   }, opts)
 
   container.addEventListener('mouseover', (e: MouseEvent) => {
-    const r = resolveLeafNode(tree, e.target)
+    const target: EventTarget | null = e.target
+    const r = resolveLeafNode(tree, target)
     if (!r) return
     const raw = r.node.data.name || r.el.getAttribute('data-node-name') || ''
     tooltipText.value = extractGeneId(raw)
@@ -627,7 +642,8 @@ function setupInternalNodeInteractions(tree: InstanceType<typeof phylotree>, _di
   const opts: AddEventListenerOptions = { signal: leafEventsAbort?.signal }
 
   container.addEventListener('dblclick', (e: MouseEvent) => {
-    const r = resolveInternalNode(tree, e.target)
+    const target: EventTarget | null = e.target
+    const r = resolveInternalNode(tree, target)
     if (!r) return
     e.stopPropagation()
     treeToggleCollapse(tree, r.node)
@@ -636,7 +652,8 @@ function setupInternalNodeInteractions(tree: InstanceType<typeof phylotree>, _di
   }, opts)
 
   container.addEventListener('contextmenu', (e: MouseEvent) => {
-    const r = resolveInternalNode(tree, e.target)
+    const target: EventTarget | null = e.target
+    const r = resolveInternalNode(tree, target)
     if (!r) return
     e.preventDefault()
     tree.reroot(r.node)
@@ -856,7 +873,7 @@ function applyHighlighting() {
   const kw = searchKeyword.value.trim().toLowerCase()
   const highlightSet = new Set((props.highlightGenes ?? []).map((g) => String(g).toLowerCase()))
 
-  const leafTagged = (node: PhylotreeNode): boolean => {
+  const leafTagged = (node: TaggedNode): boolean => {
     if (!tree.isLeafNode(node)) return false
     const gid = extractGeneId(node.data?.name || '').toLowerCase()
     if (!gid) return false
@@ -866,12 +883,11 @@ function applyHighlighting() {
   }
 
   // 叶节点打 tag
-  ;(tree.nodes as unknown as { each: (fn: (n: PhylotreeNode & { tag?: boolean }) => void }).each)(
-    (n) => { n.tag = leafTagged(n) }
-  )
+  const nodes = tree.nodes as unknown as NodeCollection
+  nodes.each((n: TaggedNode) => { n.tag = leafTagged(n) })
   // 连线 tag 跟随其目标节点（叶边连到叶节点）
-  const links = (d as { links?: Array<PhyloEdge & { target: PhylotreeNode & { tag?: boolean } }> }).links
-  if (Array.isArray(links)) {
+  const links = (d as { links?: LinkArray }).links
+  if (links && Array.isArray(links)) {
     links.forEach((link) => { link.tag = link.target?.tag === true })
   }
 

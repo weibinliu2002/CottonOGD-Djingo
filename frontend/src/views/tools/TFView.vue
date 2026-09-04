@@ -1,10 +1,12 @@
 <template>
   <div class="container-fluid">
     <div class="row">
-      <!-- 左侧栏：基因组选择（树形） -->
+      <!-- 左侧栏：基因组选择 + 转录因子家族选择 -->
       <div class="col-md-3">
         <div class="sidebar">
           <h3>{{ t('transcription_factors_') }} <el-icon class="info-icon"><QuestionFilled /></el-icon></h3>
+
+          <!-- 基因组选择 -->
           <div class="mt-4">
             <h4 class="sidebar-title"><el-icon class="play-icon"><VideoPlay /></el-icon> {{ t('select_genome') }}</h4>
             <el-tree-v2
@@ -12,7 +14,7 @@
               :data="genomeOptions"
               :props="genomeTreeProps"
               node-key="value"
-              :height="460"
+              :height="340"
               highlight-current
               :current-node-key="selectedGenomeName"
               :default-expanded-keys="defaultExpandedKeys"
@@ -21,128 +23,126 @@
               @node-click="handleGenomeNodeClick"
             />
           </div>
+
+          <!-- 转录因子家族：树形单选（与基因组选择同样的滚动框样式） -->
+          <div class="mt-4" v-loading="familyLoading">
+            <h4 class="sidebar-title">{{ t('family_list') }}</h4>
+            <el-tree-v2
+              ref="familyTreeRef"
+              :data="familyTreeData"
+              :props="familyTreeProps"
+              node-key="value"
+              :height="350"
+              highlight-current
+              show-checkbox
+              check-strictly
+              :current-node-key="selectedFamilyName"
+              :default-checked-keys="defaultCheckedFamilies"
+              class="genome-tree w-100 mt-2"
+              @check="handleFamilyCheck"
+              @node-click="handleFamilyNodeClick"
+            />
+          </div>
         </div>
       </div>
 
-      <!-- 主内容区域 -->
+      <!-- 右侧主内容：上方进化树，下方基因列表 -->
       <div class="col-md-9">
-        <div class="main-content">
-          <h2>{{ t('annotated_transcription_factors') }}</h2>
+        <!-- 上方：系统发生树 -->
+        <div class="main-content tree-panel">
+          <h2>{{ t('phylotree') }}</h2>
+          <PhyloTreeViewer
+            v-if="selectedGenomeName && selectedFamilyName"
+            :key="treeKey"
+            :genome="selectedGenomeName"
+            category="TF"
+            :family="selectedFamilyName"
+            :highlight-genes="highlightGenes"
+          />
+          <el-empty v-else-if="!selectedGenomeName" :description="t('select_genome_first')" />
+          <el-empty v-else :description="t('select_family_first')" />
+        </div>
 
-          <!-- 转录因子家族：单选（选中后联动下方 列表 / 进化树） -->
-          <div class="tf-families mt-4" v-loading="familyLoading">
-            <el-radio-group v-model="selectedFamilyName" @change="handleFamilyChange">
-              <div class="row">
-                <div class="col-md-3" v-for="family in familyInfo" :key="family.name">
-                  <el-radio :value="family.name" class="tf-radio">
-                    {{ family.name }}({{ family.count }})
-                  </el-radio>
-                </div>
+        <!-- 下方：基因列表 -->
+        <div class="main-content mt-3" v-if="selectedFamilyName">
+          <h2>{{ t('gene_list') }}</h2>
+          <div class="tf-table mt-2">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div class="table-pagination">
+                <el-pagination
+                  v-model:current-page="currentPage"
+                  v-model:page-size="pageSize"
+                  :page-sizes="[10, 20, 50, 100]"
+                  layout="sizes"
+                  :total="totalCount"
+                  @current-change="handlePageChange"
+                  @update:page-size="handlePageSizeChange"
+                />
               </div>
-            </el-radio-group>
+              <div class="table-search">
+                <el-input
+                  v-model="searchQuery"
+                  placeholder="search"
+                  prefix-icon="el-icon-search"
+                  size="small"
+                  class="w-100"
+                  @input="handleSearch"
+                  clearable
+                />
+              </div>
+            </div>
+
+            <el-skeleton v-if="loading" :rows="5" animated />
+
+            <template v-else>
+              <el-table
+                ref="tfTableRef"
+                :data="paginatedTFData"
+                style="width: 100%"
+                row-key="TF_gene"
+                @row-click="handleRowClick"
+                @selection-change="handleSelectionChange"
+                stripe
+                border
+              >
+                <el-table-column type="selection" width="48" reserve-selection />
+                <el-table-column prop="TF_name" :label="t('tf_name')" min-width="50" />
+                <el-table-column prop="TF_class" :label="t('tf_class')" min-width="50" />
+                <el-table-column prop="TF_gene" :label="t('gene')" min-width="120">
+                  <template #default="scope">
+                    <el-link type="primary" :underline="false" @click.stop="handleGeneClick(scope.row.db_id)" class="gene-link">
+                      {{ scope.row.TF_gene }}
+                    </el-link>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="TF_genome" :label="t('genome')" min-width="120" />
+              </el-table>
+
+              <div class="d-flex justify-content-between align-items-center mt-3">
+                <span class="table-info">
+                  Showing {{ (currentPage - 1) * pageSize + 1 }} to {{ Math.min(currentPage * pageSize, totalCount) }} of {{ totalCount }} entries
+                </span>
+                <el-pagination
+                  v-model:current-page="currentPage"
+                  v-model:page-size="pageSize"
+                  :page-sizes="[10, 20, 50, 100]"
+                  layout="total, sizes, prev, pager, next, jumper"
+                  :total="totalCount"
+                  @current-change="handlePageChange"
+                  @update:page-size="handlePageSizeChange"
+                />
+              </div>
+
+              <div v-if="highlightGenes.length" class="highlight-hint mt-3">
+                <el-icon><View /></el-icon>
+                {{ t('highlight_in_tree') }}: {{ highlightGenes.length }}
+              </div>
+            </template>
           </div>
-
-          <!-- 选中转录因子家族后：基因列表 / 系统发生树 -->
-          <el-tabs v-if="selectedFamilyName" v-model="activeTab" type="border-card" class="tf-tabs mt-4">
-            <el-tab-pane :label="t('gene_list')" name="family">
-              <div class="tf-table mt-2">
-                <h4 class="table-title">{{ t('click_row_details') }}</h4>
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                  <div class="table-pagination">
-                    <el-pagination
-                      v-model:current-page="currentPage"
-                      v-model:page-size="pageSize"
-                      :page-sizes="[10, 20, 50, 100]"
-                      layout="sizes"
-                      :total="totalCount"
-                      @current-change="handlePageChange"
-                      @update:page-size="handlePageSizeChange"
-                    />
-                  </div>
-                  <div class="table-search">
-                    <el-input
-                      v-model="searchQuery"
-                      placeholder="search"
-                      prefix-icon="el-icon-search"
-                      size="small"
-                      class="w-100"
-                      @input="handleSearch"
-                      clearable
-                    />
-                  </div>
-                </div>
-
-                <!-- 加载状态 -->
-                <el-skeleton v-if="loading" :rows="10" animated />
-
-                <template v-else>
-                  <!-- 表格内容：复选框多选，选中基因在进化树中高亮 -->
-                  <el-table
-                    ref="tfTableRef"
-                    :data="paginatedTFData"
-                    style="width: 100%"
-                    row-key="TF_gene"
-                    @row-click="handleRowClick"
-                    @selection-change="handleSelectionChange"
-                    stripe
-                    border
-                  >
-                    <el-table-column type="selection" width="48" reserve-selection />
-                    <el-table-column prop="TF_name" :label="t('tf_name')" min-width="50" />
-                    <el-table-column prop="TF_class" :label="t('tf_class')" min-width="50" />
-                    <el-table-column prop="TF_gene" :label="t('gene')" min-width="120">
-                      <template #default="scope">
-                        <el-link type="primary" :underline="false" @click.stop="handleGeneClick(scope.row.db_id)" class="gene-link">
-                          {{ scope.row.TF_gene }}
-                        </el-link>
-                      </template>
-                    </el-table-column>
-                    <el-table-column prop="TF_genome" :label="t('genome')" min-width="120" />
-                  </el-table>
-
-                  <!-- 分页 -->
-                  <div class="d-flex justify-content-between align-items-center mt-3">
-                    <span class="table-info">
-                      Showing {{ (currentPage - 1) * pageSize + 1 }} to {{ Math.min(currentPage * pageSize, totalCount) }} of {{ totalCount }} entries
-                    </span>
-                    <el-pagination
-                      v-model:current-page="currentPage"
-                      v-model:page-size="pageSize"
-                      :page-sizes="[10, 20, 50, 100]"
-                      layout="total, sizes, prev, pager, next, jumper"
-                      :total="totalCount"
-                      @current-change="handlePageChange"
-                      @update:page-size="handlePageSizeChange"
-                    />
-                  </div>
-
-                  <div v-if="highlightGenes.length" class="highlight-hint mt-3">
-                    <el-icon><View /></el-icon>
-                    {{ t('highlight_in_tree') }}: {{ highlightGenes.length }}
-                  </div>
-                </template>
-              </div>
-            </el-tab-pane>
-            <el-tab-pane :label="t('phylotree')" name="phylotree">
-              <PhyloTreeViewer
-                v-if="selectedGenomeName"
-                :key="treeKey"
-                :genome="selectedGenomeName"
-                category="TF"
-                :family="selectedFamilyName"
-                :highlight-genes="highlightGenes"
-              />
-              <el-empty v-else :description="t('select_genome_first')" />
-            </el-tab-pane>
-          </el-tabs>
-
-          <!-- 未选择家族时的空状态 -->
-          <el-empty v-else class="mt-4" :description="t('select_family_first')" />
         </div>
       </div>
     </div>
 
-    <!-- 回到顶部 -->
     <el-backtop :right="40" :bottom="40" />
   </div>
 </template>
@@ -184,17 +184,30 @@ export default {
     const navigationStore = useNavigationStore()
     const familyStore = useFamilyStore()
 
-    // Tab 切换
-    const activeTab = ref('family')
     const treeKey = ref(0)
 
     // el-tree-v2 配置：分组节点（基因组类别）可选展开，叶子节点（基因组）单选
     const genomeTreeRef = ref(null)
     const genomeTreeProps = { label: 'label', children: 'children', value: 'value' }
-    const defaultExpandedKeys = computed(() => genomeOptions.value.map((g) => g.value))
+    // 默认全部折叠，用户手动点击展开分组
+    const defaultExpandedKeys = ref([])
+
+    // 转录因子家族树：将 familyInfo 转为 el-tree-v2 数据格式
+    const familyTreeProps = { label: 'label', value: 'value' }
+    const familyTreeRef = ref(null)
+    const familyTreeData = computed(() =>
+      familyStore.familyInfo.map((f) => ({
+        value: f.name,
+        label: `${f.name} (${f.count})`
+      }))
+    )
 
     // 当前单选选中的转录因子家族
     const selectedFamilyName = ref('')
+    // 默认勾选的家族（与 selectedFamilyName 同步）
+    const defaultCheckedFamilies = computed(() =>
+      selectedFamilyName.value ? [selectedFamilyName.value] : []
+    )
     // 表格中勾选、需要在进化树中高亮的基因 id 列表
     const highlightGenes = ref([])
     const tfTableRef = ref(null)
@@ -358,6 +371,41 @@ export default {
       filterTFData()
     }
 
+    // el-tree-v2 家族节点点击：选中该家族
+    const handleFamilyNodeClick = (data) => {
+      if (!data || !data.value) return
+      selectedFamilyName.value = data.value
+      // 同步复选框：只勾选当前家族
+      if (familyTreeRef.value && typeof familyTreeRef.value.setCheckedKeys === 'function') {
+        familyTreeRef.value.setCheckedKeys([data.value])
+      }
+      handleFamilyChange()
+    }
+
+    // 复选框勾选事件：实现单选（勾选新的，自动取消旧的）
+    const handleFamilyCheck = (data, checkedInfo) => {
+      const checkedKeys = checkedInfo && checkedInfo.checkedKeys ? checkedInfo.checkedKeys : []
+      if (checkedKeys.length > 1) {
+        // 勾选了多个，只保留最后一个（最新勾选的）
+        const latest = checkedKeys[checkedKeys.length - 1]
+        if (familyTreeRef.value && typeof familyTreeRef.value.setCheckedKeys === 'function') {
+          familyTreeRef.value.setCheckedKeys([latest])
+        }
+        selectedFamilyName.value = latest
+      } else if (checkedKeys.length === 1) {
+        selectedFamilyName.value = checkedKeys[0]
+      } else {
+        // 全部取消勾选时不允许——至少保留一个
+        if (selectedFamilyName.value) {
+          if (familyTreeRef.value && typeof familyTreeRef.value.setCheckedKeys === 'function') {
+            familyTreeRef.value.setCheckedKeys([selectedFamilyName.value])
+          }
+          return
+        }
+      }
+      handleFamilyChange()
+    }
+
     // 表格多选变化：收集勾选基因，传给进化树高亮
     const handleSelectionChange = (rows) => {
       highlightGenes.value = (rows || []).map((r) => r.TF_gene).filter(Boolean)
@@ -414,7 +462,6 @@ export default {
 
     return {
       t,
-      activeTab,
       treeKey,
       // 基因组树
       genomeTreeRef,
@@ -426,11 +473,15 @@ export default {
       selectedGenomeName,
       allGenomes,
       handleGenomeNodeClick,
-      // 家族单选
-      familyInfo,
+      // 家族树
+      familyTreeRef,
+      familyTreeData,
+      familyTreeProps,
+      defaultCheckedFamilies,
       familyLoading,
       selectedFamilyName,
-      handleFamilyChange,
+      handleFamilyNodeClick,
+      handleFamilyCheck,
       // 表格 / 高亮
       tfTableRef,
       highlightGenes,
@@ -516,19 +567,21 @@ export default {
   margin-bottom: 20px;
 }
 
-/* 转录因子家族样式 */
-.tf-families {
-  background-color: #f9f9f9;
-  padding: 15px;
-  border-radius: 6px;
+/* 转录因子家族样式：单列，固定宽度，高度自适应滚动 */
+.tf-radio-group {
+  display: flex;
+  flex-direction: column;
+  max-height: 300px;
+  overflow-y: auto;
 }
 
 .tf-radio {
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   margin-right: 0;
   font-size: 0.9rem;
   white-space: normal;
+  word-break: break-word;
 }
 
 /* 表格样式 */
