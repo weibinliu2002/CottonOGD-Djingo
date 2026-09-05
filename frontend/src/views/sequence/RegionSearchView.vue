@@ -87,7 +87,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, inject } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Search } from '@element-plus/icons-vue'
 import { useEnrichmentStore } from '@/stores/modules/enrichment'
@@ -98,20 +98,24 @@ import httpInstance from '@/utils/http.js'
 
 const { t } = useI18n()
 const router = useRouter()
+const route = useRoute()
 const store = useEnrichmentStore()
 const navigationStore = useNavigationStore()
 const geneSearchStore = useGeneSearchStore()
 const showLoading = inject('showLoading') as (() => void) | undefined
 const hideLoading = inject('hideLoading') as (() => void) | undefined
 
-const { genomeOptions, genomeLoading, ensureGenomesLoaded, pickDefaultGenome } = useGenomeSelector()
+const { genomeOptions, genomeLoading, ensureGenomesLoaded, pickDefaultGenome, allGenomes } = useGenomeSelector()
 
 const selectedGenome = ref('')
 const region = ref('')
 
 onMounted(async () => {
   await ensureGenomesLoaded()
-  const defaultGenome = pickDefaultGenome()
+  const queryGenome = typeof route.query.genome === 'string' ? route.query.genome : ''
+  const defaultGenome = queryGenome && allGenomes.value.includes(queryGenome)
+    ? queryGenome
+    : pickDefaultGenome()
   if (defaultGenome) {
     selectedGenome.value = defaultGenome
   }

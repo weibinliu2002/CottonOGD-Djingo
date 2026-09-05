@@ -9,6 +9,7 @@ import PlaceholderView from '@/views/common/PlaceholderView.vue'
 
 // Genome module
 import BrowseGenomeView from '@/views/genome/BrowseGenomeView.vue'
+import GenomeDetailView from '@/views/genome/GenomeDetailView.vue'
 import JbrowseView from '@/views/genome/JbrowseView.vue'
 import IGVView from '@/views/genome/IGVView.vue'
 import GenomeSyntenyView from '@/views/genome/GenomeSyntenyView.vue'
@@ -91,6 +92,12 @@ const routes = [
     path: '/genome/browse',
     name: 'BrowseGenome',
     component: BrowseGenomeView
+  },
+  {
+    path: '/genome/detail/:key',
+    name: 'GenomeDetail',
+    component: GenomeDetailView,
+    props: true,
   },
   {
     path: '/genome/jbrowse',
@@ -389,6 +396,11 @@ const routes = [
     name: 'Msa',
     component: PlaceholderView,
     props: { title: 'Multiple Sequence Alignment' }
+  },
+  {
+    path: '/test/protein-viewer',
+    name: 'ProteinViewerTest',
+    component: () => import('@/views/test/ProteinViewerTest.vue')
   },
 ]
 

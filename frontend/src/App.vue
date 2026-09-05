@@ -57,7 +57,7 @@
               <ul class="dropdown-menu">
                 <li><router-link class="dropdown-item" to="/genome/jbrowse">{{ t('jbrowse_view') }}</router-link></li>
                 <li><router-link class="dropdown-item" to="/genome/igv">{{ t('igv_view') }}</router-link></li>
-                
+                <li><router-link class="dropdown-item" to="/genome/browse">{{ t('genome_browser') }}</router-link></li>
               </ul>
             </li>
             <li class="nav-item dropdown">

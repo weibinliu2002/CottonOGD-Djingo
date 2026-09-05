@@ -1,57 +1,70 @@
 <template>
   <div class="container-fluid">
     <div class="row">
-      <!-- 宸︿晶杈规爮 -->
+      <!-- 左侧栏：基因组选择 + 转录因子家族选择 -->
       <div class="col-md-3">
         <div class="sidebar">
           <h3>{{ t('transcription_factors_') }} <el-icon class="info-icon"><QuestionFilled /></el-icon></h3>
+
+          <!-- 基因组选择 -->
           <div class="mt-4">
             <h4 class="sidebar-title"><el-icon class="play-icon"><VideoPlay /></el-icon> {{ t('select_genome') }}</h4>
-            <el-cascader
-              v-model="selectedGenome"
-              :options="genomeOptions"
-              :props="cascaderProps"
-              placeholder="Select genome"
-              class="w-100 mt-2"
-              @change="handleGenomeChange"
-              :loading="genomeLoading"
+            <el-tree-v2
+              ref="genomeTreeRef"
+              :data="genomeOptions"
+              :props="genomeTreeProps"
+              node-key="value"
+              :height="340"
+              highlight-current
+              :current-node-key="selectedGenomeName"
+              :default-expanded-keys="defaultExpandedKeys"
+              class="genome-tree w-100 mt-2"
+              v-loading="genomeLoading"
+              @node-click="handleGenomeNodeClick"
+            />
+          </div>
+
+          <!-- 转录因子家族：树形单选（与基因组选择同样的滚动框样式） -->
+          <div class="mt-4" v-loading="familyLoading">
+            <h4 class="sidebar-title">{{ t('family_list') }}</h4>
+            <el-tree-v2
+              ref="familyTreeRef"
+              :data="familyTreeData"
+              :props="familyTreeProps"
+              node-key="value"
+              :height="350"
+              highlight-current
+              show-checkbox
+              check-strictly
+              :current-node-key="selectedFamilyName"
+              :default-checked-keys="defaultCheckedFamilies"
+              class="genome-tree w-100 mt-2"
+              @check="handleFamilyCheck"
+              @node-click="handleFamilyNodeClick"
             />
           </div>
         </div>
       </div>
 
-      <!-- 涓诲唴瀹瑰尯鍩?-->
+      <!-- 右侧主内容：上方进化树，下方基因列表 -->
       <div class="col-md-9">
-        <div class="main-content">
-          <h2>{{ t('annotated_transcription_factors') }}</h2>
-          
-          <!-- 杞綍鍥犲瓙瀹舵棌澶嶉€夋 -->
-          <div class="tf-families mt-4">
-            <div class="row">
-              <div class="col-md-3" v-for="family in tfFamilies" :key="family.name">
-                <el-checkbox v-model="family.checked" class="tf-checkbox" @change="handleFamilyChange">
-                  {{ family.name }}({{ family.count }})
-                </el-checkbox>
-              </div>
-            </div>
-          </div>
 
-          <!-- 琛ㄦ牸 -->
-          <div class="tf-table mt-4">
-            <h4 class="table-title">{{ t('click_row_details') }}</h4>
+        <!-- 下方：基因列表 -->
+        <div class="main-content mt-3" v-if="selectedFamilyName">
+          <h2>{{ t('gene_list') }}</h2>
+          <div class="tf-table mt-2">
             <div class="d-flex justify-content-between align-items-center mb-3">
-              <div class="table-pagination">
+              <!--<div class="table-pagination">
                 <el-pagination
-                v-model:current-page="currentPage"
-                v-model:page-size="pageSize"
-                :page-sizes="[10, 20, 50, 100]"
-                layout="sizes"
-                :total="totalCount"
-                @current-change="handlePageChange"
-                @update:page-size="handlePageSizeChange"
-              />
-              
-              </div>
+                  v-model:current-page="currentPage"
+                  v-model:page-size="pageSize"
+                  :page-sizes="[10, 20, 50, 100]"
+                  layout="sizes"
+                  :total="totalCount"
+                  @current-change="handlePageChange"
+                  @update:page-size="handlePageSizeChange"
+                />
+              </div>-->
               <div class="table-search">
                 <el-input
                   v-model="searchQuery"
@@ -64,62 +77,83 @@
                 />
               </div>
             </div>
-            
-            <!-- 鍔犺浇鐘舵€?-->
-            <el-skeleton v-if="loading" :rows="10" animated />
-            
-            <!-- 琛ㄦ牸鍐呭 -->
-            <el-table
-              v-else
-              :data="paginatedTFData"
-              style="width: 100%"
-              @row-click="handleRowClick"
-              stripe
-              border
-            >
-              <el-table-column prop="TF_name" :label="t('tf_name')" min-width="50" />
-              <el-table-column prop="TF_class" :label="t('tf_class')" min-width="50" />
-              <el-table-column prop="TF_gene" :label="t('gene')" min-width="120">
-                <template #default="scope">
-                  <el-link type="primary" :underline="false" @click="handleGeneClick(scope.row.db_id)" class="gene-link">
-                    {{ scope.row.TF_gene }}
-                  </el-link>
-                </template>
-              </el-table-column>
-              <el-table-column prop="TF_genome" :label="t('genome')" min-width="120" />
-            </el-table>
 
-            <!-- 鍒嗛〉 -->
-            <div class="d-flex justify-content-between align-items-center mt-3">
-              <span class="table-info">
-                Showing {{ (currentPage - 1) * pageSize + 1 }} to {{ Math.min(currentPage * pageSize, totalCount) }} of {{ totalCount }} entries
-              </span>
-               <el-pagination
-                v-model:current-page="currentPage"
-                v-model:page-size="pageSize"
-                :page-sizes="[10, 20, 50, 100]"
-                layout="total, sizes, prev, pager, next, jumper"
-                :total="totalCount"
-                @current-change="handlePageChange"
-                @update:page-size="handlePageSizeChange"
-              />
-            </div>
+            <el-skeleton v-if="loading" :rows="5" animated />
+
+            <template v-else>
+              <el-table
+                ref="tfTableRef"
+                :data="paginatedTFData"
+                style="width: 100%"
+                row-key="TF_gene"
+                @row-click="handleRowClick"
+                @selection-change="handleSelectionChange"
+                stripe
+                border
+              >
+                <el-table-column type="selection" width="48" reserve-selection />
+                <el-table-column prop="TF_name" :label="t('tf_name')" min-width="50" />
+                <el-table-column prop="TF_class" :label="t('tf_class')" min-width="50" />
+                <el-table-column prop="TF_gene" :label="t('gene')" min-width="120">
+                  <template #default="scope">
+                    <el-link type="primary" :underline="false" @click.stop="handleGeneClick(scope.row.db_id)" class="gene-link">
+                      {{ scope.row.TF_gene }}
+                    </el-link>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="TF_genome" :label="t('genome')" min-width="120" />
+              </el-table>
+
+              <div class="d-flex justify-content-between align-items-center mt-3">
+                <span class="table-info">
+                  Showing {{ (currentPage - 1) * pageSize + 1 }} to {{ Math.min(currentPage * pageSize, totalCount) }} of {{ totalCount }} entries
+                </span>
+                <el-pagination
+                  v-model:current-page="currentPage"
+                  v-model:page-size="pageSize"
+                  :page-sizes="[10, 20, 50, 100]"
+                  layout="total, sizes, prev, pager, next, jumper"
+                  :total="totalCount"
+                  @current-change="handlePageChange"
+                  @update:page-size="handlePageSizeChange"
+                />
+              </div>
+
+              <div v-if="highlightGenes.length" class="highlight-hint mt-3">
+                <el-icon><View /></el-icon>
+                {{ t('highlight_in_tree') }}: {{ highlightGenes.length }}
+              </div>
+            </template>
           </div>
+          <!-- 上方：系统发生树 -->
+        <div class="main-content tree-panel">
+          <h2>{{ t('phylotree') }}</h2>
+          <PhyloTreeViewer
+            v-if="selectedGenomeName && selectedFamilyName"
+            :key="treeKey"
+            :genome="selectedGenomeName"
+            category="TF"
+            :family="selectedFamilyName"
+            :highlight-genes="highlightGenes"
+          />
+          <el-empty v-else-if="!selectedGenomeName" :description="t('select_genome_first')" />
+          <el-empty v-else :description="t('select_family_first')" />
+        </div>
         </div>
       </div>
     </div>
-    
-    <!-- 回到顶部 -->
+
     <el-backtop :right="40" :bottom="40" />
   </div>
 </template>
 
 <script>
-import { ref, onMounted, computed, watch } from 'vue'
-import { QuestionFilled, VideoPlay, Search } from '@element-plus/icons-vue'
+import { ref, onMounted, computed, watch, nextTick } from 'vue'
+import { QuestionFilled, VideoPlay, Search, View } from '@element-plus/icons-vue'
+import PhyloTreeViewer from '@/components/data-display/PhyloTreeViewer.vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 import router from '@/router'
-import httpInstance from '@/utils/http.js'
 import { useGenomeSelector } from '@/composables/features/useGenomeBrowser'
 import { useFamilyStore } from '@/stores/modules/family'
 import { useNavigationStore } from '@/stores/modules/navigation'
@@ -129,84 +163,113 @@ export default {
   components: {
     QuestionFilled,
     VideoPlay,
-    Search
+    Search,
+    View,
+    PhyloTreeViewer
   },
   setup() {
     const { t } = useI18n()
-    // 鑾峰彇鍩哄洜缁剆tore
-    const { selectedGenome, genomeOptions, genomeLoading, cascaderProps, ensureGenomesLoaded, pickDefaultGenome, setSelectedGenome } = useGenomeSelector()
+    const route = useRoute()
+    // 基因组选择器（树形单选）
+    const {
+      selectedGenome,
+      selectedGenomeName,
+      genomeOptions,
+      genomeLoading,
+      allGenomes,
+      ensureGenomesLoaded,
+      pickDefaultGenome,
+      setSelectedGenome
+    } = useGenomeSelector()
     const navigationStore = useNavigationStore()
     const familyStore = useFamilyStore()
-    
-    // 閫変腑鐨勫熀鍥犵粍锛堢骇鑱旈€夋嫨鍣ㄤ娇鐢ㄦ暟缁勬牸寮忥級
-    // 浠巗tore鑾峰彇瀹舵棌淇℃伅
-    const familyInfo = computed(() => familyStore.familyInfo)
-    // 浠巗tore鑾峰彇瀹舵棌鍒楄〃
-    const familyList = computed(() => familyStore.familyList)
-    // 浠巗tore鑾峰彇瀹舵棌鍔犺浇鐘舵€?
-    const familyLoading = computed(() => familyStore.loading)
-    
-    // 浠庡悗绔幏鍙栧熀鍥犵粍鏁版嵁
-    // 杞綍鍥犲瓙瀹舵棌鏁版嵁锛堝甫閫変腑鐘舵€侊級
-    const tfFamilies = computed(() => {
-      return familyInfo.value.map((family, index) => ({
-        name: family.name,
-        count: family.count,
-        checked: index === 0 // 榛樿閫変腑绗竴涓鏃?
+
+    const treeKey = ref(0)
+
+    // el-tree-v2 配置：分组节点（基因组类别）可选展开，叶子节点（基因组）单选
+    const genomeTreeRef = ref(null)
+    const genomeTreeProps = { label: 'label', children: 'children', value: 'value' }
+    // 默认全部折叠，用户手动点击展开分组
+    const defaultExpandedKeys = ref([])
+
+    // 转录因子家族树：将 familyInfo 转为 el-tree-v2 数据格式
+    const familyTreeProps = { label: 'label', value: 'value' }
+    const familyTreeRef = ref(null)
+    const familyTreeData = computed(() =>
+      familyStore.familyInfo.map((f) => ({
+        value: f.name,
+        label: `${f.name} (${f.count})`
       }))
-    })
-    
-    // 杞綍鍥犲瓙鏁版嵁
+    )
+
+    // 当前单选选中的转录因子家族
+    const selectedFamilyName = ref('')
+    // 默认勾选的家族（与 selectedFamilyName 同步）
+    const defaultCheckedFamilies = computed(() =>
+      selectedFamilyName.value ? [selectedFamilyName.value] : []
+    )
+    // 表格中勾选、需要在进化树中高亮的基因 id 列表
+    const highlightGenes = ref([])
+    const tfTableRef = ref(null)
+
+    // 从 store 获取家族信息 / 列表 / 加载状态
+    const familyInfo = computed(() => familyStore.familyInfo)
+    const familyList = computed(() => familyStore.familyList)
+    const familyLoading = computed(() => familyStore.loading)
+
+    // 转录因子数据
     const tfData = ref([])
-    // 鎼滅储鏌ヨ
+    // 搜索查询
     const searchQuery = ref('')
-    
-    // 鍒嗛〉鐩稿叧
+
+    // 分页相关
     const currentPage = ref(1)
     const pageSize = ref(10)
     const totalCount = ref(0)
-    
-    // 鍔犺浇鐘舵€?
+
+    // 加载状态
     const loading = ref(false)
-    
-    // 鍘熷杞綍鍥犲瓙鏁版嵁锛堢敤浜庣瓫閫夛級
+
+    // 原始转录因子数据（用于筛选）
     const originalTFData = ref([])
-    
-    // 鐩戝惉 familyList 鍙樺寲锛屾洿鏂?originalTFData
+
+    // 监听 familyList 变化，更新 originalTFData，并默认选中第一个家族
     watch(familyList, (newList) => {
       if (newList && newList.length > 0) {
         originalTFData.value = newList
-        console.log('Updated originalTFData from familyList:', originalTFData.value.length, 'items')
-        // 濡傛灉宸茬粡閫夋嫨浜嗗熀鍥犵粍锛岄噸鏂拌繃婊ゆ暟鎹?
+        // 单选：默认选中第一个家族（若当前未选或已失效）
+        if (
+          !selectedFamilyName.value ||
+          !familyStore.familyInfo.some((f) => f.name === selectedFamilyName.value)
+        ) {
+          selectedFamilyName.value = familyStore.familyInfo[0]?.name || ''
+        }
         if (selectedGenome.value.length > 0) {
           filterTFData()
         }
       }
     }, { immediate: true })
-    
-    // 璁＄畻鍒嗛〉鍚庣殑鏁版嵁
+
+    // 计算分页后的数据
     const paginatedTFData = computed(() => {
       const startIndex = (currentPage.value - 1) * pageSize.value
       const endIndex = startIndex + pageSize.value
       return tfData.value.slice(startIndex, endIndex)
     })
-    
-    // 鏍规嵁閫夋嫨鐨勫熀鍥犵粍鑾峰彇杞綍鍥犲瓙鏁版嵁
+
+    // 根据选择的基因组获取转录因子数据
     const fetchTFDataByGenome = async () => {
       if (selectedGenome.value.length === 0) {
         tfData.value = []
         totalCount.value = 0
         return
       }
-      
+
       loading.value = true
       try {
-        // 鐩存帴浣跨敤瀛樺偍鐨勫師濮嬫暟鎹紝鏍规嵁鍩哄洜缁勮繘琛岀瓫閫?
         if (originalTFData.value.length > 0) {
-          // 璋冪敤绛涢€夊嚱鏁板鐞嗘樉绀烘暟鎹?
           filterTFData()
         } else {
-          // 濡傛灉娌℃湁鍘熷鏁版嵁锛屾樉绀虹┖
           tfData.value = []
           totalCount.value = 0
         }
@@ -218,141 +281,211 @@ export default {
         loading.value = false
       }
     }
-    
-    // 绛涢€夎浆褰曞洜瀛愭暟鎹?
+
+    // 清空表格选择（切换基因组 / 家族时调用，避免残留高亮）
+    const clearTableSelection = () => {
+      highlightGenes.value = []
+      nextTick(() => {
+        if (tfTableRef.value && typeof tfTableRef.value.clearSelection === 'function') {
+          tfTableRef.value.clearSelection()
+        }
+      })
+    }
+
+    // 筛选转录因子数据
     const filterTFData = () => {
-      console.log('Filtering TF data...')
-      console.log('TF families:', tfFamilies.value)
-      
       if (originalTFData.value.length === 0 || selectedGenome.value.length === 0) {
-        console.log('No data or genome selected')
         tfData.value = []
         totalCount.value = 0
         return
       }
-      
+
       const genome = selectedGenome.value[selectedGenome.value.length - 1]
-      console.log('Current genome:', genome)
-      
-      // 鍏堣繃婊ゅ熀鍥犵粍
-      let filteredData = originalTFData.value//.filter(item => 
-        //item.genome === genome || item.genome_id === genome
-      //)
-      console.log('Filtered by genome:', filteredData.length, 'items')
-      
-      // 鍐嶈繃婊ゅ鏃?
-      const selectedFamilies = tfFamilies.value.filter(f => f.checked).map(f => f.name)
-      console.log('Selected families:', selectedFamilies)
-      if (selectedFamilies.length > 0) {
-        filteredData = filteredData.filter(item => selectedFamilies.includes(item.TF_name))
-        console.log('Filtered by families:', filteredData.length, 'items')
+
+      // 先按基因组过滤
+      let filteredData = originalTFData.value
+
+      // 再按单选选中的家族过滤
+      const familyName =
+        selectedFamilyName.value || familyStore.familyInfo[0]?.name || ''
+      if (familyName) {
+        filteredData = filteredData.filter((item) => item.TF_name === familyName)
       }
-      
-      // 鏈€鍚庤繃婊ゆ悳绱㈠叧閿瘝
+
+      // 最后过滤搜索关键词
       if (searchQuery.value) {
         const query = searchQuery.value.toLowerCase()
-        filteredData = filteredData.filter(item => 
-          item.TF_name.toLowerCase().includes(query) ||
-          item.geneid.toLowerCase().includes(query)
+        filteredData = filteredData.filter((item) =>
+          (item.TF_name || '').toLowerCase().includes(query) ||
+          (item.geneid || '').toLowerCase().includes(query)
         )
-        console.log('Filtered by search:', filteredData.length, 'items')
       }
-      
-      // 澶勭悊鏁版嵁鏍煎紡
-      tfData.value = filteredData.map(item => ({
+
+      // 处理数据格式
+      tfData.value = filteredData.map((item) => ({
         TF_name: item.TF_name || 'Unknown',
         TF_class: item.TF_class || 'Unknown',
         TF_gene: item.geneid || 'Unknown',
         db_id: item.id_id || 'Unknown',
         TF_genome: genome
       }))
-      
+
       totalCount.value = tfData.value.length || 0
-      console.log('Filtered TF data:', tfData.value)
     }
-    
-    // 澶勭悊鍩哄洜缁勯€夋嫨鍙樺寲
+
+    // el-tree-v2 节点点击：仅叶子节点（具体基因组）触发选择，分组节点仅展开/折叠
+    const handleGenomeNodeClick = (data) => {
+      if (!data) return
+      if (data.children && data.children.length) return
+      if (!data.value) return
+      setSelectedGenome(data.value)
+      handleGenomeChange()
+    }
+
+    // 处理基因组选择变化
     const handleGenomeChange = async () => {
-      currentPage.value = 1 // 閲嶇疆椤电爜
-      // 娓呯┖鎵€鏈夋湰鍦版暟鎹?
+      currentPage.value = 1
+      // 清空所有本地数据
       originalTFData.value = []
       tfData.value = []
       totalCount.value = 0
-      // 鏇存柊familyStore涓殑selectedGenome
+      selectedFamilyName.value = ''
+      clearTableSelection()
+      // 更新 familyStore 中的 selectedGenome
       const genome = selectedGenome.value[selectedGenome.value.length - 1]
       familyStore.selectedGenome = genome
-      familyStore.selectedClass = 'TF' // 鍥哄畾涓篢F
-      // 閲嶆柊鑾峰彇瀹舵棌鏁版嵁
+      familyStore.selectedClass = 'TF'
+      // 强制进化树组件随新基因组重建
+      treeKey.value += 1
+      // 重新获取家族数据
       await familyStore.fetchFamilies()
-      // 浠呭湪鍩哄洜缁勬敼鍙樻椂閲嶆柊鑾峰彇鏁版嵁
+      // 单选默认选中第一个家族
+      selectedFamilyName.value = familyStore.familyInfo[0]?.name || ''
       fetchTFDataByGenome()
     }
-    
-    // 澶勭悊瀹舵棌閫夋嫨鍙樺寲
+
+    // 处理家族单选变化
     const handleFamilyChange = () => {
-      currentPage.value = 1 // 閲嶇疆椤电爜
-      // 瀹舵棌鍙樺寲鏃惰皟鐢ㄧ瓫閫夊嚱鏁?
+      currentPage.value = 1
+      clearTableSelection()
       filterTFData()
     }
-    
-    // 澶勭悊鎼滅储
+
+    // el-tree-v2 家族节点点击：选中该家族
+    const handleFamilyNodeClick = (data) => {
+      if (!data || !data.value) return
+      selectedFamilyName.value = data.value
+      // 同步复选框：只勾选当前家族
+      if (familyTreeRef.value && typeof familyTreeRef.value.setCheckedKeys === 'function') {
+        familyTreeRef.value.setCheckedKeys([data.value])
+      }
+      handleFamilyChange()
+    }
+
+    // 复选框勾选事件：实现单选（勾选新的，自动取消旧的）
+    const handleFamilyCheck = (data, checkedInfo) => {
+      const checkedKeys = checkedInfo && checkedInfo.checkedKeys ? checkedInfo.checkedKeys : []
+      if (checkedKeys.length > 1) {
+        // 勾选了多个，只保留最后一个（最新勾选的）
+        const latest = checkedKeys[checkedKeys.length - 1]
+        if (familyTreeRef.value && typeof familyTreeRef.value.setCheckedKeys === 'function') {
+          familyTreeRef.value.setCheckedKeys([latest])
+        }
+        selectedFamilyName.value = latest
+      } else if (checkedKeys.length === 1) {
+        selectedFamilyName.value = checkedKeys[0]
+      } else {
+        // 全部取消勾选时不允许——至少保留一个
+        if (selectedFamilyName.value) {
+          if (familyTreeRef.value && typeof familyTreeRef.value.setCheckedKeys === 'function') {
+            familyTreeRef.value.setCheckedKeys([selectedFamilyName.value])
+          }
+          return
+        }
+      }
+      handleFamilyChange()
+    }
+
+    // 表格多选变化：收集勾选基因，传给进化树高亮
+    const handleSelectionChange = (rows) => {
+      highlightGenes.value = (rows || []).map((r) => r.TF_gene).filter(Boolean)
+    }
+
+    // 处理搜索
     const handleSearch = () => {
-      currentPage.value = 1 // 閲嶇疆椤电爜
-      // 鎼滅储鍙樺寲鏃惰皟鐢ㄧ瓫閫夊嚱鏁?
+      currentPage.value = 1
       filterTFData()
     }
-    
-    // 澶勭悊椤电爜鍙樺寲
+
+    // 处理页码变化
     const handlePageChange = () => {
-      // 椤电爜鍙樺寲鏃朵笉闇€瑕侀噸鏂拌姹傛暟鎹紝鍙渶瑕佹洿鏂拌绠楀睘鎬?
+      // 页码变化时无需重新请求数据，仅更新计算属性
     }
-    
-    // 澶勭悊姣忛〉鏉℃暟鍙樺寲
+
+    // 处理每页条数变化
     const handlePageSizeChange = () => {
-      currentPage.value = 1 // 閲嶇疆椤电爜
-      // 姣忛〉鏉℃暟鍙樺寲鏃朵笉闇€瑕侀噸鏂拌姹傛暟鎹紝鍙渶瑕佹洿鏂拌绠楀睘鎬?
+      currentPage.value = 1
     }
-    
-    // 澶勭悊琛岀偣鍑?
+
+    // 处理行点击
     const handleRowClick = (row) => {
       console.log('Selected row:', row)
-      // 杩欓噷鍙互娣诲姞鐐瑰嚮琛屽悗鐨勫鐞嗛€昏緫锛屾瘮濡傝烦杞埌璇︽儏椤?
     }
-    
-    // 澶勭悊鍩哄洜閾炬帴鐐瑰嚮
+
+    // 处理基因链接点击
     const handleGeneClick = (geneId) => {
       console.log('Gene link clicked:', geneId)
-      // 娓呴櫎 navigationStore 涓殑 geneDetail 鏁版嵁锛岀‘淇濅粠鍚庣閲嶆柊鑾峰彇
       navigationStore.clearNavigationData('geneDetail')
-      // 瀵艰埅鍒癐D鎼滅储缁撴灉椤甸潰锛屽苟灏嗗熀鍥營D浣滀负鍙傛暟浼犻€?
       router.push({
         name: 'idSearchResults',
         query: { db_id: geneId }
       })
     }
-    
-    // 鐩戝惉pageSize鍙樺寲锛岀‘淇漜urrentPage琚噸缃?
+
+    // 监听 pageSize 变化，确保 currentPage 被重置
     watch(pageSize, () => {
       currentPage.value = 1
     })
-    
-    // 缁勪欢鎸傝浇鏃跺姞杞芥暟鎹?
+
+    // 组件挂载时加载数据
     onMounted(async () => {
       await ensureGenomesLoaded()
-      const targetGenome = pickDefaultGenome()
+      // 优先使用 URL query 中的 genome 参数（从详情页快捷跳转过来）
+      const queryGenome = typeof route.query.genome === 'string' ? route.query.genome : ''
+      const targetGenome =
+        queryGenome && allGenomes.value.includes(queryGenome) ? queryGenome : pickDefaultGenome()
       if (targetGenome) {
         setSelectedGenome(targetGenome)
         handleGenomeChange()
       }
     })
-    
+
     return {
       t,
-      selectedGenome,
+      treeKey,
+      // 基因组树
+      genomeTreeRef,
+      genomeTreeProps,
+      defaultExpandedKeys,
       genomeOptions,
       genomeLoading,
-      cascaderProps,
-      tfFamilies,
+      selectedGenome,
+      selectedGenomeName,
+      allGenomes,
+      handleGenomeNodeClick,
+      // 家族树
+      familyTreeRef,
+      familyTreeData,
+      familyTreeProps,
+      defaultCheckedFamilies,
+      familyLoading,
+      selectedFamilyName,
+      handleFamilyNodeClick,
+      handleFamilyCheck,
+      // 表格 / 高亮
+      tfTableRef,
+      highlightGenes,
+      handleSelectionChange,
       searchQuery,
       currentPage,
       pageSize,
@@ -360,8 +493,6 @@ export default {
       tfData,
       paginatedTFData,
       loading,
-      handleGenomeChange,
-      handleFamilyChange,
       handleSearch,
       handlePageChange,
       handlePageSizeChange,
@@ -379,7 +510,7 @@ export default {
   min-height: 100vh;
 }
 
-/* 宸︿晶杈规爮鏍峰紡 */
+/* 左侧栏样式 */
 .sidebar {
   background-color: white;
   padding: 20px;
@@ -414,7 +545,14 @@ export default {
   color: #e6a23c;
 }
 
-/* 涓诲唴瀹瑰尯鍩熸牱寮?*/
+/* 基因组树样式 */
+.genome-tree {
+  border: 1px solid #ebeef5;
+  border-radius: 6px;
+  padding: 6px;
+}
+
+/* 主内容区域样式 */
 .main-content {
   background-color: white;
   padding: 20px;
@@ -429,20 +567,24 @@ export default {
   margin-bottom: 20px;
 }
 
-/* 杞綍鍥犲瓙瀹舵棌鏍峰紡 */
-.tf-families {
-  background-color: #f9f9f9;
-  padding: 15px;
-  border-radius: 6px;
+/* 转录因子家族样式：单列，固定宽度，高度自适应滚动 */
+.tf-radio-group {
+  display: flex;
+  flex-direction: column;
+  max-height: 300px;
+  overflow-y: auto;
 }
 
-.tf-checkbox {
+.tf-radio {
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
+  margin-right: 0;
   font-size: 0.9rem;
+  white-space: normal;
+  word-break: break-word;
 }
 
-/* 琛ㄦ牸鏍峰紡 */
+/* 表格样式 */
 .table-title {
   color: #e6a23c;
   font-weight: bold;
@@ -455,7 +597,7 @@ export default {
   border-radius: 6px;
 }
 
-/* 鍩哄洜閾炬帴鏍峰紡 */
+/* 基因链接样式 */
 .gene-link {
   color: #409eff;
   text-decoration: none;
@@ -477,17 +619,27 @@ export default {
   color: #666;
 }
 
-/* 鍝嶅簲寮忚璁?*/
+/* 高亮提示 */
+.highlight-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #f56c6c;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* 响应式设计 */
 @media (max-width: 768px) {
   .container-fluid {
     padding: 10px;
   }
-  
+
   .sidebar,
   .main-content {
     padding: 15px;
   }
-  
+
   .tf-families .col-md-3 {
     width: 50%;
   }

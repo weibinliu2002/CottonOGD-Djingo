@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="container mt-4">
     <h2 class="mb-4">{{ t('gene_expression_analysis') }}</h2>
     
@@ -97,7 +97,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, inject, watch, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import httpInstance from '@/utils/http.js'
 import { Search } from '@element-plus/icons-vue'
@@ -109,7 +109,8 @@ const showLoading = inject('showLoading') as (() => void) | undefined
 const hideLoading = inject('hideLoading') as (() => void) | undefined
 
 const router = useRouter()
-const { genomeStore, ensureGenomesLoaded, pickDefaultGenome } = useGenomeSelector('G.hirsutumAD1_Jin668_HAU_v1T2T')
+const route = useRoute()
+const { genomeStore, ensureGenomesLoaded, pickDefaultGenome, allGenomes } = useGenomeSelector('G.hirsutumAD1_Jin668_HAU_v1T2T')
 const geneExpressionStore = useGeneExpressionStore()
 
 // 表单数据
@@ -179,7 +180,11 @@ const fetchTissues = async (genomeId?: string) => {
 onMounted(async () => {
   await ensureGenomesLoaded()
   await fetchGenomesWithTissue()
-  selectedGenome.value = pickDefaultGenome()
+  // 优先使用 URL query 中的 genome 参数（从详情页快捷跳转过来）
+  const queryGenome = (route.query.genome as string) || ''
+  const preferred =
+    queryGenome && allGenomes.value.includes(queryGenome) ? queryGenome : pickDefaultGenome()
+  selectedGenome.value = preferred
   await fetchTissues(selectedGenome.value)
 })
 

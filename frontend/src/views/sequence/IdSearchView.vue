@@ -77,6 +77,7 @@
 <script setup>
 import { ref, onMounted, inject } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 import { useGenomeSelector } from '@/composables/features/useGenomeBrowser'
 import { useGeneSearchStore } from '@/stores/modules/geneSearch'
 import { Upload } from '@element-plus/icons-vue'
@@ -85,15 +86,19 @@ const { t } = useI18n()
 
 const showLoading = inject('showLoading')
 const hideLoading = inject('hideLoading')
+const route = useRoute()
 
-const { genomeOptions, genomeLoading, ensureGenomesLoaded, pickDefaultGenome } = useGenomeSelector()
+const { genomeOptions, genomeLoading, ensureGenomesLoaded, pickDefaultGenome, allGenomes } = useGenomeSelector()
 const geneSearchStore = useGeneSearchStore()
 
 const fileName = ref('')
 
 onMounted(async () => {
   await ensureGenomesLoaded()
-  const defaultGenome = pickDefaultGenome()
+  // 优先使用 URL query 中的 genome 参数（从详情页快捷跳转过来）
+  const queryGenome = typeof route.query.genome === 'string' ? route.query.genome : ''
+  const defaultGenome =
+    queryGenome && allGenomes.value.includes(queryGenome) ? queryGenome : pickDefaultGenome()
   if (defaultGenome) {
     geneSearchStore.selectedGenome = [defaultGenome]
   }

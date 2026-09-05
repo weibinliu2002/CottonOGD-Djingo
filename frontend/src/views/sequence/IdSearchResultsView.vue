@@ -19,7 +19,7 @@
       <!-- 顶部区域：基因信息 + 功能注释交集 -->
       <el-row :gutter="20" class="mb-6">
         <!-- 左上：基因信息 -->
-        <el-col :span="14">
+        <el-col :span="10">
           <gene-info-card 
             :gene-data="result" 
             :title="t('gene_basic_information')"
@@ -27,77 +27,44 @@
           />
         </el-col>
         
-        <!-- 右上：功能注释交集 -->
-        <el-col :span="10">
-          <el-card title="Function" class="h-full">
+        <!-- 右上：蛋白3D结构 -->
+        <el-col :span="14">
+          <el-card class="h-full">
             <template #header>
-              <h3 class="card-title">Function</h3>
+              <div class="card-header-flex">
+                <h3 class="card-title">Protein Structure</h3>
+                <el-select
+                  v-if="pdbHits.length > 0"
+                  v-model="selectedPdbIndex"
+                  size="small"
+                  style="width: 200px"
+                  @change="onPdbSelectChange"
+                >
+                  <el-option
+                    v-for="(hit, index) in pdbHits"
+                    :key="index"
+                    :label="`${hit.pdb_id} (Identity: ${(hit.identity * 100).toFixed(1)}%)`"
+                    :value="index"
+                  />
+                </el-select>
+              </div>
             </template>
-            <div class="function-content">
-              <!-- GO注释交集 -->
-              <div v-if="intersectionAnnotations.go.length > 0" class="annotation-section">
-                <div class="section-header">
-                  <el-tag type="primary" size="small">GO</el-tag>
-                </div>
-                <ul class="annotation-list">
-                  <li 
-                    v-for="(item, index) in deduplicatedGoAnnotations.slice(0, 5)" 
-                    :key="'go-' + item.id"
-                    class="annotation-list-item"
-                  >
-                    <span class="annotation-text">
-                      {{ item.type }}: {{ item.term }}
-                    </span>
-                  </li>
-                  <li v-if="deduplicatedGoAnnotations.length > 5" class="annotation-list-item text-muted text-sm">
-                    +{{ deduplicatedGoAnnotations.length - 5 }} more
-                  </li>
-                </ul>
+            <div class="structure-content">
+              <div v-if="pdbLoading" class="pdb-loading">
+                <el-skeleton :rows="8" animated />
               </div>
-              
-              <!-- KEGG注释交集 -->
-              <div v-if="intersectionAnnotations.kegg.length > 0" class="annotation-section">
-                <div class="section-header">
-                  <el-tag type="success" size="small">KEGG</el-tag>
-                </div>
-                <ul class="annotation-list">
-                  <li 
-                    v-for="(item, index) in deduplicatedKeggAnnotations.slice(0, 5)" 
-                    :key="'kegg-' + item.id"
-                    class="annotation-list-item"
-                  >
-                    <span class="annotation-text">
-                      {{ item.id }}: {{ item.description }}
-                    </span>
-                  </li>
-                  <li v-if="deduplicatedKeggAnnotations.length > 5" class="annotation-list-item text-muted text-sm">
-                    +{{ deduplicatedKeggAnnotations.length - 5 }} more
-                  </li>
-                </ul>
+              <div v-else-if="pdbError">
+                <el-alert :title="pdbError" type="warning" :closable="false" show-icon />
               </div>
-              
-              <!-- 其他注释交集 -->
-              <div v-if="intersectionAnnotations.other.length > 0" class="annotation-section">
-                <div class="section-header">
-                  <el-tag type="info" size="small">Other</el-tag>
-                </div>
-                <ul class="annotation-list">
-                  <li 
-                    v-for="(item, index) in intersectionAnnotations.other.slice(0, 5)" 
-                    :key="'other-' + index"
-                    class="annotation-list-item"
-                  >
-                    <span class="annotation-text">{{ item.annotation }}</span>
-                  </li>
-                  <li v-if="intersectionAnnotations.other.length > 5" class="annotation-list-item text-muted text-sm">
-                    +{{ intersectionAnnotations.other.length - 5 }} more
-                  </li>
-                </ul>
+              <div v-else-if="selectedPdbId">
+                <ProteinStructureViewer
+                  :pdb-id="selectedPdbId"
+                  :chain="selectedHit?.chain"
+                  :hit-info="selectedHit"
+                />
               </div>
-              
-              <!-- 无数据提示 -->
-              <div v-if="isEmptyAnnotations" class="empty-state">
-                <el-empty description="No annotation data available" />
+              <div v-else class="empty-state">
+                <el-empty description="No protein structure available" />
               </div>
             </div>
           </el-card>
@@ -518,6 +485,7 @@ import httpInstance from '@/utils/http.js'
 import SequenceDisplay from '@/components/data-display/SequenceDisplay.vue'
 import SequenceModal from '@/components/data-display/SequenceModal.vue'
 import GeneInfoCard from '@/components/data-display/GeneInfoCard.vue'
+import ProteinStructureViewer from '@/components/data-display/ProteinStructureViewer.vue'
 import { v4 as uuidv4 } from 'uuid'
 import { ElMessage } from 'element-plus'
 import { useGeneSearchStore } from '@/stores/modules/geneSearch'
@@ -610,6 +578,91 @@ const selectedTranscriptIndex = ref(0)
 // GFF数据相关
 const gffData = ref<GffItem[]>([])
 const hasGffData = ref(false)
+
+// PDB 蛋白结构搜索相关
+interface PdbHit {
+  rank: number
+  pdb_id: string
+  chain: string
+  evalue: number
+  bitscore: number
+  identity: number
+  description: string
+  cov_q: number
+  cov_t: number
+}
+const pdbHits = ref<PdbHit[]>([])
+const selectedPdbIndex = ref(0)
+const pdbLoading = ref(false)
+const pdbError = ref('')
+
+const selectedPdbId = computed(() => {
+  const hit = pdbHits.value[selectedPdbIndex.value]
+  return hit?.pdb_id || ''
+})
+
+const selectedHit = computed((): PdbHit | undefined => {
+  return pdbHits.value[selectedPdbIndex.value] || undefined
+})
+
+const onPdbSelectChange = () => {
+  // 切换 PDB 时无需额外操作，computed 会自动更新
+}
+
+/** 获取蛋白序列（优先 top-level，其次第一个转录本） */
+const getProteinSeq = (): string => {
+  if (result.value?.protein_seq && result.value.protein_seq !== 'N/A' && result.value.protein_seq !== 'unavailable') {
+    return result.value.protein_seq
+  }
+  if (result.value?.mrna_transcripts && result.value.mrna_transcripts.length > 0) {
+    const t = result.value.mrna_transcripts[0]
+    if (t?.protein_seq && t.protein_seq !== 'N/A' && t.protein_seq !== 'unavailable') {
+      return t.protein_seq
+    }
+  }
+  return ''
+}
+
+/** 搜索相似蛋白结构 */
+const searchPdbStructures = async (proteinSeq: string) => {
+  console.log('=== searchPdbStructures called ===')
+  console.log('proteinSeq length:', proteinSeq?.length)
+  
+  if (!proteinSeq || proteinSeq.length < 10) {
+    pdbError.value = 'Protein sequence too short for structure search'
+    return
+  }
+
+  pdbLoading.value = true
+  pdbError.value = ''
+  pdbHits.value = []
+
+  try {
+    const formData = new FormData()
+    formData.append('sequence', `>${result.value?.IDs || 'query'} protein\n${proteinSeq}`)
+    formData.append('method', 'rcsb_api')
+    console.log('Sending PDB search request...')
+
+    const response = await httpInstance.post('/CottonOGD_api/search_similar_structure/', formData)
+    const data = response.data !== undefined ? response.data : response
+    console.log('PDB search response:', data)
+
+    if (data.error) {
+      pdbError.value = data.error
+    } else if (data.top_hits && data.top_hits.length > 0) {
+      pdbHits.value = data.top_hits
+      selectedPdbIndex.value = 0
+      console.log('PDB hits found:', pdbHits.value.length, 'first:', pdbHits.value[0])
+    } else {
+      pdbError.value = 'No similar structures found'
+    }
+  } catch (e: any) {
+    console.error('PDB search error:', e)
+    pdbError.value = e.message || 'Failed to search protein structures'
+  } finally {
+    pdbLoading.value = false
+  }
+}
 
 // 分页相关
 const currentPage = ref(1)
@@ -1131,6 +1184,13 @@ const fetchGeneData = async (db_id: string) => {
       if (geneId) {
         loadExpressionData(geneId, undefined, db_id)
       }
+      // 搜索蛋白 3D 结构
+      const proteinSeq = getProteinSeq()
+      if (proteinSeq) {
+        searchPdbStructures(proteinSeq)
+      } else {
+        console.log('No protein_seq found in result or transcripts')
+      }
     } else {
       console.log('=== 开始获取基因数据 ===')
       console.log('db_id:', db_id)
@@ -1229,6 +1289,13 @@ const fetchGeneData = async (db_id: string) => {
           const geneId = result.value?.IDs
           if (geneId) {
             loadExpressionData(geneId, undefined, db_id)
+          }
+          // 搜索蛋白 3D 结构
+          const proteinSeq = getProteinSeq()
+          if (proteinSeq) {
+            searchPdbStructures(proteinSeq)
+          } else {
+            console.log('No protein_seq found in result or transcripts')
           }
         }
         
@@ -1443,6 +1510,20 @@ onMounted(() => {
 <style scoped>
 .result-container {
   position: relative;
+}
+
+.card-header-flex {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.structure-content {
+  min-height: 400px;
+}
+
+.pdb-loading {
+  padding: 20px;
 }
 
 .function-content {
