@@ -187,6 +187,13 @@ function initPieChart() {
       },
     ],
   })
+  // 点击扇区：跳转到基因组浏览页并按该 BUSCO 区间筛选
+  pieChart.off('click')
+  pieChart.on('click', (params: { name?: string }) => {
+    if (params?.name) {
+      router.push({ path: '/genome/browse', query: { busco: params.name } })
+    }
+  })
 }
 
 /** 初始化柱状图：各棉花物种的基因组数量 */
@@ -247,6 +254,13 @@ function initBarChart() {
         },
       },
     ],
+  })
+  // 点击柱子：跳转到基因组浏览页并按该物种筛选
+  barChart.off('click')
+  barChart.on('click', (params: { name?: string }) => {
+    if (params?.name) {
+      router.push({ path: '/genome/browse', query: { cottonSpecies: params.name } })
+    }
   })
 }
 
@@ -373,6 +387,14 @@ function initScatterChart() {
         },
       },
     ],
+  })
+  // 点击散点：跳转到基因组浏览页并按该点所属物种筛选
+  scatterChart.off('click')
+  scatterChart.on('click', (params: { value?: [number, number, number | null, string] }) => {
+    const species = params?.value?.[3]
+    if (species) {
+      router.push({ path: '/genome/browse', query: { cottonSpecies: species } })
+    }
   })
 }
 
@@ -974,6 +996,7 @@ const fillExample = (example: string) => {
 .chart-container {
   width: 100%;
   height: 400px;
+  cursor: pointer;
 }
 
 .chart-container-wide {
@@ -988,7 +1011,7 @@ const fillExample = (example: string) => {
 .hero-section {
   background: linear-gradient(135deg, #3a6ea5 0%, #7297bd 100%);
   color: #ffffff;
-  padding: 60px 0;
+  padding: 6px 0;
   text-align: center;
   position: relative;
   overflow: hidden;

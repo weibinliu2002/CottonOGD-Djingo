@@ -107,6 +107,40 @@
           </el-select>
         </el-form-item>
 
+        <el-form-item label="BUSCO">
+          <el-select
+            v-model="filters.busco"
+            placeholder="All BUSCO"
+            clearable
+            style="width: 170px"
+            @change="currentPage = 1"
+          >
+            <el-option
+              v-for="b in BUSCO_BUCKETS"
+              :key="b.key"
+              :label="b.label"
+              :value="b.key"
+            />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="LAI">
+          <el-select
+            v-model="filters.lai"
+            placeholder="All LAI"
+            clearable
+            style="width: 180px"
+            @change="currentPage = 1"
+          >
+            <el-option
+              v-for="b in LAI_BUCKETS"
+              :key="b.key"
+              :label="b.label"
+              :value="b.key"
+            />
+          </el-select>
+        </el-form-item>
+
         <el-form-item>
           <el-button type="primary" @click="currentPage = 1">Search</el-button>
           <el-button @click="resetFilters">Reset</el-button>
@@ -241,13 +275,36 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useGenomeStore } from '@/stores/modules/genome'
 import type { Species } from '@/stores/modules/genome'
 
 const router = useRouter()
+const route = useRoute()
 const genomeStore = useGenomeStore()
+
+// ============ BUSCO / LAI 区间定义 ============
+// key 与首页饼图扇区名称保持一致，便于图表点击跳转携带参数
+interface RangeBucket {
+  key: string
+  label: string
+  min: number
+  max: number
+}
+const BUSCO_BUCKETS: RangeBucket[] = [
+  { key: '≥95', label: '≥95%', min: 95, max: Infinity },
+  { key: '90-95', label: '90-95%', min: 90, max: 95 },
+  { key: '80-90', label: '80-90%', min: 80, max: 90 },
+  { key: '70-80', label: '70-80%', min: 70, max: 80 },
+  { key: '<70', label: '<70%', min: -Infinity, max: 70 },
+]
+// LAI 分级：≥20 Gold / 10-20 Reference / <10 Draft
+const LAI_BUCKETS: RangeBucket[] = [
+  { key: '≥20', label: '≥20 (Gold)', min: 20, max: Infinity },
+  { key: '10-20', label: '10-20 (Reference)', min: 10, max: 20 },
+  { key: '<10', label: '<10 (Draft)', min: -Infinity, max: 10 },
+]
 
 // ============ 筛选条件 ============
 interface Filters {
@@ -257,6 +314,8 @@ interface Filters {
   category: string
   ploidy: string
   institution: string
+  busco: string
+  lai: string
 }
 const filters = reactive<Filters>({
   keyword: '',
@@ -265,6 +324,8 @@ const filters = reactive<Filters>({
   category: '',
   ploidy: '',
   institution: '',
+  busco: '',
+  lai: '',
 })
 
 function resetFilters(): void {
@@ -274,8 +335,31 @@ function resetFilters(): void {
   filters.category = ''
   filters.ploidy = ''
   filters.institution = ''
+  filters.busco = ''
+  filters.lai = ''
   currentPage.value = 1
 }
+
+// ============ 路由 query → 筛选条件（首页图表点击跳转） ============
+function applyRouteQuery(): void {
+  const q = route.query
+  const str = (v: unknown): string => (typeof v === 'string' ? v : '')
+  filters.keyword = str(q.keyword)
+  filters.cottonSpecies = str(q.cottonSpecies)
+  filters.genomeType = str(q.genomeType)
+  filters.category = str(q.category)
+  filters.ploidy = str(q.ploidy)
+  filters.institution = str(q.institution)
+  // 仅当 query 中的区间 key 合法时才应用
+  const buscoKey = str(q.busco)
+  filters.busco = BUSCO_BUCKETS.some((b) => b.key === buscoKey) ? buscoKey : ''
+  const laiKey = str(q.lai)
+  filters.lai = LAI_BUCKETS.some((b) => b.key === laiKey) ? laiKey : ''
+  currentPage.value = 1
+}
+
+// 同路由仅 query 变化时（从首页不同图表连续跳转）也要重新应用
+watch(() => route.query, () => applyRouteQuery())
 
 // ============ 筛选下拉选项（从 speciesData 去重） ============
 const cottonSpeciesOptions = computed(() =>
@@ -297,12 +381,26 @@ const institutionOptions = computed(() =>
 // ============ 筛选后数据 ============
 const filteredData = computed<Species[]>(() => {
   const kw = filters.keyword.trim().toLowerCase()
+  const buscoBucket = BUSCO_BUCKETS.find((b) => b.key === filters.busco)
+  const laiBucket = LAI_BUCKETS.find((b) => b.key === filters.lai)
   return genomeStore.speciesData.filter((row) => {
     if (filters.cottonSpecies && row.Cotton_Species !== filters.cottonSpecies) return false
     if (filters.genomeType && row.Genome_type !== filters.genomeType) return false
     if (filters.category && row.Category !== filters.category) return false
     if (filters.ploidy && row.Ploidy !== filters.ploidy) return false
     if (filters.institution && row.Assembling_institution !== filters.institution) return false
+    // BUSCO 区间筛选：左闭右开，与首页饼图区间一致
+    if (buscoBucket) {
+      const v = parseBusco(row.Busco)
+      if (isNaN(v)) return false
+      if (!(v >= buscoBucket.min && v < buscoBucket.max)) return false
+    }
+    // LAI 区间筛选
+    if (laiBucket) {
+      const v = parseLai(row.LAI_value)
+      if (isNaN(v)) return false
+      if (!(v >= laiBucket.min && v < laiBucket.max)) return false
+    }
     if (kw) {
       const haystack = [
         row.name,
@@ -361,6 +459,12 @@ function parseBusco(busco: string | undefined | null): number {
   return n <= 1 ? n * 100 : n
 }
 
+function parseLai(lai: string | undefined | null): number {
+  if (!lai) return NaN
+  const n = Number(String(lai).trim())
+  return isNaN(n) ? NaN : n
+}
+
 function formatBusco(busco: string | undefined | null): string {
   const n = parseBusco(busco)
   if (isNaN(n)) return '-'
@@ -407,6 +511,8 @@ onMounted(async () => {
   if (genomeStore.speciesData.length === 0) {
     await genomeStore.fetchGenomes()
   }
+  // 应用首页图表跳转携带的筛选参数
+  applyRouteQuery()
 })
 </script>
 
