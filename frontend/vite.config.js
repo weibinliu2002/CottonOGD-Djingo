@@ -1,5 +1,5 @@
 import { fileURLToPath, URL } from 'node:url'
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
@@ -9,7 +9,12 @@ const DJANGO_TARGET = 'http://172.28.226.114:8000'
 //const DJANGO_TARGET = 'http://127.0.0.1:8000'
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  // 读取 .env.local 中的天地图密钥（仅 dev server 端使用，不打包进前端）
+  const env = loadEnv(mode, process.cwd(), '')
+  const tiandituKey = env.TIANDITU_KEY || ''
+
+  return {
   build: {
     rollupOptions: {
       output: {
@@ -130,6 +135,25 @@ export default defineConfig({
       '/images': {
         target: 'http://172.28.226.114:4567',
         changeOrigin: true,
+      },
+      // 天地图 API 代理：前端通过 /tianditu-api 加载脚本，密钥由 proxy 注入
+      // 密钥存储在 .env.local（TIANDITU_KEY），源码中无明文
+      '/tianditu-api': {
+        target: 'http://api.tianditu.gov.cn',
+        changeOrigin: true,
+        rewrite: (path) => {
+          const query = path.includes('?') ? path.substring(path.indexOf('?')) : ''
+          return `/api${query}${query ? '&' : '?'}tk=${tiandituKey}`
+        },
+      },
+      // 天地图瓦片图代理（地图切片请求）
+      '/tianditu-tile': {
+        target: 'http://t0.tianditu.gov.cn',
+        changeOrigin: true,
+        rewrite: (path) => {
+          const query = path.includes('?') ? path.substring(path.indexOf('?')) : ''
+          return path.replace(/^\/tianditu-tile/, '') + (query ? '&' : '?') + 'tk=' + tiandituKey
+        },
       }
     }
   },
@@ -137,5 +161,6 @@ export default defineConfig({
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
     }
+  }
   }
 })

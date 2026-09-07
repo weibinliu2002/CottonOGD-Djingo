@@ -402,6 +402,11 @@ const routes = [
     name: 'ProteinViewerTest',
     component: () => import('@/views/test/ProteinViewerTest.vue')
   },
+  {
+    path: '/test/tianditu-map',
+    name: 'TiandituMapTest',
+    component: () => import('@/views/test/TiandituMapTest.vue')
+  },
 ]
 
 const router = createRouter({

@@ -80,6 +80,7 @@ declare module 'vue' {
     SequenceDisplay: typeof import('./src/components/data-display/SequenceDisplay.vue')['default']
     SequenceModal: typeof import('./src/components/data-display/SequenceModal.vue')['default']
     TheWelcome: typeof import('./src/components/TheWelcome.vue')['default']
+    TiandituMap: typeof import('./src/components/data-display/TiandituMap.vue')['default']
     TranscriptSelector: typeof import('./src/components/data-display/TranscriptSelector.vue')['default']
     WelcomeItem: typeof import('./src/components/WelcomeItem.vue')['default']
   }
@@ -158,6 +159,7 @@ declare global {
   const SequenceDisplay: typeof import('./src/components/data-display/SequenceDisplay.vue')['default']
   const SequenceModal: typeof import('./src/components/data-display/SequenceModal.vue')['default']
   const TheWelcome: typeof import('./src/components/TheWelcome.vue')['default']
+  const TiandituMap: typeof import('./src/components/data-display/TiandituMap.vue')['default']
   const TranscriptSelector: typeof import('./src/components/data-display/TranscriptSelector.vue')['default']
   const WelcomeItem: typeof import('./src/components/WelcomeItem.vue')['default']
 }

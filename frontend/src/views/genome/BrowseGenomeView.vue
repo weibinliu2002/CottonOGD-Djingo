@@ -207,13 +207,13 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="Category" width="150" prop="Category">
+        <el-table-column label="Category" width="150" prop="Category" sortable>
           <template #default="scope">
             {{ scope.row.Category || '-' }}
           </template>
         </el-table-column>
 
-        <el-table-column label="Genome Size (Gb)" width="150" prop="Genome_size" align="right">
+        <el-table-column label="Genome Size (Gb)" width="150" prop="Genome_size" align="right" sortable :sort-method="genomeSizeSort">
           <template #default="scope">
             {{ formatGenomeSize(scope.row.Genome_size) }}
           </template>
@@ -230,7 +230,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="LAI" width="100" prop="LAI_value" align="center">
+        <el-table-column label="LAI" width="100" prop="LAI_value" align="center" sortable :sort-method="laiSort">
           <template #default="scope">
             {{ scope.row.LAI_value || '-' }}
           </template>
@@ -474,6 +474,24 @@ function formatBusco(busco: string | undefined | null): string {
 function buscoSort(a: Species, b: Species): number {
   const av = parseBusco(a.Busco)
   const bv = parseBusco(b.Busco)
+  if (isNaN(av) && isNaN(bv)) return 0
+  if (isNaN(av)) return -1
+  if (isNaN(bv)) return 1
+  return av - bv
+}
+
+function genomeSizeSort(a: Species, b: Species): number {
+  const av = Number(a.Genome_size)
+  const bv = Number(b.Genome_size)
+  if (isNaN(av) && isNaN(bv)) return 0
+  if (isNaN(av)) return -1
+  if (isNaN(bv)) return 1
+  return av - bv
+}
+
+function laiSort(a: Species, b: Species): number {
+  const av = parseLai(a.LAI_value)
+  const bv = parseLai(b.LAI_value)
   if (isNaN(av) && isNaN(bv)) return 0
   if (isNaN(av)) return -1
   if (isNaN(bv)) return 1
