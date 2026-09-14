@@ -1,57 +1,57 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 // Common views
-import HomeView from '@/views/common/HomeView.vue'
-import AboutView from '@/views/common/AboutView.vue'
-import Contact_usView from '@/views/common/Contact_usView.vue'
-import DownloadView from '@/views/common/DownloadView.vue'
-import PlaceholderView from '@/views/common/PlaceholderView.vue'
+const HomeView = () => import('@/views/common/HomeView.vue')
+const AboutView = () => import('@/views/common/AboutView.vue')
+const Contact_usView = () => import('@/views/common/Contact_usView.vue')
+const DownloadView = () => import('@/views/common/DownloadView.vue')
+const PlaceholderView = () => import('@/views/common/PlaceholderView.vue')
 
 // Genome module
-import BrowseGenomeView from '@/views/genome/BrowseGenomeView.vue'
-import GenomeDetailView from '@/views/genome/GenomeDetailView.vue'
-import JbrowseView from '@/views/genome/JbrowseView.vue'
-import IGVView from '@/views/genome/IGVView.vue'
-import GenomeSyntenyView from '@/views/genome/GenomeSyntenyView.vue'
-import GeneLocationView from '@/views/genome/GeneLocationView.vue'
+const BrowseGenomeView = () => import('@/views/genome/BrowseGenomeView.vue')
+const GenomeDetailView = () => import('@/views/genome/GenomeDetailView.vue')
+const JbrowseView = () => import('@/views/genome/JbrowseView.vue')
+const IGVView = () => import('@/views/genome/IGVView.vue')
+const GenomeSyntenyView = () => import('@/views/genome/GenomeSyntenyView.vue')
+const GeneLocationView = () => import('@/views/genome/GeneLocationView.vue')
 
 // Annotation module
-import GoAnnotationView from '@/views/annotation/GoAnnotationView.vue'
-import GoAnnotationResultView from '@/views/annotation/GoAnnotationResultView.vue'
-import KeggAnnotationView from '@/views/annotation/KeggAnnotationView.vue'
-import KeggAnnotationResultView from '@/views/annotation/KeggAnnotationResultView.vue'
+const GoAnnotationView = () => import('@/views/annotation/GoAnnotationView.vue')
+const GoAnnotationResultView = () => import('@/views/annotation/GoAnnotationResultView.vue')
+const KeggAnnotationView = () => import('@/views/annotation/KeggAnnotationView.vue')
+const KeggAnnotationResultView = () => import('@/views/annotation/KeggAnnotationResultView.vue')
 
 // Enrichment module
-import GoEnrichmentView from '@/views/enrichment/GoEnrichmentView.vue'
-import GoEnrichmentResultView from '@/views/enrichment/GoEnrichmentResultView.vue'
-import KeggEnrichmentView from '@/views/enrichment/KeggEnrichmentView.vue'
-import KeggEnrichmentResultView from '@/views/enrichment/KeggEnrichmentResultView.vue'
+const GoEnrichmentView = () => import('@/views/enrichment/GoEnrichmentView.vue')
+const GoEnrichmentResultView = () => import('@/views/enrichment/GoEnrichmentResultView.vue')
+const KeggEnrichmentView = () => import('@/views/enrichment/KeggEnrichmentView.vue')
+const KeggEnrichmentResultView = () => import('@/views/enrichment/KeggEnrichmentResultView.vue')
 
 // Expression module
-import GeneExpressionView from '@/views/expression/GeneExpressionView.vue'
-import GeneExpressionResultView from '@/views/expression/GeneExpressionResultView.vue'
-import GeneExpressionEfpView from '@/views/expression/GeneExpressionEfpView.vue'
+const GeneExpressionView = () => import('@/views/expression/GeneExpressionView.vue')
+const GeneExpressionResultView = () => import('@/views/expression/GeneExpressionResultView.vue')
+const GeneExpressionEfpView = () => import('@/views/expression/GeneExpressionEfpView.vue')
 
 // Sequence module
-import IdSearchView from '@/views/sequence/IdSearchView.vue'
-import IdSearchResultsView from '@/views/sequence/IdSearchResultsView.vue'
-import IdSearchSummaryView from '@/views/sequence/IdSearchSummaryView.vue'
-import BlastpView from '@/views/sequence/BlastpView.vue'
-import BlastpResultView from '@/views/sequence/BlastpResultView.vue'
-import RegionSearchView from '@/views/sequence/RegionSearchView.vue'
-import SequenceServerView from '@/views/sequence/sequence-server.vue'
+const IdSearchView = () => import('@/views/sequence/IdSearchView.vue')
+const IdSearchResultsView = () => import('@/views/sequence/IdSearchResultsView.vue')
+const IdSearchSummaryView = () => import('@/views/sequence/IdSearchSummaryView.vue')
+const BlastpView = () => import('@/views/sequence/BlastpView.vue')
+const BlastpResultView = () => import('@/views/sequence/BlastpResultView.vue')
+const RegionSearchView = () => import('@/views/sequence/RegionSearchView.vue')
+const SequenceServerView = () => import('@/views/sequence/sequence-server.vue')
 
 // Visualization module
-import CircosView from '@/views/visualization/CircosView.vue'
-import PhylotreeView from '@/views/visualization/PhylotreeView.vue'
-import PPIView from '@/views/visualization/PPIView.vue'
-import Clustergramme_heatmapView from '@/views/visualization/Clustergramme_heatmap.vue'
-import CanvaspressView from '@/views/visualization/CanvaspressView.vue'
+const CircosView = () => import('@/views/visualization/CircosView.vue')
+const PhylotreeView = () => import('@/views/visualization/PhylotreeView.vue')
+const PPIView = () => import('@/views/visualization/PPIView.vue')
+const Clustergramme_heatmapView = () => import('@/views/visualization/Clustergramme_heatmap.vue')
+const CanvaspressView = () => import('@/views/visualization/CanvaspressView.vue')
 
 // Tools module
-import TFView from '@/views/tools/TFView.vue'
-import TRView from '@/views/tools/TRView.vue'
-import PrimerView from '@/views/tools/PrimerView.vue'
+const TFView = () => import('@/views/tools/TFView.vue')
+const TRView = () => import('@/views/tools/TRView.vue')
+const PrimerView = () => import('@/views/tools/PrimerView.vue')
 
 
 

@@ -39,6 +39,8 @@
     "cellular_component": "细胞组分",
     "chromosome": "染色体",
     "seqid": "Seq ID",
+    "start": "起始",
+    "end": "结束",
     "chromosome_name_eg_a01": "染色体名称（例如：A01）",
     "select_chromosome": "选择染色体",
     "clear": "清空",

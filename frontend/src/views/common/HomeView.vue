@@ -9,11 +9,13 @@ import httpInstance from '@/utils/http.js'
 import { useNavigationStore } from '@/stores/modules/navigation'
 import {
   searchGenes,
+  getSearchIndexes,
   MeiliSearchError,
   sanitizeHighlight,
   escapeHtml,
+  MEILI_INDEX,
   MEILI_MAX_WINDOW,
-  type MeiliGeneHit,
+  type SearchIndexInfo,
 } from '@/utils/meiliSearchApi'
 import { useGenomeStore } from '@/stores/modules/genome'
 import * as echarts from 'echarts'
@@ -390,7 +392,8 @@ function initScatterChart() {
   })
   // 点击散点：跳转到基因组浏览页并按该点所属物种筛选
   scatterChart.off('click')
-  scatterChart.on('click', (params: { value?: [number, number, number | null, string] }) => {
+  // params.value: [x, y, count, species]
+  scatterChart.on('click', (params: any) => {
     const species = params?.value?.[3]
     if (species) {
       router.push({ path: '/genome/browse', query: { cottonSpecies: species } })
@@ -422,6 +425,15 @@ onMounted(() => {
       initScatterChart()
     })
   }
+  // 拉取可检索的信息类型（基因 / 转录因子家族 ...）
+  getSearchIndexes().then((indexes) => {
+    searchIndexes.value = indexes
+    // 当前默认索引不可用时，回退到第一个可用索引
+    if (!indexes.some((i) => i.uid === selectedIndex.value && i.available)) {
+      const first = indexes.find((i) => i.available)
+      if (first) selectedIndex.value = first.uid
+    }
+  })
 })
 
 onBeforeUnmount(() => {
@@ -431,23 +443,29 @@ onBeforeUnmount(() => {
   scatterChart?.dispose()
 })
 
-// ==================== Meilisearch 即时搜索 ====================
+// ==================== 统一检索（经后端代理 Meilisearch） ====================
 const PAGE_SIZE = 20
 const searchQuery = ref('')
-const selectedGenomes = ref<string[]>([])
-const genomeFacets = ref<Record<string, number>>({})
-const searchHits = ref<MeiliGeneHit[]>([])
+// 可检索的信息类型（基因、转录因子家族等），来自后端索引清单
+const searchIndexes = ref<SearchIndexInfo[]>([])
+const selectedIndex = ref<string>(MEILI_INDEX)
+const searchHits = ref<Record<string, any>[]>([])
 const totalHits = ref(0)
 const processingTimeMs = ref(0)
 const isSearching = ref(false)
 const searchError = ref('')
 const currentPage = ref(1)
 
-/** 物种过滤下拉选项：按命中数降序 */
-const genomeFilterOptions = computed(() =>
-  Object.entries(genomeFacets.value)
-    .sort((a, b) => b[1] - a[1])
-    .map(([name, count]) => ({ label: `${name} (${count})`, value: name })),
+/** 检索库下拉选项：仅展示已建好可检索的索引 */
+const indexOptions = computed(() =>
+  searchIndexes.value
+    .filter((i) => i.available)
+    .map((i) => ({ label: i.label, value: i.uid })),
+)
+
+/** 当前选中索引的展示名 */
+const currentIndexLabel = computed(
+  () => searchIndexes.value.find((i) => i.uid === selectedIndex.value)?.label || selectedIndex.value,
 )
 
 /** 当前页起始 offset */
@@ -492,21 +510,19 @@ async function doSearch(): Promise<void> {
   try {
     const data = await searchGenes({
       q,
+      index: selectedIndex.value,
       offset: currentOffset.value,
       limit: PAGE_SIZE,
-      genomeIds: selectedGenomes.value,
+      withFacets: false,
       signal: abortController.signal,
     })
     if (seq !== searchSeq) return // 已有更新的请求，丢弃过期结果
     searchHits.value = data.hits
     totalHits.value = data.estimatedTotalHits
     processingTimeMs.value = data.processingTimeMs
-    // 分面计数仅在无过滤条件时刷新，避免选择某物种后下拉选项塌缩成只剩该项
-    if (data.offset === 0 && selectedGenomes.value.length === 0) {
-      genomeFacets.value = data.genomeFacets
-    }
-  } catch (e) {
-    if (e instanceof DOMException && e.name === 'AbortError') return
+  } catch (e: any) {
+    // 主动取消（fetch: AbortError / axios: CanceledError）不算错误
+    if (e?.name === 'AbortError' || e?.name === 'CanceledError' || e?.code === 'ERR_CANCELED') return
     if (seq !== searchSeq) return
     searchHits.value = []
     totalHits.value = 0
@@ -516,8 +532,8 @@ async function doSearch(): Promise<void> {
   }
 }
 
-// 输入 / 过滤变更：重置到第 1 页并防抖 300ms 后搜索
-watch([searchQuery, selectedGenomes], () => {
+// 输入 / 检索库变更：重置到第 1 页并防抖 300ms 后搜索
+watch([searchQuery, selectedIndex], () => {
   currentPage.value = 1
   if (debounceTimer) clearTimeout(debounceTimer)
   debounceTimer = setTimeout(doSearch, 300)
@@ -544,9 +560,17 @@ function goNextPage(): void {
 }
 
 /** 渲染高亮字段：优先用 Meilisearch 返回的 _formatted（仅保留 <em> 标签），否则转义原文 */
-function renderHitField(hit: MeiliGeneHit, field: 'geneid' | 'alias'): string {
+function renderHitField(hit: Record<string, any>, field: string): string {
   const formatted = hit._formatted?.[field]
   return formatted ? sanitizeHighlight(formatted) : escapeHtml(hit[field] || '')
+}
+
+/** 提取命中中除主字段外可展示的附加字段（如 family 索引的 TF_name / class_name / TF_class） */
+const HIT_CORE_FIELDS = new Set(['id', 'geneid', 'alias', 'genome_id', '_formatted'])
+function extraHitFields(hit: Record<string, any>): string[] {
+  return Object.keys(hit).filter(
+    (k) => !HIT_CORE_FIELDS.has(k) && hit[k] !== null && hit[k] !== '' && typeof hit[k] !== 'object',
+  )
 }
 
 /**
@@ -554,7 +578,8 @@ function renderHitField(hit: MeiliGeneHit, field: 'geneid' | 'alias'): string {
  * 复用项目既有的 geneid_summary 流程（与 RegionSearchView 一致）：
  * 拉取基因摘要写入 navigation store，再跳转到 idSearchSummary 详情页。
  */
-async function goToGeneDetail(hit: MeiliGeneHit): Promise<void> {
+async function goToGeneDetail(hit: Record<string, any>): Promise<void> {
+  if (!hit.geneid) return // 非基因类索引命中暂不支持跳转
   const requestId = `meili_home_${Date.now()}`
   try {
     const response = await httpInstance.post('/CottonOGD_api/geneid_summary/', {
@@ -623,18 +648,13 @@ const fillExample = (example: string) => {
             <!-- 水平排列：物种过滤 + 输入框 + 搜索按钮 -->
             <div class="search-row">
               <el-select
-                v-model="selectedGenomes"
+                v-model="selectedIndex"
                 class="database-select"
                 size="large"
-                multiple
-                filterable
-                collapse-tags
-                collapse-tags-tooltip
-                clearable
-                placeholder="All Genomes"
+                placeholder="Search in"
               >
                 <el-option
-                  v-for="option in genomeFilterOptions"
+                  v-for="option in indexOptions"
                   :key="option.value"
                   :label="option.label"
                   :value="option.value"
@@ -643,7 +663,7 @@ const fillExample = (example: string) => {
 
               <el-input
                 v-model="searchQuery"
-                placeholder="Search by gene ID or alias, e.g. Gano_001"
+                :placeholder="`Search in ${currentIndexLabel}...`"
                 clearable
                 size="large"
                 class="search-input"
@@ -685,8 +705,8 @@ const fillExample = (example: string) => {
                 <div v-else-if="searchHits.length === 0" class="results-state empty">
                   <el-icon :size="20"><Search /></el-icon>
                   <span>
-                    No results for "{{ searchQuery.trim() }}". Try a shorter keyword, or filter by
-                    genome.
+                    No results for "{{ searchQuery.trim() }}" in {{ currentIndexLabel }}. Try a
+                    shorter keyword.
                   </span>
                 </div>
 
@@ -703,7 +723,7 @@ const fillExample = (example: string) => {
                     type="warning"
                     :closable="false"
                     class="window-limit-alert"
-                    title="Too many hits: only the first 1000 results are browsable. Refine your keyword or filter by genome."
+                    title="Too many hits: only the first 1000 results are browsable. Refine your keyword."
                   />
 
                   <ul class="results-list">
@@ -711,18 +731,45 @@ const fillExample = (example: string) => {
                       v-for="hit in searchHits"
                       :key="hit.id"
                       class="result-item"
+                      :class="{ 'is-clickable': !!hit.geneid }"
                       @click="goToGeneDetail(hit)"
                     >
                       <div class="result-main">
-                        <!-- geneid（高亮） -->
-                        <span class="result-geneid" v-html="renderHitField(hit, 'geneid')"></span>
+                        <!-- 主标识：优先 geneid（高亮），否则用 id -->
+                        <span
+                          v-if="hit.geneid"
+                          class="result-geneid"
+                          v-html="renderHitField(hit, 'geneid')"
+                        ></span>
+                        <span v-else class="result-geneid">{{ hit.id }}</span>
                         <!-- alias（高亮） -->
-                        <span class="result-alias" v-html="renderHitField(hit, 'alias')"></span>
+                        <span
+                          v-if="hit.alias"
+                          class="result-alias"
+                          v-html="renderHitField(hit, 'alias')"
+                        ></span>
                       </div>
-                      <!-- genome_id：geneid 在不同基因组下可能重复，必须同时展示 -->
-                      <el-tag size="small" type="success" effect="light" class="result-genome">
-                        {{ hit.genome_id }}
-                      </el-tag>
+                      <!-- 附加信息标签：genome_id 及该索引的其他字段（TF_name / class_name 等） -->
+                      <div class="result-tags">
+                        <el-tag
+                          v-if="hit.genome_id"
+                          size="small"
+                          type="success"
+                          effect="light"
+                          class="result-genome"
+                        >
+                          {{ hit.genome_id }}
+                        </el-tag>
+                        <el-tag
+                          v-for="field in extraHitFields(hit)"
+                          :key="field"
+                          size="small"
+                          type="info"
+                          effect="plain"
+                        >
+                          {{ field }}: {{ hit[field] }}
+                        </el-tag>
+                      </div>
                     </li>
                   </ul>
 
@@ -1158,12 +1205,22 @@ const fillExample = (example: string) => {
   gap: 12px;
   padding: 10px 12px;
   border-bottom: 1px solid #f1f3f5;
-  cursor: pointer;
   transition: background-color 0.15s ease;
 }
 
-.result-item:hover {
+.result-item.is-clickable {
+  cursor: pointer;
+}
+
+.result-item.is-clickable:hover {
   background-color: #f0f6ff;
+}
+
+.result-tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
 }
 
 .result-main {

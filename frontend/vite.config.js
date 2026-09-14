@@ -5,7 +5,7 @@ import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 
-const DJANGO_TARGET = 'http://172.28.226.114:8000'
+const DJANGO_TARGET = 'http://172.28.226.114:8002'
 //const DJANGO_TARGET = 'http://127.0.0.1:8000'
 
 // https://vite.dev/config/
@@ -24,7 +24,12 @@ export default defineConfig(({ mode }) => {
           d3: ['d3'],
           tools: ['heatmap.js'],
           'vue-vendor': ['vue', 'vue-router', 'pinia', 'vue-i18n'],
-          'utils': ['axios', '@element-plus/icons-vue']
+          'utils': ['axios', '@element-plus/icons-vue'],
+          igv: ['igv'],
+          echarts: ['echarts'],
+          clustergrammer: ['clustergrammer'],
+          drawrnajs: ['drawrnajs'],
+          phylotree: ['phylotree']
         }
       }
     },

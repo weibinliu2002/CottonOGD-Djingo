@@ -38,9 +38,6 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-// 使用相对路径导入，避免TypeScript类型错误
-const ngCircosUrl = '/src/assets/js/NGCircos.js'
-
 declare global {
   interface Window {
     NGCircos?: any

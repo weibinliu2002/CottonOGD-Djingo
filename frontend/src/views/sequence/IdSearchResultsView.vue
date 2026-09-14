@@ -1209,7 +1209,9 @@ const fetchGeneData = async (db_id: string) => {
           console.log('开始解析JSON:', data.results)
           let parsedResult: Result
           try {
-            parsedResult = JSON.parse(data.results)
+            // 后端可能返回 JSON 字符串或已解析的对象，两种形态均兼容
+            parsedResult =
+              typeof data.results === 'string' ? JSON.parse(data.results) : data.results
             result.value = parsedResult
             console.log('JSON解析成功:', result.value)
             console.log('result.value.geneid_result:', parsedResult.geneid_result)

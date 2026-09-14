@@ -4,7 +4,7 @@ import router from './router'
 import { createPinia } from 'pinia'
 import { v4 as uuidv4 } from 'uuid'
 import '@fortawesome/fontawesome-free/css/all.min.css'
-import httpInstance from './utils/http.js'
+import httpInstance, { login as ensureLogin } from './utils/http.js'
 import { useGenomeStore } from './stores/modules/genome'
 import { useFamilyStore } from './stores/modules/family'
 import ElementPlus from 'element-plus'
@@ -31,6 +31,12 @@ app.use(i18n)
 initLocale()
 
 app.use(pinia).use(router).mount('#app')
+
+// 应用启动时自动登录获取会话 token（缓存未过期则后端直接复用）
+// 非阻塞：失败不影响启动，后续请求遇 400/401 会自动重登并重放
+ensureLogin().catch((e) => {
+  console.warn('Auto login failed, will retry on next request:', e?.message || e)
+})
 
 // 初始化基因组store，在应用启动时获取数据
 const genomeStore = useGenomeStore()

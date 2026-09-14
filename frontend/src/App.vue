@@ -196,7 +196,6 @@
 <script setup>
 import { ref, provide, onMounted, computed } from 'vue'
 import { ArrowUp } from '@element-plus/icons-vue'
-import httpInstance from '@/utils/http.js'
 import { useRouter } from 'vue-router'
 import { setLocale, getLocale } from '@/locales/i18n-config'
 import { useI18n } from 'vue-i18n'
@@ -225,7 +224,7 @@ const currentLanguage = computed({
 })
 
 onMounted(() => {
-  httpInstance.post('/CottonOGD_api/login/')
+  // 会话登录已移至 main.js 启动时统一调用（见 utils/http.js 的 ensureLogin）
   addVisitorMapScript()
 })
 
@@ -322,12 +321,6 @@ const addVisitorMapScript = () => {
     document.body.appendChild(script)
   }
 }
-
-// 组件挂载时自动登录并添加访问统计脚本
-onMounted(() => {
-  httpInstance.post('/CottonOGD_api/login/')
-  addVisitorMapScript()
-})
 </script>
 
 <style>

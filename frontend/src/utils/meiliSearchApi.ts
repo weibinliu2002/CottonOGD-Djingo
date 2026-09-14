@@ -1,19 +1,14 @@
 /**
- * Meilisearch 基因搜索 API 封装（直连模式）
+ * 基因搜索 API 封装（统一后端检索模式）
  *
- * - 生产环境：Meilisearch 经 Nginx 反向代理同源暴露（如 https://<域名>/meili），无 CORS 问题
- * - 本地开发：直接连 http://localhost:7700
- * - 认证：Authorization: Bearer <SEARCH_API_KEY>，key 仅具 search 权限，通过环境变量注入
- *
- * 环境变量（见 .env.development / .env.production）：
- *   VITE_MEILI_HOST       Meilisearch 地址，如 https://example.com/meili 或 http://localhost:7700
- *   VITE_MEILI_SEARCH_KEY 仅限 search 权限的 API key（切勿硬编码在源码中）
+ * 前端不直接访问 Meilisearch：所有检索请求经 Django 统一检索端点
+ * `/CottonOGD_api/search/` 代理（Meilisearch 地址与 API key 仅存在于后端），
+ * 认证与全站一致（Bearer token / auth_token cookie，见 utils/http.js）。
  */
 
-const MEILI_HOST = (import.meta.env.VITE_MEILI_HOST || 'http://localhost:7700').replace(/\/+$/, '')
-const SEARCH_KEY: string = import.meta.env.VITE_MEILI_SEARCH_KEY || ''
+import httpInstance from './http.js'
 
-/** 基因主索引名 */
+/** 基因主索引名（作为 index 参数传给后端统一检索端点） */
 export const MEILI_INDEX = 'genemaster'
 
 /**
@@ -68,12 +63,39 @@ export interface GeneSearchParams {
   q: string
   offset?: number
   limit?: number
+  /** 检索索引 uid（genemaster / family ...），默认 genemaster */
+  index?: string
   /** 按 genome_id 过滤（多选时 OR 连接） */
   genomeIds?: string[]
-  /** 是否请求 genome_id 分面统计，默认 true */
+  /** 是否请求分面统计，默认 true（使用 facets 默认值） */
   withFacets?: boolean
+  /** 分面字段，默认 ['genome_id']；非基因索引应传该索引已配置的分面字段 */
+  facets?: string[]
+  /** 指定返回字段，默认基因索引字段集 */
+  attributesToRetrieve?: string[]
   /** 取消信号，用于丢弃过期请求 */
   signal?: AbortSignal
+}
+
+/** 后端返回的可选检索索引信息 */
+export interface SearchIndexInfo {
+  /** 索引 uid，作为搜索请求的 index 参数 */
+  uid: string
+  /** 展示名称 */
+  label: string
+  /** 索引是否已建好可检索 */
+  available: boolean
+}
+
+/** 拉取当前可用的检索索引列表（经后端统一端点） */
+export async function getSearchIndexes(): Promise<SearchIndexInfo[]> {
+  try {
+    const data = await httpInstance.get('/CottonOGD_api/get_search_indexes/') as Record<string, any>
+    return Array.isArray(data?.indexes) ? (data.indexes as SearchIndexInfo[]) : []
+  } catch (e) {
+    console.error('Failed to load search indexes:', e)
+    return []
+  }
 }
 
 /** 过滤值转义：双引号会破坏过滤表达式，必须转义 */
@@ -103,60 +125,56 @@ export function escapeHtml(text: string): string {
 }
 
 /**
- * 搜索 genemaster 索引。
+ * 搜索 genemaster 索引（经后端统一检索端点代理）。
  * 关键词与过滤条件是独立参数：filter 不拼进 q。
  */
 export async function searchGenes(params: GeneSearchParams): Promise<MeiliSearchResult> {
-  const { q, offset = 0, limit = 20, genomeIds = [], withFacets = true, signal } = params
+  const {
+    q,
+    offset = 0,
+    limit = 20,
+    index = MEILI_INDEX,
+    genomeIds = [],
+    withFacets = true,
+    facets = ['genome_id'],
+    attributesToRetrieve,
+    signal,
+  } = params
 
   const body: Record<string, unknown> = {
+    index,
     q,
     offset,
     limit,
-    attributesToRetrieve: ['id', 'geneid', 'alias', 'genome_id'],
+    // 默认：基因索引只取展示字段；其他索引（family 等）返回全部字段
+    attributesToRetrieve: attributesToRetrieve ?? (
+      index === MEILI_INDEX
+        ? ['id', 'geneid', 'alias', 'genome_id']
+        : ['*']
+    ),
     attributesToHighlight: ['geneid', 'alias'],
   }
   const filter = buildGenomeFilter(genomeIds)
   if (filter) body.filter = filter
-  if (withFacets) body.facets = ['genome_id']
+  if (withFacets) body.facets = facets
 
-  let res: Response
   try {
-    res = await fetch(`${MEILI_HOST}/indexes/${MEILI_INDEX}/search`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(SEARCH_KEY ? { Authorization: `Bearer ${SEARCH_KEY}` } : {}),
-      },
-      body: JSON.stringify(body),
-      signal,
-    })
-  } catch (e) {
-    // 主动取消不算错误，向上抛出由调用方忽略
-    if (e instanceof DOMException && e.name === 'AbortError') throw e
-    throw new MeiliSearchError('无法连接搜索服务，请检查网络后重试', 0, 'network_error')
-  }
-
-  if (!res.ok) {
-    let message = `搜索服务错误（HTTP ${res.status}）`
-    let code = ''
-    try {
-      const err = await res.json()
-      message = err.message || message
-      code = err.code || ''
-    } catch {
-      /* 非 JSON 响应体，使用默认消息 */
+    // http.js 的响应拦截器直接返回 response.data；401 时自动重登并重放
+    const data = await httpInstance.post('/CottonOGD_api/search/', body, { signal }) as Record<string, any>
+    return {
+      hits: data.hits ?? [],
+      estimatedTotalHits: data.estimatedTotalHits ?? 0,
+      processingTimeMs: data.processingTimeMs ?? 0,
+      offset: data.offset ?? offset,
+      limit: data.limit ?? limit,
+      genomeFacets: (data.facetDistribution?.genome_id ?? {}) as Record<string, number>,
     }
-    throw new MeiliSearchError(message, res.status, code)
-  }
-
-  const data = await res.json()
-  return {
-    hits: data.hits ?? [],
-    estimatedTotalHits: data.estimatedTotalHits ?? 0,
-    processingTimeMs: data.processingTimeMs ?? 0,
-    offset: data.offset ?? offset,
-    limit: data.limit ?? limit,
-    genomeFacets: (data.facetDistribution?.genome_id ?? {}) as Record<string, number>,
+  } catch (e: any) {
+    // 主动取消不算错误，向上抛出由调用方忽略（axios: CanceledError / ERR_CANCELED）
+    if (e?.name === 'AbortError' || e?.name === 'CanceledError' || e?.code === 'ERR_CANCELED') throw e
+    const status: number = e?.response?.status ?? 0
+    const message: string = e?.response?.data?.message || e?.message || '无法连接搜索服务，请检查网络后重试'
+    const code: string = e?.response?.data?.code || 'network_error'
+    throw new MeiliSearchError(message, status, code)
   }
 }

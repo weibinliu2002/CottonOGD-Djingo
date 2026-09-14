@@ -1,7 +1,7 @@
 
 import { ref, computed } from 'vue'
+import router from '@/router'
 import { defineStore } from 'pinia'
-import { useRouter } from 'vue-router'
 import { useAsyncTask } from '@/composables/core/useAsyncTask'
 
 type EnrichmentType = 'go' | 'kegg'
@@ -50,8 +50,6 @@ export interface KeggEnrichmentResult {
 }
 
 export const useEnrichmentStore = defineStore('enrichment', () => {
-  const router = useRouter()
-
   // --- STATE ---
   const geneList = ref('')
   const pValue = ref(0.05)

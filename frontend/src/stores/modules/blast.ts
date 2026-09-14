@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue';
+import router from '@/router'
 import { defineStore } from 'pinia';
-import { useRouter } from 'vue-router';
 import httpInstance from '@/utils/http.js';
 import { useAsyncTask } from '@/composables/core/useAsyncTask';
 import { useNavigationStore } from './navigation';
@@ -17,7 +17,6 @@ interface GenomeOption {
 }
 
 export const useBlastStore = defineStore('blast', () => {
-  const router = useRouter();
 
   // --- 状态 (State) ---
   const sequence = ref('');

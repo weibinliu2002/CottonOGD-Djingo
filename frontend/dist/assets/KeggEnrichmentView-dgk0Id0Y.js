@@ -1,0 +1,30 @@
+import"./index-CDqonAEx.js";/* empty css                *//* empty css                     *//* empty css               *//* empty css               *//* empty css                  *//* empty css                  *//* empty css                  *//* empty css                 */import{d as D,ax as N,p as T,c as y,a as m,U as v,u as a,F as e,G as i,aF as j,r as p,$ as O,S as V,M as z,a6 as A,B as $,aA as H,o as k}from"./vue-vendor-UPSzB6ZS.js";import{u as P}from"./enrichment-L-l0QGtZ.js";import{u as Q}from"./useGenomeBrowser-DuRf3P1N.js";import{m as W,a as X,v as Y,w as Z,e as ee,f as le,d as ie,n as ae,j as te,l as oe,o as g}from"./element-plus-BVGCgPq7.js";import{_ as re}from"./_plugin-vue_export-helper-DlAUqK2U.js";import"./utils-eXoYvUN4.js";import"./useAsyncTask-CMk2hupo.js";const ne={class:"container mt-4"},se={class:"card-header"},ue={class:"mt-2"},de={class:"d-flex justify-content-end"},_e=D({__name:"KeggEnrichmentView",setup(ce){const{t:l}=N(),u=p(""),d=p(.05),_=p(.05),n=p(!1),E=H(),b=j(),f=P(),{genomeOptions:w,genomeLoading:x,ensureGenomesLoaded:G,pickDefaultGenome:q,allGenomes:B}=Q(),c=p("");T(async()=>{await G();const r=typeof b.query.genome=="string"?b.query.genome:"",t=r&&B.value.includes(r)?r:q();t&&(c.value=t)});const S=()=>{const r=`Kirkii_Juiced.00g000010
+Kirkii_Juiced.00g000020
+Kirkii_Juiced.00g000030
+Kirkii_Juiced.00g000040
+Kirkii_Juiced.00g000050
+Kirkii_Juiced.00g000060
+Kirkii_Juiced.00g000070
+Kirkii_Juiced.00g000080
+Kirkii_Juiced.00g000090
+Kirkii_Juiced.00g000100
+Kirkii_Juiced.00g000110
+Kirkii_Juiced.00g000120
+Kirkii_Juiced.00g000130
+Kirkii_Juiced.00g000140
+Kirkii_Juiced.00g000150
+Kirkii_Juiced.00g000160
+Kirkii_Juiced.00g000170
+Kirkii_Juiced.00g000180
+Kirkii_Juiced.00g000190
+Kirkii_Juiced.00g000200
+Kirkii_Juiced.00g000210
+Kirkii_Juiced.00g000220
+Kirkii_Juiced.00g000230
+Kirkii_Juiced.00g000240
+Kirkii_Juiced.00g000250
+Kirkii_Juiced.00g000260
+Kirkii_Juiced.00g000270
+Kirkii_Juiced.00g000280
+Kirkii_Juiced.00g000290
+Kirkii_Juiced.00g000300`;u.value=r},F=async()=>{if(!u.value.trim()){g.error(l("please_enter_gene_ids"));return}if(!c.value){g.error(l("please_select_genome"));return}if(d.value<0||d.value>1){g.error(l("p_value_threshold_must_be_between_0_and_1"));return}if(_.value<0||_.value>1){g.error(l("q_value_threshold_must_be_between_0_and_1"));return}n.value=!0;try{f.geneList=u.value,f.pValue=d.value,f.qValue=_.value,f.selectedGenome=c.value,E.push({name:"KeggEnrichmentResults"})}catch(r){g.error(l("error")+": "+(r.message||"Unknown error"))}finally{n.value=!1}};return(r,t)=>{const h=ee,K=le,s=Z,L=ae,M=ie,J=oe,U=te,C=Y,I=W,R=X;return k(),y("div",ne,[m("h2",null,v(a(l)("kegg_pathway_enrichment_analysis")),1),e(I,{class:"mb-4"},{header:i(()=>[m("div",se,[m("span",null,v(a(l)("kegg_pathway_enrichment_analysis")),1)])]),default:i(()=>[e(C,{onSubmit:O(F,["prevent"]),"label-width":"250px"},{default:i(()=>[e(s,{label:a(l)("input_gene_ids_one_per_line_or_separated_by_spaces_commas")},{default:i(()=>[e(h,{type:"textarea",rows:10,modelValue:u.value,"onUpdate:modelValue":t[0]||(t[0]=o=>u.value=o),placeholder:a(l)("please_enter_gene_ids_here"),disabled:n.value},null,8,["modelValue","placeholder","disabled"]),m("div",ue,[e(K,{type:"info",size:"small",onClick:S,disabled:n.value},{default:i(()=>[V(v(a(l)("load_example")),1)]),_:1},8,["disabled"])])]),_:1},8,["label"]),e(s,{label:a(l)("select_genome")},{default:i(()=>[e(M,{modelValue:c.value,"onUpdate:modelValue":t[1]||(t[1]=o=>c.value=o),placeholder:a(l)("select_genome"),style:{width:"100%"},loading:a(x),filterable:""},{default:i(()=>[(k(!0),y(z,null,A(a(w),o=>(k(),$(L,{key:o.value,label:o.label,value:o.value},null,8,["label","value"]))),128))]),_:1},8,["modelValue","placeholder","loading"])]),_:1},8,["label"]),e(s,null,{default:i(()=>[e(U,{gutter:20},{default:i(()=>[e(J,{span:12},{default:i(()=>[e(s,{label:a(l)("p_value_threshold")},{default:i(()=>[e(h,{type:"number",modelValue:d.value,"onUpdate:modelValue":t[2]||(t[2]=o=>d.value=o),modelModifiers:{number:!0},min:0,max:1,step:.001,placeholder:a(l)("p_value_threshold"),disabled:n.value},null,8,["modelValue","placeholder","disabled"])]),_:1},8,["label"])]),_:1}),e(J,{span:12},{default:i(()=>[e(s,{label:a(l)("q_value_threshold")},{default:i(()=>[e(h,{type:"number",modelValue:_.value,"onUpdate:modelValue":t[3]||(t[3]=o=>_.value=o),modelModifiers:{number:!0},min:0,max:1,step:.001,placeholder:a(l)("q_value_threshold"),disabled:n.value},null,8,["modelValue","placeholder","disabled"])]),_:1},8,["label"])]),_:1})]),_:1})]),_:1}),e(s,null,{default:i(()=>[m("div",de,[e(K,{type:"primary","native-type":"submit",loading:n.value},{default:i(()=>[V(v(a(l)("submit")),1)]),_:1},8,["loading"])])]),_:1})]),_:1})]),_:1}),e(R,{right:40,bottom:40})])}}}),qe=re(_e,[["__scopeId","data-v-266846bf"]]);export{qe as default};
