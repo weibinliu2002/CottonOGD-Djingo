@@ -97,29 +97,10 @@ onMounted(async () => {
 })
 
 const fillExample = () => {
-  const exampleIDs = `Kirkii_Juiced.00g000010
-Kirkii_Juiced.00g000020
-Kirkii_Juiced.00g000030
-Kirkii_Juiced.00g000040
-Kirkii_Juiced.00g000050
-Kirkii_Juiced.00g000060
-Kirkii_Juiced.00g000070
-Kirkii_Juiced.00g000080
-Kirkii_Juiced.00g000090
-Kirkii_Juiced.00g000100
-Kirkii_Juiced.00g000110
-Kirkii_Juiced.00g000120
-Kirkii_Juiced.00g000130
-Kirkii_Juiced.00g000140
-Kirkii_Juiced.00g000150
-Kirkii_Juiced.00g000160
-Kirkii_Juiced.00g000170
-Kirkii_Juiced.00g000180
-Kirkii_Juiced.00g000190
-Kirkii_Juiced.00g000200
-Kirkii_Juiced.00g000210
-Kirkii_Juiced.00g000220
-Kirkii_Juiced.00g000230`;
+  const exampleIDs = `Ghir_A01G000040.1
+Ghir_A01G000060
+Ghir_A01G000290.1
+Ghir_A01G000120.2`;
   geneIds.value = exampleIDs;
 }
 

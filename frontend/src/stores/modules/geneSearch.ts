@@ -41,7 +41,7 @@ function buildDbIdIndex(geneInfoResult: any[], geneidResult: any[]): Record<stri
     if (!item || item.type !== 'gene' || !item.attributes || item.id_id == null) return
     const m = String(item.attributes).match(/(?:^|;)ID=([^;]+)/)
     if (!m) return
-    const gid = m[1].trim()
+    const gid = m[1]?.trim()
     if (!gid) return
     const dbId = String(item.id_id)
     // 同时以原样和归一化形式索引，兼容带/不带版本号的写法

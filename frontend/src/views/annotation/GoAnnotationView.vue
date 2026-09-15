@@ -111,16 +111,10 @@ const isLoading = ref(false)
 
 // 填充示例数据
 const fillExample = () => {
-  const exampleIDs = `Kirkii_Juiced.00g000010
-Kirkii_Juiced.00g000020
-Kirkii_Juiced.00g000030
-Kirkii_Juiced.00g000040
-Kirkii_Juiced.00g000050
-Kirkii_Juiced.00g000060
-Kirkii_Juiced.00g000070
-Kirkii_Juiced.00g000080
-Kirkii_Juiced.00g000090
-Kirkii_Juiced.00g000100`
+  const exampleIDs = `Ghir_A01G000040
+Ghir_A01G000060
+Ghir_A01G000290
+Ghir_A01G000120`
   geneList.value = exampleIDs
 }
 
