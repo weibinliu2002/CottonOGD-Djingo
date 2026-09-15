@@ -1,6 +1,0 @@
-import{_ as n}from"./_plugin-vue_export-helper-DlAUqK2U.js";import{p as a,c as r,a as s,r as i,o as c}from"./vue-vendor-UPSzB6ZS.js";const G={class:"container mt-4"},A={__name:"PPIView",setup(m){const L=i(!1);a(()=>{const e=document.createElement("script");e.src="https://s3.eu-central-1.amazonaws.com/cdn.bio.sh/msa/latest/msa.min.gz.js",e.onload=()=>{L.value=!0,o()},document.head.appendChild(e)});function o(){if(!window.msa){console.error("MSA library not loaded");return}const t=window.msa.io.fasta.parse(`>seq1
-MALWMRLLPLLALLALWGPDPAAAFVNQHLCGSHLVEALYLVCGERGFFYTPKTRREAEDLQVGQVELGGGPGAGSLQPLALEGSLQKRGIVEQCCTSICSLYQLENYCN
->seq2
-MALWMRLLPLLALLALWGPDPAAAFVNQHLCGSHLVEALYLVCGERGFFYTPKTRREAEDLQVGQVELGGGPGAGSLQPLALEGSLQKRGIVEQCCTSICSLYQLENYCN
->seq3
-MALWMRLLPLLALLALWGPDPAAAFVNQHLCGSHLVEALYLVCGERGFFYTPKTRREAEDLQVGQVELGGGPGAGSLQPLALEGSLQKRGIVEQCCTSICSLYQLENYCN`);window.msa({el:document.getElementById("msa-container"),seqs:t,vis:{conserv:!0,overviewbox:!0,seqlogo:!0},zoomer:{alignmentWidth:"auto",alignmentHeight:400,autoResize:!0},conf:{registerMouseHover:!0,registerMouseClicks:!0}}).render()}return(e,t)=>(c(),r("div",G,[...t[0]||(t[0]=[s("h2",null,"PPI Network",-1),s("p",null,"此页面正在开发中...",-1),s("div",{id:"msa-container",style:{width:"100%","min-height":"500px"}},null,-1)])]))}},u=n(A,[["__scopeId","data-v-c6207bc9"]]);export{u as default};
