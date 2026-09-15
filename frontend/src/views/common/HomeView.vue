@@ -167,8 +167,8 @@ function initPieChart() {
       top: 'middle',
       textStyle: { fontSize: 12 },
     },
-    // 颜色由高到低：绿、蓝、橙、红、灰
-    color: ['#67C23A', '#409EFF', '#E6A23C', '#F56C6C', '#909399'],
+    // 颜色由高到低：红、橙、绿、蓝、灰
+    color: ['#F56C6C', '#E6A23C',   '#909399','#409EFF','#67C23A'],
     series: [
       {
         name: 'BUSCO',
@@ -244,8 +244,8 @@ function initBarChart() {
         data: barSpeciesData.value.counts,
         itemStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: '#409EFF' },
-            { offset: 1, color: '#67C23A' },
+            { offset: 0, color: '#67C23A' },
+            { offset: 1, color: '#409EFF' },
           ]),
           borderRadius: [4, 4, 0, 0],
         },
@@ -372,7 +372,7 @@ function initScatterChart() {
       calculable: true,
       itemHeight: 120,
       inRange: {
-        color: ['#F56C6C', '#E6A23C', '#409EFF', '#67C23A'],
+        color: ['#67C23A','#409EFF', '#E6A23C','#F56C6C'  ],
       },
     },
     series: [
