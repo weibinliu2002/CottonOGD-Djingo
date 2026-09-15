@@ -9,15 +9,30 @@ from django.core.cache import caches
 logger = logging.getLogger(__name__)
 
 # ==========================================
-# 1. 基础框架：缓存管理器和基类 (类似 ORM 的 Manager 和 Model)
+# 1. 基础框架：缓存管理器和描述符
 # ==========================================
+
+class CacheManagerDescriptor:
+    """
+    描述符类，用于实现类似 Django Model.objects 的类级别访问
+    支持子类隔离，确保每个 Model 都有自己的 Manager
+    """
+    def __init__(self):
+        self._managers = {}  # 用字典缓存每个类的 Manager
+
+    def __get__(self, instance, owner):
+        # owner 是调用 objects 的类（比如 GenomeGenesetCache）
+        if owner not in self._managers:
+            self._managers[owner] = CacheManager(owner)
+        return self._managers[owner]
+
+
 
 class CacheManager:
     """
     缓存管理器，类似 Django 的 objects
-    负责处理 Redis 连接、序列化、版本控制和读取
     """
-    cache_alias = 'geneset'  # 指向 settings.py 中配置的专用 Redis
+    cache_alias = 'default'  # 使用 settings.py 中的 default 缓存
 
     def __init__(self, model_class):
         self.model_class = model_class
@@ -32,14 +47,10 @@ class CacheManager:
     def _make_key(self, **kwargs):
         """生成带版本号的 Redis Key"""
         version = self._get_version()
-        # 子类可以重写 key_format
         return self.model_class.key_format.format(version=version, **kwargs)
 
     def get(self, **kwargs):
-        """
-        获取缓存数据，如果 Redis 没有则触发构建
-        类似 Model.objects.get()
-        """
+        """获取缓存数据，如果 Redis 没有则触发构建"""
         key = self._make_key(**kwargs)
         raw = self._cache.get(key)
         
@@ -56,13 +67,10 @@ class CacheManager:
         if raw is not None:
             return self.model_class(data=pickle.loads(raw), **kwargs)
         
-        return None # 构建后仍没有（可能是无效的 genome_name）
+        return None
 
     def build_all(self):
-        """
-        触发全量构建，类似 makemigrations/migrate
-        版本号 +1，保证旧数据自动失效
-        """
+        """触发全量构建，版本号 +1"""
         new_version = self._get_version() + 1
         logger.info(f"开始构建 {self.model_class.__name__}，新版本: {new_version}")
         
@@ -76,47 +84,21 @@ class CacheManager:
             
         # 更新版本号
         self._cache.set(self.model_class.version_key, new_version, timeout=None)
-        
-        # 清理上一个版本的数据（可选）
-        old_version = new_version - 1
-        if old_version > 0:
-            # 这里为了简化，没有自动清理旧版本，Redis 内存够用可以忽略
-            pass
+        logger.info(f"构建完成！当前版本: {new_version}")
 
 
 class CacheModelBase:
-    """
-    缓存模型基类，类似 django.db.models.Model
-    子类必须定义：version_key, key_format, build_data()
-    """
-    version_key = None       # 版本号的 Redis Key
-    key_format = None        # 数据的 Redis Key 格式
+    """缓存模型基类"""
+    version_key = None       
+    key_format = None        
     
-    # 注入 Manager
-    objects = None 
+    # 使用描述符
+    objects = CacheManagerDescriptor()
 
     def __init__(self, data, **kwargs):
         self._data = data
-        # 将 kwargs 作为实例属性（如 genome_name）
         for k, v in kwargs.items():
             setattr(self, k, v)
-
-    @classmethod
-    def get_manager(cls):
-        if cls.objects is None:
-            cls.objects = CacheManager(cls)
-        return cls.objects
-
-    # 语法糖，让子类可以直接调用 GenomeGenesetCache.objects.get()
-    objects = property(lambda cls: cls.get_manager())
-
-    @staticmethod
-    def build_data(version):
-        """
-        纯数据构建逻辑（查库、计算等），必须由子类实现
-        返回字典：{ 'key_suffix': data }
-        """
-        raise NotImplementedError
 
 
 # ==========================================
@@ -126,10 +108,9 @@ class CacheModelBase:
 class GenomeGenesetCache(CacheModelBase):
     """
     基因组基因集缓存模型
-    将之前那堆复杂的 SQL 和 GO 传播逻辑封装在里面
     """
     version_key = 'geneset_cache_version'
-    key_format = 'geneset_v{version}_{suffix}'  # suffix 可以是基因组名
+    key_format = 'geneset_v{version}_{suffix}'
 
     @staticmethod
     def build_data(version):
@@ -141,8 +122,6 @@ class GenomeGenesetCache(CacheModelBase):
             genome_names = [row[0] for row in cursor.fetchall()]
 
             for genome_name in genome_names:
-                # 这里放之前那堆复杂的查库和 GO 传播逻辑
-                # 为了简洁，我简化了代码，你把之前的逻辑搬进来即可
                 data = GenomeGenesetCache._build_single_genome(cursor, genome_name)
                 if data:
                     genomes_data[genome_name] = data
@@ -151,9 +130,10 @@ class GenomeGenesetCache(CacheModelBase):
 
     @staticmethod
     def _build_single_genome(cursor, genome_name):
-        """构建单个基因组的逻辑（封装内部实现）"""
+        """构建单个基因组的逻辑"""
         logger.info(f"正在构建基因组: {genome_name}")
         
+        # 1. 获取 id_id 到 geneid 的映射及背景基因
         cursor.execute("SELECT id, geneid FROM genemaster WHERE genome_id = %s", [genome_name])
         id_to_geneid = {}
         background_genes = set()
@@ -164,26 +144,121 @@ class GenomeGenesetCache(CacheModelBase):
         if not background_genes:
             return None
 
-        # --- GO 逻辑 (搬运你之前的代码) ---
-        # ... cursor.execute(...) 
-        # ... True Path Rule 传播 ...
-        # go_genesets = {...}
-        # go_type_map = {...}
+        # 2. 构建 GO 基因集 (带 True Path Rule 传播)
+        cursor.execute("""
+            SELECT gg.id_id, gg.go_id 
+            FROM gene_go gg
+            JOIN genemaster gm ON gg.id_id = gm.id
+            WHERE gm.genome_id = %s AND gg.go_id IS NOT NULL
+        """, [genome_name])
+        
+        go2ids_direct = defaultdict(set)
+        for id_id, go_id in cursor.fetchall():
+            go2ids_direct[go_id].add(id_id)
 
-        # --- KEGG 逻辑 (搬运你之前的代码) ---
-        # ... cursor.execute(...) 
-        # kegg_genesets = {...}
+        # 2.1 获取 is_a 关系并递归传播
+        cursor.execute("SELECT subject_id, object_id FROM go_relationship WHERE relationship_type = 'is_a'")
+        go_is_a = defaultdict(list)
+        for sub, obj in cursor.fetchall():
+            go_is_a[sub].append(obj)
 
-        # 模拟返回结果
+        ancestor_cache = {}
+        def get_go_ancestors(go_id):
+            if go_id in ancestor_cache:
+                return ancestor_cache[go_id]
+            ancestors = set()
+            for parent in go_is_a.get(go_id, []):
+                ancestors.add(parent)
+                ancestors |= get_go_ancestors(parent)
+            ancestor_cache[go_id] = ancestors
+            return ancestors
+
+        go2ids_propagated = defaultdict(set)
+        for go_id, id_set in go2ids_direct.items():
+            all_gos = set([go_id])
+            all_gos |= get_go_ancestors(go_id)
+            for g in all_gos:
+                go2ids_propagated[g] |= id_set
+
+        # 2.2 获取 GO 名称和类型
+        cursor.execute("SELECT id, name, namespace FROM go_term")
+        go_info = {row[0]: {'name': row[1], 'namespace': row[2]} for row in cursor.fetchall()}
+
+        go_genesets = {}
+        go_type_map = {}
+        for go_id, id_set in go2ids_propagated.items():
+            gene_set = set()
+            for id_id in id_set:
+                if id_id in id_to_geneid:
+                    gene_set.add(id_to_geneid[id_id])
+            
+            if not gene_set: continue
+            
+            info = go_info.get(go_id, {'name': '', 'namespace': ''})
+            name = info.get('name', '')
+            key = f"{go_id} {name}" if name else go_id
+            go_genesets[key] = sorted(list(gene_set))
+            
+            ns = info.get('namespace', '')
+            go_type_map[go_id] = 'BP' if 'biological' in ns else 'MF' if 'molecular' in ns else 'CC'
+
+        # 3. 构建 KEGG 基因集
+        cursor.execute("""
+            SELECT gk.id_id, gk.kegg_id 
+            FROM gene_kegg gk
+            JOIN genemaster gm ON gk.id_id = gm.id
+            WHERE gm.genome_id = %s AND gk.kegg_id IS NOT NULL
+        """, [genome_name])
+        
+        gene2kos = defaultdict(set)
+        for id_id, kegg_id in cursor.fetchall():
+            for ko in str(kegg_id).split(','):
+                ko = ko.strip().replace('ko:', '')
+                if ko.startswith('K'):
+                    gene2kos[id_id].add(ko)
+
+        cursor.execute("""
+            SELECT pe.enzyme_id, mp.pathway_id 
+            FROM pathway_enzyme pe
+            JOIN metabolic_pathway mp ON pe.pathway_id = mp.pathway_id
+        """)
+        ko2pathways = defaultdict(list)
+        for ko_id, pathway_id in cursor.fetchall():
+            ko2pathways[ko_id].append(pathway_id)
+
+        cursor.execute("SELECT pathway_id, name FROM metabolic_pathway")
+        pathway2name = {row[0]: row[1] for row in cursor.fetchall()}
+
+        pathway2ids = defaultdict(set)
+        for id_id, kos in gene2kos.items():
+            for ko in kos:
+                for pathway_id in ko2pathways.get(ko, []):
+                    pathway2ids[pathway_id].add(id_id)
+
+        kegg_genesets = {}
+        for pathway_id, id_set in pathway2ids.items():
+            gene_set = set()
+            for id_id in id_set:
+                if id_id in id_to_geneid:
+                    gene_set.add(id_to_geneid[id_id])
+            
+            if not gene_set: continue
+            
+            name = pathway2name.get(pathway_id, '')
+            key = f"{pathway_id} {name}" if name else pathway_id
+            kegg_genesets[key] = sorted(list(gene_set))
+
+        # 4. 返回当前基因组构建好的数据
+        logger.info(f"基因组 {genome_name} 构建完成: GO集={len(go_genesets)}, KEGG集={len(kegg_genesets)}")
         return {
-            'go_genesets': {}, # 替换为真实计算结果
-            'kegg_genesets': {}, # 替换为真实计算结果
-            'go_type_map': {}, # 替换为真实计算结果
+            'go_genesets': go_genesets,
+            'kegg_genesets': kegg_genesets,
+            'go_type_map': go_type_map,
             'background_genes': background_genes
         }
 
     # ==========================================
-    # 3. 实例方法：像 Model 一样访问属性
+    # 实例方法：像 Model 一样访问属性
     # ==========================================
     @property
     def go_genesets(self):
@@ -204,4 +279,3 @@ class GenomeGenesetCache(CacheModelBase):
     def is_valid_gene(self, gene_name):
         """便捷方法：检查基因是否在背景集中"""
         return gene_name in self.background_genes
-

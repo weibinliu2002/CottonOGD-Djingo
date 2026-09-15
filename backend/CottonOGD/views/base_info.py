@@ -16,11 +16,8 @@ def get_species_info(request):
     if uuid not in UuidManager.uuid_storage:
         return Response({'error': 'uuid is required'}, status=status.HTTP_400_BAD_REQUEST)
     try:
-        species_info = Species_info.objects.all().values(
-            'id','Cotton_Species','Genome_type','name','alias','Article',
-            'Busco','Genome_size','Category','Accession','Ploidy',
-            'Assembling_institution','Website','LAI_value','description'
-        )
+        species_info = Species_info.objects.all().values()
+        #logger.info(f"species_info: {species_info}")
         response_payload = json.dumps(list(species_info), ensure_ascii=False)
         return Response({'species_info': response_payload}, status=status.HTTP_200_OK)
     except Exception as e:
@@ -38,7 +35,8 @@ def get_family_info(request):
     logger.info(f"selectedGenome: {selectedGenome}, selectedClass: {selectedClass}")
     try:
         if selectedGenome and selectedClass:
-            family_list = list(Family.objects.filter(genome_id=selectedGenome,TF_class=selectedClass).values())
+            genomeid = Species_info.objects.get(name=selectedGenome).id
+            family_list = list(Family.objects.filter(genome_id=genomeid,TF_class=selectedClass).values())
         else:
             family_list = list(Family.objects.all().values())
         #logger.info(f"family_list: {family_list}")
