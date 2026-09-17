@@ -77,6 +77,7 @@
             placeholder="All ploidies"
             clearable
             filterable
+            :disabled="!!routePloidyFilter"
             style="width: 140px"
             @change="currentPage = 1"
           >
@@ -328,6 +329,42 @@ const filters = reactive<Filters>({
   lai: '',
 })
 
+const routePloidyFilter = computed(() => {
+  const ploidy = route.meta.ploidy
+  return typeof ploidy === 'string' ? ploidy : ''
+})
+
+function applyFixedPloidyFilter(): void {
+  if (routePloidyFilter.value) {
+    filters.ploidy = routePloidyFilter.value
+  }
+}
+
+function normalizePloidy(value: string | undefined | null): string {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, '')
+}
+
+function ploidyMatches(rowPloidy: string | undefined, filterPloidy: string): boolean {
+  const rowValue = normalizePloidy(rowPloidy)
+  const filterValue = normalizePloidy(filterPloidy)
+  if (!filterValue) return true
+  if (!rowValue) return false
+  if (rowValue === filterValue) return true
+
+  if (filterValue === 'diploid') {
+    return rowValue.includes('diploid') || rowValue.includes('2x') || rowValue.includes('二倍')
+  }
+
+  if (filterValue === 'tetraploid') {
+    return rowValue.includes('tetraploid') || rowValue.includes('4x') || rowValue.includes('四倍')
+  }
+
+  return false
+}
+
 function resetFilters(): void {
   filters.keyword = ''
   filters.cottonSpecies = ''
@@ -337,6 +374,7 @@ function resetFilters(): void {
   filters.institution = ''
   filters.busco = ''
   filters.lai = ''
+  applyFixedPloidyFilter()
   currentPage.value = 1
 }
 
@@ -349,6 +387,7 @@ function applyRouteQuery(): void {
   filters.genomeType = str(q.genomeType)
   filters.category = str(q.category)
   filters.ploidy = str(q.ploidy)
+  applyFixedPloidyFilter()
   filters.institution = str(q.institution)
   // 仅当 query 中的区间 key 合法时才应用
   const buscoKey = str(q.busco)
@@ -358,8 +397,8 @@ function applyRouteQuery(): void {
   currentPage.value = 1
 }
 
-// 同路由仅 query 变化时（从首页不同图表连续跳转）也要重新应用
-watch(() => route.query, () => applyRouteQuery())
+// 路由变化时（含同组件复用、query 更新）也要重新应用
+watch(() => route.fullPath, () => applyRouteQuery())
 
 // ============ 筛选下拉选项（从 speciesData 去重） ============
 const cottonSpeciesOptions = computed(() =>
@@ -387,7 +426,7 @@ const filteredData = computed<Species[]>(() => {
     if (filters.cottonSpecies && row.Cotton_Species !== filters.cottonSpecies) return false
     if (filters.genomeType && row.Genome_type !== filters.genomeType) return false
     if (filters.category && row.Category !== filters.category) return false
-    if (filters.ploidy && row.Ploidy !== filters.ploidy) return false
+    if (filters.ploidy && !ploidyMatches(row.Ploidy, filters.ploidy)) return false
     if (filters.institution && row.Assembling_institution !== filters.institution) return false
     // BUSCO 区间筛选：左闭右开，与首页饼图区间一致
     if (buscoBucket) {

@@ -2,15 +2,14 @@
 import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useGenomeSelector } from '@/composables/features/useGenomeBrowser'
-import { Download, RefreshLeft, Folder, Files, Loading } from '@element-plus/icons-vue'
-import axios from '@/utils/http.js'
+import { Download, Folder } from '@element-plus/icons-vue'
+import type { Species } from '@/stores/modules/genome'
 
 const { t } = useI18n()
 
 const { genomeStore, ensureGenomesLoaded } = useGenomeSelector()
 const isLoading = ref(false)
 const errorMessage = ref('')
-const selectedCategory = ref('')
 
 // 涓嬭浇绫诲瀷瀹氫箟
 const downloadTypes = [
@@ -34,18 +33,86 @@ const typeMapping: Record<string, string> = {
   'gff3': '.gff.gz'
 }
 
-// 璁＄畻灞炴€э細鎸夊熀鍥犵粍绫诲瀷鍒嗙粍鐨勬暟鎹?
-const groupedGenomes = computed(() => {
-  return genomeStore.genomeOptions
-})
+interface DownloadGenome {
+  value: string
+  label: string
+  article?: string
+}
 
-// 璁＄畻灞炴€э細鑾峰彇鎵€鏈夊垎绫?
-const categories = computed(() => {
-  return groupedGenomes.value.map(group => ({
-    value: group.value,
-    label: group.label
-  }))
-})
+interface DownloadGenomeGroup {
+  value: string
+  label: string
+  children: DownloadGenome[]
+}
+
+interface PloidyColumn {
+  key: 'diploid' | 'tetraploid'
+  title: string
+  groups: DownloadGenomeGroup[]
+}
+
+function normalizePloidy(value: string | undefined | null): string {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, '')
+}
+
+function getPloidyKey(value: string | undefined | null): PloidyColumn['key'] | '' {
+  const normalized = normalizePloidy(value)
+  if (normalized.includes('diploid') || normalized.includes('2x') || normalized.includes('二倍')) return 'diploid'
+  if (normalized.includes('tetraploid') || normalized.includes('4x') || normalized.includes('四倍')) return 'tetraploid'
+  return ''
+}
+
+function createGenomeGroupMap(rows: Species[], ploidyKey: PloidyColumn['key']): DownloadGenomeGroup[] {
+  const groups = new Map<string, DownloadGenomeGroup>()
+
+  rows.forEach((species) => {
+    if (getPloidyKey(species.Ploidy) !== ploidyKey) return
+
+    const groupKey = species.Genome_type || 'undefined'
+    if (!groups.has(groupKey)) {
+      groups.set(groupKey, {
+        value: `${ploidyKey}-${groupKey}`,
+        label: groupKey,
+        children: []
+      })
+    }
+
+    groups.get(groupKey)?.children.push({
+      value: species.name || species.alias || species.Cotton_Species || '',
+      label: species.alias || species.name || species.Cotton_Species || '',
+      article: species.Article || ''
+    })
+  })
+
+  return Array.from(groups.values())
+}
+
+const ploidyColumns = computed<PloidyColumn[]>(() => [
+  {
+    key: 'diploid',
+    title: t('diploid'),
+    groups: createGenomeGroupMap(genomeStore.speciesData, 'diploid')
+  },
+  {
+    key: 'tetraploid',
+    title: t('tetraploid'),
+    groups: createGenomeGroupMap(genomeStore.speciesData, 'tetraploid')
+  }
+])
+
+const totalGenomeCount = computed(() =>
+  ploidyColumns.value.reduce(
+    (sum, column) => sum + column.groups.reduce((groupSum, group) => groupSum + group.children.length, 0),
+    0
+  )
+)
+
+function getColumnGenomeCount(column: PloidyColumn): number {
+  return column.groups.reduce((sum, group) => sum + group.children.length, 0)
+}
 
 // 鍒濆鍖栨暟鎹?
 onMounted(async () => {
@@ -147,7 +214,7 @@ const activeNames = ref<string[]>([])
       
       <!-- No Data Alert -->
       <el-alert
-        v-else-if="groupedGenomes.length === 0"
+        v-else-if="totalGenomeCount === 0"
         type="warning"
         :title="t('no_genome_data_available')"
         show-icon
@@ -155,55 +222,72 @@ const activeNames = ref<string[]>([])
       />
       
       <!-- Genome Data Display -->
-      <div v-else class="genome-cards">
-        <el-collapse v-model="activeNames" class="collapse-container">
-          <el-collapse-item
-            v-for="genomeGroup in groupedGenomes"
-            :key="genomeGroup.value"
-            :name="genomeGroup.value"
-            class="genome-collapse-item"
-          >
-            <template #title>
-              <div class="card-header">
-                <el-icon class="mr-2"><Folder /></el-icon>
-                <span class="category-name">{{ genomeGroup.label }}</span>
-                <el-tag type="info" size="small" class="ml-2">{{ genomeGroup.children?.length || 0 }} {{ t('genome') }}</el-tag>
+      <div v-else class="ploidy-layout">
+        <section
+          v-for="column in ploidyColumns"
+          :key="column.key"
+          class="ploidy-column"
+        >
+          <div class="ploidy-header">
+            <h2 class="ploidy-title">{{ column.title }}</h2>
+            <el-tag type="info" size="small">{{ getColumnGenomeCount(column) }} {{ t('genome') }}</el-tag>
+          </div>
+
+          <el-empty
+            v-if="column.groups.length === 0"
+            :description="t('no_genome_data_available')"
+            class="column-empty"
+          />
+
+          <el-collapse v-else v-model="activeNames" class="collapse-container">
+            <el-collapse-item
+              v-for="genomeGroup in column.groups"
+              :key="genomeGroup.value"
+              :name="genomeGroup.value"
+              class="genome-collapse-item"
+            >
+              <template #title>
+                <div class="card-header">
+                  <el-icon class="mr-2"><Folder /></el-icon>
+                  <span class="category-name">{{ genomeGroup.label }}</span>
+                  <el-tag type="info" size="small" class="ml-2">{{ genomeGroup.children?.length || 0 }} {{ t('genome') }}</el-tag>
+                </div>
+              </template>
+              
+              <div class="genome-list">
+                <el-card
+                  v-for="genome in genomeGroup.children"
+                  :key="genome.value"
+                  shadow="hover"
+                  class="genome-item mb-4"
+                >
+                  <div class="genome-info">
+                    <h4 class="genome-name">{{ genome.label }}</h4>
+                    <p class="genome-id">ID: {{ genome.value }}</p>
+                    <p class="genome-id">Article: {{ genome.article || 'N/A' }}</p>
+                  </div>
+                  
+                  <div class="download-options">
+                    <el-divider content-position="center">{{ t('download_options') }}</el-divider>
+                    <el-row :gutter="12" class="download-buttons">
+                      <el-col :xs="24" :sm="12" :lg="8" v-for="type in downloadTypes" :key="type.value">
+                        <el-button
+                          type="primary"
+                          @click="downloadFile(genome.value, type.value)"
+                          class="download-btn w-full"
+                          :class="`btn-${type.value}`"
+                        >
+                          <el-icon><Download /></el-icon>
+                          {{ type.label }}
+                        </el-button>
+                      </el-col>
+                    </el-row>
+                  </div>
+                </el-card>
               </div>
-            </template>
-            
-            <div class="genome-list">
-              <el-card
-                v-for="genome in genomeGroup.children"
-                :key="genome.value"
-                shadow="hover"
-                class="genome-item mb-4"
-              >
-                <div class="genome-info">
-                  <h4 class="genome-name">{{ genome.label }}</h4>
-                  <p class="genome-id">ID: {{ genome.value }}</p>
-                  <p class="genome-id">Article: {{ genome.article || 'N/A' }}</p>
-                </div>
-                
-                <div class="download-options">
-                  <el-divider content-position="center">{{ t('download_options') }}</el-divider>
-                  <el-row :gutter="15" class="download-buttons">
-                    <el-col :xs="24" :sm="12" :md="8" :lg="4" v-for="type in downloadTypes" :key="type.value">
-                      <el-button
-                        type="primary"
-                        @click="downloadFile(genome.value, type.value)"
-                        class="download-btn w-full"
-                        :class="`btn-${type.value}`"
-                      >
-                        <el-icon><Download /></el-icon>
-                        {{ type.label }}
-                      </el-button>
-                    </el-col>
-                  </el-row>
-                </div>
-              </el-card>
-            </div>
-          </el-collapse-item>
-        </el-collapse>
+            </el-collapse-item>
+          </el-collapse>
+        </section>
       </div>
     </div>
     
@@ -242,6 +326,42 @@ const activeNames = ref<string[]>([])
 .action-bar {
   background: white;
   padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.08);
+}
+
+.ploidy-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.ploidy-column {
+  min-width: 0;
+}
+
+.ploidy-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.08);
+}
+
+.ploidy-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #3a6ea5;
+}
+
+.column-empty {
+  background: white;
   border-radius: 10px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.08);
 }
@@ -321,6 +441,7 @@ const activeNames = ref<string[]>([])
 .download-btn {
   transition: all 0.3s ease;
   border-radius: 6px;
+  margin-bottom: 10px;
 }
 
 .download-btn:hover {
@@ -356,6 +477,10 @@ const activeNames = ref<string[]>([])
 @media (max-width: 768px) {
   .page-title {
     font-size: 2rem;
+  }
+
+  .ploidy-layout {
+    grid-template-columns: 1fr;
   }
   
   .genome-card {

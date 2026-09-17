@@ -94,6 +94,22 @@ const routes = [
     component: BrowseGenomeView
   },
   {
+    path: '/species',
+    redirect: '/species/diploid'
+  },
+  {
+    path: '/species/diploid',
+    name: 'DiploidSpecies',
+    component: BrowseGenomeView,
+    meta: { ploidy: 'Diploid' }
+  },
+  {
+    path: '/species/tetraploid',
+    name: 'TetraploidSpecies',
+    component: BrowseGenomeView,
+    meta: { ploidy: 'Tetraploid' }
+  },
+  {
     path: '/genome/detail/:key',
     name: 'GenomeDetail',
     component: GenomeDetailView,
@@ -137,7 +153,7 @@ const routes = [
   },
   {
     path: '/browse/species',
-    redirect: '/genome/browse'
+    redirect: '/species/diploid'
   },
 
   // Sequence analysis routes

@@ -41,6 +41,15 @@
             </li>
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                {{ t('species') }}
+              </a>
+              <ul class="dropdown-menu">
+                <li><router-link class="dropdown-item" to="/species/diploid">{{ t('diploid') }}</router-link></li>
+                <li><router-link class="dropdown-item" to="/species/tetraploid">{{ t('tetraploid') }}</router-link></li>
+              </ul>
+            </li>
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                 {{ t('browse') }}
               </a>
               <ul class="dropdown-menu">
@@ -57,9 +66,9 @@
               <ul class="dropdown-menu">
                 <li><router-link class="dropdown-item" to="/genome/jbrowse">{{ t('jbrowse_view') }}</router-link></li>
                 <li><router-link class="dropdown-item" to="/genome/igv">{{ t('igv_view') }}</router-link></li>
-                <li><router-link class="dropdown-item" to="/genome/browse">{{ t('genome_browser') }}</router-link></li>
               </ul>
             </li>
+            
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                 {{ t('tools') }}

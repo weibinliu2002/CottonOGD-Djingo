@@ -193,6 +193,8 @@
     "input_id": "Input ID",
     "query_id": "Query ID",
     "species": "Species",
+    "diploid": "Diploid",
+    "tetraploid": "Tetraploid",
     "download_all_sequences": "Download All Sequences",
     "download_table": "Download Table",
     "no_data_to_download": "No data to download",
