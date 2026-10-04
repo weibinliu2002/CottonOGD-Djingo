@@ -1,3 +1,4 @@
+import { path } from 'd3'
 import { createRouter, createWebHistory } from 'vue-router'
 
 // Common views
@@ -52,6 +53,8 @@ const CanvaspressView = () => import('@/views/visualization/CanvaspressView.vue'
 const TFView = () => import('@/views/tools/TFView.vue')
 const TRView = () => import('@/views/tools/TRView.vue')
 const PrimerView = () => import('@/views/tools/PrimerView.vue')
+
+const TreeView = () => import('@/views/test/tree.vue')
 
 
 
@@ -423,6 +426,11 @@ const routes = [
     name: 'TiandituMapTest',
     component: () => import('@/views/test/TiandituMapTest.vue')
   },
+  {
+    path: '/test/tree',
+    name: 'tree',
+    component: () => import('@/views/test/tree.vue')
+  }
 ]
 
 const router = createRouter({
