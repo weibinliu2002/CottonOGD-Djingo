@@ -199,6 +199,9 @@
         </div>
       </template>
     </el-backtop>
+
+    <!-- AI 对话悬浮组件：全局挂载，任意页面均可唤起 -->
+    <ChatWidget />
   </div>
 </template>
 
@@ -208,6 +211,7 @@ import { ArrowUp } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { setLocale, getLocale } from '@/locales/i18n-config'
 import { useI18n } from 'vue-i18n'
+import ChatWidget from '@/components/home/ChatWidget.vue'
 
 const router = useRouter()
 const { t } = useI18n()

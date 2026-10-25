@@ -462,7 +462,7 @@
     "tree_search_placeholder": "输入基因ID高亮匹配",
     "tree_export_svg": "导出 SVG 图片",
     "tree_reset": "重置视图",
-    "tree_hint": "滚轮缩放 · 拖拽平移 · 点击叶端查看基因详情",
+    "tree_hint": "拖拽平移 · 滚轮缩放 · 点击叶端查看详情 · 双击折叠/展开 · 右键重根",
     "export": "导出",
     "tree_sequences": "序列数",
     "tree_zoom": "缩放",
@@ -478,6 +478,17 @@
     "tree_detail_genome": "基因组",
     "tree_detail_category": "类别",
     "tree_detail_family": "家族",
-    "tree_view_gene_detail": "查看基因详情"
+    "tree_view_gene_detail": "查看基因详情",
+    "news_title": "新闻公告",
+    "news_empty": "暂无新闻内容，敬请期待。",
+    "chat_title": "AI 智能助手",
+    "chat_subtitle": "询问基因、工具与数据相关问题",
+    "chat_placeholder": "输入你的问题…（回车发送，Shift+回车换行）",
+    "chat_send": "发送",
+    "chat_new": "新话题",
+    "chat_welcome": "你好！我是 iCotton 智能助手，可以帮你查询棉花基因、转录因子、基因组数据，以及解答工具使用问题。",
+    "chat_error": "请求失败，请稍后重试。",
+    "chat_thinking": "思考中…",
+    "chat_tools_used": "调用的工具"
   }
 }

@@ -18,7 +18,8 @@ import {
   type SearchIndexInfo,
 } from '@/utils/meiliSearchApi'
 import { useGenomeStore } from '@/stores/modules/genome'
-import * as echarts from 'echarts'
+import echarts from '@/utils/echarts'
+import NewsBox from '@/components/home/NewsBox.vue'
 
 const genomeStore = useGenomeStore()
 const router = useRouter()
@@ -72,6 +73,15 @@ const stats = computed(() => {
     },
   ]
 })
+
+// 英雄区浅色背景轮播（浅蓝 → 浅绿 → 浅黄 → 浅紫）：用 el-carousel 实现
+// 与图片轮播一致的滑动切换效果，暂用颜色渐变占位，后续可换浅色图片
+const heroBackgrounds = [
+  'linear-gradient(135deg, #dbeafe 0%, #eff6ff 55%, #e0f2fe 100%)',
+  'linear-gradient(135deg, #dcfce7 0%, #f0fdf4 55%, #d1fae5 100%)',
+  'linear-gradient(135deg, #fef3c7 0%, #fffbeb 55%, #fde68a 100%)',
+  'linear-gradient(135deg, #ede9fe 0%, #f5f3ff 55%, #e9d5ff 100%)',
+]
 
 onMounted(() => {
   genomeStore.fetchGenomes()
@@ -636,6 +646,18 @@ const fillExample = (example: string) => {
   <div class="home">
     <!-- 英雄区域 -->
     <section class="hero-section">
+      <!-- 浅色背景轮播：与图片轮播同款滑动切换，暂用颜色渐变占位 -->
+      <el-carousel
+        class="hero-bg-carousel"
+        :interval="3000"
+        arrow="never"
+        indicator-position="none"
+        height="100%"
+      >
+        <el-carousel-item v-for="(bg, i) in heroBackgrounds" :key="i">
+          <div class="hero-bg-slide" :style="{ background: bg }"></div>
+        </el-carousel-item>
+      </el-carousel>
       <div class="container">
         <div class="hero-content">
           <h1>{{ t('welcome_to_cottonogd') }}</h1>
@@ -843,10 +865,14 @@ const fillExample = (example: string) => {
           </el-col>
         </el-row>
         <el-row :gutter="30" class="mt-3">
-          <el-col :span="24">
+          <!-- 物种基因组大小散点图，右侧留新闻位 -->
+          <el-col :xs="24" :md="16">
             <el-card shadow="hover">
               <div ref="scatterChartRef" class="chart-container chart-container-wide"></div>
             </el-card>
+          </el-col>
+          <el-col :xs="24" :md="8" class="news-aside-col">
+            <NewsBox />
           </el-col>
         </el-row>
       </div>
@@ -1034,6 +1060,11 @@ const fillExample = (example: string) => {
   padding-bottom: 0;
 }
 
+/* 新闻占位列（散点图右侧） */
+.news-aside-col {
+  margin-bottom: 24px;
+}
+
 /* 图表区域 */
 .charts-section {
   padding: 60px 0;
@@ -1054,14 +1085,28 @@ const fillExample = (example: string) => {
   margin-top: 20px;
 }
 
-/* 英雄区域 */
+/* 英雄区域：浅色背景轮换 */
 .hero-section {
-  background: linear-gradient(135deg, #3a6ea5 0%, #7297bd 100%);
-  color: #ffffff;
+  background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 55%, #e0f2fe 100%);
   padding: 6px 0;
   text-align: center;
   position: relative;
   overflow: hidden;
+}
+
+/* 背景轮播层：铺满英雄区，滑动切换 */
+.hero-bg-carousel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+.hero-bg-slide {
+  width: 100%;
+  height: 100%;
 }
 
 .hero-section::before {
@@ -1071,37 +1116,39 @@ const fillExample = (example: string) => {
   left: 0;
   right: 0;
   bottom: 0;
-  background-image: url('data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%25%22 height=%22100%25%22%3E%3Cdefs%3E%3Cpattern id=%22grid%22 width=%2240%22 height=%2240%22 patternUnits=%22userSpaceOnUse%22%3E%3Cpath d=%22M 40 0 L 0 0 0 40%22 fill=%22none%22 stroke=%22rgba(255,255,255,0.1)%22 stroke-width=%221%22/%3E%3C/pattern%3E%3C/defs%3E%3Crect width=%22100%25%22 height=%22100%25%22 fill=%22url(%23grid)%22/%3E%3C/svg%3E');
-  opacity: 0.3;
+  background-image: url('data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%25%22 height=%22100%25%22%3E%3Cdefs%3E%3Cpattern id=%22grid%22 width=%2240%22 height=%2240%22 patternUnits=%22userSpaceOnUse%22%3E%3Cpath d=%22M 40 0 L 0 0 0 40%22 fill=%22none%22 stroke=%22rgba(58,110,165,0.10)%22 stroke-width=%221%22/%3E%3C/pattern%3E%3C/defs%3E%3Crect width=%22100%25%22 height=%22100%25%22 fill=%22url(%23grid)%22/%3E%3C/svg%3E');
+  opacity: 0.6;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .hero-content {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   max-width: 900px;
   margin: 0 auto;
 }
 
+/* 浅色背景上使用深色文字保证对比度 */
 .hero-section h1 {
   font-size: 48px;
   font-weight: 700;
   margin-bottom: 16px;
-  color: #ffffff;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  color: #2c5282;
 }
 
 .hero-subtitle {
   font-size: 24px;
   font-weight: 500;
   margin-bottom: 24px;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(44, 82, 130, 0.9);
 }
 
 .hero-description {
   font-size: 16px;
   line-height: 1.6;
   margin-bottom: 32px;
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(60, 72, 88, 0.75);
 }
 
 /* 水平布局搜索框 */

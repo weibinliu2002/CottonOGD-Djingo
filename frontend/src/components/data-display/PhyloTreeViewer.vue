@@ -163,7 +163,12 @@
 
       <!-- 树容器（固定高度 700px，overflow hidden + d3-zoom 内部平移） -->
       <div class="tree-wrapper">
-        <div ref="treeContainerRef" id="phylotree-container" class="tree-container" />
+        <div
+          ref="treeContainerRef"
+          id="phylotree-container"
+          class="tree-container"
+          :class="{ 'is-panning': isPanning }"
+        />
         <div v-if="treeLoading" class="tree-mask">
           <el-icon class="is-loading"><Loading /></el-icon>
           <span>{{ t('loading_tree') }}</span>
@@ -307,6 +312,8 @@ const spacingY = ref(0)
 // Tooltip
 const tooltipVisible = ref(false)
 const tooltipX = ref(0)
+// 平移/缩放手势进行中（zoom start~end），用于切换 grabbing 光标
+const isPanning = ref(false)
 const tooltipY = ref(0)
 const tooltipText = ref('')
 
@@ -548,6 +555,8 @@ async function renderTree(newickStr: string) {
       console.warn('[Phylo] zoom reset FAILED:', e)
     }
   }
+  // iTOL 风格交互：拖后不误选 / 禁双击缩放 / 光标与 tooltip 反馈
+  configureZoomInteraction(display)
 
   // 设置默认 nodeLabel（只显示 geneid）和 branchName
   display.nodeLabel((node: PhylotreeNode) => {
@@ -569,6 +578,37 @@ async function renderTree(newickStr: string) {
   setupInternalNodeInteractions(tree, display)
   // 渲染完成后应用一次高亮（搜索关键字 + 外部表格选中基因）
   applyHighlighting()
+}
+
+/**
+ * iTOL 风格的画布交互配置（每次 render 重建 zoomBehavior 后调用）：
+ * 1. clickDistance(5)：左键拖动超过 5px 即视为平移手势，松手时 d3-zoom
+ *    会在捕获阶段拦截 click——解决"拖完松手误选叶子/误开详情面板"的主诉；
+ * 2. 关闭 d3-zoom 默认的双击缩放：双击保留给"折叠/展开内部节点"，
+ *    否则双击折叠时树会同时被放大一级；
+ * 3. 手势期间隐藏 tooltip 并切换 grabbing 光标。
+ */
+function configureZoomInteraction(display: unknown) {
+  const d = display as {
+    zoomBehavior?: d3.ZoomBehavior<SVGSVGElement, unknown>
+    svg?: { node: () => SVGSVGElement }
+  }
+  const svgNode = d.svg?.node()
+  if (!svgNode || !d.zoomBehavior) return
+  const zb = d.zoomBehavior
+  try {
+    zb.clickDistance(5)
+  } catch {
+    // 旧版 d3 无 clickDistance 时忽略，仅失去"拖后不误选"的增强
+  }
+  d3.select(svgNode).on('dblclick.zoom', null)
+  zb.on('start.phyloext', () => {
+    tooltipVisible.value = false
+    isPanning.value = true
+  })
+  zb.on('end.phyloext', () => {
+    isPanning.value = false
+  })
 }
 
 // ==================== 事件委托 ====================
@@ -1149,6 +1189,9 @@ onBeforeUnmount(() => {
 /* 按住可拖动的光标反馈：默认抓手，按下时为抓取态 */
 .tree-container :deep(svg) { cursor: grab; }
 .tree-container :deep(svg:active) { cursor: grabbing; }
+/* 拖动/缩放手势进行中（含指针已移出 svg 的情况） */
+.tree-container.is-panning { cursor: grabbing; }
+.tree-container.is-panning :deep(svg) { cursor: grabbing; }
 
 /* ============ 状态栏 ============ */
 .tree-statusbar {

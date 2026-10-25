@@ -5,8 +5,10 @@ import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 
-const DJANGO_TARGET = 'http://172.28.226.114:8000'
-//const DJANGO_TARGET = 'http://127.0.0.1:8000'
+// 代理目标从 .env.local 读取（DJANGO_TARGET / BLAST_TARGET），不进源码与版本库
+const env = loadEnv('development', process.cwd(), '')
+const DJANGO_TARGET = env.DJANGO_TARGET || 'http://172.28.226.114:8000'
+const BLAST_TARGET = env.BLAST_TARGET || 'http://172.28.226.114:4567'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
@@ -19,14 +21,12 @@ export default defineConfig(({ mode }) => {
     rollupOptions: {
       output: {
         manualChunks: {
-          'element-plus': ['element-plus'],
           'chart-js': ['chart.js'],
           d3: ['d3'],
           tools: ['heatmap.js'],
           'vue-vendor': ['vue', 'vue-router', 'pinia', 'vue-i18n'],
           'utils': ['axios', '@element-plus/icons-vue'],
           igv: ['igv'],
-          echarts: ['echarts'],
           clustergrammer: ['clustergrammer'],
           drawrnajs: ['drawrnajs'],
           phylotree: ['phylotree']
@@ -89,7 +89,7 @@ export default defineConfig(({ mode }) => {
       },
       // Sequence Server 代理配置
       '/blast': {
-        target: 'http://172.28.226.114:4567' ,
+        target: BLAST_TARGET,
         changeOrigin: true,
         // 把前端 /blast 开头的路径，去掉 /blast 传给后端
         rewrite: (path) => path.replace(/^\/blast/, ''),
@@ -102,11 +102,11 @@ export default defineConfig(({ mode }) => {
               if (proxyRes.headers.location) {
                 const originalLocation = proxyRes.headers.location;
                 
-                // 情况1：后端返回了绝对路径 (如 http://172.28.226.114:4567/9fc89b49...)
-                if (originalLocation.startsWith('http://172.28.226.114:4567/')) {
+                // 情况1：后端返回了绝对路径 (如 http://<blast-host>:4567/9fc89b49...)
+                if (originalLocation.startsWith(BLAST_TARGET + '/')) {
                   // 强行替换回前端的代理地址
                   proxyRes.headers.location = originalLocation.replace(
-                    'http://172.28.226.114:4567/' , 
+                    BLAST_TARGET + '/' ,
                     'http://localhost:5713/blast/'  // 注意改成你本地 Vue 的真实端口
                   );
                 } 
@@ -122,23 +122,23 @@ export default defineConfig(({ mode }) => {
       },
       // Sequence Server 静态资源代理
       '/css': {
-        target: 'http://172.28.226.114:4567',
+        target: BLAST_TARGET,
         changeOrigin: true,
       },
       '/js': {
-        target: 'http://172.28.226.114:4567',
+        target: BLAST_TARGET,
         changeOrigin: true,
       },
       '/fonts': {
-        target: 'http://172.28.226.114:4567',
+        target: BLAST_TARGET,
         changeOrigin: true,
       },
       '/vendor': {
-        target: 'http://172.28.226.114:4567',
+        target: BLAST_TARGET,
         changeOrigin: true,
       },
       '/images': {
-        target: 'http://172.28.226.114:4567',
+        target: BLAST_TARGET,
         changeOrigin: true,
       },
       // 天地图 API 代理：前端通过 /tianditu-api 加载脚本，密钥由 proxy 注入

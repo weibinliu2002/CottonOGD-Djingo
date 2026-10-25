@@ -463,7 +463,7 @@
     "tree_search_placeholder": "Search gene ID to highlight",
     "tree_export_svg": "Export SVG",
     "tree_reset": "Reset view",
-    "tree_hint": "Scroll to zoom · Drag to pan · Click a leaf for gene details",
+    "tree_hint": "Drag to pan · Scroll to zoom · Click a leaf for details · Double-click to collapse · Right-click to reroot",
     "export": "Export",
     "tree_sequences": "Sequences",
     "tree_zoom": "Zoom",
@@ -479,6 +479,17 @@
     "tree_detail_genome": "Genome",
     "tree_detail_category": "Category",
     "tree_detail_family": "Family",
-    "tree_view_gene_detail": "View gene detail"
+    "tree_view_gene_detail": "View gene detail",
+    "news_title": "News & Announcements",
+    "news_empty": "No news yet — coming soon.",
+    "chat_title": "AI Assistant",
+    "chat_subtitle": "Ask about genes, tools and data",
+    "chat_placeholder": "Type your question... (Enter to send, Shift+Enter for a new line)",
+    "chat_send": "Send",
+    "chat_new": "New topic",
+    "chat_welcome": "Hello! I'm the iCotton AI assistant. Ask me about cotton genes, transcription factors, genome data or how to use the tools.",
+    "chat_error": "Request failed, please try again later.",
+    "chat_thinking": "Thinking...",
+    "chat_tools_used": "Tools used"
   }
 }

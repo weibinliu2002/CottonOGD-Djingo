@@ -12,6 +12,7 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    ChatWidget: typeof import('./src/components/home/ChatWidget.vue')['default']
     ElAlert: typeof import('element-plus/es')['ElAlert']
     ElBacktop: typeof import('element-plus/es')['ElBacktop']
     ElBreadcrumb: typeof import('element-plus/es')['ElBreadcrumb']
@@ -19,6 +20,8 @@ declare module 'vue' {
     ElButton: typeof import('element-plus/es')['ElButton']
     ElButtonGroup: typeof import('element-plus/es')['ElButtonGroup']
     ElCard: typeof import('element-plus/es')['ElCard']
+    ElCarousel: typeof import('element-plus/es')['ElCarousel']
+    ElCarouselItem: typeof import('element-plus/es')['ElCarouselItem']
     ElCascader: typeof import('element-plus/es')['ElCascader']
     ElCheckbox: typeof import('element-plus/es')['ElCheckbox']
     ElCheckboxGroup: typeof import('element-plus/es')['ElCheckboxGroup']
@@ -67,6 +70,7 @@ declare module 'vue' {
     GeneInfoCard: typeof import('./src/components/data-display/GeneInfoCard.vue')['default']
     Internation: typeof import('./src/components/layout/Internation.vue')['default']
     LanguageSelector: typeof import('./src/components/layout/LanguageSelector.vue')['default']
+    NewsBox: typeof import('./src/components/home/NewsBox.vue')['default']
     PhyloTreeViewer: typeof import('./src/components/data-display/PhyloTreeViewer.vue')['default']
     ProteinStructureViewer: typeof import('./src/components/data-display/ProteinStructureViewer.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
@@ -83,6 +87,7 @@ declare module 'vue' {
 
 // For TSX support
 declare global {
+  const ChatWidget: typeof import('./src/components/home/ChatWidget.vue')['default']
   const ElAlert: typeof import('element-plus/es')['ElAlert']
   const ElBacktop: typeof import('element-plus/es')['ElBacktop']
   const ElBreadcrumb: typeof import('element-plus/es')['ElBreadcrumb']
@@ -90,6 +95,8 @@ declare global {
   const ElButton: typeof import('element-plus/es')['ElButton']
   const ElButtonGroup: typeof import('element-plus/es')['ElButtonGroup']
   const ElCard: typeof import('element-plus/es')['ElCard']
+  const ElCarousel: typeof import('element-plus/es')['ElCarousel']
+  const ElCarouselItem: typeof import('element-plus/es')['ElCarouselItem']
   const ElCascader: typeof import('element-plus/es')['ElCascader']
   const ElCheckbox: typeof import('element-plus/es')['ElCheckbox']
   const ElCheckboxGroup: typeof import('element-plus/es')['ElCheckboxGroup']
@@ -138,6 +145,7 @@ declare global {
   const GeneInfoCard: typeof import('./src/components/data-display/GeneInfoCard.vue')['default']
   const Internation: typeof import('./src/components/layout/Internation.vue')['default']
   const LanguageSelector: typeof import('./src/components/layout/LanguageSelector.vue')['default']
+  const NewsBox: typeof import('./src/components/home/NewsBox.vue')['default']
   const PhyloTreeViewer: typeof import('./src/components/data-display/PhyloTreeViewer.vue')['default']
   const ProteinStructureViewer: typeof import('./src/components/data-display/ProteinStructureViewer.vue')['default']
   const RouterLink: typeof import('vue-router')['RouterLink']
