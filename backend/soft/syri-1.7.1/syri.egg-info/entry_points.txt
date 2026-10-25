@@ -1,0 +1,3 @@
+[console_scripts]
+chroder = syri.scripts.chroder:main
+syri = syri.scripts.syri:main

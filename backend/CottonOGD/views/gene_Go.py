@@ -1,11 +1,5 @@
-from django.db import connection
 from django.http import JsonResponse
-from rest_framework.response import Response
 from rest_framework.decorators import api_view
-from rest_framework import status
-from django.views.decorators.http import require_http_methods
-import json
-import logging
 from collections import defaultdict
 import matplotlib
 matplotlib.use('Agg')
@@ -13,404 +7,373 @@ import matplotlib.pyplot as plt
 import numpy as np
 from io import BytesIO
 import base64
+import logging
+
+from CottonOGD.views.gene_id_result import resolve_input_ids
+from CottonOGD.models import gene_go, gene_info, GeneMaster, GoTerm
 
 logger = logging.getLogger(__name__)
 
+# GoTerm.namespace -> 前端使用的短码（前端按 BP/MF/CC 过滤，必须归一化成这三个值）
+GO_NAMESPACE_TO_SHORT = {
+    'biological_process': 'BP',
+    'molecular_function': 'MF',
+    'cellular_component': 'CC',
+}
 
-@api_view(['GET'])
+
+def _load_go_terms(go_ids):
+    """批量取 GO 术语信息，返回 {go_id: {name, definition, namespace}}。"""
+    terms = {}
+    for term in GoTerm.objects.filter(id__in=list(go_ids)).values(
+            'id', 'name', 'definition', 'namespace'):
+        terms[term['id']] = term
+    return terms
+
+
+def _get_param(request, key, default=''):
+    """GET/POST/JSON body 统一取参。"""
+    if hasattr(request, 'data') and request.data:
+        value = request.data.get(key)
+        if value not in (None, ''):
+            return value
+    value = request.POST.get(key) if request.method == 'POST' else request.GET.get(key)
+    return value if value not in (None, '') else default
+
+
+@api_view(['GET', 'POST'])
 def go_annotation(request):
     """
     GO注释API - 根据基因ID获取GO注释信息
+
+    入参：gene_id（单 ID 或逗号/竖线/换行分隔多 ID，可带版本号/转录本后缀）、
+          genome_id（可选，物种名）。解析统一走 Meilisearch + MySQL 兜底。
     """
-    if request.method == 'GET':
-        gene_input = request.GET.get('gene_id', '').strip()
-        genome_id = request.GET.get('genome_id', 'G.kirkii_ISU_ISU_v3.0')
-        
-        if not gene_input:
+    gene_input = str(_get_param(request, 'gene_id', '')).strip()
+    genome_id = str(_get_param(request, 'genome_id', '')).strip()
+
+    if not gene_input:
+        return JsonResponse({
+            'status': 'error',
+            'error': 'Missing gene_id parameter'
+        })
+
+    gene_list = [gene.strip() for gene in gene_input.replace(',', '\n').split() if gene.strip()]
+
+    results = []
+    chart = None
+    chart_data = None
+    categories = []
+    data = {'BP': [], 'MF': [], 'CC': []}
+
+    if gene_list:
+        try:
+            db_ids = resolve_input_ids(gene_input, genome_id)
+            logger.info(f"GO annotation - 解析到 {len(db_ids)} 个 db_id")
+
+            if db_ids:
+                # 基因坐标 + geneid 展示名
+                geneid_map = dict(GeneMaster.objects.filter(id__in=db_ids)
+                                  .values_list('id', 'geneid'))
+                coords = {row['id_id']: row for row in gene_info.objects
+                          .filter(id_id__in=db_ids, type='gene')
+                          .values('id_id', 'seqid', 'start', 'end')}
+
+                # GO 注释（term 信息一次取全）
+                go_rows = (gene_go.objects
+                           .filter(id_id__in=db_ids, go_id__isnull=False)
+                           .values('id_id', 'go_id_id', 'go_id__name', 'go_id__namespace'))
+                logger.info(f"GO annotation - 查询到 {len(go_rows)} 条GO数据")
+
+                # 直接构建结果和图表数据，减少循环
+                chart_data = {'BP': {}, 'MF': {}, 'CC': {}}
+                go_type_map = GO_NAMESPACE_TO_SHORT
+
+                for row in go_rows:
+                    gene_db_id = row['id_id']
+                    coord = coords.get(gene_db_id, {})
+                    go_name = row['go_id__name']
+                    namespace = row['go_id__namespace'] or ''
+                    go_type_short = go_type_map.get(namespace, 'Unknown')
+
+                    results.append({
+                        'Chr': coord.get('seqid', ''),
+                        'Start': coord.get('start', 0),
+                        'End': coord.get('end', 0),
+                        'ID': geneid_map.get(gene_db_id, ''),
+                        'GO_ID': row['go_id_id'],
+                        'Description': go_name or '',
+                        'Gene_Ontology': namespace or 'Unknown',
+                        'dddd': namespace or 'Unknown'
+                    })
+
+                    # 直接更新图表数据
+                    if go_type_short in chart_data and go_name:
+                        chart_data[go_type_short][go_name] = chart_data[go_type_short].get(go_name, 0) + 1
+
+                # 获取所有 GO 描述用于图表
+                categories = sorted(set(r['Description'] for r in results if r['Description']))
+                data = {
+                    'BP': [chart_data['BP'].get(cat, 0) for cat in categories],
+                    'MF': [chart_data['MF'].get(cat, 0) for cat in categories],
+                    'CC': [chart_data['CC'].get(cat, 0) for cat in categories]
+                }
+
+                if categories and any(data.values()):
+                    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15, 6), sharey=True)
+                    axes = [ax1, ax2, ax3]
+
+                    max_value = max(max(data['BP']), max(data['MF']), max(data['CC'])) * 1.1
+                    for ax in axes:
+                        ax.set_ylim(0, max_value)
+                        ax.grid(False)
+
+                    colors = ['#1f77b4', '#ff7f0e', '#2ca02c']
+
+                    for i, (ax, (group, values), color) in enumerate(zip(axes, data.items(), colors)):
+                        bars = ax.bar(categories, values, color=color)
+                        ax.set_title(group, fontsize=14, pad=15)
+                        ax.set_xlabel('', fontsize=12)
+
+                        ax.spines['top'].set_visible(False)
+                        ax.spines['right'].set_visible(False)
+
+                        if i > 0:
+                            ax.spines['left'].set_visible(False)
+                            ax.tick_params(left=False)
+
+                        for bar in bars:
+                            height = bar.get_height()
+                            if height > 0:
+                                ax.text(bar.get_x() + bar.get_width()/2., height,
+                                        f'{int(height)}',
+                                        ha='center', va='bottom', fontsize=10)
+
+                    ax1.set_ylabel('Count', fontsize=12)
+
+                    plt.tight_layout()
+
+                    buffer = BytesIO()
+                    plt.savefig(buffer, format='png', bbox_inches='tight')
+                    plt.close()
+                    chart = base64.b64encode(buffer.getvalue()).decode('utf-8')
+
+            return JsonResponse({
+                'status': 'success',
+                'data': {
+                    'results': results,
+                    'gene_list': gene_list,
+                    'searched_ids': gene_input,
+                    'chart': chart,
+                    'chart_data': {
+                        'data': data,
+                        'categories': categories
+                    }
+                }
+            })
+        except Exception as e:
+            logger.error(f"GO annotation error: {str(e)}")
             return JsonResponse({
                 'status': 'error',
-                'error': 'Missing gene_id parameter'
+                'error': str(e)
             })
-        
-        gene_list = [gene.strip() for gene in gene_input.replace(',', '\n').split() if gene.strip()]
-        
-        results = []
-        chart = None
-        chart_data = None
-        categories = []
-        
-        if gene_list:
-            try:
-                with connection.cursor() as cursor:
-                    cursor.execute("""
-                        SELECT seqid, start, end, geneid_id 
-                        FROM `GeneAssembly` 
-                        WHERE genome_id = %s and type = 'gene' AND geneid_id IN %s 
-                    """, [genome_id, tuple(gene_list)])
-                    annotation_data = cursor.fetchall()
+    else:
+        return JsonResponse({
+            'status': 'success',
+            'data': {
+                'results': [],
+                'gene_list': [],
+                'searched_ids': gene_input,
+                'chart': None,
+                'chart_data': {
+                    'data': {},
+                    'categories': []
+                }
+            }
+        })
 
-                    cursor.execute("""
-                        SELECT go_type, go_description, go_id, geneid, go_type
-                        FROM `GeneGo` 
-                        WHERE genome_id = %s and geneid IN %s
-                    """, [genome_id, tuple(gene_list)])
-                    enrichment_data = cursor.fetchall()
-                    logger.info(f"GO annotation - 数据库样本数据: {len(annotation_data)}")
-                    logger.info(f"GO annotation - 查询到 {len(enrichment_data)} 条GO数据，基因列表: {gene_list}")
-              
 
-                    enrichment_dict = {}
-                    for row in enrichment_data:
-                        gene_id = row[3]
-                        if gene_id not in enrichment_dict:
-                            enrichment_dict[gene_id] = []
-                        enrichment_dict[gene_id].append(row)
+@api_view(['GET', 'POST'])
+def go_enrichment(request):
+    """
+    GO富集分析API - 使用gseapy进行富集分析
 
-                    for anno_row in annotation_data:
-                        gene_id = anno_row[3]
-                        if gene_id in enrichment_dict:
-                            for enrich_row in enrichment_dict[gene_id]:
-                                results.append({
-                                    'Chr': anno_row[0],
-                                    'Start': anno_row[1],
-                                    'End': anno_row[2],
-                                    'ID': anno_row[3],
-                                    'GO_ID': enrich_row[2],
-                                    'Description': enrich_row[1],
-                                    'Gene_Ontology': enrich_row[0],
-                                    'dddd': enrich_row[4]
-                                })
-                    
-                    chart_data = {'BP': {}, 'MF': {}, 'CC': {}}
+    入参与 go_annotation 相同；解析统一走 Meilisearch + MySQL 兜底，
+    背景集合按 genome_id（物种名）圈定。
+    """
+    gene_input = str(_get_param(request, 'gene_id', '')).strip()
+    genome_id = str(_get_param(request, 'genome_id', '')).strip()
+    p_value_threshold = float(_get_param(request, 'p_value_threshold', 0.05))
 
-                    for result in results:
-                        go_type = result['Gene_Ontology']
-                        dddd_value = result['dddd']
-                        if go_type in chart_data:
-                            if dddd_value in chart_data[go_type]:
-                                chart_data[go_type][dddd_value] += 1
-                            else:
-                                chart_data[go_type][dddd_value] = 1
+    if not gene_input:
+        return JsonResponse({
+            'status': 'error',
+            'error': 'Missing gene_id parameter'
+        })
 
-                    categories = sorted({result['dddd'] for result in results if result['dddd']})
-                    data = {
-                        'BP': [chart_data['BP'].get(cat, 0) for cat in categories],
-                        'MF': [chart_data['MF'].get(cat, 0) for cat in categories],
-                        'CC': [chart_data['CC'].get(cat, 0) for cat in categories]
-                    }
+    gene_list = [gene.strip() for gene in gene_input.replace(',', '\n').split() if gene.strip()]
 
-                    if categories and any(data.values()):
-                        fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15, 6), sharey=True)
-                        axes = [ax1, ax2, ax3]
-                        
-                        max_value = max(max(data['BP']), max(data['MF']), max(data['CC'])) * 1.1
-                        for ax in axes:
-                            ax.set_ylim(0, max_value)
-                            ax.grid(False) 
+    if not gene_list:
+        return JsonResponse({
+            'status': 'error',
+            'error': 'Empty gene list'
+        })
 
-                        colors = ['#1f77b4', '#ff7f0e', '#2ca02c']
-                        
-                        for i, (ax, (group, values), color) in enumerate(zip(axes, data.items(), colors)):
-                            bars = ax.bar(categories, values, color=color)
-                            ax.set_title(group, fontsize=14, pad=15)
-                            ax.set_xlabel('', fontsize=12)
+    try:
+        db_ids = resolve_input_ids(gene_input, genome_id)
+        logger.info(f"GO富集分析 - 解析到 {len(db_ids)} 个 db_id")
 
-                            ax.spines['top'].set_visible(False)
-                            ax.spines['right'].set_visible(False)
+        # 输入基因的 GO 注释
+        enrichment_rows = list(gene_go.objects
+                               .filter(id_id__in=db_ids, go_id__isnull=False)
+                               .values_list('id_id__geneid', 'go_id_id'))
+        logger.info(f"GO富集分析 - 查询到 {len(enrichment_rows)} 条富集数据")
 
-                            if i > 0: 
-                                ax.spines['left'].set_visible(False)
-                                ax.tick_params(left=False)
-                            
-                            for bar in bars:
-                                height = bar.get_height()
-                                if height > 0:
-                                    ax.text(bar.get_x() + bar.get_width()/2., height,
-                                            f'{int(height)}',
-                                            ha='center', va='bottom', fontsize=10)
-                        
-                        ax1.set_ylabel('Count', fontsize=12)
-                        
-                        plt.tight_layout()
+        # 背景基因总数（该基因组有 GO 注释的基因数）
+        total_background_genes = (gene_go.objects
+                                  .filter(id_id__genome__name=genome_id, go_id__isnull=False)
+                                  .values('id_id').distinct().count())
+        logger.info(f"GO富集分析 - 背景基因总数: {total_background_genes}")
 
-                        buffer = BytesIO()
-                        plt.savefig(buffer, format='png', bbox_inches='tight')
-                        plt.close()
-                        chart = base64.b64encode(buffer.getvalue()).decode('utf-8')
-                
-                return JsonResponse({
-                    'status': 'success',
-                    'data': {
-                        'results': results,
-                        'gene_list': gene_list,
-                        'searched_ids': gene_input,
-                        'chart': chart,
-                        'chart_data': {
-                            'data': data,
-                            'categories': categories
-                        }
-                    }
-                })
-            except Exception as e:
-                logger.error(f"GO annotation error: {str(e)}")
-                return JsonResponse({
-                    'status': 'error',
-                    'error': str(e)
-                })
-        else:
+        # 背景数据（geneid, go_id）
+        background_rows = list(gene_go.objects
+                               .filter(id_id__genome__name=genome_id, go_id__isnull=False)
+                               .values_list('id_id__geneid', 'go_id_id'))
+        logger.info(f"GO富集分析 - 背景数据条数: {len(background_rows)}")
+
+        input_go_terms = defaultdict(list)
+        input_genes = set()
+
+        for gene, go_id in enrichment_rows:
+            if go_id:
+                go_id = str(go_id).strip()
+                if go_id and go_id != '-':
+                    input_genes.add(gene)
+                    input_go_terms[go_id].append({'gene': gene})
+
+        total_input_genes = len(input_genes)
+        if total_input_genes == 0:
+            logger.warning("GO富集分析 - 没有找到输入基因的富集数据")
             return JsonResponse({
                 'status': 'success',
                 'data': {
                     'results': [],
-                    'gene_list': [],
-                    'searched_ids': gene_input,
-                    'chart': None,
-                    'chart_data': {
-                        'data': {},
-                        'categories': []
-                    }
+                    'input_gene_count': 0,
+                    'background_gene_count': total_background_genes
                 }
             })
-    
-    return JsonResponse({
-        'status': 'error',
-        'error': 'Method not allowed'
-    })
 
-
-@api_view(['POST'])
-def go_enrichment(request):
-    """
-    GO富集分析API - 使用gseapy进行富集分析
-    """
-    if request.method == 'POST':
-        gene_input = request.POST.get('gene_id', '').strip()
-        genome_id = request.POST.get('genome_id', 'G.kirkii_ISU_ISU_v3.0')
-        p_value_threshold = float(request.POST.get('p_value_threshold', 0.05))
-        
-        if not gene_input:
-            return JsonResponse({
-                'status': 'error',
-                'error': 'Missing gene_id parameter'
-            })
-        
-        gene_list = [gene.strip() for gene in gene_input.replace(',', '\n').split() if gene.strip()]
-        
-        if not gene_list:
-            return JsonResponse({
-                'status': 'error',
-                'error': 'Empty gene list'
-            })
-        
         try:
-            with connection.cursor() as cursor:
-                logger.info(f"GO富集分析 - 输入基因列表: {gene_list}")
-                
-                cursor.execute("""
-                    SELECT go_type, go_description, go_id, geneid, go_type
-                    FROM `GeneGo` 
-                    WHERE genome_id = %s AND geneid IN %s
-                """, [genome_id, tuple(gene_list)])
-                enrichment_data = cursor.fetchall()
-                
-                logger.info(f"GO富集分析 - 查询到 {len(enrichment_data)} 条富集数据")
+            import gseapy as gp
 
-                cursor.execute("""
-                    SELECT COUNT(*) FROM `GeneGo` WHERE genome_id = %s
-                """, [genome_id])
-                total_background_genes = cursor.fetchone()[0]
-                
-                logger.info(f"GO富集分析 - 背景基因总数: {total_background_genes}")
+            logger.info("使用gseapy进行GO富集分析...")
 
-                cursor.execute("""
-                    SELECT `go_type`, `go_description`, `go_id`, `geneid`, `go_type`
-                    FROM `GeneGo` 
-                    WHERE genome_id = %s AND `go_type` IS NOT NULL 
-                    AND `go_id` IS NOT NULL
-                """, [genome_id])
-                background_data = cursor.fetchall()
-                
-                logger.info(f"GO富集分析 - 背景数据条数: {len(background_data)}")
-
-            def normalize_go_type(go_type):
-                if not go_type:
-                    return 'Unknown'
-                go_type_upper = str(go_type).upper().strip()
-                if go_type_upper in ['BP', 'BIOLOGICAL_PROCESS', 'BIOLOGICAL PROCESS']:
-                    return 'BP'
-                elif go_type_upper in ['MF', 'MOLECULAR_FUNCTION', 'MOLECULAR FUNCTION']:
-                    return 'MF'
-                elif go_type_upper in ['CC', 'CELLULAR_COMPONENT', 'CELLULAR COMPONENT']:
-                    return 'CC'
-                return go_type_upper
-            
-            input_go_terms = defaultdict(list)
-            input_genes = set()
-            
-            for row in enrichment_data:
-                gene = row[3]
-                go_type_raw = row[0]
-                go_id_str = row[2]
-                description = row[1]
-                
-                go_type = normalize_go_type(go_type_raw)
-                
-                for go_id in go_id_str.split(','):
-                    go_id = go_id.strip()
+            # 构建基因集：go_id -> 基因集合
+            go_gene_sets = defaultdict(set)
+            for gene, go_id in background_rows:
+                if go_id:
+                    go_id = str(go_id).strip()
                     if go_id and go_id != '-':
-                        input_genes.add(gene)
-                        input_go_terms[go_id].append({
-                            'gene': gene,
-                            'go_type': go_type,
-                            'description': description
-                        })
-            
-            logger.info(f"GO富集分析 - 输入GO术语数: {len(input_go_terms)}")
-            logger.info(f"GO富集分析 - 输入基因数: {len(input_genes)}")
-            
-            total_input_genes = len(input_genes)
-            if total_input_genes == 0:
-                logger.warning("GO富集分析 - 没有找到输入基因的富集数据")
+                        go_gene_sets[go_id].add(gene)
+
+            # 获取背景基因列表
+            background_genes_list = list({gene for gene, go_id in background_rows if go_id})
+
+            if not go_gene_sets or not input_genes:
+                logger.warning("没有有效的GO基因集数据")
                 return JsonResponse({
                     'status': 'success',
                     'data': {
                         'results': [],
-                        'input_gene_count': 0,
-                        'background_gene_count': total_background_genes
-                    }
-                })
-            
-            background_counts = defaultdict(int)
-            background_categories = {}
-            background_descriptions = {}
-            
-            for row in background_data:
-                go_type_raw = row[0]
-                go_id_str = row[2]
-                description = row[1]
-                
-                go_type = normalize_go_type(go_type_raw)
-                
-                for go_id in go_id_str.split(','):
-                    go_id = go_id.strip()
-                    if go_id and go_id != '-':
-                        background_counts[go_id] += 1
-                        if go_id not in background_categories:
-                            background_categories[go_id] = go_type
-                        if go_id not in background_descriptions:
-                            background_descriptions[go_id] = description
-            
-            logger.info(f"GO富集分析 - 背景GO术语数: {len(background_counts)}")
-
-            try:
-                import gseapy as gp
-                
-                logger.info("使用gseapy进行GO富集分析...")
-
-                go_gene_sets = defaultdict(set)
-                for row in background_data:
-                    go_id_str = row[2]
-                    gene = row[3]
-                    for go_id in go_id_str.split(','):
-                        go_id = go_id.strip()
-                        if go_id and go_id != '-':
-                            go_gene_sets[go_id].add(gene)
-
-                if not go_gene_sets or not input_genes:
-                    logger.warning("没有有效的GO基因集数据")
-                    return JsonResponse({
-                        'status': 'success',
-                        'data': {
-                            'results': [],
-                            'input_gene_count': total_input_genes,
-                            'background_gene_count': total_background_genes,
-                            'method': 'Python_gseapy'
-                        }
-                    })
-
-                enr = gp.enrich(
-                    gene_list=sorted(list(input_genes)),
-                    gene_sets={k: sorted(list(v)) for k, v in go_gene_sets.items() if v},
-                    background=sorted(set([row[3] for row in background_data])),
-                    no_plot=True,
-                    outdir=None
-                )
-
-                if enr is None or not hasattr(enr, "results") or enr.results.empty:
-                    logger.warning("gseapy没有返回富集结果")
-                    return JsonResponse({
-                        'status': 'success',
-                        'data': {
-                            'results': [],
-                            'input_gene_count': total_input_genes,
-                            'background_gene_count': total_background_genes,
-                            'method': 'Python_gseapy'
-                        }
-                    })
-
-                enrichment_results = []
-                for _, row in enr.results.iterrows():
-                    go_id = row.get('Term', '')
-                    go_type = background_categories.get(go_id, 'Unknown')
-                    
-                    overlap_str = str(row.get('Overlap', '0/0'))
-                    match = overlap_str.split('/')
-                    gene_count = int(match[0]) if match and match[0].isdigit() else 0
-
-                    enrichment_results.append({
-                        'go_id': go_id,
-                        'description': {
-                            'name': background_descriptions.get(go_id, 'No description available'),
-                            'definition': ''
-                        },
-                        'gene_ratio': overlap_str,
-                        'bg_ratio': '',
-                        'rich_factor': row.get('Odds Ratio', 0),
-                        'fold_enrichment': row.get('Odds Ratio', 0),
-                        'z_score': 0,
-                        'p_value': row.get('P-value', 1),
-                        'corrected_p_value': row.get('Adjusted P-value', row.get('P-value', 1)),
-                        'gene_count': gene_count,
-                        'genes': str(row.get('Genes', '')).split(';') if row.get('Genes', '') else [],
-                        'go_type': go_type
-                    })
-
-                enrichment_results.sort(key=lambda x: x['p_value'])
-                filtered_results = [r for r in enrichment_results if r.get('p_value', 1.0) <= p_value_threshold]
-
-                logger.info(f"gseapy GO富集分析结果: {len(filtered_results)} 条显著富集项")
-
-                return JsonResponse({
-                    'status': 'success',
-                    'data': {
-                        'results': filtered_results,
                         'input_gene_count': total_input_genes,
                         'background_gene_count': total_background_genes,
                         'method': 'Python_gseapy'
                     }
                 })
 
-            except ImportError as e:
-                logger.error(f"gseapy未安装: {str(e)}")
+            enr = gp.enrich(
+                gene_list=sorted(list(input_genes)),
+                gene_sets={k: sorted(list(v)) for k, v in go_gene_sets.items() if v},
+                background=sorted(background_genes_list),
+                no_plot=True,
+                outdir=None
+            )
+
+            if enr is None or not hasattr(enr, "results") or enr.results.empty:
+                logger.warning("gseapy没有返回富集结果")
                 return JsonResponse({
-                    'status': 'error',
-                    'error': 'gseapy is not installed'
+                    'status': 'success',
+                    'data': {
+                        'results': [],
+                        'input_gene_count': total_input_genes,
+                        'background_gene_count': total_background_genes,
+                        'method': 'Python_gseapy'
+                    }
                 })
-            except Exception as e:
-                logger.error(f"gseapy GO富集分析失败: {str(e)}")
-                return JsonResponse({
-                    'status': 'error',
-                    'error': str(e)
+
+            enrichment_results = []
+            # 一次性取回本轮命中的 GO 术语名称/定义/namespace，用于填充 description 与 go_type
+            go_terms = _load_go_terms(
+                row.get('Term', '') for _, row in enr.results.iterrows())
+
+            for _, row in enr.results.iterrows():
+                go_id = row.get('Term', '')
+                term = go_terms.get(go_id) or {}
+
+                overlap_str = str(row.get('Overlap', '0/0'))
+                match = overlap_str.split('/')
+                gene_count = int(match[0]) if match and match[0].isdigit() else 0
+
+                enrichment_results.append({
+                    'go_id': go_id,
+                    'description': {
+                        'name': term.get('name') or go_id,
+                        'definition': term.get('definition') or ''
+                    },
+                    'gene_ratio': overlap_str,
+                    'bg_ratio': '',
+                    'rich_factor': row.get('Odds Ratio', 0),
+                    'fold_enrichment': row.get('Odds Ratio', 0),
+                    'z_score': 0,
+                    'p_value': row.get('P-value', 1),
+                    'corrected_p_value': row.get('Adjusted P-value', row.get('P-value', 1)),
+                    'gene_count': gene_count,
+                    'genes': str(row.get('Genes', '')).split(';') if row.get('Genes', '') else [],
+                    # 归一化成前端过滤用的 BP/MF/CC，取不到术语时保持 Unknown
+                    'go_type': GO_NAMESPACE_TO_SHORT.get(term.get('namespace'), 'Unknown')
                 })
-        
+
+            enrichment_results.sort(key=lambda x: x['p_value'])
+            filtered_results = [r for r in enrichment_results if r.get('p_value', 1.0) <= p_value_threshold]
+
+            logger.info(f"gseapy GO富集分析结果: {len(filtered_results)} 条显著富集项")
+
+            return JsonResponse({
+                'status': 'success',
+                'data': {
+                    'results': filtered_results,
+                    'input_gene_count': total_input_genes,
+                    'background_gene_count': total_background_genes,
+                    'method': 'Python_gseapy'
+                }
+            })
+
+        except ImportError as e:
+            logger.error(f"gseapy未安装: {str(e)}")
+            return JsonResponse({
+                'status': 'error',
+                'error': 'gseapy is not installed'
+            })
         except Exception as e:
-            logger.error(f"GO enrichment error: {str(e)}")
+            logger.error(f"gseapy GO富集分析失败: {str(e)}")
             return JsonResponse({
                 'status': 'error',
                 'error': str(e)
             })
-    
-    return JsonResponse({
-        'status': 'error',
-        'error': 'Method not allowed'
-    })
+
+    except Exception as e:
+        logger.error(f"GO enrichment error: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'error': str(e)
+        })

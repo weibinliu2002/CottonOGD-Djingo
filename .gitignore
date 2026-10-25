@@ -5,6 +5,9 @@
 .github/
 .idea/
 
+# 环境变量文件（含密钥，禁止提交）
+# .env* / !.env.example 已在下方全局规则中处理
+
 # 以下路径不忽略（必须放在其他忽略规则之前）
 !Script/script/Biosql/
 !Script/script/update_EBI-PDB.sh
@@ -46,3 +49,5 @@ frontend/node_modules/
 !.dev.vars.example
 .env*
 !.env.example
+backend/soft/plotsr-master/software/annovar/humandb/*.fa
+backend/soft/plotsr-master/software/openjdk-11/lib/modules

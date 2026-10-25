@@ -1,0 +1,109 @@
+import {
+  ensureLocalAsset,
+  resolveGbdrawWheelUrl,
+  resolveLocalDependencyWheelUrls,
+  resolvePyodideIndexUrl
+} from '../services/pyodide-assets.js';
+import { PYTHON_HELPERS } from './python-helpers.js';
+
+export const createPyodideManager = ({ state }) => {
+  const {
+    pyodideReady,
+    loadingStatus,
+    paletteDefinitions,
+    paletteNames,
+    selectedPalette,
+    currentColors,
+    appliedPaletteName,
+    appliedPaletteColors,
+    pendingPaletteName,
+    pendingPaletteColors,
+    normalizePaletteColors,
+    normalizePaletteDefinitions
+  } = state;
+  const pyodideRef = { current: null };
+
+  const getPyodide = () => pyodideRef.current;
+  const setPyodide = (value) => {
+    pyodideRef.current = value;
+  };
+
+  const loadPalettes = () => {
+    const pyodide = getPyodide();
+    if (!pyodide) return null;
+    const paletteJson = pyodide.runPython('get_palettes_json()');
+    return JSON.parse(paletteJson);
+  };
+
+  const ensureWheelAvailable = async () => {
+    const wheelUrl = resolveGbdrawWheelUrl();
+    return ensureLocalAsset(wheelUrl, 'gbdraw browser wheel');
+  };
+
+  const ensureLocalDependencyWheels = async () => {
+    const wheelUrls = resolveLocalDependencyWheelUrls();
+    await Promise.all(
+      wheelUrls.map((url, index) =>
+        ensureLocalAsset(url, `Pyodide dependency wheel #${index + 1}`)
+      )
+    );
+    return wheelUrls;
+  };
+
+  const initPyodide = async () => {
+    try {
+      const pyodideIndexUrl = resolvePyodideIndexUrl();
+      loadingStatus.value = 'Loading local Pyodide runtime...';
+      const pyodide = await loadPyodide({
+        indexURL: pyodideIndexUrl,
+        packageBaseUrl: pyodideIndexUrl
+      });
+      setPyodide(pyodide);
+      loadingStatus.value = 'Loading local micropip...';
+      await pyodide.loadPackage('micropip');
+      const micropip = pyodide.pyimport('micropip');
+      loadingStatus.value = 'Installing local Python dependencies...';
+      const localWheelUrls = await ensureLocalDependencyWheels();
+      await micropip.install(localWheelUrls);
+      loadingStatus.value = 'Installing gbdraw...';
+      const wheelUrl = await ensureWheelAvailable();
+      await micropip.install(wheelUrl);
+      await pyodide.runPythonAsync(PYTHON_HELPERS);
+
+      const allPalettes = loadPalettes();
+      if (allPalettes) {
+        const normalizedPalettes = normalizePaletteDefinitions(allPalettes);
+        paletteDefinitions.value = normalizedPalettes;
+        paletteNames.value = Object.keys(normalizedPalettes).sort();
+        const defaultColors = normalizePaletteColors(normalizedPalettes.default || {});
+        selectedPalette.value = 'default';
+        currentColors.value = defaultColors;
+        appliedPaletteName.value = 'default';
+        appliedPaletteColors.value = { ...defaultColors };
+        pendingPaletteName.value = '';
+        pendingPaletteColors.value = {};
+      }
+      pyodideReady.value = true;
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      loadingStatus.value = 'Startup Error: ' + message;
+      console.error(e);
+    }
+  };
+
+  const writeFileToFs = async (fileObj, path) => {
+    if (!fileObj) return false;
+    const pyodide = getPyodide();
+    if (!pyodide) return false;
+    const buffer = await fileObj.arrayBuffer();
+    pyodide.FS.writeFile(path, new Uint8Array(buffer));
+    return true;
+  };
+
+  return {
+    getPyodide,
+    initPyodide,
+    loadPalettes,
+    writeFileToFs
+  };
+};

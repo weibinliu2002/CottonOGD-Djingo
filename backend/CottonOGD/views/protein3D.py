@@ -6,8 +6,7 @@ from rest_framework import status
 
 # 导入序列化器（用上一条消息里的定义）
 from CottonOGD.server.serializers import SearchRequestSerializer
-# 导入模型
-from CottonOGD.models import SearchCache
+from django.core.cache import cache
 from django.conf import settings
 # 导入统一基类和具体方法
 from CottonOGD.server.base3D import SearchMethod
@@ -73,11 +72,11 @@ def search_similar_structure(request):
     # 2. 查缓存 (如果开启)
     if req_data['use_cache']:
         seq_hash = hashlib.md5(seq.encode()).hexdigest()
-        cache_obj = SearchCache.objects.filter(seq_hash=seq_hash, method=method.value).first()
-        if cache_obj:
-            result_data = cache_obj.result_json
-            result_data['from_cache'] = True  # 标记来自缓存，前端可以展示个小闪电⚡
-            return Response(result_data)
+        cache_key = f'protein3d:search:{seq_hash}:{method}'
+        cached_result = cache.get(cache_key)
+        if cached_result:
+            cached_result['from_cache'] = True
+            return Response(cached_result)
 
     # 3. 执行搜索（核心逻辑）
     searcher = SEARCHERS.get(method)
@@ -120,11 +119,8 @@ def search_similar_structure(request):
     # 4. 写入缓存
     if req_data['use_cache']:
         seq_hash = hashlib.md5(seq.encode()).hexdigest()
-        SearchCache.objects.update_or_create(
-            seq_hash=seq_hash,
-            method=method.value,
-            defaults={'result_json': result_data}
-        )
+        cache_key = f'protein3d:search:{seq_hash}:{method}'
+        cache.set(cache_key, result_data, timeout=604800)
 
     # 5. 返回统一格式的 JSON 给前端
     return Response(result_data)

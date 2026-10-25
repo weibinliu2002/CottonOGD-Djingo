@@ -1,5 +1,4 @@
 from ast import alias
-from django.db.models import Q
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from CottonOGD.views.base import UuidManager
@@ -63,8 +62,13 @@ def Id_map(gene_id: str, genome_id: str):
         id_map[gid] = {'geneid':nid,'genome_id':genome,'search_id':f"{genome}_{nid}"}
     #logger.info(f"search_ids: {search_ids}")
     #logger.info(f"norm_map: {norm_map}")
-    #map_ids=GeneMaster.objects.filter(alias__in=search_ids).values('alias','id')
-    map_ids=GeneMaster.objects.filter(Q(geneid__in=norm_map) | Q(genome_id__in=genome_ids)).values('alias','id')
+    # 仅按输入 ID 精确匹配：alias 即 "{genome}_{normalized_geneid}"，直接 alias__in 精确过滤。
+    # 原写法 OR 上 genome_id__in=genome_ids，会在输入 ID 全部未命中时把整个基因组的行
+    # （该基因组 7 万行）拉进内存，genome_id 现在只作为额外 AND 条件。
+    map_ids=GeneMaster.objects.filter(
+        alias__in=search_ids,
+        genome_id__in=genome_ids,
+    ).values('alias','id')
     map_ids={item['alias']:item['id'] for item in map_ids}
     genome_gene_id = attach_db_id(id_map, map_ids)
     return genome_gene_id

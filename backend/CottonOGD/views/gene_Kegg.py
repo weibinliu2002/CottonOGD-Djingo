@@ -1,12 +1,5 @@
-from django.db import connection
 from django.http import JsonResponse
-from rest_framework.response import Response
 from rest_framework.decorators import api_view
-from rest_framework import status
-from django.views.decorators.http import require_http_methods
-import json
-import logging
-from collections import defaultdict
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -16,305 +9,294 @@ import base64
 from matplotlib.gridspec import GridSpec
 import pandas as pd
 from textwrap import wrap
+from collections import defaultdict
+import logging
 
-from CottonOGD.models import GeneMaster
+from CottonOGD.views.gene_id_result import resolve_input_ids
+from CottonOGD.models import gene_info, gene_kegg, GeneMaster, PathwayEnzyme
 
 logger = logging.getLogger(__name__)
 
 
-@api_view(['GET'])
+def _get_param(request, key, default=''):
+    """GET/POST/JSON body 统一取参。"""
+    if hasattr(request, 'data') and request.data:
+        value = request.data.get(key)
+        if value not in (None, ''):
+            return value
+    value = request.POST.get(key) if request.method == 'POST' else request.GET.get(key)
+    return value if value not in (None, '') else default
+
+
+@api_view(['GET', 'POST'])
 def kegg_annotation(request):
     """
     KEGG注释API - 根据基因ID获取KEGG注释信息
+
+    入参：gene_id（单 ID 或逗号/竖线/换行分隔多 ID，可带版本号/转录本后缀）、
+          genome_id（可选，物种名）。解析统一走 Meilisearch + MySQL 兜底。
     """
-    if request.method == 'GET':
-        gene_input = request.GET.get('gene_id', '').strip()
-        genome_id = request.GET.get('genome_id', 'G.kirkii_ISU_ISU_v3.0')
+    gene_input = str(_get_param(request, 'gene_id', '')).strip()
+    genome_id = str(_get_param(request, 'genome_id', '')).strip()
 
-        if not gene_input:
-            return JsonResponse({
-                'status': 'error',
-                'error': 'Missing gene_id parameter'
-            })
+    if not gene_input:
+        return JsonResponse({
+            'status': 'error',
+            'error': 'Missing gene_id parameter'
+        })
 
-        gene_list = [gene.strip() for gene in gene_input.replace(',', '\n').split() if gene.strip()]
+    gene_list = [gene.strip() for gene in gene_input.replace(',', '\n').split() if gene.strip()]
 
-        logger.info(f"KEGG注释 - gene_input: {gene_input}, genome_id: {genome_id}")
+    logger.info(f"KEGG注释 - gene_input: {gene_input}, genome_id: {genome_id}")
 
-        if not gene_list:
-            return JsonResponse({
-                'status': 'success',
-                'data': {
-                    'results': [],
-                    'gene_list': [],
-                    'searched_ids': gene_input,
-                    'chart': None,
-                    'chart_data': None
-                }
-            })
+    if not gene_list:
+        return JsonResponse({
+            'status': 'success',
+            'data': {
+                'results': [],
+                'gene_list': [],
+                'searched_ids': gene_input,
+                'chart': None,
+                'chart_data': None
+            }
+        })
 
-        gene_masters = GeneMaster.objects.filter(genome_id=genome_id, geneid__in=gene_list)
-        gene_id_map = {gm.geneid: gm.id for gm in gene_masters}
-        gene_id_list = list(gene_id_map.values())
+    results = []
+    categories = []
+    chart_data = {}
+    chart = None
 
-        results = []
+    try:
+        db_ids = resolve_input_ids(gene_input, genome_id)
+        logger.info(f"KEGG注释 - 解析到 {len(db_ids)} 个 db_id")
+
         chart_data_raw = defaultdict(lambda: defaultdict(int))
 
-        if gene_id_list:
-            try:
-                with connection.cursor() as cursor:
-                    cursor.execute("""
-                        SELECT
-                            gi.seqid,
-                            gi.start,
-                            gi.end,
-                            gi.id_id,
-                            gi.geneid_id,
-                            gk.kegg_id,
-                            mp.name AS pathway_name,
-                            mp.full_name AS pathway_full_name,
-                            mp.category_id
-                        FROM gene_assembly gi
-                        LEFT JOIN gene_kegg gk ON gi.id_id = gk.id_id
-                        LEFT JOIN metabolic_pathway mp ON gk.kegg_id = mp.ko_id
-                        WHERE gi.type = 'gene'
-                          AND gi.id_id IN %s
-                    """, [tuple(gene_id_list)])
+        if db_ids:
+            # geneid 展示名 + 基因坐标
+            geneid_map = dict(GeneMaster.objects.filter(id__in=db_ids)
+                              .values_list('id', 'geneid'))
+            coords = {row['id_id']: row for row in gene_info.objects
+                      .filter(id_id__in=db_ids, type='gene')
+                      .values('id_id', 'seqid', 'start', 'end')}
 
-                    annotation_data = cursor.fetchall()
-                    logger.info(f"KEGG annotation - 查询到 {len(annotation_data)} 条数据")
+            # KO -> 通路映射（与旧 SQL 的 pathway_enzyme 联结语义一致）
+            pe_rows = (PathwayEnzyme.objects
+                       .select_related('pathway', 'pathway__category')
+                       .values('enzyme_id', 'pathway__name',
+                               'pathway__full_name', 'pathway__category_id',
+                               'pathway__category__name'))
+            ko_pathway = defaultdict(list)
+            for row in pe_rows:
+                ko_pathway[row['enzyme_id']].append(row)
 
-                    result_dict = defaultdict(list)
-                    for row in annotation_data:
-                        seqid, start, end, id_id, geneid_id, kegg_id, pathway_name, pathway_full_name, category_id = row
-                        result_dict[id_id].append({
-                            'seqid': seqid,
-                            'start': start,
-                            'end': end,
-                            'geneid_id': geneid_id,
-                            'kegg_id': kegg_id,
-                            'pathway_name': pathway_name if pathway_name else '',
-                            'pathway_full_name': pathway_full_name if pathway_full_name else '',
-                            'category_id': category_id if category_id else ''
+            # KEGG 注释
+            gk_rows = (gene_kegg.objects
+                       .filter(id_id__in=db_ids)
+                       .values('id_id', 'kegg_id', 'kegg_id__name', 'kegg_id__full_name'))
+            logger.info(f"KEGG annotation - 查询到 {len(gk_rows)} 条数据")
+
+            result_dict = defaultdict(list)
+            for row in gk_rows:
+                gene_db_id = row['id_id']
+                coord = coords.get(gene_db_id, {})
+                pathways = ko_pathway.get(row['kegg_id']) or [{}]
+                for pw in pathways:
+                    result_dict[gene_db_id].append({
+                        'seqid': coord.get('seqid', ''),
+                        'start': coord.get('start', 0),
+                        'end': coord.get('end', 0),
+                        'geneid_id': geneid_map.get(gene_db_id, ''),
+                        'kegg_id': row['kegg_id'],
+                        'kegg_name': row['kegg_id__name'] or '',
+                        'kegg_full_name': row['kegg_id__full_name'] or '',
+                        'pathway_name': pw.get('pathway__name') or '',
+                        'pathway_full_name': pw.get('pathway__full_name') or '',
+                        'category_id': pw.get('pathway__category_id') or '',
+                        'category_name': pw.get('pathway__category__name') or ''
+                    })
+
+            for items in result_dict.values():
+                for item in items:
+                    if item['kegg_id']:
+                        results.append({
+                            'Chr': item['seqid'],
+                            'Start': item['start'],
+                            'End': item['end'],
+                            'ID': item['geneid_id'],
+                            'KEGG_ID': item['kegg_id'],
+                            'Description': item['kegg_name'],
+                            'Type': '',
+                            'Pathway': item['pathway_name'],
+                            'Pathway_Full': item['pathway_full_name'],
+                            'Category_ID': item['category_id'],
+                            'Category_Name': item['category_name']
                         })
 
-                    for id_id, items in result_dict.items():
-                        for item in items:
-                            if item['kegg_id']:
-                                results.append({
-                                    'Chr': item['seqid'],
-                                    'Start': item['start'],
-                                    'End': item['end'],
-                                    'ID': item['geneid_id'],
-                                    'KEGG_ID': item['kegg_id'],
-                                    'Description': item['pathway_name'],
-                                    'Type': '',
-                                    'Pathway': item['pathway_name'],
-                                    'Pathway_Full': item['pathway_full_name'],
-                                    'Category_ID': item['category_id']
-                                })
+                        chart_data_raw['Pathway'][item['pathway_name']] += 1
 
-                                chart_data_raw['Pathway'][item['pathway_name']] += 1
+            categories = sorted({r['Description'] for r in results if r['Description']})
 
-                    categories = sorted({r['Description'] for r in results if r['Description']})
-                    chart_data = {}
-
-                    for kegg_type, desc_counts in chart_data_raw.items():
-                        chart_data[kegg_type] = {
-                            'labels': list(desc_counts.keys()),
-                            'values': list(desc_counts.values())
-                        }
-
-                    logger.info(f"图表分类: {categories}")
-                    logger.info(f"图表数据: {chart_data}")
-
-                    chart = None
-                    if categories and chart_data:
-                        all_labels = []
-                        all_values = []
-                        all_types = []
-
-                        for kegg_type, data in chart_data.items():
-                            for label, value in zip(data['labels'], data['values']):
-                                all_labels.append(label)
-                                all_values.append(value)
-                                all_types.append(kegg_type)
-
-                        if all_labels:
-                            fig, ax = plt.subplots(figsize=(12, 6))
-
-                            types = list(set(all_types))
-                            colors = plt.cm.Set3(np.linspace(0, 1, len(types)))
-                            type_color_map = dict(zip(types, colors))
-
-                            x_positions = range(len(all_labels))
-                            bars = ax.bar(x_positions, all_values,
-                                         color=[type_color_map[t] for t in all_types])
-
-                            ax.set_xlabel('KEGG Description', fontsize=12)
-                            ax.set_ylabel('Count', fontsize=12)
-                            ax.set_title('KEGG Annotation Distribution', fontsize=14, pad=20)
-
-                            short_labels = [label[:20] + '...' if len(label) > 20 else label
-                                           for label in all_labels]
-                            ax.set_xticks(x_positions)
-                            ax.set_xticklabels(short_labels, rotation=45, ha='right', fontsize=8)
-
-                            for bar, value in zip(bars, all_values):
-                                height = bar.get_height()
-                                if height > 0:
-                                    ax.text(bar.get_x() + bar.get_width()/2., height,
-                                            f'{int(height)}',
-                                            ha='center', va='bottom', fontsize=8)
-
-                            ax.spines['top'].set_visible(False)
-                            ax.spines['right'].set_visible(False)
-                            ax.grid(axis='y', linestyle='--', alpha=0.7)
-
-                            legend_elements = [plt.Rectangle((0,0),1,1, facecolor=type_color_map[t],
-                                                            label=t) for t in types]
-                            ax.legend(handles=legend_elements, loc='upper right', fontsize=8)
-
-                            plt.tight_layout()
-
-                            buffer = BytesIO()
-                            plt.savefig(buffer, format='png', bbox_inches='tight', dpi=100)
-                            plt.close()
-                            chart = base64.b64encode(buffer.getvalue()).decode('utf-8')
-
-                    return JsonResponse({
-                        'status': 'success',
-                        'data': {
-                            'results': results,
-                            'gene_list': gene_list,
-                            'searched_ids': gene_input,
-                            'chart': chart,
-                            'chart_data': {
-                                'categories': categories,
-                                'data': chart_data
-                            }
-                        }
-                    })
-            except Exception as e:
-                logger.error(f"KEGG annotation error: {str(e)}")
-                return JsonResponse({
-                    'status': 'error',
-                    'error': str(e)
-                })
-        else:
-            return JsonResponse({
-                'status': 'success',
-                'data': {
-                    'results': [],
-                    'gene_list': [],
-                    'searched_ids': gene_input,
-                    'chart': None,
-                    'chart_data': None
+            for kegg_type, desc_counts in chart_data_raw.items():
+                chart_data[kegg_type] = {
+                    'labels': list(desc_counts.keys()),
+                    'values': list(desc_counts.values())
                 }
-            })
 
-    return JsonResponse({
-        'status': 'error',
-        'error': 'Method not allowed'
-    })
+            if categories and chart_data:
+                all_labels = []
+                all_values = []
+                all_types = []
+
+                for kegg_type, data in chart_data.items():
+                    for label, value in zip(data['labels'], data['values']):
+                        all_labels.append(label)
+                        all_values.append(value)
+                        all_types.append(kegg_type)
+
+                if all_labels:
+                    fig, ax = plt.subplots(figsize=(12, 6))
+
+                    types = list(set(all_types))
+                    colors = plt.cm.Set3(np.linspace(0, 1, len(types)))
+                    type_color_map = dict(zip(types, colors))
+
+                    x_positions = range(len(all_labels))
+                    bars = ax.bar(x_positions, all_values,
+                                  color=[type_color_map[t] for t in all_types])
+
+                    ax.set_xlabel('KEGG Description', fontsize=12)
+                    ax.set_ylabel('Count', fontsize=12)
+                    ax.set_title('KEGG Annotation Distribution', fontsize=14, pad=20)
+
+                    short_labels = [label[:20] + '...' if len(label) > 20 else label
+                                    for label in all_labels]
+                    ax.set_xticks(x_positions)
+                    ax.set_xticklabels(short_labels, rotation=45, ha='right', fontsize=8)
+
+                    for bar, value in zip(bars, all_values):
+                        height = bar.get_height()
+                        if height > 0:
+                            ax.text(bar.get_x() + bar.get_width()/2., height,
+                                    f'{int(height)}', ha='center', va='bottom', fontsize=8)
+
+                    ax.spines['top'].set_visible(False)
+                    ax.spines['right'].set_visible(False)
+                    ax.grid(axis='y', linestyle='--', alpha=0.7)
+
+                    legend_elements = [plt.Rectangle((0, 0), 1, 1, facecolor=type_color_map[t],
+                                                     label=t) for t in types]
+                    ax.legend(handles=legend_elements, loc='upper right', fontsize=8)
+
+                    plt.tight_layout()
+
+                    buffer = BytesIO()
+                    plt.savefig(buffer, format='png', bbox_inches='tight', dpi=100)
+                    plt.close()
+                    chart = base64.b64encode(buffer.getvalue()).decode('utf-8')
+
+        return JsonResponse({
+            'status': 'success',
+            'data': {
+                'results': results,
+                'gene_list': gene_list,
+                'searched_ids': gene_input,
+                'chart': chart,
+                'chart_data': {
+                    'categories': categories,
+                    'data': chart_data
+                }
+            }
+        })
+    except Exception as e:
+        logger.error(f"KEGG annotation error: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'error': str(e)
+        })
 
 
-@api_view(['POST'])
+@api_view(['GET', 'POST'])
 def kegg_enrichment(request):
     """
     KEGG富集分析API - 使用gseapy进行富集分析
+
+    入参与 kegg_annotation 相同；解析统一走 Meilisearch + MySQL 兜底，
+    背景集合按 genome_id（物种名）圈定。
     """
-    if request.method == 'POST':
-        gene_input = request.POST.get('gene_id', '').strip()
-        genome_id = request.POST.get('genome_id', 'G.kirkii_ISU_ISU_v3.0')
-        p_value_threshold = float(request.POST.get('p_value_threshold', 0.05))
+    gene_input = str(_get_param(request, 'gene_id', '')).strip()
+    genome_id = str(_get_param(request, 'genome_id', '')).strip()
+    p_value_threshold = float(_get_param(request, 'p_value_threshold', 0.05))
 
-        if not gene_input:
-            return JsonResponse({
-                'status': 'error',
-                'error': 'Missing gene_id parameter'
-            })
+    if not gene_input:
+        return JsonResponse({
+            'status': 'error',
+            'error': 'Missing gene_id parameter'
+        })
 
-        gene_list = [gene.strip() for gene in gene_input.replace(',', '\n').split() if gene.strip()]
+    gene_list = [gene.strip() for gene in gene_input.replace(',', '\n').split() if gene.strip()]
 
-        if not gene_list:
-            return JsonResponse({
-                'status': 'error',
-                'error': 'Empty gene list'
-            })
+    if not gene_list:
+        return JsonResponse({
+            'status': 'error',
+            'error': 'Empty gene list'
+        })
 
-        logger.info(f"KEGG富集分析 - gene_input: {gene_input}, genome_id: {genome_id}")
+    logger.info(f"KEGG富集分析 - gene_input: {gene_input}, genome_id: {genome_id}")
 
-        with connection.cursor() as cursor:
-            if genome_id:
-                cursor.execute("""
-                    SELECT gm.id, gm.geneid
-                    FROM genemaster gm
-                    WHERE gm.geneid IN %s AND gm.genome_id = %s
-                """, [tuple(gene_list), genome_id])
-            else:
-                cursor.execute("""
-                    SELECT gm.id, gm.geneid
-                    FROM genemaster gm
-                    WHERE gm.geneid IN %s
-                """, [tuple(gene_list)])
-            gene_id_map = {row[1]: row[0] for row in cursor.fetchall()}
+    try:
+        db_ids = resolve_input_ids(gene_input, genome_id)
+        logger.info(f"KEGG富集分析 - 解析到 {len(db_ids)} 个 db_id")
 
-            if gene_id_map:
-                cursor.execute("""
-                    SELECT gk.id_id, gk.kegg_id
-                    FROM gene_kegg gk
-                    WHERE gk.id_id IN %s
-                      AND gk.kegg_id IS NOT NULL
-                """, [tuple(gene_id_map.values())])
-            else:
-                cursor.execute("SELECT 1 FROM DUAL WHERE 1=0")
-            gene_kegg_data = cursor.fetchall()
+        # 输入基因的 KEGG 注释
+        gene_kegg_data = list(gene_kegg.objects
+                              .filter(id_id__in=db_ids, kegg_id__isnull=False)
+                              .values_list('id_id', 'kegg_id'))
 
-            if genome_id:
-                cursor.execute("""
-                    SELECT gk.id_id, gk.kegg_id
-                    FROM gene_kegg gk
-                    LEFT JOIN genemaster gm ON gk.id_id = gm.id
-                    WHERE gk.kegg_id IS NOT NULL
-                      AND gm.genome_id = %s
-                """, [genome_id])
-            else:
-                cursor.execute("""
-                    SELECT gk.id_id, gk.kegg_id
-                    FROM gene_kegg gk
-                    WHERE gk.kegg_id IS NOT NULL
-                """)
-            background_kegg_data = cursor.fetchall()
+        # 背景数据（该基因组全部 KO 注释）
+        background_kegg_data = list(gene_kegg.objects
+                                    .filter(id_id__genome__name=genome_id, kegg_id__isnull=False)
+                                    .values_list('id_id', 'kegg_id'))
 
-            cursor.execute("""
-                SELECT mp.ko_id, mp.name, mp.full_name, mp.category_id, c.name as category_name
-                FROM metabolic_pathway mp
-                LEFT JOIN category c ON mp.category_id = c.category_id
-            """)
-            pathway_info = {}
-            for row in cursor.fetchall():
-                ko_id, name, full_name, category_id, category_name = row
-                pathway_info[ko_id] = {
-                    'name': name,
-                    'full_name': full_name,
-                    'category_id': category_id,
-                    'category_name': category_name
-                }
+        # db_id -> geneid 展示名
+        involved_ids = {gid for gid, _ in gene_kegg_data} | {gid for gid, _ in background_kegg_data}
+        geneid_map = dict(GeneMaster.objects.filter(id__in=involved_ids)
+                          .values_list('id', 'geneid'))
 
-        gene_id_to_name = {v: k for k, v in gene_id_map.items()}
+        # KO -> 通路信息
+        pe_rows = (PathwayEnzyme.objects
+                   .select_related('pathway', 'pathway__category')
+                   .values('enzyme_id', 'pathway__name', 'pathway__full_name',
+                           'pathway__category_id', 'pathway__category__name'))
+        ko_pathway = defaultdict(list)
+        for row in pe_rows:
+            ko_pathway[row['enzyme_id']].append(row)
+
+        kegg_info = {}
+        from CottonOGD.models import KOTerm
+        for row in KOTerm.objects.values('ko_id', 'name', 'full_name'):
+            pws = ko_pathway.get(row['ko_id']) or [{}]
+            pw = pws[0]
+            kegg_info[row['ko_id']] = {
+                'name': row['name'] or '',
+                'full_name': row['full_name'] or '',
+                'pathway_name': pw.get('pathway__name') or '',
+                'pathway_full_name': pw.get('pathway__full_name') or '',
+                'category_id': pw.get('pathway__category_id') or '',
+                'category_name': pw.get('pathway__category__name') or ''
+            }
 
         input_kegg_terms = defaultdict(list)
         input_genes = set()
 
-        for gene_id, kegg_id in gene_kegg_data:
-            gene_name = next((k for k, v in gene_id_map.items() if v == gene_id), str(gene_id))
+        for gene_db_id, kegg_id in gene_kegg_data:
+            gene_name = geneid_map.get(gene_db_id, str(gene_db_id))
             input_genes.add(gene_name)
             if kegg_id:
                 input_kegg_terms[kegg_id].append(gene_name)
 
         total_input_genes = len(input_genes)
-        total_background_genes = len(set([row[0] for row in background_kegg_data]))
+        total_background_genes = len({row[0] for row in background_kegg_data})
 
         if total_input_genes == 0:
             return JsonResponse({
@@ -332,9 +314,9 @@ def kegg_enrichment(request):
             logger.info("使用gseapy进行KEGG富集分析...")
 
             kegg_gene_sets = defaultdict(set)
-            for gene_id, kegg_id in background_kegg_data:
-                if kegg_id and gene_id in gene_id_to_name:
-                    kegg_gene_sets[kegg_id].add(gene_id_to_name[gene_id])
+            for gene_db_id, kegg_id in background_kegg_data:
+                if kegg_id and gene_db_id in geneid_map:
+                    kegg_gene_sets[kegg_id].add(geneid_map[gene_db_id])
 
             if not kegg_gene_sets or not input_genes:
                 logger.warning("没有有效的KEGG基因集数据")
@@ -348,10 +330,13 @@ def kegg_enrichment(request):
                     }
                 })
 
+            background_genes_list = list({geneid_map[gid] for gid, _ in background_kegg_data
+                                          if gid in geneid_map})
+
             enr = gp.enrich(
                 gene_list=sorted(list(input_genes)),
                 gene_sets={k: sorted(list(v)) for k, v in kegg_gene_sets.items() if v},
-                background=sorted(set(gene_id_to_name.values())),
+                background=sorted(background_genes_list),
                 no_plot=True,
                 outdir=None
             )
@@ -370,18 +355,18 @@ def kegg_enrichment(request):
 
             enrichment_results = []
             for _, row in enr.results.iterrows():
-                pathway_id = row.get('Term', '')
-                pathway = pathway_info.get(pathway_id, {})
-                
+                kegg_id = row.get('Term', '')
+                kegg = kegg_info.get(kegg_id, {})
+
                 overlap_str = str(row.get('Overlap', '0/0'))
                 match = overlap_str.split('/')
                 gene_count = int(match[0]) if match and match[0].isdigit() else 0
 
                 enrichment_results.append({
-                    'pathway_id': pathway_id,
+                    'pathway_id': kegg_id,
                     'description': {
-                        'name': pathway.get('name', pathway_id),
-                        'definition': pathway.get('full_name', '')
+                        'name': kegg.get('name', kegg_id),
+                        'definition': kegg.get('full_name', '')
                     },
                     'gene_ratio': overlap_str,
                     'bg_ratio': '',
@@ -391,13 +376,13 @@ def kegg_enrichment(request):
                     'corrected_p_value': row.get('Adjusted P-value', row.get('P-value', 1)),
                     'gene_count': gene_count,
                     'genes': str(row.get('Genes', '')).split(';') if row.get('Genes', '') else [],
-                    'category_id': pathway.get('category_id', ''),
-                    'category_name': pathway.get('category_name', '')
+                    'category_id': kegg.get('category_id', ''),
+                    'category_name': kegg.get('category_name', '')
                 })
 
             enrichment_results.sort(key=lambda x: x['p_value'])
             filtered_results = [r for r in enrichment_results if r.get('p_value', 1.0) <= p_value_threshold]
-            
+
             plot_image = plot_kegg_enrichment(filtered_results) if filtered_results else None
 
             logger.info(f"gseapy KEGG富集分析结果: {len(filtered_results)} 条显著富集项")
@@ -426,10 +411,12 @@ def kegg_enrichment(request):
                 'error': str(e)
             })
 
-    return JsonResponse({
-        'status': 'error',
-        'error': 'Method not allowed'
-    })
+    except Exception as e:
+        logger.error(f"KEGG enrichment error: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'error': str(e)
+        })
 
 
 def plot_kegg_enrichment(kegg_results, max_terms=30, figsize=(15, 7)):

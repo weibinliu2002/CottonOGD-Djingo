@@ -9,9 +9,9 @@ class MMseqs2Searcher(BaseSearcher):
     method = SearchMethod.MMSEQS2
 
     def __init__(self, db_path: str, tmp_dir: str = "/tmp/mmseqs_tmp"):
-        self.db_path = db_path  # MMseqs2 格式的数据库路径
-        self.tmp_dir = tmp_dir
-        os.makedirs(tmp_dir, exist_ok=True)
+        self.db_path = str(db_path)  # MMseqs2 格式的数据库路径
+        self.tmp_dir = str(tmp_dir)
+        os.makedirs(self.tmp_dir, exist_ok=True)
 
     def search(self, seq: str, top_n: int = 10,
                evalue: float = 0.001, **kwargs) -> SearchResult:

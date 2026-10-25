@@ -1,7 +1,8 @@
 # Created by venv; see https://docs.python.org/3/library/venv.html
 
 # 忽略虚拟环境
-venv/
+backend/venv/
+backend/venv2/
 
 # 忽略编译的 Python 文件
 __pycache__/
