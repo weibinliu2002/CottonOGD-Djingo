@@ -463,7 +463,7 @@
     "tree_search_placeholder": "Search gene ID to highlight",
     "tree_export_svg": "Export SVG",
     "tree_reset": "Reset view",
-    "tree_hint": "Drag to pan · Scroll to zoom · Click a leaf for details · Double-click to collapse · Right-click to reroot",
+    "tree_hint": "Drag to select · Shift+drag or middle-drag to pan · Scroll to zoom · Click a leaf for details",
     "export": "Export",
     "tree_sequences": "Sequences",
     "tree_zoom": "Zoom",

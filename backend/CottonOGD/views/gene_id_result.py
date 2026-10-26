@@ -10,9 +10,8 @@ logger = logging.getLogger(__name__)
 
 def build_jbrowse_url(seqid: str, start: int, end: int,genome_name: str) -> str:
     """生成 JBrowse 3.6.5 单基因视图 URL"""
-    gff_name = 'GFF'
     loc = f"{seqid}:{max(0, start-1000)}-{end+1000}"
-    return f"/assets/jbrowse/index.html?config=data/{genome_name}/config.json&assembly={genome_name}&loc={loc}&tracks={gff_name}"
+    return f"/assets/jbrowse/index.html?config=data/{genome_name}/config.json&assembly={genome_name}&loc={loc}"
 
 @api_view(['POST'])
 def geneid_summary(request):

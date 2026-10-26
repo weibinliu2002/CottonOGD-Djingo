@@ -462,7 +462,7 @@
     "tree_search_placeholder": "输入基因ID高亮匹配",
     "tree_export_svg": "导出 SVG 图片",
     "tree_reset": "重置视图",
-    "tree_hint": "拖拽平移 · 滚轮缩放 · 点击叶端查看详情 · 双击折叠/展开 · 右键重根",
+    "tree_hint": "左键拖拽框选 · Shift+左键或中键拖拽平移 · 滚轮缩放 · 点击叶端查看详情",
     "export": "导出",
     "tree_sequences": "序列数",
     "tree_zoom": "缩放",

@@ -162,12 +162,19 @@
       </div>
 
       <!-- 树容器（固定高度 700px，overflow hidden + d3-zoom 内部平移） -->
-      <div class="tree-wrapper">
+      <div ref="treeWrapperRef" class="tree-wrapper">
         <div
           ref="treeContainerRef"
           id="phylotree-container"
           class="tree-container"
-          :class="{ 'is-panning': isPanning }"
+          :class="{ 'is-panning': isPanning, 'is-brush-selecting': isBrushSelecting }"
+        />
+        <!-- iTOL 风格框选层：屏幕坐标定位，不参与 SVG 的缩放/平移 -->
+        <div
+          v-show="isBrushSelecting"
+          class="tree-selection-box"
+          :style="selectionBoxStyle"
+          aria-hidden="true"
         />
         <div v-if="treeLoading" class="tree-mask">
           <el-icon class="is-loading"><Loading /></el-icon>
@@ -299,7 +306,8 @@ const treeError = ref('')
 const treeData = ref<InstanceType<typeof phylotree> | null>(null)
 const treeDisplay = ref<any>(null)
 const treeContainerRef = ref<HTMLElement | null>(null)
-const lastNewick = ref('')
+const treeWrapperRef = ref<HTMLElement | null>(null)
+const lastNewick = ref('' )
 const leafCount = ref(0)
 const collapsedCount = ref(0)
 const selectedNodeName = ref('')
@@ -314,13 +322,33 @@ const tooltipVisible = ref(false)
 const tooltipX = ref(0)
 // 平移/缩放手势进行中（zoom start~end），用于切换 grabbing 光标
 const isPanning = ref(false)
+// iTOL 风格框选状态：左键在树空白/分枝区拖动时框住叶节点
+const isBrushSelecting = ref(false)
+const brushStart = ref<{ x: number; y: number } | null>(null)
+const brushEnd = ref<{ x: number; y: number } | null>(null)
+const brushMoved = ref(false)
+const brushSelectedGenes = ref<Set<string>>(new Set())
 const tooltipY = ref(0)
+
+const selectionBoxStyle = computed(() => {
+  if (!brushStart.value || !brushEnd.value) return { display: 'none' }
+  const left = Math.min(brushStart.value.x, brushEnd.value.x)
+  const top = Math.min(brushStart.value.y, brushEnd.value.y)
+  return {
+    left: `${left}px`,
+    top: `${top}px`,
+    width: `${Math.abs(brushEnd.value.x - brushStart.value.x)}px`,
+    height: `${Math.abs(brushEnd.value.y - brushStart.value.y)}px`,
+  }
+})
 const tooltipText = ref('')
 
 // 竞态 / 监听清理
 let fetchAbort: AbortController | null = null
 let leafEventsAbort: AbortController | null = null
 let searchTimer: ReturnType<typeof setTimeout> | null = null
+// 框选完成后紧接着浏览器仍可能派发 click；在此时间窗内忽略，避免误开详情。
+let suppressLeafClickUntil = 0
 
 const displayFamilies = computed(() => {
   if (props.families && props.families.length > 0) return props.families
@@ -353,6 +381,10 @@ function destroyTree() {
   tooltipVisible.value = false
   detailNode.value = null
   selectedNodeName.value = ''
+  brushSelectedGenes.value = new Set()
+  isBrushSelecting.value = false
+  brushStart.value = null
+  brushEnd.value = null
   collapsedCount.value = 0
   if (treeContainerRef.value) treeContainerRef.value.innerHTML = ''
   treeData.value = null
@@ -598,8 +630,15 @@ function configureZoomInteraction(display: unknown) {
   const zb = d.zoomBehavior
   try {
     zb.clickDistance(5)
+    // iTOL 交互分工：默认左键给框选；Shift+左键 / 中键保留为平移，滚轮保留缩放。
+    // 这避免 d3-zoom 在捕获阶段抢走左键，使“点击节点”和“拖出选择框”可稳定区分。
+    zb.filter((event: MouseEvent | WheelEvent) => {
+      if (event.type === 'wheel') return true
+      if (event.type === 'mousedown') return event.button === 1 || (event.button === 0 && event.shiftKey)
+      return !('button' in event) || event.button !== 0 || event.shiftKey
+    })
   } catch {
-    // 旧版 d3 无 clickDistance 时忽略，仅失去"拖后不误选"的增强
+    // 旧版 d3 无 clickDistance/filter 时忽略，仅失去相应交互增强
   }
   d3.select(svgNode).on('dblclick.zoom', null)
   zb.on('start.phyloext', () => {
@@ -609,6 +648,105 @@ function configureZoomInteraction(display: unknown) {
   zb.on('end.phyloext', () => {
     isPanning.value = false
   })
+}
+
+// ==================== iTOL 风格左键框选 ====================
+/** 将浏览器事件坐标转换为 tree-wrapper 局部坐标。 */
+function wrapperPoint(e: MouseEvent): { x: number; y: number } | null {
+  const rect = treeWrapperRef.value?.getBoundingClientRect()
+  if (!rect) return null
+  return { x: e.clientX - rect.left, y: e.clientY - rect.top }
+}
+
+function isTreeTarget(target: EventTarget | null): boolean {
+  return target instanceof Element && !!target.closest('#phylotree-container svg')
+}
+
+/**
+ * 选择框命中的叶节点：基于叶节点 <g> 的屏幕边界，自动适配当前 zoom/pan 与三种布局。
+ * 默认替换选择；按 Ctrl/Cmd 则与既有选择并集，按 Alt 则从既有选择移除。
+ */
+function finishBrushSelection(e: MouseEvent) {
+  const start = brushStart.value
+  const end = brushEnd.value
+  if (!start || !end || !brushMoved.value) return
+  const wrapperRect = treeWrapperRef.value?.getBoundingClientRect()
+  if (!wrapperRect) return
+
+  const left = Math.min(start.x, end.x)
+  const right = Math.max(start.x, end.x)
+  const top = Math.min(start.y, end.y)
+  const bottom = Math.max(start.y, end.y)
+  const hits = new Set<string>()
+  treeContainerRef.value?.querySelectorAll<SVGGElement>('g.node').forEach((el) => {
+    const node = (el as unknown as { __data__?: PhylotreeNode }).__data__
+    const tree = treeData.value
+    if (!node || !tree?.isLeafNode(node)) return
+    const r = el.getBoundingClientRect()
+    // 叶的标记/文字中心落入选择框即命中（避免标签很长时必须框住整个文字）
+    const x = r.left - wrapperRect.left + Math.min(8, r.width / 2)
+    const y = r.top - wrapperRect.top + r.height / 2
+    if (x >= left && x <= right && y >= top && y <= bottom) {
+      const id = extractGeneId(node.data.name || el.getAttribute('data-node-name') || '')
+      if (id) hits.add(id.toLowerCase())
+    }
+  })
+
+  const current = new Set(brushSelectedGenes.value)
+  if (e.altKey) {
+    hits.forEach((id) => current.delete(id))
+  } else if (e.ctrlKey || e.metaKey) {
+    hits.forEach((id) => current.add(id))
+  } else {
+    brushSelectedGenes.value = hits
+    applyHighlighting()
+    return
+  }
+  brushSelectedGenes.value = current
+  applyHighlighting()
+}
+
+function setupBrushSelection() {
+  const wrapper = treeWrapperRef.value
+  if (!wrapper) return
+  const opts: AddEventListenerOptions = { signal: leafEventsAbort?.signal }
+
+  wrapper.addEventListener('mousedown', (e: MouseEvent) => {
+    // 仅左键 + 树 SVG 区域；点在叶节点上仍允许点击详情，移动超过阈值后再进入框选。
+    if (e.button !== 0 || !isTreeTarget(e.target) || e.shiftKey) return
+    const point = wrapperPoint(e)
+    if (!point) return
+    brushStart.value = point
+    brushEnd.value = point
+    brushMoved.value = false
+  }, opts)
+
+  window.addEventListener('mousemove', (e: MouseEvent) => {
+    if (!brushStart.value) return
+    const point = wrapperPoint(e)
+    if (!point) return
+    brushEnd.value = point
+    const dx = point.x - brushStart.value.x
+    const dy = point.y - brushStart.value.y
+    if (!brushMoved.value && Math.hypot(dx, dy) >= 5) {
+      brushMoved.value = true
+      isBrushSelecting.value = true
+      tooltipVisible.value = false
+    }
+  }, opts)
+
+  window.addEventListener('mouseup', (e: MouseEvent) => {
+    if (!brushStart.value) return
+    if (brushMoved.value) {
+      finishBrushSelection(e)
+      // 阻止随后 click 冒泡到叶节点详情（阈值略高于常见 click 时序）
+      suppressLeafClickUntil = Date.now() + 100
+    }
+    isBrushSelecting.value = false
+    brushStart.value = null
+    brushEnd.value = null
+    brushMoved.value = false
+  }, opts)
 }
 
 // ==================== 事件委托 ====================
@@ -642,8 +780,14 @@ function setupLeafInteractions(tree: InstanceType<typeof phylotree>, _display: a
   leafEventsAbort?.abort()
   leafEventsAbort = new AbortController()
   const opts: AddEventListenerOptions = { signal: leafEventsAbort.signal }
+  setupBrushSelection()
 
   container.addEventListener('click', (e: MouseEvent) => {
+    if (Date.now() < suppressLeafClickUntil) {
+      e.preventDefault()
+      e.stopPropagation()
+      return
+    }
     const target: EventTarget | null = e.target
     const r = resolveLeafNode(tree, target)
     if (!r) return
@@ -911,7 +1055,10 @@ function applyHighlighting() {
   const d = treeDisplay.value
   if (!tree || !d) return
   const kw = searchKeyword.value.trim().toLowerCase()
-  const highlightSet = new Set((props.highlightGenes ?? []).map((g) => String(g).toLowerCase()))
+  const highlightSet = new Set([
+    ...(props.highlightGenes ?? []).map((g) => String(g).toLowerCase()),
+    ...brushSelectedGenes.value,
+  ])
 
   const leafTagged = (node: TaggedNode): boolean => {
     if (!tree.isLeafNode(node)) return false
@@ -1171,6 +1318,25 @@ onBeforeUnmount(() => {
   overflow: auto;
 }
 .tree-container { width: 100%; height: 100%; }
+
+/* iTOL 风格框选矩形：覆盖层不接受指针事件，所有输入仍落到 SVG。 */
+.tree-selection-box {
+  position: absolute;
+  z-index: 5;
+  box-sizing: border-box;
+  pointer-events: none;
+  background: rgba(58, 110, 165, 0.16);
+  border: 1px solid #3a6ea5;
+  border-radius: 2px;
+}
+
+.tree-container.is-brush-selecting,
+.tree-container.is-brush-selecting :deep(svg),
+.tree-container.is-brush-selecting :deep(svg *) {
+  cursor: crosshair !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+}
 
 /* 树的平移由 d3-zoom 处理：按住鼠标(mousedown)拖动平移、松开(mouseup)即停。
    必须禁止浏览器对 SVG <text> 的原生文本选中——否则按住拖动会选中基因名（蓝色高亮），

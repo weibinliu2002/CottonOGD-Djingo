@@ -1,7 +1,8 @@
-from django.http import FileResponse, HttpResponse, StreamingHttpResponse, HttpResponseNotFound
+from django.http import FileResponse, HttpResponse, StreamingHttpResponse, HttpResponseNotFound, JsonResponse
 from django.conf import settings
 import os
 import mimetypes
+import json
 
 JBROWSE_ROOT = os.path.join(settings.BASE_DIR, 'static', 'jbrowse', 'data')
 
@@ -121,7 +122,7 @@ def file_iterator(file_path, start=0, length=None):
         f.seek(start)
         remaining = length or os.path.getsize(file_path) - start
         chunk_size = 8192
-        
+
         while remaining > 0:
             read_size = min(chunk_size, remaining)
             data = f.read(read_size)
@@ -129,3 +130,18 @@ def file_iterator(file_path, start=0, length=None):
                 break
             yield data
             remaining -= len(data)
+
+
+def get_jbrowse_tracks(request, genome_name):
+    """读取 config.json，返回该基因组所有 trackId 列表"""
+    config_path = os.path.join(JBROWSE_ROOT, genome_name, 'config.json')
+    if not os.path.exists(config_path):
+        return JsonResponse({'error': f'Config not found for {genome_name}'}, status=404)
+
+    try:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config = json.load(f)
+        track_ids = [t['trackId'] for t in config.get('tracks', []) if 'trackId' in t]
+        return JsonResponse({'tracks': track_ids})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

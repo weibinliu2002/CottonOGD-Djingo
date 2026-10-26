@@ -282,7 +282,7 @@ export default {
         if (seqid && start && end && genomeId) {
           const gffName = 'GFF'
           const loc = `${seqid}:${Math.max(0, start - 1000)}-${end + 1000}`
-          jbrowseUrl = `/assets/jbrowse/index.html?config=data/${genomeId}/config.json&assembly=${genomeId}&loc=${loc}&tracks=${gffName}`
+          jbrowseUrl = `/assets/jbrowse/index.html?config=data/${genomeId}/config.json&assembly=${genomeId}&loc=${loc}`
           console.log('鐢熸垚 jbrowse_url:', jbrowseUrl)
         }
         

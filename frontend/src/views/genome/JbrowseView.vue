@@ -2,7 +2,7 @@
   <div class="container-fluid">
     <div class="row">
       <!-- 宸︿晶杈规爮 - 閫夋嫨鍩哄洜缁?-->
-      <div class="col-md-3">
+      <div class="col-md-2">
         <div class="sidebar">
           <h3>{{ t('jbrowse_views') }} <el-icon class="info-icon"><QuestionFilled /></el-icon></h3>
           <div class="mt-4">
@@ -31,7 +31,7 @@
       </div>
 
       <!-- 涓诲唴瀹瑰尯鍩?- 灞曠ずJBrowse -->
-      <div class="col-md-9">
+      <div class="col-md-10">
         <div class="main-content">
           <h2>{{ t('jbrowse_visualization') }}</h2>
           <div v-if="selectedGenomeInfo" class="genome-info">
@@ -39,7 +39,7 @@
             <!--<p><strong>{{ t('version') }}:</strong> {{ selectedGenomeInfo. }}</p>-->
           </div>
           <div class="embed-container">
-            <iframe :key="iframeKey" :src="currentIframeUrl" width="100%" height="800px" frameborder="0"></iframe>
+            <iframe :key="iframeKey" :src="currentIframeUrl" class="jbrowse-iframe" frameborder="0"></iframe>
           </div>
         </div>
       </div>
@@ -69,7 +69,7 @@ const {
 } = useGenomeSelector()
 
 const currentIframeUrl = ref(
-  '/assets/jbrowse/index.html?assembly=Ghirsutum_genome_HAU_v1.0&tracks=Ghirsutum_genome_HAU_v1.0.gff&loc=Ghir_A01:1-1000000'
+  '/assets/jbrowse/index.html?assembly=GhirsutumAD1_TM-1_HAU_v1.1&loc=Ghir_A01:1-1000000'
 )
 const iframeKey = ref(0)
 const selectedGenomeInfo = ref(null)
@@ -80,7 +80,7 @@ const refreshIframe = () => {
 
 const buildJbrowseUrl = async (genomeName) => {
   const defaultLocus = await createDefaultLocus(genomeName, '1-1000000', 'Ghir_A01')
-  return `/assets/jbrowse/index.html?config=data/${genomeName}/config.json&assembly=${genomeName}&tracks=GFF&loc=${defaultLocus}`
+  return `/assets/jbrowse/index.html?config=data/${genomeName}/config.json&assembly=${genomeName}&tracks=GFF,biological_process_annotation,cellular_component_annotation,molecular_function_annotation,kegg_annotation&loc=${defaultLocus}`
 }
 
 const handleGenomeChange = async (value) => {
@@ -108,7 +108,7 @@ onMounted(async () => {
 
 <style scoped>
 .container-fluid {
-  padding: 20px;
+  padding: 12px;
   background-color: #f5f5f5;
   min-height: 100vh;
 }
@@ -174,8 +174,15 @@ onMounted(async () => {
 .embed-container {
   border: 1px solid #e0e0e0;
   border-radius: 6px;
-  overflow: hidden;
-  margin-top: 20px;
+  overflow: auto;
+  margin-top: 10px;
+}
+
+.jbrowse-iframe {
+  width: 100%;
+  height: calc(100vh - 160px);
+  min-height: 600px;
+  border: none;
 }
 
 /* 鍝嶅簲寮忚璁?*/
