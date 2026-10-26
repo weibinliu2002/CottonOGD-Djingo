@@ -41,7 +41,7 @@ onMounted(async () => {
   try {
     const res = await apiGet<unknown[]>(NEWS_API)
     const list = Array.isArray(res) ? res : Array.isArray((res as any)?.data) ? (res as any).data : []
-    newsItems.value = list.map(normalizeItem).filter((it): it is NewsItem => it !== null)
+    newsItems.value = list.map(normalizeItem).filter((it: NewsItem | null): it is NewsItem => it !== null)
   } catch {
     // 新闻接口尚未上线：保持空占位
   } finally {

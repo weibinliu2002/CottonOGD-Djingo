@@ -236,11 +236,14 @@ function parseItolTreeColors(content: string): ItolRange[] {
       : s.includes(',') ? s.split(',')
       : s.split(/\s+/)
     if (fields.length < 3) continue
-    const [nodeId, type, color, label] = fields.map(f => f.trim())
+    const [nodeIdRaw, typeRaw, colorRaw, label] = fields.map(f => f.trim());
+    const nodeId = nodeIdRaw ?? '';
+    const color = colorRaw ?? '';
+    const type = (typeRaw as ItolRange['type']) || 'range';
     result.push({
       nodeId,
       type: (type as ItolRange['type']) || 'range',
-      color: color.startsWith('#') ? color : `#${color}`,
+      color: color && color.startsWith('#') ? color : `#${color ?? ''}`,
       label: label || undefined
     })
   }
@@ -374,16 +377,13 @@ async function renderTree(newick: string) {
       container: '#phylotree-container',
       width: 1600,
       height: 700,
-      // @ts-expect-error 运行时支持
-      'left-right-spacing': 'fit-to-size',
-      // @ts-expect-error 运行时支持
-      'top-bottom-spacing': 'fit-to-size',
+            'left-right-spacing': 'fit-to-size',
+            'top-bottom-spacing': 'fit-to-size',
       'align-tips': !isRadial && alignRight.value,
       'show-scale': !isRadial,
       'is-radial': isRadial,
       'is-unrooted': false,
-      // @ts-expect-error 运行时支持
-      'scaling': !ignoreBranchLength.value,
+            'scaling': !ignoreBranchLength.value,
       'show-labels': true,
       'font-size': 12,
       zoom: true,
