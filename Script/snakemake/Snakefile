@@ -1,0 +1,542 @@
+#!/usr/bin/env snakemake
+# -*- snakemake -*-
+
+"""
+CottonOGD基因组分析流程
+输入: 基因组名称、FASTA文件、GFF文件
+输出: 完整的基因组注释和分析结果
+"""
+
+import os
+import pandas as pd
+
+# 配置参数
+configfile: "config.yaml"
+
+# 输入文件
+#SAMPLES = config["samples"]
+SAMPLES_TABLE = pd.read_table("merge.txt", sep="\t", dtype=str, header=None, names=["genome", "fa", "gff"]).fillna("")
+SAMPLES = SAMPLES_TABLE["genome"].tolist()
+annotation=pd.read_table("/data/wbliu/data/CottonOGD/pandagma/work3/00_data/SpeciesIDs.txt", sep=" ", dtype=str, header=None, names=["new_genome", "species"]).fillna("")
+annotation["new_genome"]=r'Species'+ annotation["new_genome"].str.replace(":","")
+# 创建从 genome 名称到各行数据的快速查找字典（移除重复的genome名称）
+SAMPLE_LOOKUP = SAMPLES_TABLE.drop_duplicates(subset="genome").set_index("genome").to_dict("index")
+
+# 目录结构
+BASE_DIR = config.get("base_dir", "/data/web/CottonOGD/OGD")
+GENOME_DIR = os.path.join(BASE_DIR, "backend/data/genome")
+SCRIPT_DIR = os.path.join(BASE_DIR, "Script/script")
+BLAST_DIR = os.path.join(BASE_DIR, "backend/data/blastdb/CottonOGD")
+ITAK_DIR = config.get("itak_dir", "/data/wbliu/data/CottonOGD/iTAK")
+BUSCO_DB = config.get("busco_db", "/data/wbliu/data/CottonOGD/busco/busco_downloads/lineages/eudicots_odb10")
+LAI_DIR = config.get("lai_dir", "/data/wbliu/data/CottonOGD/LAI")
+BUSCO_DIR = config.get("busco_dir", "/data/wbliu/data/CottonOGD/busco")
+EGGNOG_DIR = config.get("eggnog", "/data/wbliu/data/CottonOGD/eggnog_annoation")
+FUNCTIONAL_ANNOTATION_DIR = config.get("functional_annotation", "/data/wbliu/data/CottonOGD/Function")
+INTERPROSCAN_DIR =os.path.join(FUNCTIONAL_ANNOTATION_DIR, "interproscan")
+UNIPROT_DIR =os.path.join(FUNCTIONAL_ANNOTATION_DIR, "uniprot")
+eggnog_db = config.get("egg_db", "/public2/wbliu/data/pfam_data/eggnog")
+EGGNOG_DIR =config.get("eggnog_db",'/data/wbliu/data/CottonOGD/eggnog_annoation/eggnog')
+uniprorot_db = config.get("uniprot_db", "/public2/wbliu/data/pfam_data/uniprot/uniprot")
+snakemake_result=os.path.join(BASE_DIR, "snakemake_result")
+
+
+
+# ============================================================
+# 规则定义
+# ============================================================
+
+rule all:
+    """完成所有分析步骤"""
+    input:
+        expand(snakemake_result + "/{genome}_jbrowse.txt", genome=SAMPLES),
+        expand(snakemake_result + "/{genome}_tf_done.txt", genome=SAMPLES),
+        expand(snakemake_result + "/{genome}_busco.txt", genome=SAMPLES),
+        expand(snakemake_result + "/{genome}_lai.txt", genome=SAMPLES),
+        expand(snakemake_result + "/{genome}_geneseq_done.txt", genome=SAMPLES),
+        expand(snakemake_result + "/{genome}_functional_annotation_done.txt", genome=SAMPLES)
+
+
+
+
+
+# ------------------------------------------------------------------
+# add_jbrowse — jbrowse_path 改为 params
+# ------------------------------------------------------------------
+rule add_jbrowse:
+    """添加JBrowse轨道"""
+    input:
+        fa_file=lambda wildcards: os.path.join(GENOME_DIR, wildcards.genome, SAMPLE_LOOKUP[wildcards.genome]["fa"]),
+        gff_file = lambda wildcards: os.path.join(GENOME_DIR, wildcards.genome, SAMPLE_LOOKUP[wildcards.genome]["gff"]),
+    output:
+        done=snakemake_result + "/{genome}_jbrowse.txt",
+        #fa_file=os.path.join(GENOME_DIR, "{genome}", "{genome}.genome.fa.gz"),
+        gff_file = os.path.join(GENOME_DIR, "{genome}", "{genome}.gff.gz"),
+    params:
+        jbrowse_path=os.path.join(BASE_DIR, "backend/static/jbrowse/data/{genome}"),
+        genome_path=os.path.join(GENOME_DIR, "{genome}")
+    shell:
+        """
+        bash {SCRIPT_DIR}/../snakemake/fix_gff.sh {input.gff_file} {output.gff_file}
+        #bash {SCRIPT_DIR}/add_jbrowes.sh {wildcards.genome} {input.fa_file} {output.gff_file} {params.genome_path} {params.jbrowse_path} {SCRIPT_DIR}
+        touch {output.done}
+        """
+
+
+rule add_Species_info:
+    """将物种信息导入到Species_info表"""
+    input:
+        species_csv="species_info.csv"
+    output:
+        done=snakemake_result + "/{genome}_species_info_added.txt"
+    params:
+        genome="{wildcards.genome}"
+    shell:
+        """
+        cd {BASE_DIR}/backend && source venv/bin/activate &&
+        python {SCRIPT_DIR}/snakemake/import_species_info.py
+            --csv {input.species_csv} &&
+        touch {output.done}
+        """
+
+'''
+rule add_species:
+    """将基因组添加到Species表"""
+    input:
+        fa_file=os.path.join(GENOME_DIR, "{genome}", "{genome}.fa"),
+        gff_file=os.path.join(GENOME_DIR, "{genome}", "{genome}.gff.gz")
+    output:
+        "{genome}_species_added.txt"
+    shell:
+        """
+        cd {BASE_DIR}/backend && source venv/bin/activate &&
+        python {SCRIPT_DIR}/process_fasta_gff.py
+            --genome {wildcards.genome}
+            --fasta {input.fa_file}
+            --gff {input.gff_file}
+            --db cottonogd-ortho &&
+        touch {output}
+        """
+'''
+'''
+rule import_genemaster:
+    """导入GeneMaster数据"""
+    input:
+        #species_added="{genome}_species_added.txt",
+        gff_file=os.path.join(GENOME_DIR, "{genome}", "{genome}.gff.gz")
+    output:
+        "{genome}_genemaster_done.txt"
+    shell:
+        """
+        cd {BASE_DIR}/backend && source venv/bin/activate &&
+        Rscript {SCRIPT_DIR}/genemaster.R {wildcards.genome} {input.gff_file} &&
+        touch {output}
+        """
+
+
+rule import_transcriptmaster:
+    """导入TranscriptMaster数据"""
+    input:
+        genemaster_done="{genome}_genemaster_done.txt",
+        gff_file=os.path.join(GENOME_DIR, "{genome}", "{genome}.gff.gz")
+    output:
+        "{genome}_transcriptmaster_done.txt"
+    shell:
+        """
+        cd {BASE_DIR}/backend && source venv/bin/activate &&
+        python {SCRIPT_DIR}/import_transcripts_from_gff.py
+            {input.gff_file} {wildcards.genome} &&
+        touch {output}
+        """
+'''
+
+rule run_busco:
+    """运行BUSCO评估基因组完整性"""
+    input:
+        fa_file=os.path.join(GENOME_DIR, "{genome}", "{genome}.pro_longest.fasta"),
+    output:
+        done=snakemake_result + "/{genome}_busco.txt"
+    params:
+        env="busco",
+        busco_db=config["busco_db"],
+        outdir=os.path.join(GENOME_DIR, "{genome}/busco")
+    shell:
+        """
+        mkdir -p {params.outdir} &&
+        busco -i {input.fa_file}
+              --out_path {params.outdir}
+              -o {wildcards.genome}
+              --lineage_dataset {params.busco_db}
+              -f
+              -m proteins
+              --augustus
+              -c 10
+              --augustus_species Arabidopsis
+              --long
+              --offline &&
+        touch {output.done}
+        """
+
+
+rule run_lai:
+    """计算LAI（LTR Assembly Index）"""
+    input:
+        #species_added="{genome}_species_added.txt"
+    output:
+        done=snakemake_result + "/{genome}_lai.txt"
+    shell:
+        """
+        bash {SCRIPT_DIR}/../snakemake/LAI_for_snakemake.sh {wildcards.genome} &&
+        touch {output.done}
+        """
+
+
+rule extract_longest_fa:
+    """提取最长转录本序列"""
+    input:
+        pro=os.path.join(GENOME_DIR, "{genome}", "{genome}.pro.fa"),
+        #cds=os.path.join(GENOME_DIR, "{genome}", "{genome}.cds.fa"),
+        #mrna=os.path.join(GENOME_DIR, "{genome}", "{genome}.mrna.fa")
+    output:
+        pro_longest=os.path.join(GENOME_DIR, "{genome}", "{genome}.pro_longest.fasta"),
+        #cds_longest=os.path.join(GENOME_DIR, "{genome}", "{genome}.cds_longest.fasta"),
+        #mrna_longest=os.path.join(GENOME_DIR, "{genome}", "{genome}.mrna_longest.fasta")
+    shell:
+        """
+        Rscript {SCRIPT_DIR}/longest.R {input.pro} {output.pro_longest} 
+        wait
+        """
+
+
+# ======================================================================
+# ★ makeblast 规则 — 修正了 3 个语法错误 ★
+# ======================================================================
+rule makeblast:
+    """构建BLAST数据库"""
+    input:
+        blast_path=os.path.join(BASE_DIR, 'backend', 'soft', 'UNIX', 'blast+', 'bin'),  # 修复1: 加逗号
+        pro_longest=os.path.join(GENOME_DIR, "{genome}", "{genome}.pro_longest.fasta"),
+        cds_longest=os.path.join(GENOME_DIR, "{genome}", "{genome}.cds_longest.fasta"),
+        mrna_longest=os.path.join(GENOME_DIR, "{genome}", "{genome}.mrna_longest.fasta"),
+        fa_file=os.path.join(GENOME_DIR, "{genome}", "{genome}.fa")
+    params:
+        blast_db=os.path.join(BLAST_DIR, "{genome}")  # 修复2: {genome} 加引号
+    output:
+        done=snakemake_result + "/{genome}_blast_done.txt"
+    shell:
+        """
+        bash {SCRIPT_DIR}/add_blast_db.sh {wildcards.genome} {input.fa_file} {input.mrna_longest} {input.cds_longest} {input.pro_longest} {input.blast_path} {params.blast_db} &&
+        touch {output.done}
+        """
+
+
+# ------------------------------------------------------------------
+# 解压缩 GFF 文件
+# ------------------------------------------------------------------
+rule decompress_gff:
+    """解压缩 GFF 文件并过滤，只保留 FASTA 中存在的序列"""
+    input:
+        jbrowse_done=snakemake_result + "/{genome}_jbrowse.txt",
+        gff_file=lambda wildcards: os.path.join(GENOME_DIR, wildcards.genome, "{genome}.gff.gz"),
+        fa_file=lambda wildcards: os.path.join(GENOME_DIR, wildcards.genome, SAMPLE_LOOKUP[wildcards.genome]["fa"]),
+    output:
+        gff_uncompressed=os.path.join(GENOME_DIR, "{genome}", "{genome}.gff"),
+    shell:
+        """
+        # 解压缩 GFF，过滤序列，检查坐标范围，将 strand=? 替换为 strand=.
+        bgzip -d -c {input.gff_file} | awk 'NR==FNR {{seqs[$1]=1; len[$1]=$2; next}} /^#/ {{print; next}} ($1 in seqs) {{if($7==\"?\")$7=\".\"; if($4<=$5 && $4>=1 && $5<=len[$1]) print}}' {input.fa_file}.fai - > {output.gff_uncompressed}
+        """
+
+# ------------------------------------------------------------------
+# 序列提取规则（七个小规则）
+# ------------------------------------------------------------------
+rule extract_mrna:
+    """提取 mRNA 序列"""
+    input:
+        gff_uncompressed=os.path.join(GENOME_DIR, "{genome}", "{genome}.gff"),
+        fa_file=lambda wildcards: os.path.join(GENOME_DIR, wildcards.genome, SAMPLE_LOOKUP[wildcards.genome]["fa"]),
+    output:
+        mrna=os.path.join(GENOME_DIR, "{genome}", "{genome}.mrna.fa"),
+    shell:
+        """
+        gffread -E {input.gff_uncompressed} -g {input.fa_file} -u {output.mrna} --w-nocds
+        """
+
+rule extract_cdna:
+    """提取 cDNA 序列"""
+    input:
+        gff_uncompressed=os.path.join(GENOME_DIR, "{genome}", "{genome}.gff"),
+        fa_file=lambda wildcards: os.path.join(GENOME_DIR, wildcards.genome, SAMPLE_LOOKUP[wildcards.genome]["fa"]),
+    output:
+        cdna=os.path.join(GENOME_DIR, "{genome}", "{genome}.cdna.fa"),
+    shell:
+        """
+        gffread -E {input.gff_uncompressed} -g {input.fa_file} -w {output.cdna} --w-nocds
+        """
+
+rule extract_cds:
+    """提取 CDS 序列"""
+    input:
+        gff_uncompressed=os.path.join(GENOME_DIR, "{genome}", "{genome}.gff"),
+        fa_file=lambda wildcards: os.path.join(GENOME_DIR, wildcards.genome, SAMPLE_LOOKUP[wildcards.genome]["fa"]),
+    output:
+        cds=os.path.join(GENOME_DIR, "{genome}", "{genome}.cds.fa"),
+    shell:
+        """
+        gffread -E {input.gff_uncompressed} -g {input.fa_file} -x {output.cds} --w-nocds
+        """
+
+rule extract_pro:
+    """提取蛋白质序列"""
+    input:
+        gff_uncompressed=os.path.join(GENOME_DIR, "{genome}", "{genome}.gff"),
+        fa_file=lambda wildcards: os.path.join(GENOME_DIR, wildcards.genome, SAMPLE_LOOKUP[wildcards.genome]["fa"]),
+    output:
+        pro=os.path.join(GENOME_DIR, "{genome}", "{genome}.pro.fa"),
+    shell:
+        """
+        gffread -E {input.gff_uncompressed} -g {input.fa_file} -y {output.pro} --w-nocds
+        """
+
+rule extract_gene_genome:
+    """提取基因全长序列"""
+    input:
+        gff_uncompressed=os.path.join(GENOME_DIR, "{genome}", "{genome}.gff"),
+        fa_file=lambda wildcards: os.path.join(GENOME_DIR, wildcards.genome, SAMPLE_LOOKUP[wildcards.genome]["fa"]),
+    output:
+        gene_genome=os.path.join(GENOME_DIR, "{genome}", "{genome}.gene_genome.fa"),
+    shell:
+        """
+        Rscript {SCRIPT_DIR}/../snakemake/extract_seq.R {input.fa_file} {input.gff_uncompressed} {output.gene_genome}
+        """
+
+rule extract_upstream:
+    """提取上游 2000bp 序列"""
+    input:
+        gff_uncompressed=os.path.join(GENOME_DIR, "{genome}", "{genome}.gff"),
+        fa_file=lambda wildcards: os.path.join(GENOME_DIR, wildcards.genome, SAMPLE_LOOKUP[wildcards.genome]["fa"]),
+    output:
+        upstream=os.path.join(GENOME_DIR, "{genome}", "{genome}.upstream20000.fa"),
+    shell:
+        """
+        java -cp /data/wbliu/soft/TBtools-II-2.311/TBtools_JRE1.6.jar biocjava.bioIO.GFF.ExtractFeaturefromGFF3andGenome \\
+            --inGtf {input.gff_uncompressed} \\
+            --inGenome {input.fa_file} \\
+            --outFile {output.upstream} \\
+            --targetFeature CDS \\
+            --targetIdTag Parent \\
+            --upStreamBases 2000 \\
+            --onlyCheck false \\
+            --onlyRetainFlank true
+        """
+
+rule extract_downstream:
+    """提取下游 2000bp 序列"""
+    input:
+        gff_uncompressed=os.path.join(GENOME_DIR, "{genome}", "{genome}.gff"),
+        fa_file=lambda wildcards: os.path.join(GENOME_DIR, wildcards.genome, SAMPLE_LOOKUP[wildcards.genome]["fa"]),
+    output:
+        downstream=os.path.join(GENOME_DIR, "{genome}", "{genome}.downstream20000.fa"),
+    shell:
+        """
+        java -cp /data/wbliu/soft/TBtools-II-2.311/TBtools_JRE1.6.jar biocjava.bioIO.GFF.ExtractFeaturefromGFF3andGenome \\
+            --inGtf {input.gff_uncompressed} \\
+            --inGenome {input.fa_file} \\
+            --outFile {output.downstream} \\
+            --targetFeature CDS \\
+            --targetIdTag Parent \\
+            --downStreamBases 2000 \\
+            --onlyCheck false \\
+            --onlyRetainFlank true
+        """
+
+# ------------------------------------------------------------------
+# 汇总规则：等待所有序列提取完成
+# ------------------------------------------------------------------
+rule extract_sequences:
+    """汇总规则：等待所有序列提取完成"""
+    input:
+        rules.extract_mrna.output,
+        rules.extract_cdna.output,
+        rules.extract_cds.output,
+        rules.extract_pro.output,
+        rules.extract_gene_genome.output,
+        rules.extract_upstream.output,
+        rules.extract_downstream.output
+    output:
+        done=snakemake_result + "/{genome}_sequences_done.txt"
+    shell:
+        """
+        touch {output.done}
+        """
+rule import_geneseq:
+    """将序列导入geneseq表"""
+    input:
+        sequences_done=snakemake_result + "/{genome}_sequences_done.txt",
+        pro=os.path.join(GENOME_DIR, "{genome}", "{genome}.pro.fa"),
+        cds=os.path.join(GENOME_DIR, "{genome}", "{genome}.cds.fa"),
+        mrna=os.path.join(GENOME_DIR, "{genome}", "{genome}.mrna.fa"),
+        cdna=os.path.join(GENOME_DIR, "{genome}", "{genome}.cdna.fa"),
+        gene_genome=os.path.join(GENOME_DIR, "{genome}", "{genome}.gene_genome.fa"),
+        upstream=os.path.join(GENOME_DIR, "{genome}", "{genome}.upstream20000.fa"),
+        downstream=os.path.join(GENOME_DIR, "{genome}", "{genome}.downstream20000.fa"),
+    output:
+        done=snakemake_result + "/{genome}_geneseq_done.txt"
+    threads: 1
+    shell:
+        """
+        cd {BASE_DIR}/backend && source venv/bin/activate &&
+        python {SCRIPT_DIR}/../snakemake/import_sequences_to_geneseq.py
+            --species {wildcards.genome} &&
+        touch {output.done}
+        """
+
+
+rule run_itak:
+    """使用iTAK鉴定转录因子"""
+    input:
+        sequences_done=snakemake_result + "/{genome}_sequences_done.txt",
+        pro_file=os.path.join(GENOME_DIR, "{genome}", "{genome}.pro_longest.fasta"),
+    output:
+        done=snakemake_result + "/{genome}_tf_done.txt"
+       
+    params:
+        outdir=os.path.join(ITAK_DIR, "iTAK_result", "{genome}.pro")
+    shell:
+        """
+        mkdir -p {params.outdir} &&
+        cd {ITAK_DIR} &&
+        python iTAK.py -i {input.pro_file} -o {params.outdir} &&
+        touch {output.done}
+        """
+
+
+rule import_tf_to_genefamily:
+    """将iTAK结果导入genefamily表"""
+    input:
+        tf_done="{genome}_tf_done.txt",
+        transcriptmaster_done="{genome}_transcriptmaster_done.txt"
+    output:
+        done=snakemake_result + "/{genome}_genefamily_done.txt"
+    shell:
+        """
+        cd {BASE_DIR}/backend && source venv/bin/activate &&
+        python {SCRIPT_DIR}/import_itak_to_genefamily.py
+            --species {wildcards.genome} &&
+        touch {output.done}
+        """
+
+
+rule functional_annotation:
+    input:
+        interproscan_annotation=INTERPROSCAN_DIR + "/all_genomes_interproscan_annotation.txt",
+        uniprot_annotation=UNIPROT_DIR + "/uniprot_unique.m8",
+        eggnog_import_done=FUNCTIONAL_ANNOTATION_DIR + "/EGGNOG/{genome}/import_done.txt",
+        #eggno_done=snakemake_result + "/{genome}_eggno_done.txt"
+    output:
+        done=snakemake_result + "/{genome}_functional_annotation_done.txt"
+    shell:
+        """
+        touch {output.done}
+        """
+
+rule parrel:
+    input:
+        expand(snakemake_result + "/{genome}_functional_annotation_done.txt", genome=SAMPLES),
+        expand(snakemake_result + "/{genome}_sequences_done.txt", genome=SAMPLES)
+
+rule prepare_annotation:
+    """合并所有物种的蛋白序列并去重"""
+    input:
+        rename_pro=expand('/data/wbliu/data/CottonOGD/pandagma/work3/00_data/{species}/{species}.fa', species=annotation["new_genome"].tolist())
+        
+    output:
+        all_proteins=FUNCTIONAL_ANNOTATION_DIR + "/data/all_proteins.fasta",
+        unique_proteins=FUNCTIONAL_ANNOTATION_DIR + "/data/unique_proteins.fasta",
+        unique_proteins_map=FUNCTIONAL_ANNOTATION_DIR + "/data/unique_proteins_map.txt"
+    params:
+        tmp_dir=FUNCTIONAL_ANNOTATION_DIR + "/data/tmp"
+    shell:
+        """
+        mkdir -p {params.tmp_dir}
+        cat {input.rename_pro} | sed '/^>/!s/[\\*\\.]//g' > {output.all_proteins} && \
+        mmseqs createdb {output.all_proteins} {params.tmp_dir}/all_proteins_db && \
+        mmseqs linclust {params.tmp_dir}/all_proteins_db {params.tmp_dir}/clusterDB {params.tmp_dir} --min-seq-id 1.0 -c 1.0 --cov-mode 1 --threads 20 && \
+        mmseqs result2repseq {params.tmp_dir}/all_proteins_db {params.tmp_dir}/clusterDB {params.tmp_dir}/repSeqDB && \
+        mmseqs convert2fasta {params.tmp_dir}/repSeqDB {output.unique_proteins} && \
+        mmseqs createtsv {params.tmp_dir}/all_proteins_db {params.tmp_dir}/all_proteins_db {params.tmp_dir}/clusterDB {output.unique_proteins_map}
+        """
+rule uniprot:
+    """使用mmseqs鉴定功能域"""
+    input:
+        unique_proteins=FUNCTIONAL_ANNOTATION_DIR + "/data/unique_proteins.fasta",
+    output:
+        uniprot_annotation=UNIPROT_DIR + "/uniprot_unique.m8",
+        best_hits=UNIPROT_DIR + "/best_hits.m8",
+    shell:
+        """
+        mmseqs easy-search {input.unique_proteins} /public2/wbliu/data/pfam_data/uniprot/uniprot_sprot.fasta  {output.uniprot_annotation} tmp --min-seq-id 0.3 -s 5.0 -e 1e-5 -c 0.5 --threads 50 && \
+        sort -k1,1 -k11,11g {output.uniprot_annotation} | awk '!seen[$1]++' > {output.best_hits} && \
+        python {UNIPROT_DIR}/unipro_annotation.py 
+        """
+
+rule interproscan:
+    """使用InterProScan鉴定功能域（合并所有样本的最长蛋白，去重后注释）"""
+    input:
+        unique_proteins=FUNCTIONAL_ANNOTATION_DIR + "/data/unique_proteins.fasta",
+    output:
+        interproscan_annotation=INTERPROSCAN_DIR + "/all_genomes_interproscan_annotation.txt",
+    params:
+        tmp_dir=INTERPROSCAN_DIR + "/tmp/interproscan"
+    shell:
+        """
+        interproscan.sh -i {input.unique_proteins} -o {output.interproscan_annotation} -cpu 16 -f tsv -T {params.tmp_dir} -dp 
+        """
+rule eggno:
+    """使用eggNO鉴定功能域"""
+    input:
+        pro_file=os.path.join(GENOME_DIR, "{genome}", "{genome}.pro_longest.fasta"),
+    output:
+        mmseq_annotation=directory(EGGNOG_DIR + "/{genome}.pro_longest_mmseqs_proteins_realign"),
+        annotation=EGGNOG_DIR + "/{genome}.pro_longest_mmseqs_proteins_realign/{genome}.pro_longest_mmseqs_proteins_realign.emapper.annotations"
+        #diamond_annotation=directory(EGGNOG_DIR + "/{genome}.pro_longest_diamond_proteins_realign"),
+        #done=snakemake_result + "/{genome}_eggno_done.txt"
+    params:
+        COMMON_ARGS="--cpu 20 --mp_start_method forkserver --data_dir " + config["egg_db"] + " \
+             --temp_dir /tmp --override --evalue 0.001 --score 60 \
+             --pident 40 --query_cover 20 --subject_cover 20 --tax_scope auto \
+             --target_orthologs all --go_evidence non-electronic \
+             --pfam_realign realign --report_orthologs --decorate_gff yes --excel"
+
+    shell:
+        """
+       
+        emapper.py {params.COMMON_ARGS} --output_dir {output.mmseq_annotation} -m mmseqs -i {input.pro_file} -o {wildcards.genome}.pro_longest_mmseqs_protein_realign --itype proteins
+        """
+
+rule result_egg:
+    """使用eggNO鉴定功能域"""
+    input:
+       annotation=EGGNOG_DIR + "/{genome}.pro_longest_mmseqs_proteins_realign/{genome}.pro_longest_mmseqs_proteins_realign.emapper.annotations"
+    output:
+        annotation=directory(FUNCTIONAL_ANNOTATION_DIR + "/EGGNOG/{genome}"),
+        GOannotation=FUNCTIONAL_ANNOTATION_DIR + "/EGGNOG/{genome}/GOannotation.tsv",
+        KOannotation=FUNCTIONAL_ANNOTATION_DIR + "/EGGNOG/{genome}/KOannotation.tsv",
+    shell:
+        """
+        python {EGGNOG_DIR}/parse_eggNOG.py -i {input.annotation} -g {EGGNOG_DIR}/go.tb -O ath,tcc,gra,ghi,gab,hsyr,dzi,egr,rarg  -o {output.annotation}
+        """
+
+rule import_egg:
+    """导入eggNO注释"""
+    input:
+        GOannotation=FUNCTIONAL_ANNOTATION_DIR + "/EGGNOG/{genome}/GOannotation.tsv",
+        KOannotation=FUNCTIONAL_ANNOTATION_DIR + "/EGGNOG/{genome}/KOannotation.tsv",
+    output:
+        done=touch(FUNCTIONAL_ANNOTATION_DIR + "/EGGNOG/{genome}/import_done.txt"),
+    params:
+        script_dir=SCRIPT_DIR+'../snakemake/',
+    shell:
+        """
+        cd {params.script_dir} && source venv/bin/activate && python import_eggnog_annotation.py {wildcards.genome} {FUNCTIONAL_ANNOTATION_DIR}/EGGNOG/{wildcards.genome}
+        """ 

@@ -1,0 +1,11 @@
+G.hirsutumAD1_PSC355_USDA_v1	PSC355.genome.fa	PSC355.pub.gff
+G.hirsutumAD1_Punctatum_CRI_v1	GCA_024704785.1_ASM2470478v1_genomic.fa	AD1_ICR-race-punctatum.gff
+G.hirsutumAD1_TM-1_ATU_v2.1	Ghirsutum_527_v2.0.fa	Ghirsutum_527_v2.1.gene.gff
+G.hirsutumAD1_TM-1_BGI-CGI_v1	BGI_Gossypium_hirsutum_v1.0.fa	BGI_Gossypium_hirsutum_v1.0.gff
+G.hirsutumAD1_TM-1_CRI_v1	TM_1.fa	TM_1.Chr.gff
+G.hirsutumAD1_TM-1_HAU_v1.1	Ghirsutum_genome.fa	Ghirsutum_gene_model.gff
+G.hirsutumAD1_TM-1_JGI-ATU_v1.1	Tx-JGI_G.hirsutum_v1.1.fa	Tx-JGI_G.hirsutum_v1.1.gene.gff
+G.hirsutumAD1_TM-1_NJAU-NBT_v1.1	NBI_Gossypium_hirsutum_v1.1.fa	NBI_Gossypium_hirsutum_v1.1.gene.gff
+G.hirsutumAD1_TM-1_WHU_v1	Ghirsutum_TM-1_WHU_genome.standard.fa	Ghirsutum_TM-1_WHU_standard.gene.gff
+G.hirsutumAD1_TM-1_ZJU_v1.1T2T	TM-1-T2T.fa	GhChr.gff
+G.hirsutumAD1_TM-1_ZJU_v2.1	TM-1_V2.1.fa	TM-1_V2.1.gene.gff

@@ -1,0 +1,5 @@
+name,Cotton_Species,Genome_type,Category,Accession,Ploidy,Assembling_institution,Website,Article,LAI_value,Busco,Genome_size,description,alias
+G.hirsutumAD1_TM-1_ZJU_v2.1,Gossypium hirsutum,AD1, cultivated,AAD1,2x,Zhejiang University,https://www.cottongen.org,doi:10.1038/nbt.3208,10.5,95.2,2300000000,Reference genome of upland cotton,TM-1_ZJU_v2.1
+G.barbadenseAD2_3-79_HGSC_v1.1,Gossypium barbadense,AD2,cultivated,AAD2,2x,HGSC,https://www.cottongen.org,doi:10.1038/nbt.3209,12.3,94.8,2100000000,Reference genome of extra-long staple cotton,3-79_HGSC_v1.1
+G.arboreumA2_Shixiya1_HAU_v1,Gossypium arboreum,A2,wild,A2,2x,Huazhong Agricultural University,https://www.cottongen.org,doi:10.1038/nbt.3210,8.7,93.5,1700000000,Diploid cotton genome,Shixiya1_HAU_v1
+G.raimondiiD5_JGI_v2.0,Gossypium raimondii,D5,wild,D5,2x,JGI,https://www.cottongen.org,doi:10.1038/nbt.3211,15.2,96.1,850000000,Diploid D-genome cotton,JGI_v2.0

@@ -26,7 +26,25 @@
   "configuration": {},
   "connections": [],
   "defaultSession": {
-    "name": "New Session"
+    "name": "G.tomentosumAD3_HAU_v1",
+    "views": [
+      {
+        "id": "linearGenomeView",
+        "type": "LinearGenomeView",
+        "tracks": [
+          {
+            "type": "FeatureTrack",
+            "configuration": "GFF",
+            "displays": [
+              {
+                "type": "LinearBasicDisplay",
+                "configuration": "GFF-LinearBasicDisplay"
+              }
+            ]
+          }
+        ]
+      }
+    ]
   },
   "tracks": [
     {

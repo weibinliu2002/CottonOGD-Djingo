@@ -1,0 +1,44 @@
+# CottonOGD基因组分析流程配置文件
+
+# 基础目录
+base_dir: "/public2/lyserver/web/CottonOGD/OGD"
+functional_annotation: "/public2/lyserver/wbliu/data/CottonOGD/Function"
+# 样本列表（基因组名称）
+samples:
+  - G.gossypioidesD6_ISU_v1.0
+  - G.harknessiiD2-2_ISU_v1.0
+ 
+
+# 工具和数据库路径
+busco_db: "/public2/wbliu/data/CottonOGD/busco/busco_downloads/lineages/eudicots_odb10"
+lai_dir: "/public2/wbliu/data/CottonOGD/LAI"
+itak_dir: "/public2/wbliu/data/CottonOGD/iTAK"
+uniprot_db: "/public2/wbliu/data/pfam_data/uniprot/uniprot"
+pfam_db: "/public2/wbliu/data/pfam_data/pfamdb/Pfam-A.hmm"
+egg_db: "/public2/wbliu/data/pfam_data/eggnog"
+
+# 线程数
+threads: 8
+
+# 内存限制（MB）
+memory: 4000000
+
+# 输入文件配置
+input:
+  genome: ""
+  fasta_suffix: ".fa"
+  gff_suffix: ".gff.gz"
+
+# 输出目录配置
+output:
+  genome_dir: "backend/data/genome"
+  log_dir: "logs"
+  result_dir: "backend/data"
+
+# 数据库配置
+database:
+  name: "cottonogd-ortho"
+  user: "cottonogd"
+  password: "1234"
+  host: "localhost"
+  port: 3306

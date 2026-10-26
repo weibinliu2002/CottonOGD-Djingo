@@ -5,7 +5,7 @@ import pymysql
 def import_kegg_ko_data(json_file_path):
     conn = pymysql.connect(
         host='localhost',
-        user='root',
+        user='cottonogd',
         password='1234',
         db='cottonogd-ortho',
         charset='utf8mb4',

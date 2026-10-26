@@ -20,7 +20,7 @@ from django.db.models import Count
 from CottonOGD.config.meilisearch_config import MeilisearchConfig
 from CottonOGD.models import Family, GeneMaster, Species_info, gene_info, gene_seq
 from CottonOGD.server.annotation_search import get_annotation
-from CottonOGD.server.Go_kegg_saearch import go_annotation, kegg_annotation
+from CottonOGD.server.Go_kegg_search import go_annotation, kegg_annotation
 from CottonOGD.server.seq_fetch import fetch_by_id
 from CottonOGD.views.Meilisearch import search_genes
 from CottonOGD.views.gene_id_result import (

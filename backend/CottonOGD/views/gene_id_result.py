@@ -3,7 +3,7 @@ from rest_framework.decorators import api_view
 from rest_framework import status
 from django.db.models import Q
 from CottonOGD.server.annotation_search import get_annotation
-from CottonOGD.server.Go_kegg_saearch import go_annotation, kegg_annotation
+from CottonOGD.server.Go_kegg_search import go_annotation, kegg_annotation
 from CottonOGD.server.seq_fetch import fetch_by_id, fetch_region
 from CottonOGD.views.Meilisearch import search_genes, normalize_gene_query
 from CottonOGD.models import gene_annotation, gene_info, gene_seq, gene_go, gene_kegg, Species_info, GeneMaster

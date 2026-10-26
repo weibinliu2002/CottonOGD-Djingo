@@ -1,66 +1,67 @@
+"""
+EFP（电子荧光伪彩图）视图：POST /CottonOGD_api/expression_EFP_image/
+
+渲染策略（eFP Browser 风格）：
+  - 底图是多器官棉株插画（自带器官标签与引线，位于多边形外部）；
+  - 每个器官多边形先铺白色底遮住插画本身的绿/蓝色，再填高不透明度
+    表达色，保证组织颜色不受底图干扰、器官之间边界清晰；
+  - 大面积区域内叠加数值标签（白色描边），无数据区域填浅灰；
+  - 颜色映射使用 matplotlib 三段线性色图，对数值做 log10 归一化。
+"""
 import json
-import os
 import math
+import os
 import logging
-from rest_framework.response import Response
-from rest_framework.decorators import api_view
-from rest_framework import status
-from django.views.decorators.csrf import csrf_exempt
-from CottonOGD.models import gene_expression
-from io import BytesIO
 import base64
+from io import BytesIO
+
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
+from matplotlib.colors import LinearSegmentedColormap
+
 from django.conf import settings
 from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 
+from CottonOGD.models import gene_expression
 
 logger = logging.getLogger(__name__)
 
-# 全局变量，标记rpy2是否可用
+# 表达色填充不透明度（0-255）。高于 220 时底图纹理基本不可见，只保留轮廓感
+FILL_ALPHA = 235
+# 多边形面积（像素^2）超过该阈值才绘制数值标签，避免小器官文字挤成一团
+VALUE_LABEL_MIN_AREA = 6000
+# 同名器官只在最大的一块上标注器官名，避免 Leaf 的 8 个多边形重复标字
+NAME_LABEL_MIN_AREA_RATIO = 1.0
 
-rpy2_available = False
-'''
-# 尝试导入rpy2包（仅检查是否存在，不初始化）
-try:
-    # 设置R_HOME环境变量
-    # R安装在 D:\software\R\R-4.5.2（无空格路径）
-    r_home = r'D:\software\R\R-4.5.2'
-    if os.path.exists(r_home):
-        os.environ['R_HOME'] = r_home
-        logger.info(f'Set R_HOME to: {r_home}')
-    else:
-        logger.warning(f'R installation path not found: {r_home}')
-    
-    # 在Windows上设置cffi模式为ABI
-    os.environ['RPY2_CFFI_MODE'] = 'ABI'
-    logger.info('Set RPY2_CFFI_MODE to ABI for Windows compatibility')
-    
-    import rpy2
-    # 尝试初始化R，检查是否真的可用
-    try:
-        import rpy2.rinterface as rinterface
-        # 尝试初始化R
-        rinterface.initr()
-        # 如果成功，标记为可用
-        rpy2_available = False
-        logger.info('rpy2 package and R initialization successful, will use R for EFP drawing when possible')
-    except Exception as init_error:
-        # R初始化失败，禁用rpy2
-        rpy2_available = False
-        logger.warning(f'rpy2 found but R initialization failed: {str(init_error)}, falling back to PIL')
-        logger.warning('This is likely due to R installation issues. Please ensure R is properly installed.')
-except ImportError as e:
-    logger.warning(f'rpy2 not available: {str(e)}, falling back to PIL')
-except Exception as e:
-    logger.warning(f'Error checking rpy2: {str(e)}, falling back to PIL')
-'''
+# 组织名别名：ccc.json 区域名 / 其他命名习惯 -> 数据库 tissue 字段的规范名
+REGION_ALIASES = {
+    'fiber': 'fibers',
+    'fibers': 'fibers',
+    'ovule': 'ovules',
+    'ovules': 'ovules',
+    'phloem': 'pholem',
+    'pholem': 'pholem',
+    'cotyledon': 'cotyledon',
+}
+
+# 缓存已创建的色图（按颜色组合复用）
+_COLORMAP_CACHE = {}
+
+
+def _get_colormap(low_color, mid_color, high_color):
+    """三段线性色图，带缓存。"""
+    cache_key = (low_color, mid_color, high_color)
+    if cache_key not in _COLORMAP_CACHE:
+        _COLORMAP_CACHE[cache_key] = LinearSegmentedColormap.from_list(
+            'efp', [low_color, mid_color, high_color], N=256)
+    return _COLORMAP_CACHE[cache_key]
+
+
 @csrf_exempt
 def expression_EFP_image(request):
-    """生成热图API - 优化版本"""
-    
+    """生成 EFP 伪彩图 API"""
     try:
-        # 1. 参数解析
         data = _parse_request_data(request)
         gene_id = data.get('gene_id')
         if not gene_id:
@@ -71,108 +72,70 @@ def expression_EFP_image(request):
         high_color = data.get('high_color', '#FF0000')
         genome_id = data.get('genome_id', 'G.hirsutumAD1_Jin668_HAU_v1T2T')
 
-        logger.info(f'Request: gene_id={gene_id}, genome={genome_id}, '
-                   f'colors=({low_color}, {mid_color}, {high_color})')
+        logger.info('Request: gene_id=%s, genome=%s, colors=(%s, %s, %s)',
+                    gene_id, genome_id, low_color, mid_color, high_color)
 
         # 2. 获取基因数据
         gene_data = list(gene_expression.objects.filter(
-            geneid=gene_id, 
+            geneid=gene_id,
             genome=genome_id
         ))
-        
         if not gene_data:
-            logger.error(f'Gene not found: {gene_id} in {genome_id}')
+            logger.error('Gene not found: %s in %s', gene_id, genome_id)
             return JsonResponse({
-                'success': False, 
+                'success': False,
                 'error': f'基因ID "{gene_id}" 在基因组 "{genome_id}" 中不存在'
             })
 
         # 3. 构建表达值映射
         stage_tissue_map = _build_expression_map(gene_data)
-        
+
         # 4. 加载配置和图像
         regions_config = _load_regions_config()
         base_image = _load_base_image()
-        
-        # 5. 处理区域数据（单次循环）
-        regions_info, values = _process_regions(
-            regions_config, 
-            stage_tissue_map, 
-            base_image
-        )
 
-        # 6. 计算值范围（使用对数分位数，避免IQR问题）
+        # 5. 处理区域数据
+        regions_info, values = _process_regions(regions_config, stage_tissue_map)
+
+        # 6. 计算值范围（log 分位数）
         min_val, max_val, min_log, max_log = _calculate_value_range(values)
 
-        # 7. 绘制热图 - 优先使用R绘制
-        image = None
-        logger.info(f'rpy2_available: {rpy2_available}')
-        if rpy2_available:
-            try:
-                logger.info('Attempting to use R for EFP drawing')
-                # 尝试使用R绘制
-                image, regions_info = _draw_heatmap_with_r(
-                    regions_info, 
-                    values,
-                    min_val, max_val, min_log, max_log,
-                    low_color, mid_color, high_color
-                )
-                logger.info('Successfully used R for EFP drawing')
-            except Exception as e:
-                logger.error(f'Error using R: {str(e)}', exc_info=True)
-                # 回退到PIL绘制
-                image = None
-        
-        if image is None:
-            logger.info('Falling back to PIL for EFP drawing')
-            # 使用PIL绘制
-            image, regions_info = _draw_heatmap(
-                base_image, 
-                regions_info, 
-                values,
-                min_val, max_val, min_log, max_log,
-                low_color, mid_color, high_color
-            )
-            logger.info('Successfully used PIL for EFP drawing')
+        # 7. 绘制伪彩图
+        image = _draw_heatmap(
+            base_image,
+            regions_info,
+            min_log, max_log,
+            low_color, mid_color, high_color
+        )
 
-        # 8. 添加图例和信息（如果是PIL绘制的）
-        if isinstance(image, Image.Image):
-            draw = ImageDraw.Draw(image, 'RGBA')
-            add_colorbar(draw, image.width, image.height, 
-                        min_val, max_val, 
-                        hex_to_rgb(low_color), 
-                        hex_to_rgb(mid_color), 
-                        hex_to_rgb(high_color))
-            add_gene_info(draw, image.width, gene_id, len(values), len(regions_config['regions']))
+        # 8. 图例与标题
+        draw = ImageDraw.Draw(image, 'RGBA')
+        add_colorbar(draw, image.width, image.height,
+                     min_val, max_val,
+                     low_color, mid_color, high_color)
+        add_gene_info(draw, image.width, image.height, gene_id,
+                      len(values), len(regions_config['regions']))
 
         # 9. 生成响应
-        if isinstance(image, Image.Image):
-            img_str = _image_to_base64(image)
-        else:
-            # R生成的图像已经是base64
-            img_str = image
-        
+        img_str = _image_to_base64(image)
         return JsonResponse({
             'success': True,
             'image': f'data:image/png;base64,{img_str}',
             'regions_info': regions_info,
-            'image_width': getattr(image, 'width', 800),
-            'image_height': getattr(image, 'height', 600),
+            'image_width': image.width,
+            'image_height': image.height,
             'gene_id': gene_id,
             'genome_id': genome_id,
             'min_value': float(min_val),
             'max_value': float(max_val),
             'valid_regions': len(values),
             'total_regions': len(regions_config['regions']),
-            'drawing_method': 'R' if rpy2_available and not isinstance(image, Image.Image) else 'PIL'
+            'drawing_method': 'PIL'
         })
 
     except Exception as e:
-        logger.error(f'Error generating heatmap: {str(e)}', exc_info=True)
-        return JsonResponse({
-            'success': False, 
-            'error': f'生成热图时发生错误: {str(e)}'
-        })
+        logger.error('Error generating EFP image: %s', e, exc_info=True)
+        return JsonResponse({'success': False, 'error': f'生成热图时发生错误: {e}'})
 
 
 def _parse_request_data(request):
@@ -183,28 +146,25 @@ def _parse_request_data(request):
 
 
 def _build_expression_map(gene_data):
-    """构建阶段-组织到表达值的映射"""
+    """构建 stage_tissue -> 表达值列表 的映射（键统一小写）"""
     stage_tissue_map = {}
-    
     for item in gene_data:
         stage = (item.stage or '').strip()
         tissue = (item.tissue or '').strip()
-        
         if not stage and not tissue:
             continue
-            
-        # 生成所有可能的键格式
+
         keys = set()
         base_key = f'{stage}_{tissue}'.lower() if stage and tissue else (stage or tissue).lower()
         keys.add(base_key)
-        
-        # 添加无下划线版本
         if stage and tissue:
             keys.add(f'{stage}{tissue}'.lower())
-            
+            # 器官单独键（如 3DPA_fibers 区域聚合所有时期取均值时用不到，
+            # 但无 stage 信息的器官如 Leaf 依赖此键）
+            keys.add(tissue.lower())
+
         for key in keys:
             stage_tissue_map.setdefault(key, []).append(item.value)
-            
     return stage_tissue_map
 
 
@@ -213,7 +173,6 @@ def _load_regions_config():
     config_path = os.path.join(settings.BASE_DIR, 'static', 'ccc.json')
     if not os.path.exists(config_path):
         raise FileNotFoundError('区域配置文件不存在')
-    
     with open(config_path, 'r', encoding='utf-8') as f:
         return json.load(f)
 
@@ -226,45 +185,28 @@ def _load_base_image():
     return Image.open(image_path).convert('RGBA')
 
 
-def _process_regions(regions_config, stage_tissue_map, base_image):
-    """预处理所有区域，收集值和信息"""
+def _process_regions(regions_config, stage_tissue_map):
+    """为每个区域查找表达值，返回 (regions_info, values)"""
     regions_info = []
     values = []
-    
-    region_to_tissue = {
-        'Stem': 'stem', 'Root': 'root', 'Leaf': 'leaf',
-        'Bract': 'bract', 'Sepal': 'sepal', 'Petal': 'petal',
-        'Stigma': 'stigma', 'Anther': 'anther', 'Cotyledon': 'cotyledon',
-        'Phloem': 'phloem', 'Ovules': 'ovule', 'Seed': 'seed', 'Fiber': 'fiber'
-    }
-    
+
     for region in regions_config['regions']:
         region_name = region['name']
         polygon = region.get('polygon', [])
-        
-        # 验证多边形
+
         if not polygon:
-            regions_info.append({
-                'name': region_name,
-                'value': 'No Polygon',
-                'polygon': []
-            })
+            regions_info.append({'name': region_name, 'value': 'No Polygon', 'polygon': []})
             continue
-            
+
         try:
             polygon = [(int(x), int(y)) for x, y in polygon]
         except (ValueError, TypeError) as e:
-            logger.error(f'Invalid polygon for {region_name}: {e}')
-            regions_info.append({
-                'name': region_name,
-                'value': 'Invalid Polygon',
-                'polygon': []
-            })
+            logger.error('Invalid polygon for %s: %s', region_name, e)
+            regions_info.append({'name': region_name, 'value': 'Invalid Polygon', 'polygon': []})
             continue
-        
-        # 查找表达值
-        region_values = _find_region_values(region_name, stage_tissue_map, region_to_tissue)
-        
+
+        region_values = _find_region_values(region_name, stage_tissue_map)
+
         if region_values:
             value = sum(region_values) / len(region_values)
             if not math.isnan(value):
@@ -276,369 +218,238 @@ def _process_regions(regions_config, stage_tissue_map, base_image):
                     'has_data': True
                 })
                 continue
-        
-        # 无数据情况
+
         regions_info.append({
             'name': region_name,
             'value': 'NA',
             'polygon': polygon,
             'has_data': False
         })
-    
+
     return regions_info, values
 
 
-def _find_region_values(region_name, stage_tissue_map, region_to_tissue):
-    """查找区域的表达值"""
-    # 策略1: 直接匹配区域名
+def _find_region_values(region_name, stage_tissue_map):
+    """查找区域的表达值：精确 -> 别名 -> 模糊包含"""
     key = region_name.lower()
+    # 策略1: 区域名精确匹配（覆盖 0DPA_ovules / 3DPA_fibers 等阶段区域）
     if key in stage_tissue_map:
         return stage_tissue_map[key]
-    
-    # 策略2: 匹配组织类型
-    tissue_key = region_to_tissue.get(region_name, region_name).lower()
+
+    # 策略2: 别名归一后的组织名匹配
+    tissue_key = REGION_ALIASES.get(key, key)
     if tissue_key in stage_tissue_map:
         return stage_tissue_map[tissue_key]
-    
-    # 策略3: 模糊匹配
+
+    # 策略3: 模糊包含（兼容 stage 拼写差异）
     values = []
     for k, v in stage_tissue_map.items():
-        if tissue_key in k:
+        if tissue_key in k or k in tissue_key:
             values.extend(v)
     return values
 
 
 def _calculate_value_range(values):
-    """计算对数缩放的值范围（修复IQR问题）"""
+    """计算 log10 缩放的值范围（5%-95% 分位数抗异常值）"""
     if not values:
-        min_val, max_val = 0, 10
-    else:
-        # 使用对数分位数，但确保范围有效
-        log_values = np.log10(np.array(values) + 1)
-        
-        # 使用5%-95%分位数而非IQR，避免异常值过度影响
-        min_log = np.percentile(log_values, 5)
-        max_log = np.percentile(log_values, 95)
-        
-        # 确保最小范围，避免除零
-        if max_log - min_log < 0.1:
-            mean_log = (min_log + max_log) / 2
-            min_log = mean_log - 0.05
-            max_log = mean_log + 0.05
-        
-        min_val = 10 ** min_log - 1
-        max_val = 10 ** max_log - 1
-    
-    return min_val, max_val, min_log, max_log
+        return 0, 10, 0, 1
+
+    log_values = np.log10(np.array(values) + 1)
+    min_log = np.percentile(log_values, 5)
+    max_log = np.percentile(log_values, 95)
+
+    if max_log - min_log < 0.1:
+        mean_log = (min_log + max_log) / 2
+        min_log = mean_log - 0.05
+        max_log = mean_log + 0.05
+
+    return 10 ** min_log - 1, 10 ** max_log - 1, min_log, max_log
 
 
-def _draw_heatmap(base_image, regions_info, values, min_val, max_val, 
-                  min_log, max_log, low_color, mid_color, high_color):
-    """绘制热图"""
+def _polygon_area(polygon):
+    """鞋带公式计算多边形面积"""
+    n = len(polygon)
+    if n < 3:
+        return 0
+    area = 0
+    for i in range(n):
+        x1, y1 = polygon[i]
+        x2, y2 = polygon[(i + 1) % n]
+        area += x1 * y2 - x2 * y1
+    return abs(area) / 2
+
+
+def _polygon_centroid(polygon):
+    """多边形质心"""
+    n = len(polygon)
+    if n == 0:
+        return (0, 0)
+    cx = sum(p[0] for p in polygon) / n
+    cy = sum(p[1] for p in polygon) / n
+    return (int(cx), int(cy))
+
+
+def _normalized_value(value, min_log, max_log):
+    """log10 归一化到 [0, 1]"""
+    log_value = math.log10(value + 1)
+    if max_log > min_log:
+        return max(0.0, min(1.0, (log_value - min_log) / (max_log - min_log)))
+    return 0.5
+
+
+def _value_color(normalized, cmap):
+    """归一化值 -> RGBA 颜色元组"""
+    r, g, b, _ = cmap(normalized)
+    return (int(r * 255), int(g * 255), int(b * 255))
+
+
+def _load_font(size):
+    """加载字体，失败回退默认"""
+    try:
+        return ImageFont.truetype('arial.ttf', size)
+    except OSError:
+        return ImageFont.load_default()
+
+
+def _draw_heatmap(base_image, regions_info, min_log, max_log,
+                  low_color, mid_color, high_color):
+    """绘制 EFP 伪彩图：白底遮罩 + 高不透明度纯色 + 深色描边 + 数值标签"""
     image = base_image.copy()
     draw = ImageDraw.Draw(image, 'RGBA')
-    
-    low_rgb = hex_to_rgb(low_color)
-    mid_rgb = hex_to_rgb(mid_color)
-    high_rgb = hex_to_rgb(high_color)
-    
-    for region in regions_info:
-        polygon = region['polygon']
-        if not polygon or not region.get('has_data'):
-            # 绘制灰色边框表示无数据
-            if len(polygon) > 1:
-                closed = polygon + [polygon[0]]
-                draw.line(closed, fill='gray', width=2, joint='curve')
-            continue
-        
-        # 计算颜色
-        value = region['value']
-        log_value = math.log10(value + 1)
-        
-        # 对数归一化
-        if max_log > min_log:
-            normalized = (log_value - min_log) / (max_log - min_log)
-            normalized = max(0, min(1, normalized))
-        else:
-            normalized = 0.5
-        
-        # 使用对数感知的颜色映射
-        color = _log_aware_color_map(normalized, low_rgb, mid_rgb, high_rgb)
-        
-        # 绘制
-        draw.polygon(polygon, fill=color)
-        if len(polygon) > 1:
-            closed = polygon + [polygon[0]]
-            draw.line(closed, fill='black', width=2, joint='curve')
-        
-        # 更新区域信息
-        region['color'] = color
-        region['normalized'] = normalized
-    
-    return image, regions_info
+    cmap = _get_colormap(low_color, mid_color, high_color)
 
-
-def _log_aware_color_map(normalized, low_rgb, mid_rgb, high_rgb, alpha=100):
-    """对数感知的颜色映射（保持视觉线性）"""
-    # 使用指数插值使颜色过渡更符合对数感知
-    if normalized < 0.5:
-        t = (normalized * 2) ** 0.5  # 指数调整
-        r = int(low_rgb[0] + (mid_rgb[0] - low_rgb[0]) * t)
-        g = int(low_rgb[1] + (mid_rgb[1] - low_rgb[1]) * t)
-        b = int(low_rgb[2] + (mid_rgb[2] - low_rgb[2]) * t)
-    else:
-        t = ((normalized - 0.5) * 2) ** 2  # 平方调整
-        r = int(mid_rgb[0] + (high_rgb[0] - mid_rgb[0]) * t)
-        g = int(mid_rgb[1] + (high_rgb[1] - mid_rgb[1]) * t)
-        b = int(mid_rgb[2] + (high_rgb[2] - mid_rgb[2]) * t)
-    
-    return (
-        max(0, min(255, r)),
-        max(0, min(255, g)),
-        max(0, min(255, b)),
-        max(0, min(255, alpha))
-    )
-
-
-def _draw_heatmap_with_r(regions_info, values, min_val, max_val, min_log, max_log, low_color, mid_color, high_color):
-    """使用R的ggplot2绘制热图"""
-    import pandas as pd
-    
-    # 准备数据
-    region_data = []
+    # 每个器官名对应的最大多边形面积，用于决定是否标注器官名
+    name_area = {}
     for region in regions_info:
         if region.get('has_data'):
-            region_data.append({
-                'name': region['name'],
-                'value': region['value'],
-                'normalized': (math.log10(region['value'] + 1) - min_log) / (max_log - min_log) if max_log > min_log else 0.5
-            })
-    
-    if not region_data:
-        # 无数据情况，返回空图像
-        image = Image.new('RGBA', (800, 600), (255, 255, 255, 255))
-        draw = ImageDraw.Draw(image)
-        draw.text((400, 300), 'No data available', fill='black', anchor='mm')
-        return image, regions_info
-    
-    # 创建DataFrame
-    df = pd.DataFrame(region_data)
-    
-    try:
-        # 延迟导入rpy2组件
-        import rpy2.robjects as robjects
-        from rpy2.robjects import pandas2ri
-        from rpy2.robjects.conversion import localconverter
-        from rpy2.robjects.packages import importr
-        
-        # 创建包含默认转换器和pandas转换器的复合转换器
-        converter = robjects.default_converter + pandas2ri.converter
-        
-        # 确保在转换上下文中执行所有R操作
-        with localconverter(converter):
-            # 设置R选项
-            robjects.r('options(warn = -1)')
-            
-            # 传递数据到R环境
-            robjects.globalenv['df'] = robjects.conversion.py2rpy(df)
-            robjects.globalenv['low_color'] = robjects.conversion.py2rpy(low_color)
-            robjects.globalenv['mid_color'] = robjects.conversion.py2rpy(mid_color)
-            robjects.globalenv['high_color'] = robjects.conversion.py2rpy(high_color)
-            
-            # 构建R代码（使用ggplantmap绘制）
-            r_code = """
-            # 设置R库路径
-            .libPaths("D:/software/R/Rlib")
-            
-            # 加载必要的包
-            library(ggplot2)
-            library(base64enc)
-            library(ggplantmap)
-            library(jsonlite)
-            library(png)
-            
-            # 保存为临时文件
-            temp_file <- tempfile(fileext = '.png')
-            
-            # 尝试使用ggplantmap绘制
-            tryCatch({
-                # 设置编码
-                options(encoding = "UTF-8")
-                
-                # 读取JSON文件（使用正确编码）
-                json_data <- fromJSON('D:/science/OGD/backend/static/ccc.json', encoding = "UTF-8")
-                
-                # 准备区域数据
-                regions_data <- lapply(json_data$regions, function(region) {
-                    list(
-                        name = as.character(region$name),
-                        polygon = region$polygon
-                    )
-                })
-                
-                # 准备表达式数据
-                expr_data <- df
-                
-                # 读取基础图片
-                img <- readPNG('D:/science/OGD/backend/static/images/egg.jpg')
-                
-                # 创建植物图
-                p <- ggplantmap(
-                    image = img,
-                    regions = regions_data,
-                    expression = expr_data,
-                    expression_col = "normalized",
-                    fill_palette = c(low_color, mid_color, high_color)
-                ) +
-                  labs(title = 'Expression Pattern')
-                
-                # 保存为临时文件
-                ggsave(temp_file, plot = p, width = 10, height = 6, dpi = 150)
-            }, error = function(e) {
-                # 如果出错，使用更简单的绘图方法
-                # 创建一个空白图像并添加错误信息
-                png(temp_file, width = 10, height = 6, units = "in", res = 150)
-                plot(1, type = "n", axes = FALSE, xlab = "", ylab = "")
-                text(1, 1, paste("R Error:", as.character(e)), cex = 1.2)
-                dev.off()
-            })
-            
-            # 读取文件并转换为base64
-            img_data <- readBin(temp_file, 'raw', n = file.size(temp_file))
-            base64_str <- base64encode(img_data)
-            
-            # 返回结果
-            list(base64_str = base64_str)
-            """
-            
-            # 执行R代码
-            logger.info('Executing R code...')
-            result = robjects.r(r_code)
-            logger.info(f'R code result type: {type(result)}')
-            logger.info(f'R code result: {result}')
-        
-        # 获取base64字符串
-        if result is None:
-            raise ValueError('R code returned None')
-        
-        # 尝试使用不同的方法访问NamedList元素
-        try:
-            # 方法1：直接使用字典访问
-            base64_str = result['base64_str']
-        except (KeyError, TypeError):
-            try:
-                # 方法2：使用索引访问
-                base64_str = result[0]
-            except (IndexError, TypeError):
-                try:
-                    # 方法3：使用rx方法
-                    base64_str = result.rx('base64_str')
-                except AttributeError:
-                    raise ValueError('Unable to access base64_str from R result')
-        
-        if base64_str is None:
-            raise ValueError('base64_str not found in R result')
-        
-        # 确保获取的是实际值
-        try:
-            base64_str = base64_str[0]
-        except (IndexError, TypeError):
-            # 如果已经是字符串，直接使用
-            pass
-        logger.info(f'Generated base64 string length: {len(base64_str)}')
-        return base64_str, regions_info
-        
-    except Exception as e:
-        logger.error(f'Error in R code: {str(e)}', exc_info=True)
-        # 回退到默认实现
-        image = Image.new('RGBA', (800, 600), (255, 255, 255, 255))
-        draw = ImageDraw.Draw(image)
-        draw.text((400, 300), f'Error in R drawing: {str(e)}', fill='black', anchor='mm')
-        return image, regions_info
+            area = _polygon_area(region['polygon'])
+            if area > name_area.get(region['name'], 0):
+                name_area[region['name']] = area
+
+    label_font = _load_font(22)
+    value_font = _load_font(20)
+
+    for region in regions_info:
+        polygon = region['polygon']
+        if not polygon:
+            continue
+
+        if not region.get('has_data'):
+            # 无数据：浅灰填充 + 灰色描边
+            draw.polygon(polygon, fill=(238, 238, 238, FILL_ALPHA))
+            closed = polygon + [polygon[0]]
+            draw.line(closed, fill=(150, 150, 150, 255), width=3, joint='curve')
+            continue
+
+        value = region['value']
+        normalized = _normalized_value(value, min_log, max_log)
+        color = _value_color(normalized, cmap)
+
+        # 白色打底压住底图本身的颜色，再叠表达色，保证颜色不被底图干扰
+        draw.polygon(polygon, fill=(255, 255, 255, 255))
+        draw.polygon(polygon, fill=color + (FILL_ALPHA,))
+        closed = polygon + [polygon[0]]
+        draw.line(closed, fill=(45, 45, 45, 255), width=3, joint='curve')
+
+        region['color'] = color
+        region['normalized'] = round(float(normalized), 4)
+
+        # 面积足够大时在质心标注器官名 + 表达值
+        area = _polygon_area(polygon)
+        if area >= VALUE_LABEL_MIN_AREA:
+            cx, cy = _polygon_centroid(polygon)
+            # 展示名：去掉下划线换空格（0DPA_ovules -> 0 DPA ovules）
+            display = region['name'].replace('_', ' ')
+            show_name = area >= name_area[region['name']] * NAME_LABEL_MIN_AREA_RATIO
+            text = f'{display}\n{value:.2f}' if show_name else f'{value:.2f}'
+            # 白色描边保证任何底色上可读
+            draw.text((cx, cy), text, fill=(20, 20, 20, 255), font=value_font,
+                      anchor='mm', align='center',
+                      stroke_width=2, stroke_fill=(255, 255, 255, 255))
+            _ = label_font  # 保留字体变量备用
+
+    return image
 
 
 def _image_to_base64(image):
-    """图像转Base64"""
+    """图像转 Base64"""
     with BytesIO() as buffer:
-        image.save(buffer, format="PNG")
+        image.save(buffer, format='PNG')
         return base64.b64encode(buffer.getvalue()).decode()
 
 
 def hex_to_rgb(hex_color):
-    """将十六进制颜色转换为RGB元组"""
+    """十六进制颜色 -> RGB 元组"""
     hex_color = hex_color.lstrip('#')
     if len(hex_color) == 3:
         hex_color = ''.join([c * 2 for c in hex_color])
     return (
         int(hex_color[0:2], 16),
         int(hex_color[2:4], 16),
-        int(hex_color[4:6], 16)
+        int(hex_color[4:6], 16),
     )
 
 
-def add_colorbar(draw, image_width, image_height, min_val, max_val, 
-                 low_rgb, mid_rgb, high_rgb):
-    """添加颜色条图例（修复字体问题）"""
-    colorbar_width = 25
-    colorbar_height = 150
+def add_colorbar(draw, image_width, image_height, min_val, max_val,
+                 low_color, mid_color, high_color):
+    """右侧颜色条图例（白色半透明背板，避免与底图元素混淆）"""
+    cmap = _get_colormap(low_color, mid_color, high_color)
+
+    bar_width = 30
+    bar_height = 240
     margin = 20
-    colorbar_x = int(image_width - margin - colorbar_width - 50)
-    colorbar_y = int(margin + 50)
+    bar_x = image_width - margin - bar_width - 60
+    bar_y = int(image_height * 0.30)
 
-    # 绘制渐变色条
-    for i in range(colorbar_height):
-        normalized = i / colorbar_height
-        color = _log_aware_color_map(normalized, low_rgb, mid_rgb, high_rgb, alpha=255)
-        y_pos = colorbar_y + colorbar_height - i  # 反转：高值在上
-        draw.line([(colorbar_x, y_pos), (colorbar_x + colorbar_width, y_pos)], 
-                 fill=color, width=1)
+    # 半透明白色背板（含标签区域）
+    panel = [
+        (bar_x - 14, bar_y - 44),
+        (bar_x + bar_width + 92, bar_y + bar_height + 14),
+    ]
+    draw.rounded_rectangle(panel, radius=10, fill=(255, 255, 255, 215),
+                           outline=(120, 120, 120, 255), width=2)
 
-    # 边框
-    draw.rectangle([
-        (colorbar_x, colorbar_y),
-        (colorbar_x + colorbar_width, colorbar_y + colorbar_height)
-    ], outline='black', width=2)
+    # 渐变色条
+    for i in range(bar_height):
+        normalized = i / bar_height
+        color = _value_color(normalized, cmap) + (255,)
+        y_pos = bar_y + bar_height - i  # 高值在上
+        draw.line([(bar_x, y_pos), (bar_x + bar_width, y_pos)], fill=color, width=1)
+    draw.rectangle([(bar_x, bar_y), (bar_x + bar_width, bar_y + bar_height)],
+                   outline='black', width=2)
 
-    # 标签
+    font = _load_font(16)
+    title_font = _load_font(17)
+
     def format_val(v):
-        return f"{v:.2f}" if v < 10 else f"{v:.1f}"
-    
-    # 尝试加载字体，失败则使用默认
-    try:
-        font = ImageFont.truetype("arial.ttf", 12)
-    except:
-        font = ImageFont.load_default()
+        return f'{v:.2f}' if v < 10 else f'{v:.1f}'
 
-    draw.text((colorbar_x + colorbar_width + 5, colorbar_y + colorbar_height - 10), 
-             format_val(min_val), fill='black', font=font)
-    draw.text((colorbar_x + colorbar_width + 5, colorbar_y), 
-             format_val(max_val), fill='black', font=font)
-    
+    draw.text((bar_x + bar_width + 8, bar_y + bar_height - 8),
+              format_val(min_val), fill='black', font=font, anchor='lm')
+    draw.text((bar_x + bar_width + 8, bar_y),
+              format_val(max_val), fill='black', font=font, anchor='lm')
+
     mid_val = 10 ** ((math.log10(min_val + 1) + math.log10(max_val + 1)) / 2) - 1
-    draw.text((colorbar_x + colorbar_width + 5, colorbar_y + colorbar_height//2 - 6), 
-             format_val(mid_val), fill='black', font=font)
+    draw.text((bar_x + bar_width + 8, bar_y + bar_height // 2),
+              format_val(mid_val), fill='black', font=font, anchor='lm')
 
-    draw.text((colorbar_x - 10, colorbar_y - 30), "Expression Level", fill='black', font=font)
-    draw.text((colorbar_x - 10, colorbar_y - 15), "(log scale)", fill='black', font=font)
+    draw.text((bar_x - 8, bar_y - 36), 'Expression', fill='black',
+              font=title_font, anchor='lm')
+    draw.text((bar_x - 8, bar_y - 16), '(log scale)', fill=(90, 90, 90),
+              font=font, anchor='lm')
 
 
-def add_gene_info(draw, image_width, gene_id, valid_count, total_count):
-    """添加基因信息和统计（修复坐标计算）"""
-    try:
-        font = ImageFont.truetype("arial.ttf", 16)
-        small_font = ImageFont.truetype("arial.ttf", 12)
-    except:
-        font = ImageFont.load_default()
-        small_font = ImageFont.load_default()
-    
-    # 标题居中
-    title = f"Gene: {gene_id}"
+def add_gene_info(draw, image_width, image_height, gene_id, valid_count, total_count):
+    """顶部标题与统计信息"""
+    font = _load_font(26)
+    small_font = _load_font(16)
+
+    title = f'Gene: {gene_id}'
     bbox = draw.textbbox((0, 0), title, font=font)
     title_width = bbox[2] - bbox[0]
-    title_x = (image_width - title_width) // 2
-    draw.text((title_x, 15), title, fill='black', font=font)
+    draw.text(((image_width - title_width) // 2, 12), title,
+              fill='black', font=font,
+              stroke_width=1, stroke_fill=(255, 255, 255, 180))
 
-    # 图例说明
-    legend = f"Valid: {valid_count}/{total_count} | Gray: NA/Invalid"
-    draw.text((20, image_width - 30 if image_width > 600 else 50), 
-             legend, fill='gray', font=small_font)
+    legend = f'Valid: {valid_count}/{total_count} | Gray: NA'
+    draw.text((20, image_height - 30), legend, fill=(90, 90, 90), font=small_font)

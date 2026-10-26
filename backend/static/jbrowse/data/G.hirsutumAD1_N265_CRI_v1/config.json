@@ -26,7 +26,65 @@
   "configuration": {},
   "connections": [],
   "defaultSession": {
-    "name": "New Session"
+    "name": "G.hirsutumAD1_N265_CRI_v1",
+    "views": [
+      {
+        "id": "linearGenomeView",
+        "type": "LinearGenomeView",
+        "tracks": [
+          {
+            "type": "FeatureTrack",
+            "configuration": "GFF",
+            "displays": [
+              {
+                "type": "LinearBasicDisplay",
+                "configuration": "GFF-LinearBasicDisplay"
+              }
+            ]
+          },
+          {
+            "type": "FeatureTrack",
+            "configuration": "biological_process_annotation",
+            "displays": [
+              {
+                "type": "LinearBasicDisplay",
+                "configuration": "biological_process_annotation-LinearBasicDisplay"
+              }
+            ]
+          },
+          {
+            "type": "FeatureTrack",
+            "configuration": "cellular_component_annotation",
+            "displays": [
+              {
+                "type": "LinearBasicDisplay",
+                "configuration": "cellular_component_annotation-LinearBasicDisplay"
+              }
+            ]
+          },
+          {
+            "type": "FeatureTrack",
+            "configuration": "molecular_function_annotation",
+            "displays": [
+              {
+                "type": "LinearBasicDisplay",
+                "configuration": "molecular_function_annotation-LinearBasicDisplay"
+              }
+            ]
+          },
+          {
+            "type": "FeatureTrack",
+            "configuration": "kegg_annotation",
+            "displays": [
+              {
+                "type": "LinearBasicDisplay",
+                "configuration": "kegg_annotation-LinearBasicDisplay"
+              }
+            ]
+          }
+        ]
+      }
+    ]
   },
   "tracks": [
     {
@@ -42,6 +100,94 @@
         "index": {
           "location": {
             "uri": "/jbrowse/large/G.hirsutumAD1_N265_CRI_v1/G.hirsutumAD1_N265_CRI_v1.gff.gz.tbi",
+            "locationType": "UriLocation"
+          },
+          "indexType": "TBI"
+        }
+      },
+      "assemblyNames": [
+        "G.hirsutumAD1_N265_CRI_v1"
+      ]
+    },
+    {
+      "type": "FeatureTrack",
+      "trackId": "biological_process_annotation",
+      "name": "GO: Biological Process",
+      "adapter": {
+        "type": "Gff3TabixAdapter",
+        "gffGzLocation": {
+          "uri": "/jbrowse/large/G.hirsutumAD1_N265_CRI_v1/G.hirsutumAD1_N265_CRI_v1_biological_process.sorted.gff.gz",
+          "locationType": "UriLocation"
+        },
+        "index": {
+          "location": {
+            "uri": "/jbrowse/large/G.hirsutumAD1_N265_CRI_v1/G.hirsutumAD1_N265_CRI_v1_biological_process.sorted.gff.gz.tbi",
+            "locationType": "UriLocation"
+          },
+          "indexType": "TBI"
+        }
+      },
+      "assemblyNames": [
+        "G.hirsutumAD1_N265_CRI_v1"
+      ]
+    },
+    {
+      "type": "FeatureTrack",
+      "trackId": "cellular_component_annotation",
+      "name": "GO: Cellular Component",
+      "adapter": {
+        "type": "Gff3TabixAdapter",
+        "gffGzLocation": {
+          "uri": "/jbrowse/large/G.hirsutumAD1_N265_CRI_v1/G.hirsutumAD1_N265_CRI_v1_cellular_component.sorted.gff.gz",
+          "locationType": "UriLocation"
+        },
+        "index": {
+          "location": {
+            "uri": "/jbrowse/large/G.hirsutumAD1_N265_CRI_v1/G.hirsutumAD1_N265_CRI_v1_cellular_component.sorted.gff.gz.tbi",
+            "locationType": "UriLocation"
+          },
+          "indexType": "TBI"
+        }
+      },
+      "assemblyNames": [
+        "G.hirsutumAD1_N265_CRI_v1"
+      ]
+    },
+    {
+      "type": "FeatureTrack",
+      "trackId": "molecular_function_annotation",
+      "name": "GO: Molecular Function",
+      "adapter": {
+        "type": "Gff3TabixAdapter",
+        "gffGzLocation": {
+          "uri": "/jbrowse/large/G.hirsutumAD1_N265_CRI_v1/G.hirsutumAD1_N265_CRI_v1_molecular_function.sorted.gff.gz",
+          "locationType": "UriLocation"
+        },
+        "index": {
+          "location": {
+            "uri": "/jbrowse/large/G.hirsutumAD1_N265_CRI_v1/G.hirsutumAD1_N265_CRI_v1_molecular_function.sorted.gff.gz.tbi",
+            "locationType": "UriLocation"
+          },
+          "indexType": "TBI"
+        }
+      },
+      "assemblyNames": [
+        "G.hirsutumAD1_N265_CRI_v1"
+      ]
+    },
+    {
+      "type": "FeatureTrack",
+      "trackId": "kegg_annotation",
+      "name": "KEGG Annotation",
+      "adapter": {
+        "type": "Gff3TabixAdapter",
+        "gffGzLocation": {
+          "uri": "/jbrowse/large/G.hirsutumAD1_N265_CRI_v1/G.hirsutumAD1_N265_CRI_v1KO.sorted.gff.gz",
+          "locationType": "UriLocation"
+        },
+        "index": {
+          "location": {
+            "uri": "/jbrowse/large/G.hirsutumAD1_N265_CRI_v1/G.hirsutumAD1_N265_CRI_v1KO.sorted.gff.gz.tbi",
             "locationType": "UriLocation"
           },
           "indexType": "TBI"

@@ -26,7 +26,25 @@
   "configuration": {},
   "connections": [],
   "defaultSession": {
-    "name": "New Session"
+    "name": "G.hirsutumAD1_YZ1_HAU_v1",
+    "views": [
+      {
+        "id": "linearGenomeView",
+        "type": "LinearGenomeView",
+        "tracks": [
+          {
+            "type": "FeatureTrack",
+            "configuration": "GFF",
+            "displays": [
+              {
+                "type": "LinearBasicDisplay",
+                "configuration": "GFF-LinearBasicDisplay"
+              }
+            ]
+          }
+        ]
+      }
+    ]
   },
   "tracks": [
     {

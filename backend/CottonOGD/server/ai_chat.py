@@ -33,7 +33,7 @@ HISTORY_KEY_PREFIX = 'ai_chat_history:'
 HISTORY_TTL = 60 * 60 * 24  # 24 小时
 
 SYSTEM_PROMPT = (
-    '你是 CottonOGD（棉花组学数据库）的智能助手。CottonOGD 收录了 258 个棉花基因组，'
+    '你是 iCotton，iCotton（棉花组学数据库）的智能助手。CottonOGD 收录了 258 个棉花基因组，'
     '包含基因、转录因子（TF/TR 家族）、功能注释（UniProt/Pfam/eggNOG）、GO、KEGG 等数据。\n'
     '回答数据相关问题时必须调用工具查询真实数据，严禁编造基因 ID、坐标或注释。\n'
     '工具使用要点：\n'
@@ -44,6 +44,10 @@ SYSTEM_PROMPT = (
     '查询不到的数据要如实说明。用中文回答，简洁、面向科研用户；'
     '如引用 jbrowse_url，请保持工具返回的相对路径原样输出，不要自行补全域名。'
 )
+
+
+# 调用者标识，用于 API 请求时区分来源（类似 codex / claude）
+CALLER_ID = 'iCotton'
 
 
 class AIChatNotConfigured(Exception):
@@ -66,6 +70,7 @@ def get_client():
             base_url=settings.AI_CHAT_BASE_URL,
             timeout=settings.AI_CHAT_TIMEOUT,
             max_retries=1,
+            default_headers={'User-Agent': f'{CALLER_ID}/1.0'},
         )
         get_client._client = client
     return client
@@ -162,6 +167,7 @@ def run_ai_chat(message, uuid=None, reset=False):
             messages=messages,
             tools=TOOL_SPECS,
             tool_choice='auto',
+            user=CALLER_ID,
         )
         choice = response.choices[0]
         assistant_msg = choice.message
@@ -205,6 +211,7 @@ def run_ai_chat(message, uuid=None, reset=False):
         response = client.chat.completions.create(
             model=settings.AI_CHAT_MODEL,
             messages=messages,
+            user=CALLER_ID,
         )
         answer = response.choices[0].message.content or ''
 

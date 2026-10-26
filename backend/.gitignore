@@ -3,7 +3,9 @@
 # 忽略虚拟环境
 backend/venv/
 backend/venv2/
-
+test_frontend.py
+parse_eggNOG.py
+emapper.sh
 # 忽略编译的 Python 文件
 __pycache__/
 *.pyc
@@ -14,11 +16,18 @@ __pycache__/
 # 忽略 SQLite 数据库
 *.sqlite3
 
+.agents
+.aws
+.claude
+.codex
+.env
+.idea
+.ipynb_checkpoints
 # 忽略 JBrowse 数据（除了 config.json）
 static/jbrowse/data/**
 !static/jbrowse/data/**/config.json
 !static/jbrowse/data/*/
-
+snakemake_result/
 # 忽略特定的大文件
 soft/windows/primer3/kmer_lists/homo_sapiens_16.list
 
