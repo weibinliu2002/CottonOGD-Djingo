@@ -2,7 +2,7 @@
 所有比对方法的统一接口
 核心：每个方法都必须返回 UnifiedResult
 """
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from typing import List
 from enum import Enum
 
@@ -45,10 +45,38 @@ class SearchResult:
     time_elapsed: float = 0.0
 
     def to_dict(self):
+        # 所有方法的 hit.pdb_id 均为标准 RCSB PDB 编号（pdb_seqres 即 RCSB 序列库），
+        # 且本地仅有序列库、无本地结构文件，因此结构统一从 RCSB 按 pdb_id 加载 mmCIF。
+        # 不伪造任何无法确认的信息（如 author_chain / url）。
+        hits_out = []
+        for h in self.top_hits:
+            hit = {
+                "rank": h.rank,
+                "pdb_id": h.pdb_id,
+                "chain": h.chain,
+                "structure": {
+                    "source": "rcsb",
+                    "pdb_id": h.pdb_id,
+                    "format": "mmcif",
+                },
+                "evalue": h.evalue,
+                "bitscore": h.bitscore,
+                "identity": h.identity,
+                "description": h.description,
+                "cov_q": h.cov_q,
+                "cov_t": h.cov_t,
+                "q_start": h.q_start,
+                "q_end": h.q_end,
+                "t_start": h.t_start,
+                "t_end": h.t_end,
+                "raw_target": h.raw_target,
+            }
+            hits_out.append(hit)
+
         return {
             "query_id": self.query_id,
             "method": self.method.value,
-            "top_hits": [asdict(h) for h in self.top_hits],
+            "top_hits": hits_out,
             "total_hits": self.total_hits,
             "time_elapsed": round(self.time_elapsed, 3),
         }

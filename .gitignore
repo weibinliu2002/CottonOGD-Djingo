@@ -4,6 +4,7 @@
 .vscode/
 .github/
 .idea/
+.claude
 
 # 以下路径不忽略（必须放在其他忽略规则之前）
 !Script/script/Biosql/
@@ -24,6 +25,7 @@ templates/
 # 忽略vue_app目录下的所有内容
 backend/.vscode/
 backend/node_modules/
+frontend/.claude
 
 # 忽略JBrowse数据目录下的所有内容，但不包括JSON配置文件
 backend/static/jbrowse/data/**

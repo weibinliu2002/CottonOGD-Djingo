@@ -12,20 +12,60 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
+import environ
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 TEMP_DIR = os.path.join(BASE_DIR, 'temp')
+SOFTWARE_DIR = os.path.join(BASE_DIR, 'soft')
 GO_OBO_FILE = os.path.join(BASE_DIR, 'data', 'go_ontology', 'go-basic.obo')
+
+# =============================================================================
+# 环境变量加载（django-environ）
+# 优先级：系统环境变量 > .env 文件
+# .env 文件不提交到 git，仅作本地开发默认值
+# =============================================================================
+env = environ.Env(
+    # 声明类型与默认值（仅在 .env/环境变量未提供时使用）
+    DEBUG=(bool, False),
+    DJANGO_SECRET_KEY=(str, ''),
+    MYSQL_DB_NAME=(str, 'cottonogd-ortho'),
+    MYSQL_DB_USER=(str, 'cottonogd'),
+    MYSQL_DB_PASSWORD=(str, ''),
+    MYSQL_DB_HOST=(str, 'localhost'),
+    MYSQL_DB_HOST_REMOTE=(str, '172.28.226.114'),
+    MYSQL_DB_PORT=(int, 3306),
+    REDIS_HOST=(str, 'localhost'),
+    REDIS_PORT=(int, 6379),
+    REDIS_DB=(int, 1),
+    REDIS_PASSWORD=(str, ''),
+    MEILISEARCH_URL=(str, 'http://127.0.0.1:7700'),
+    MEILISEARCH_MASTER_KEY=(str, ''),
+    MEILISEARCH_FRONTEND_API_KEY=(str, ''),
+    # ---- AI Chat（OpenAI 兼容大模型接口）----
+    # API key 只存在于服务器 .env / 环境变量，禁止硬编码、禁止下发给前端
+    AI_CHAT_API_KEY=(str, ''),
+    # OpenAI 兼容服务地址，必须使用 https，避免明文传输密钥
+    AI_CHAT_BASE_URL=(str, 'https://api.openai.com/v1'),
+    AI_CHAT_MODEL=(str, ''),
+    # 单次对话中 LLM <-> Tool 循环的最大轮数（防止死循环）
+    AI_CHAT_MAX_TOOL_ROUNDS=(int, 5),
+    # LLM 请求超时（秒）
+    AI_CHAT_TIMEOUT=(int, 60),
+)
+
+# 读取 .env（若存在）
+environ.Env.read_env(BASE_DIR / '.env')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-f30m$ybpt=_^ghisaer)k&ct*p1@nhkpg2&kqv*hfhy(%!x&d2'
+# 密钥从环境变量读取，禁止明文写入代码
+SECRET_KEY = env('DJANGO_SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env('DEBUG')
 
 ALLOWED_HOSTS = ['*']
 
@@ -66,6 +106,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'CottonOGD.auth.ClientTokenMiddleware',
 ]
 USE_ETAGS = False
 CORS_ALLOW_CREDENTIALS = True
@@ -101,27 +142,41 @@ ASGI_APPLICATION = "mysite.asgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
-        "NAME": "cottonogd-ortho",
-        "USER": "root",
-        "PASSWORD": "1234",
-        "HOST": "localhost",
-        #"HOST": "172.28.226.114",
-        "PORT": "3306",
-         'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-            }
+        "NAME": env('MYSQL_DB_NAME'),
+        "USER": env('MYSQL_DB_USER'),
+        "PASSWORD": env('MYSQL_DB_PASSWORD'),
+        "HOST": env('MYSQL_DB_HOST'),
+        "PORT": str(env('MYSQL_DB_PORT')),
+        'OPTIONS': {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES', FOREIGN_KEY_CHECKS=0",
+            'charset': 'utf8mb4',
+            'use_unicode': True,
+            'connect_timeout': 10,
+            'read_timeout': 60,
+            'write_timeout': 60,
+            'local_infile': True,
+        },
+        'CONN_MAX_AGE': 300,
+        'ATOMIC_REQUESTS': False,
     },
     "server": {
         "ENGINE": "django.db.backends.mysql",
-        "NAME": "cottonogd-ortho",
-        "USER": "root",
-        "PASSWORD": "1234",
-        #"HOST": "localhost",
-        "HOST": "172.28.226.114",
-        "PORT": "3306",
-         'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-            }
+        "NAME": env('MYSQL_DB_NAME'),
+        "USER": env('MYSQL_DB_USER'),
+        "PASSWORD": env('MYSQL_DB_PASSWORD'),
+        "HOST": env('MYSQL_DB_HOST_REMOTE'),
+        "PORT": str(env('MYSQL_DB_PORT')),
+        'OPTIONS': {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES', FOREIGN_KEY_CHECKS=0",
+            'charset': 'utf8mb4',
+            'use_unicode': True,
+            'connect_timeout': 10,
+            'read_timeout': 60,
+            'write_timeout': 60,
+            'local_infile': True,
+        },
+        'CONN_MAX_AGE': 300,
+        'ATOMIC_REQUESTS': False,
     },
 }
 """DATABASES = {
@@ -155,13 +210,16 @@ AUTH_PASSWORD_VALIDATORS = [
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': 'redis://localhost:6379',
+        # Redis 连接信息从环境变量读取，禁止明文硬编码
+        'LOCATION': f'redis://{env("REDIS_HOST")}:{env("REDIS_PORT")}',
         'TIMEOUT': None,  # 默认缓存过期时间为5分钟
+
         'OPTIONS': {
-            'db': 1,
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-            'KEY_PREFIX': 'cottonogd:',
-            'MAX_ENTRIES': 1000  # 最大缓存条目数
+            'db': env('REDIS_DB'),
+            'password': env('REDIS_PASSWORD'),
+            #'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            #'key_prefix': 'cottonogd:',
+            #'MAX_ENTRIES': 1000  # 最大缓存条目数
         }
     }
 }
@@ -241,3 +299,28 @@ LOGGING = {
         },
     },
 }
+
+# =============================================================================
+# Meilisearch 配置（后端仅做数据管理与 API key 管理）
+# 所有密钥优先读取环境变量，代码中不允许硬编码
+# =============================================================================
+MEILISEARCH_URL = env('MEILISEARCH_URL')
+MEILISEARCH_MASTER_KEY = env('MEILISEARCH_MASTER_KEY')
+MEILISEARCH_FRONTEND_API_KEY = env('MEILISEARCH_FRONTEND_API_KEY')
+# 增量同步游标持久化文件位置
+_meili_cursor_default = BASE_DIR / 'data' / 'meilisync_cursor.json'
+MEILISEARCH_CURSOR_PATH = Path(env.str('MEILISEARCH_CURSOR_PATH', str(_meili_cursor_default)))
+
+# =============================================================================
+# AI Chat 配置（对话式人工智能，与数据库等其他基础设施配置统一走 .env）
+# - 仅后端使用；API key 严禁出现在代码、日志、前端响应中
+# - AI_CHAT_BASE_URL 指向任一 OpenAI 兼容服务（官方 / 自建网关 / 国产模型均
+#   可），协议强制 https，避免 key 与对话内容明文传输
+# =============================================================================
+AI_CHAT_API_KEY = env('AI_CHAT_API_KEY')
+AI_CHAT_BASE_URL = env('AI_CHAT_BASE_URL')
+AI_CHAT_MODEL = env('AI_CHAT_MODEL')
+AI_CHAT_MAX_TOOL_ROUNDS = env('AI_CHAT_MAX_TOOL_ROUNDS')
+AI_CHAT_TIMEOUT = env('AI_CHAT_TIMEOUT')
+# AI chat 是否可用（key/model 任一缺失即视为未启用，接口返回明确错误而非 500）
+AI_CHAT_ENABLED = bool(AI_CHAT_API_KEY and AI_CHAT_MODEL)

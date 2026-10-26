@@ -1,0 +1,1303 @@
+import { state, normalizeLinearSeqList, collapseEmptyLinearSeqList } from '../state.js';
+import { resolveColorToHex } from '../app/color-utils.js';
+
+const SESSION_VERSION = 19;
+const LOSAT_CACHE_SCHEMA = 2;
+
+const isRawLosatCacheEntry = (entry) =>
+  Boolean(entry) &&
+  entry.schema === LOSAT_CACHE_SCHEMA &&
+  entry.kind === 'raw-losat' &&
+  typeof entry.text === 'string';
+
+const cloneColors = (colors) => ({ ...(colors || {}) });
+
+const cloneStringMap = (source) => {
+  const cloned = {};
+  if (!source || typeof source !== 'object' || Array.isArray(source)) return cloned;
+  Object.entries(source).forEach(([key, value]) => {
+    const normalizedKey = String(key || '').trim();
+    if (!normalizedKey) return;
+    cloned[normalizedKey] = String(value ?? '');
+  });
+  return cloned;
+};
+
+const replaceStringMap = (target, source) => {
+  Object.keys(target).forEach((key) => delete target[key]);
+  Object.entries(cloneStringMap(source)).forEach(([key, value]) => {
+    target[key] = value;
+  });
+};
+
+const cloneQualifierPriorityRules = (rules) => {
+  const cloned = [];
+  if (!Array.isArray(rules)) return cloned;
+
+  rules.forEach((rule) => {
+    if (!rule || typeof rule !== 'object' || Array.isArray(rule)) return;
+    const feat = String(rule.feat ?? '').trim();
+    const order = String(rule.order ?? '').trim();
+    if (!feat || !order) return;
+
+    const existingIndex = cloned.findIndex((entry) => entry.feat === feat);
+    if (existingIndex >= 0) {
+      cloned[existingIndex].order = order;
+    } else {
+      cloned.push({ feat, order });
+    }
+  });
+
+  return cloned;
+};
+
+const replaceQualifierPriorityRules = (rules) => {
+  state.manualPriorityRules.splice(
+    0,
+    state.manualPriorityRules.length,
+    ...cloneQualifierPriorityRules(rules)
+  );
+};
+
+const safeDeepMerge = (target, source) => {
+  if (!source || typeof source !== 'object') return;
+
+  Object.keys(source).forEach((key) => {
+    // 1. Prevent prototype pollution
+    if (['__proto__', 'constructor', 'prototype'].includes(key)) return;
+
+    // 2. Ignore keys not present in target (whitelisting effect)
+    if (!Object.prototype.hasOwnProperty.call(target, key)) return;
+
+    const targetValue = target[key];
+    const sourceValue = source[key];
+
+    // 3. Recursive merge for objects
+    if (
+      targetValue &&
+      typeof targetValue === 'object' &&
+      !Array.isArray(targetValue) &&
+      sourceValue &&
+      typeof sourceValue === 'object' &&
+      !Array.isArray(sourceValue)
+    ) {
+      safeDeepMerge(targetValue, sourceValue);
+      return;
+    }
+
+    // 4. For arrays, intentionally overwrite (replacing lists of settings is natural)
+    if (Array.isArray(targetValue) && Array.isArray(sourceValue)) {
+      target[key].splice(0, target[key].length, ...sourceValue);
+      return;
+    }
+
+    // 5. Update value only if types match or initial value is null
+    if (typeof targetValue === typeof sourceValue || targetValue === null) {
+      target[key] = sourceValue;
+    }
+  });
+};
+
+const downloadJson = (data, filename) => {
+  const blob = new Blob([JSON.stringify(data, null, 2)], {
+    type: 'application/json'
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+const makeSafeFilename = (name) => {
+  const cleaned = String(name || '')
+    .replace(/[^\w.-]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+  return cleaned || 'gbdraw_session';
+};
+
+const buildSessionFilename = (title) => {
+  const base = String(title || '').trim();
+  if (!base) return 'gbdraw_session.json';
+  const safe = makeSafeFilename(base);
+  return `${safe}.gbdraw-session.json`;
+};
+
+const normalizeCircularPlotTitlePosition = (value) => {
+  const normalized = String(value || '').trim().toLowerCase();
+  return ['none', 'top', 'bottom'].includes(normalized) ? normalized : 'none';
+};
+
+const normalizeLinearPlotTitlePosition = (value) => {
+  const normalized = String(value || '').trim().toLowerCase();
+  return ['center', 'top', 'bottom'].includes(normalized) ? normalized : 'bottom';
+};
+
+const normalizeLegendPosition = (value, fallback = 'left') => {
+  const normalized = String(value || '').trim().toLowerCase();
+  return normalized || fallback;
+};
+
+const normalizePositiveNumberOrNull = (value) => {
+  if (
+    value === null ||
+    value === undefined ||
+    value === '' ||
+    String(value).trim().toLowerCase() === 'auto'
+  ) {
+    return null;
+  }
+  const numeric = Number(value);
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+};
+
+const hasStoredLayoutValue = (value) => typeof value === 'string' && value.trim() !== '';
+
+const normalizeFeatureShape = (value) => (String(value || '').trim().toLowerCase() === 'arrow' ? 'arrow' : 'rectangle');
+
+const normalizePositiveInteger = (value, fallback) => {
+  const numeric = Number(value);
+  return Number.isInteger(numeric) && numeric > 0 ? numeric : fallback;
+};
+
+const normalizeBlastpMode = (value) => {
+  const normalized = String(value || '').trim().toLowerCase();
+  return ['pairwise', 'orthogroup', 'collinear'].includes(normalized) ? normalized : 'orthogroup';
+};
+
+const normalizeCollinearColorMode = (value) => {
+  const normalized = String(value || '').trim().toLowerCase().replace(/-/g, '_');
+  if (normalized === 'identity') return 'average_identity';
+  return ['average_identity', 'orientation'].includes(normalized) ? normalized : 'orientation';
+};
+
+const normalizeCollinearAnchorMode = (value) => {
+  const normalized = String(value || '').trim().toLowerCase().replace(/-/g, '_');
+  const aliases = {
+    raw: 'all',
+    all_hits: 'all',
+    top_n: 'all',
+    topn: 'all',
+    one2one: 'one_to_one',
+    mutual_best: 'one_to_one',
+    top1: 'one_to_one',
+    top_1: 'one_to_one',
+    reciprocal_best: 'rbh',
+    strict_rbh: 'rbh'
+  };
+  const resolved = aliases[normalized] || normalized;
+  return ['all', 'one_to_one', 'rbh'].includes(resolved) ? resolved : 'rbh';
+};
+
+const normalizeCollinearSearchScope = (value) => {
+  const normalized = String(value || '').trim().toLowerCase().replace(/-/g, '_');
+  return ['adjacent', 'all'].includes(normalized) ? normalized : 'adjacent';
+};
+
+const normalizePairwiseMatchStyle = (value) => {
+  const normalized = String(value || '').trim().toLowerCase();
+  return ['ribbon', 'curve'].includes(normalized) ? normalized : 'ribbon';
+};
+
+const normalizeFeatureShapes = (featureShapes) => {
+  const normalized = {};
+  if (!featureShapes || typeof featureShapes !== 'object' || Array.isArray(featureShapes)) {
+    return normalized;
+  }
+  Object.entries(featureShapes).forEach(([featureTypeRaw, shape]) => {
+    const featureType = String(featureTypeRaw || '').trim();
+    if (!featureType) return;
+    normalized[featureType] = normalizeFeatureShape(shape);
+  });
+  return normalized;
+};
+
+let lastSessionFilename = null;
+
+const buildConfigData = () => ({
+  form: state.form,
+  adv: state.adv,
+  losat: state.losat,
+  colors: state.currentColors.value,
+  palette: state.selectedPalette.value,
+  paletteInstantPreviewEnabled: Boolean(state.paletteInstantPreviewEnabled.value),
+  rules: state.manualSpecificRules,
+  qualifierPriorityRules: cloneQualifierPriorityRules(state.manualPriorityRules),
+  filterMode: state.filterMode.value,
+  whitelist: state.manualWhitelist,
+  blacklistText: state.manualBlacklist.value,
+  blastSource: state.blastSource.value,
+  losatProgram: state.losatProgram.value,
+  webEdits: {
+    orthogroupNameOverrides: cloneStringMap(state.orthogroupNameOverrides),
+    orthogroupDescriptionOverrides: cloneStringMap(state.orthogroupDescriptionOverrides)
+  }
+});
+
+const shouldSuppressCircularMultiRecordDefaults = (incomingForm) => {
+  if (state.mode.value !== 'circular') return false;
+  if (!incomingForm || typeof incomingForm !== 'object' || Array.isArray(incomingForm)) return false;
+  if (!Object.prototype.hasOwnProperty.call(incomingForm, 'multi_record_canvas')) return false;
+  return state.form.multi_record_canvas === false && incomingForm.multi_record_canvas === true;
+};
+
+const syncActiveCircularLayoutCache = () => {
+  const normalizedLegend = normalizeLegendPosition(state.form.legend, 'left');
+  const normalizedPlotTitlePosition = normalizeCircularPlotTitlePosition(state.adv.plot_title_position);
+
+  state.circularLegendPosition.value = normalizedLegend;
+  state.circularPlotTitlePosition.value = normalizedPlotTitlePosition;
+
+  if (state.form.multi_record_canvas) {
+    state.circularMultiRecordLegendPosition.value = normalizedLegend;
+    state.circularMultiRecordPlotTitlePosition.value = normalizedPlotTitlePosition;
+  } else {
+    state.circularSingleRecordLegendPosition.value = normalizedLegend;
+    state.circularSingleRecordPlotTitlePosition.value = normalizedPlotTitlePosition;
+  }
+
+  return {
+    legend: normalizedLegend,
+    plotTitlePosition: normalizedPlotTitlePosition
+  };
+};
+
+const getStoredCircularLayout = (useMultiRecord) => {
+  const singleLegend = normalizeLegendPosition(state.circularSingleRecordLegendPosition.value, 'left');
+  const singlePlotTitlePosition = normalizeCircularPlotTitlePosition(state.circularSingleRecordPlotTitlePosition.value);
+
+  if (useMultiRecord) {
+    return {
+      legend: hasStoredLayoutValue(state.circularMultiRecordLegendPosition.value)
+        ? normalizeLegendPosition(state.circularMultiRecordLegendPosition.value, singleLegend)
+        : singleLegend,
+      plotTitlePosition: hasStoredLayoutValue(state.circularMultiRecordPlotTitlePosition.value)
+        ? normalizeCircularPlotTitlePosition(state.circularMultiRecordPlotTitlePosition.value)
+        : singlePlotTitlePosition
+    };
+  }
+
+  return {
+    legend: singleLegend,
+    plotTitlePosition: singlePlotTitlePosition
+  };
+};
+
+const resolveActiveCircularLayout = () => getStoredCircularLayout(Boolean(state.form.multi_record_canvas));
+
+const syncActiveModePlotTitlePosition = () => {
+  if (state.mode.value === 'linear') {
+    state.form.legend = normalizeLegendPosition(state.form.legend, 'bottom');
+    state.linearLegendPosition.value = state.form.legend;
+    state.linearPlotTitlePosition.value = normalizeLinearPlotTitlePosition(state.adv.plot_title_position);
+    state.adv.plot_title_position = state.linearPlotTitlePosition.value;
+    return;
+  }
+
+  state.form.legend = normalizeLegendPosition(state.form.legend, 'left');
+  state.adv.plot_title_position = normalizeCircularPlotTitlePosition(state.adv.plot_title_position);
+  syncActiveCircularLayoutCache();
+};
+
+const restoreSessionPlotTitlePositions = (ui = {}) => {
+  const activeMode = state.mode.value === 'linear' ? 'linear' : 'circular';
+  const activePosition = normalizeLinearPlotTitlePosition(state.adv.plot_title_position);
+  const hasLinearPlotTitlePosition =
+    typeof ui.linearPlotTitlePosition === 'string' && ui.linearPlotTitlePosition.trim() !== '';
+
+  state.linearPlotTitlePosition.value = hasLinearPlotTitlePosition
+    ? normalizeLinearPlotTitlePosition(ui.linearPlotTitlePosition)
+    : activeMode === 'linear'
+      ? activePosition
+      : 'bottom';
+};
+
+const restoreSessionCircularLayoutCaches = (ui = {}) => {
+  const activeLegend = normalizeLegendPosition(state.form.legend, 'left');
+  const activePlotTitlePosition = normalizeCircularPlotTitlePosition(state.adv.plot_title_position);
+  const legacyLegend = hasStoredLayoutValue(ui.circularLegendPosition)
+    ? normalizeLegendPosition(ui.circularLegendPosition, activeLegend)
+    : hasStoredLayoutValue(ui.legend)
+      ? normalizeLegendPosition(ui.legend, activeLegend)
+    : activeLegend;
+  const legacyPlotTitlePosition = hasStoredLayoutValue(ui.circularPlotTitlePosition)
+    ? normalizeCircularPlotTitlePosition(ui.circularPlotTitlePosition)
+    : activePlotTitlePosition;
+
+  state.circularSingleRecordLegendPosition.value = hasStoredLayoutValue(ui.circularSingleRecordLegendPosition)
+    ? normalizeLegendPosition(ui.circularSingleRecordLegendPosition, legacyLegend)
+    : (state.form.multi_record_canvas ? legacyLegend : activeLegend);
+  state.circularSingleRecordPlotTitlePosition.value = hasStoredLayoutValue(ui.circularSingleRecordPlotTitlePosition)
+    ? normalizeCircularPlotTitlePosition(ui.circularSingleRecordPlotTitlePosition)
+    : (state.form.multi_record_canvas ? legacyPlotTitlePosition : activePlotTitlePosition);
+  state.circularMultiRecordLegendPosition.value = hasStoredLayoutValue(ui.circularMultiRecordLegendPosition)
+    ? normalizeLegendPosition(ui.circularMultiRecordLegendPosition, legacyLegend)
+    : (state.form.multi_record_canvas ? activeLegend : legacyLegend);
+  state.circularMultiRecordPlotTitlePosition.value = hasStoredLayoutValue(ui.circularMultiRecordPlotTitlePosition)
+    ? normalizeCircularPlotTitlePosition(ui.circularMultiRecordPlotTitlePosition)
+    : (state.form.multi_record_canvas ? activePlotTitlePosition : legacyPlotTitlePosition);
+
+  const activeLayout = resolveActiveCircularLayout();
+  state.circularLegendPosition.value = activeLayout.legend;
+  state.circularPlotTitlePosition.value = activeLayout.plotTitlePosition;
+};
+
+const applyConfigData = (data) => {
+  if (data.form) safeDeepMerge(state.form, data.form);
+  if (data.adv) safeDeepMerge(state.adv, data.adv);
+  if (state.adv.label_placement === 'on_feature') {
+    state.adv.label_placement = 'above_feature';
+  }
+  state.adv.circular_label_spacing = normalizePositiveNumberOrNull(state.adv.circular_label_spacing);
+  state.adv.linear_label_spacing = normalizePositiveNumberOrNull(state.adv.linear_label_spacing);
+  const rawTrackAxisGap = state.adv.track_axis_gap;
+  if (
+    rawTrackAxisGap === null ||
+    rawTrackAxisGap === undefined ||
+    rawTrackAxisGap === '' ||
+    String(rawTrackAxisGap).trim().toLowerCase() === 'auto'
+  ) {
+    state.adv.track_axis_gap = null;
+  } else {
+    const numericTrackAxisGap = Number(rawTrackAxisGap);
+    state.adv.track_axis_gap = Number.isFinite(numericTrackAxisGap) && numericTrackAxisGap >= 0
+      ? numericTrackAxisGap
+      : null;
+  }
+  if (state.form.linear_track_layout === 'spreadout') {
+    state.form.linear_track_layout = 'above';
+  } else if (state.form.linear_track_layout === 'tuckin') {
+    state.form.linear_track_layout = 'below';
+  } else if (!['above', 'middle', 'below'].includes(state.form.linear_track_layout)) {
+    state.form.linear_track_layout = 'middle';
+  }
+  state.form.plot_title = String(state.form.plot_title || '');
+  state.form.legend = normalizeLegendPosition(state.form.legend, state.mode.value === 'linear' ? 'bottom' : 'left');
+  state.adv.feature_shapes = normalizeFeatureShapes(state.adv.feature_shapes);
+  const normalizedMultiRecordSizeMode = String(state.adv.multi_record_size_mode || '').trim().toLowerCase();
+  if (normalizedMultiRecordSizeMode === 'sqrt') {
+    state.adv.multi_record_size_mode = 'auto';
+  } else {
+    state.adv.multi_record_size_mode = ['auto', 'linear', 'equal'].includes(normalizedMultiRecordSizeMode)
+      ? normalizedMultiRecordSizeMode
+      : 'auto';
+  }
+  const numericMinRadiusRatio = Number(state.adv.multi_record_min_radius_ratio);
+  state.adv.multi_record_min_radius_ratio =
+    Number.isFinite(numericMinRadiusRatio) && numericMinRadiusRatio > 0 && numericMinRadiusRatio <= 1
+      ? numericMinRadiusRatio
+      : 0.55;
+  const numericColumnGapRatio = Number(state.adv.multi_record_column_gap_ratio);
+  state.adv.multi_record_column_gap_ratio =
+    Number.isFinite(numericColumnGapRatio) && numericColumnGapRatio >= 0
+      ? numericColumnGapRatio
+      : 0.10;
+  const numericRowGapRatio = Number(state.adv.multi_record_row_gap_ratio);
+  state.adv.multi_record_row_gap_ratio =
+    Number.isFinite(numericRowGapRatio) && numericRowGapRatio >= 0
+      ? numericRowGapRatio
+      : 0.05;
+  const rawMultiRecordPositions = Array.isArray(state.adv.multi_record_positions)
+    ? state.adv.multi_record_positions
+    : [];
+  const dedupedMultiRecordPositions = [];
+  const seenMultiRecordSelectors = new Set();
+  rawMultiRecordPositions.forEach((entry) => {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return;
+    const selector = String(entry.selector ?? '').trim();
+    if (!selector || seenMultiRecordSelectors.has(selector)) return;
+    const rowValue = Number(entry.row);
+    const normalizedRow = Number.isInteger(rowValue) && rowValue > 0 ? rowValue : 1;
+    seenMultiRecordSelectors.add(selector);
+    dedupedMultiRecordPositions.push({ selector, row: normalizedRow });
+  });
+  state.adv.multi_record_positions = dedupedMultiRecordPositions
+    .map((entry, index) => ({ ...entry, __index: index }))
+    .sort((left, right) => {
+      if (left.row !== right.row) return left.row - right.row;
+      return left.__index - right.__index;
+    })
+    .map(({ __index, ...entry }) => entry);
+  if (state.mode.value === 'linear') {
+    state.adv.plot_title_position = normalizeLinearPlotTitlePosition(state.adv.plot_title_position);
+  } else {
+    state.adv.plot_title_position = normalizeCircularPlotTitlePosition(state.adv.plot_title_position);
+  }
+  syncActiveModePlotTitlePosition();
+  const rawPlotTitleFontSize = state.adv.plot_title_font_size;
+  if (
+    rawPlotTitleFontSize === null ||
+    rawPlotTitleFontSize === undefined ||
+    rawPlotTitleFontSize === ''
+  ) {
+    state.adv.plot_title_font_size = null;
+  } else {
+    const numericPlotTitleFontSize = Number(rawPlotTitleFontSize);
+    state.adv.plot_title_font_size =
+      Number.isFinite(numericPlotTitleFontSize) && numericPlotTitleFontSize > 0
+        ? numericPlotTitleFontSize
+        : null;
+  }
+  state.adv.keep_full_definition_with_plot_title =
+    state.adv.keep_full_definition_with_plot_title === true;
+  state.adv.depth_color = resolveColorToHex(String(state.adv.depth_color || '#4A90E2'));
+  state.adv.depth_normalize = state.adv.depth_normalize === true;
+  state.adv.depth_show_axis = state.adv.depth_show_axis !== false;
+  state.adv.depth_show_ticks = state.adv.depth_show_ticks !== false;
+  state.adv.depth_share_axis = state.adv.depth_share_axis === true;
+  state.adv.depth_height = normalizePositiveNumberOrNull(state.adv.depth_height);
+  state.adv.depth_width_circular = normalizePositiveNumberOrNull(state.adv.depth_width_circular);
+  state.adv.depth_window_size = normalizePositiveNumberOrNull(state.adv.depth_window_size);
+  state.adv.depth_step_size = normalizePositiveNumberOrNull(state.adv.depth_step_size);
+  state.adv.depth_tick_interval = normalizePositiveNumberOrNull(state.adv.depth_tick_interval);
+  state.adv.depth_small_tick_interval = normalizePositiveNumberOrNull(state.adv.depth_small_tick_interval);
+  state.adv.depth_tick_font_size = normalizePositiveNumberOrNull(state.adv.depth_tick_font_size);
+  const normalizeNonNegativeNumberOrNull = (value) => {
+    if (
+      value === null ||
+      value === undefined ||
+      value === '' ||
+      String(value).trim().toLowerCase() === 'auto'
+    ) {
+      return null;
+    }
+    const numeric = Number(value);
+    return Number.isFinite(numeric) && numeric >= 0 ? numeric : null;
+  };
+  state.adv.depth_min = normalizeNonNegativeNumberOrNull(state.adv.depth_min);
+  state.adv.depth_max = normalizeNonNegativeNumberOrNull(state.adv.depth_max);
+  if (
+    state.adv.depth_min !== null &&
+    state.adv.depth_max !== null &&
+    state.adv.depth_min > state.adv.depth_max
+  ) {
+    state.adv.depth_max = null;
+  }
+  state.adv.linear_show_replicon = state.adv.linear_show_replicon === true;
+  state.adv.linear_show_accession = state.adv.linear_show_accession !== false;
+  state.adv.linear_show_length = state.adv.linear_show_length !== false;
+  state.adv.pairwise_match_style = normalizePairwiseMatchStyle(state.adv.pairwise_match_style);
+  if (data.losat) {
+    safeDeepMerge(state.losat, data.losat);
+    const rawParallelWorkers = String(data.losat.parallelWorkers ?? '').trim().toLowerCase();
+    state.losat.parallelWorkers = ['1', '2', '3', '4'].includes(rawParallelWorkers)
+      ? rawParallelWorkers
+      : undefined;
+    state.losat.blastp.mode = normalizeBlastpMode(state.losat.blastp?.mode);
+    state.losat.blastp.maxHits = normalizePositiveInteger(state.losat.blastp?.maxHits, 5);
+    state.losat.blastp.candidateLimit = null;
+    state.losat.blastp.collinearMinAnchors = normalizePositiveInteger(state.losat.blastp?.collinearMinAnchors, 1);
+    {
+      const maxGap = Number(state.losat.blastp?.collinearMaxGeneGap);
+      state.losat.blastp.collinearMaxGeneGap = Number.isInteger(maxGap) && maxGap >= 0 ? maxGap : 0;
+      const blockMergeGap = Number(state.losat.blastp?.collinearBlockMergeGap);
+      state.losat.blastp.collinearBlockMergeGap = Number.isInteger(blockMergeGap) && blockMergeGap >= 0 ? blockMergeGap : 50;
+      const singletonMergeGap = Number(state.losat.blastp?.collinearSingletonMergeGap);
+      state.losat.blastp.collinearSingletonMergeGap = Number.isInteger(singletonMergeGap) && singletonMergeGap >= 0 ? singletonMergeGap : 25;
+      const diagonalDrift = Number(state.losat.blastp?.collinearMaxDiagonalDrift);
+      state.losat.blastp.collinearMaxDiagonalDrift = Number.isInteger(diagonalDrift) && diagonalDrift >= 0 ? diagonalDrift : 0;
+      const mergeConflicts = Number(state.losat.blastp?.collinearMaxConflictsInMergeGap);
+      state.losat.blastp.collinearMaxConflictsInMergeGap = Number.isInteger(mergeConflicts) && mergeConflicts >= 0 ? mergeConflicts : 1;
+      const paralogLinks = Number(state.losat.blastp?.collinearMaxParalogLinksPerOrthogroup);
+      state.losat.blastp.collinearMaxParalogLinksPerOrthogroup = Number.isInteger(paralogLinks) && paralogLinks > 0 ? paralogLinks : 2;
+      state.losat.blastp.collinearColorMode = normalizeCollinearColorMode(state.losat.blastp?.collinearColorMode);
+      const unitMode = String(state.losat.blastp?.collinearUnitMode || '').trim().toLowerCase();
+      state.losat.blastp.collinearUnitMode = ['auto', 'cds', 'locus'].includes(unitMode) ? unitMode : 'auto';
+      state.losat.blastp.collinearAnchorMode = normalizeCollinearAnchorMode(state.losat.blastp?.collinearAnchorMode);
+      state.losat.blastp.collinearSearchScope = normalizeCollinearSearchScope(state.losat.blastp?.collinearSearchScope);
+    }
+    delete state.losat.blastp.orthogroupHitPolicy;
+    delete state.losat.blastp.orthogroupMaxHits;
+  }
+  if (typeof data.paletteInstantPreviewEnabled === 'boolean') {
+    state.paletteInstantPreviewEnabled.value = data.paletteInstantPreviewEnabled;
+  }
+  if (data.colors) {
+    const normalized = {};
+    Object.entries(data.colors).forEach(([key, value]) => {
+      normalized[key] = resolveColorToHex(String(value || '').trim());
+    });
+    state.currentColors.value = state.normalizePaletteColors(normalized);
+  }
+  if (data.palette) state.selectedPalette.value = data.palette;
+
+  if (data.rules && Array.isArray(data.rules)) {
+    state.manualSpecificRules.length = 0;
+    data.rules.forEach((r) => {
+      state.manualSpecificRules.push({
+        feat: String(r.feat || ''),
+        qual: String(r.qual || ''),
+        val: String(r.val || ''),
+        color: resolveColorToHex(String(r.color || '#000000')),
+        cap: String(r.cap || ''),
+        fromFile: !!r.fromFile
+      });
+    });
+  }
+  if (Object.prototype.hasOwnProperty.call(data, 'qualifierPriorityRules')) {
+    replaceQualifierPriorityRules(data.qualifierPriorityRules);
+  } else if (Object.prototype.hasOwnProperty.call(data, 'priorityRules')) {
+    replaceQualifierPriorityRules(data.priorityRules);
+  }
+  if (data.filterMode) state.filterMode.value = data.filterMode;
+  if (data.whitelist && Array.isArray(data.whitelist)) {
+    state.manualWhitelist.length = 0;
+    data.whitelist.forEach((w) => {
+      state.manualWhitelist.push({
+        feat: String(w.feat || ''),
+        qual: String(w.qual || ''),
+        key: String(w.key || '')
+      });
+    });
+  }
+  if (data.blacklistText !== undefined) state.manualBlacklist.value = String(data.blacklistText || '');
+  if (data.blastSource) state.blastSource.value = String(data.blastSource);
+  if (data.losatProgram) {
+    const program = String(data.losatProgram);
+    state.losatProgram.value = ['blastn', 'tblastx', 'blastp'].includes(program) ? program : 'blastn';
+  }
+  const webEdits = data.webEdits && typeof data.webEdits === 'object' ? data.webEdits : {};
+  if (Object.prototype.hasOwnProperty.call(webEdits, 'orthogroupNameOverrides')) {
+    replaceStringMap(state.orthogroupNameOverrides, webEdits.orthogroupNameOverrides);
+  }
+  if (Object.prototype.hasOwnProperty.call(webEdits, 'orthogroupDescriptionOverrides')) {
+    replaceStringMap(state.orthogroupDescriptionOverrides, webEdits.orthogroupDescriptionOverrides);
+  }
+};
+
+const restorePaletteStateAfterConfigImport = () => {
+  const draftPaletteName = String(state.selectedPalette.value || state.appliedPaletteName.value || 'default');
+  const draftColors = state.normalizePaletteColors(cloneColors(state.currentColors.value));
+  const hasPreviewResults = Array.isArray(state.results.value) && state.results.value.length > 0;
+
+  if (
+    !hasPreviewResults ||
+    state.paletteInstantPreviewEnabled.value ||
+    draftPaletteName === String(state.appliedPaletteName.value || '')
+  ) {
+    state.appliedPaletteName.value = draftPaletteName;
+    state.appliedPaletteColors.value = draftColors;
+    state.pendingPaletteName.value = '';
+    state.pendingPaletteColors.value = {};
+    return;
+  }
+
+  state.pendingPaletteName.value = draftPaletteName;
+  state.pendingPaletteColors.value = draftColors;
+};
+
+const restorePaletteStateFromSession = (ui = {}) => {
+  const draftPaletteName = String(state.selectedPalette.value || state.appliedPaletteName.value || 'default');
+  const draftColors = state.normalizePaletteColors(cloneColors(state.currentColors.value));
+  const savedAppliedPaletteName = String(ui.appliedPaletteName || draftPaletteName || 'default');
+  const savedAppliedPaletteColors =
+    ui.appliedPaletteColors && typeof ui.appliedPaletteColors === 'object'
+      ? Object.fromEntries(
+          Object.entries(ui.appliedPaletteColors).map(([key, value]) => [
+            key,
+            resolveColorToHex(String(value || '').trim())
+          ])
+        )
+      : draftColors;
+  const savedPendingPaletteName = String(ui.pendingPaletteName || '').trim();
+  const savedPendingPaletteColors =
+    ui.pendingPaletteColors && typeof ui.pendingPaletteColors === 'object'
+      ? Object.fromEntries(
+          Object.entries(ui.pendingPaletteColors).map(([key, value]) => [
+            key,
+            resolveColorToHex(String(value || '').trim())
+          ])
+        )
+      : draftColors;
+
+  state.appliedPaletteName.value = savedAppliedPaletteName;
+  state.appliedPaletteColors.value = state.normalizePaletteColors(cloneColors(savedAppliedPaletteColors));
+
+  if (!state.paletteInstantPreviewEnabled.value && savedPendingPaletteName) {
+    state.pendingPaletteName.value = savedPendingPaletteName;
+    state.pendingPaletteColors.value = state.normalizePaletteColors(cloneColors(savedPendingPaletteColors));
+  } else {
+    state.pendingPaletteName.value = '';
+    state.pendingPaletteColors.value = {};
+  }
+};
+
+const bufferToBase64 = (buffer) => {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+};
+
+const base64ToUint8 = (base64) => {
+  const binary = atob(base64);
+  const len = binary.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+};
+
+const serializeFile = async (file) => {
+  if (!file) return null;
+  const buffer = await file.arrayBuffer();
+  return {
+    name: file.name || 'file',
+    type: file.type || '',
+    size: file.size || buffer.byteLength,
+    lastModified: file.lastModified || Date.now(),
+    data: bufferToBase64(buffer)
+  };
+};
+
+const deserializeFile = (entry) => {
+  if (!entry || !entry.data) return null;
+  const bytes = base64ToUint8(entry.data);
+  return new File([bytes], entry.name || 'file', {
+    type: entry.type || 'application/octet-stream',
+    lastModified: entry.lastModified || Date.now()
+  });
+};
+
+const serializeResults = () => {
+  const currentSvg = (() => {
+    if (!state.svgContainer.value) return null;
+    const svg = state.svgContainer.value.querySelector('svg');
+    if (!svg) return null;
+    const serializer = new XMLSerializer();
+    return serializer.serializeToString(svg);
+  })();
+
+  return state.results.value.map((res, idx) => ({
+    name: res.name || `Result ${idx + 1}`,
+    content: idx === state.selectedResultIndex.value && currentSvg ? currentSvg : res.content
+  }));
+};
+
+const serializeLosatCache = () => {
+  const cacheMap = state.losatCache?.value;
+  if (!cacheMap || cacheMap.size === 0) return [];
+  const info = Array.isArray(state.losatCacheInfo.value) ? state.losatCacheInfo.value : [];
+  const entries = [];
+  const seen = new Set();
+
+  info.forEach((entry, idx) => {
+    if (!entry || !entry.key) return;
+    const cached = cacheMap.get(entry.key);
+    if (!isRawLosatCacheEntry(cached)) return;
+    entries.push({
+      schema: LOSAT_CACHE_SCHEMA,
+      kind: 'raw-losat',
+      key: entry.key,
+      filename: entry.filename || `losat_pair_${idx + 1}.tsv`,
+      display: entry.display !== false,
+      text: cached.text,
+      program: cached.program || '',
+      queryCanonicalHash: cached.queryCanonicalHash || '',
+      subjectCanonicalHash: cached.subjectCanonicalHash || ''
+    });
+    seen.add(entry.key);
+  });
+
+  cacheMap.forEach((value, key) => {
+    if (seen.has(key)) return;
+    if (!isRawLosatCacheEntry(value)) return;
+    entries.push({
+      schema: LOSAT_CACHE_SCHEMA,
+      kind: 'raw-losat',
+      key,
+      filename: '',
+      display: false,
+      text: value.text,
+      program: value.program || '',
+      queryCanonicalHash: value.queryCanonicalHash || '',
+      subjectCanonicalHash: value.subjectCanonicalHash || ''
+    });
+  });
+
+  return entries;
+};
+
+const applyLosatCache = (entries) => {
+  const map = new Map();
+  const info = [];
+
+  if (Array.isArray(entries)) {
+    entries.forEach((entry, idx) => {
+      if (
+        !entry ||
+        entry.schema !== LOSAT_CACHE_SCHEMA ||
+        entry.kind !== 'raw-losat' ||
+        !entry.key ||
+        typeof entry.text !== 'string'
+      ) {
+        return;
+      }
+      map.set(entry.key, {
+        schema: LOSAT_CACHE_SCHEMA,
+        kind: 'raw-losat',
+        text: entry.text,
+        program: entry.program || '',
+        queryCanonicalHash: entry.queryCanonicalHash || '',
+        subjectCanonicalHash: entry.subjectCanonicalHash || ''
+      });
+      if (entry.display === false) return;
+      info.push({
+        key: entry.key,
+        filename: entry.filename || `losat_pair_${idx + 1}.tsv`,
+        display: true
+      });
+    });
+  }
+
+  state.losatCache.value = map;
+  state.losatCacheInfo.value = info;
+};
+
+const buildOrthogroupIndexKey = (recordIndex, svgId) => `${Number(recordIndex)}:${String(svgId || '').trim()}`;
+
+const applyOrthogroupState = (orthogroupState = {}) => {
+  const groups = Array.isArray(orthogroupState.groups) ? orthogroupState.groups : [];
+  const groupIds = groups
+    .map((group) => String(group?.id || '').trim())
+    .filter(Boolean);
+  const groupIdSet = new Set(groupIds);
+  const index = new Map();
+
+  groups.forEach((group) => {
+    const orthogroupId = String(group?.id || '').trim();
+    const members = Array.isArray(group?.members) ? group.members : [];
+    const memberCount = Number(group?.member_count || members.length || 0);
+    const recordCoverage = Number(group?.record_coverage_count || new Set(
+      members.map((member) => Number(member?.recordIndex)).filter((recordIndex) => Number.isInteger(recordIndex))
+    ).size || 0);
+    members.forEach((member) => {
+      const featureSvgId = String(member?.featureSvgId || '').trim();
+      const recordIndex = Number(member?.recordIndex);
+      if (!featureSvgId || !Number.isInteger(recordIndex)) return;
+      const entry = {
+        orthogroupId,
+        orthogroupMemberCount: memberCount,
+        orthogroupRecordCoverage: recordCoverage,
+        proteinId: String(member?.proteinId || '').trim(),
+        sourceProteinId: String(member?.sourceProteinId || '').trim(),
+        orthogroupRepresentative: Boolean(member?.representative),
+        orthogroupMember: member
+      };
+      index.set(buildOrthogroupIndexKey(recordIndex, featureSvgId), entry);
+      if (!index.has(featureSvgId)) index.set(featureSvgId, entry);
+    });
+  });
+
+  state.orthogroups.value = groups;
+  state.featureOrthogroupIndex.value = index;
+  const selectedId = String(orthogroupState.selectedOrthogroupId || '').trim();
+  state.selectedOrthogroupId.value = selectedId && groupIdSet.has(selectedId) ? selectedId : (groupIds[0] || '');
+  state.selectedOrthogroupAlignmentFeature.value = String(orthogroupState.selectedOrthogroupAlignmentFeature || '').trim();
+
+  replaceStringMap(state.orthogroupNameOverrides, orthogroupState.orthogroupNameOverrides);
+  replaceStringMap(state.orthogroupDescriptionOverrides, orthogroupState.orthogroupDescriptionOverrides);
+  Object.keys(state.orthogroupNameOverrides).forEach((id) => {
+    if (!groupIdSet.has(id)) delete state.orthogroupNameOverrides[id];
+  });
+  Object.keys(state.orthogroupDescriptionOverrides).forEach((id) => {
+    if (!groupIdSet.has(id)) delete state.orthogroupDescriptionOverrides[id];
+  });
+};
+
+const serializeFiles = async () => {
+  const normalizedLinearSeqs = normalizeLinearSeqList(state.linearSeqs);
+  const linearSeqs = await Promise.all(
+    normalizedLinearSeqs.map(async (seq) => ({
+      uid: seq.uid,
+      gb: await serializeFile(seq.gb),
+      gff: await serializeFile(seq.gff),
+      fasta: await serializeFile(seq.fasta),
+      depth: await serializeFile(seq.depth),
+      blast: await serializeFile(seq.blast),
+      losat_gencode: seq.losat_gencode ?? 1,
+      losat_filename: seq.losat_filename ?? '',
+      definition: seq.definition ?? '',
+      region_record_id: seq.region_record_id ?? '',
+      region_start: seq.region_start ?? null,
+      region_end: seq.region_end ?? null,
+      region_reverse: !!seq.region_reverse
+    }))
+  );
+
+  return {
+    c_gb: await serializeFile(state.files.c_gb),
+    c_gff: await serializeFile(state.files.c_gff),
+    c_fasta: await serializeFile(state.files.c_fasta),
+    c_depth: await serializeFile(state.files.c_depth),
+    d_color: await serializeFile(state.files.d_color),
+    t_color: await serializeFile(state.files.t_color),
+    blacklist: await serializeFile(state.files.blacklist),
+    whitelist: await serializeFile(state.files.whitelist),
+    qualifier_priority: await serializeFile(state.files.qualifier_priority),
+    linearSeqs
+  };
+};
+
+const applyFiles = (filesData) => {
+  state.files.c_gb = null;
+  state.files.c_gff = null;
+  state.files.c_fasta = null;
+  state.files.c_depth = null;
+  state.files.d_color = null;
+  state.files.t_color = null;
+  state.files.blacklist = null;
+  state.files.whitelist = null;
+  state.files.qualifier_priority = null;
+  state.linearReorderNotice.value = '';
+
+  if (!filesData) {
+    state.linearSeqs.splice(0, state.linearSeqs.length, ...normalizeLinearSeqList([]));
+    return { collapsedLinearSeqs: false };
+  }
+
+  state.files.c_gb = deserializeFile(filesData.c_gb);
+  state.files.c_gff = deserializeFile(filesData.c_gff);
+  state.files.c_fasta = deserializeFile(filesData.c_fasta);
+  state.files.c_depth = deserializeFile(filesData.c_depth);
+  state.files.d_color = deserializeFile(filesData.d_color);
+  state.files.t_color = deserializeFile(filesData.t_color);
+  state.files.blacklist = deserializeFile(filesData.blacklist);
+  state.files.whitelist = deserializeFile(filesData.whitelist);
+  state.files.qualifier_priority = deserializeFile(filesData.qualifier_priority);
+
+  if (Array.isArray(filesData.linearSeqs)) {
+    const loadedLinearSeqs = filesData.linearSeqs.map((seq) => ({
+      uid: seq.uid,
+      gb: deserializeFile(seq.gb),
+      gff: deserializeFile(seq.gff),
+      fasta: deserializeFile(seq.fasta),
+      depth: deserializeFile(seq.depth),
+      blast: deserializeFile(seq.blast),
+      losat_gencode: seq.losat_gencode ?? 1,
+      losat_filename: seq.losat_filename ?? '',
+      definition: seq.definition ?? '',
+      region_record_id: seq.region_record_id ?? '',
+      region_start: seq.region_start ?? null,
+      region_end: seq.region_end ?? null,
+      region_reverse: !!seq.region_reverse
+    }));
+    const normalized = normalizeLinearSeqList(loadedLinearSeqs);
+    const collapsed = collapseEmptyLinearSeqList(loadedLinearSeqs);
+    const collapsedLinearSeqs = collapsed.length !== normalized.length;
+    state.linearSeqs.splice(0, state.linearSeqs.length, ...collapsed);
+    return { collapsedLinearSeqs };
+  }
+
+  state.linearSeqs.splice(0, state.linearSeqs.length, ...normalizeLinearSeqList([]));
+  return { collapsedLinearSeqs: false };
+};
+
+export const exportConfig = () => {
+  const configData = buildConfigData();
+  downloadJson(configData, 'gbdraw_config.json');
+};
+
+export const exportSession = async (titleOverride = null) => {
+  const losatEntries = serializeLosatCache();
+  const losatBytes = losatEntries.reduce((sum, entry) => sum + (entry.text ? entry.text.length : 0), 0);
+  const currentLegend = state.form.legend;
+  const isLinear = state.mode.value === 'linear';
+  const currentPlotTitlePosition = state.adv.plot_title_position;
+  const activeCircularLegend = isLinear
+    ? normalizeLegendPosition(state.circularLegendPosition.value, 'left')
+    : normalizeLegendPosition(currentLegend, 'left');
+  const activeCircularPlotTitlePosition = isLinear
+    ? normalizeCircularPlotTitlePosition(state.circularPlotTitlePosition.value)
+    : normalizeCircularPlotTitlePosition(currentPlotTitlePosition);
+  const savedCircularLegend = activeCircularLegend;
+  const savedLinearLegend = isLinear
+    ? normalizeLegendPosition(currentLegend, 'bottom')
+    : normalizeLegendPosition(state.linearLegendPosition.value, 'bottom');
+  const savedCircularPlotTitlePosition = activeCircularPlotTitlePosition;
+  const savedLinearPlotTitlePosition = isLinear
+    ? normalizeLinearPlotTitlePosition(currentPlotTitlePosition)
+    : normalizeLinearPlotTitlePosition(state.linearPlotTitlePosition.value);
+  const savedCircularSingleRecordLegendPosition =
+    !isLinear && !state.form.multi_record_canvas
+      ? activeCircularLegend
+      : normalizeLegendPosition(state.circularSingleRecordLegendPosition.value, activeCircularLegend);
+  const savedCircularSingleRecordPlotTitlePosition =
+    !isLinear && !state.form.multi_record_canvas
+      ? activeCircularPlotTitlePosition
+      : normalizeCircularPlotTitlePosition(state.circularSingleRecordPlotTitlePosition.value);
+  const savedCircularMultiRecordLegendPosition =
+    !isLinear && state.form.multi_record_canvas
+      ? activeCircularLegend
+      : hasStoredLayoutValue(state.circularMultiRecordLegendPosition.value)
+        ? normalizeLegendPosition(state.circularMultiRecordLegendPosition.value, savedCircularSingleRecordLegendPosition)
+        : savedCircularSingleRecordLegendPosition;
+  const savedCircularMultiRecordPlotTitlePosition =
+    !isLinear && state.form.multi_record_canvas
+      ? activeCircularPlotTitlePosition
+      : hasStoredLayoutValue(state.circularMultiRecordPlotTitlePosition.value)
+        ? normalizeCircularPlotTitlePosition(state.circularMultiRecordPlotTitlePosition.value)
+        : savedCircularSingleRecordPlotTitlePosition;
+  const resolvedTitle =
+    typeof titleOverride === 'string'
+      ? titleOverride.trim()
+      : typeof state.sessionTitle?.value === 'string'
+        ? state.sessionTitle.value.trim()
+        : '';
+  const sessionFilename = buildSessionFilename(resolvedTitle);
+  const totalBytes =
+    (state.files.c_gb?.size || 0) +
+    (state.files.c_gff?.size || 0) +
+    (state.files.c_fasta?.size || 0) +
+    (state.files.c_depth?.size || 0) +
+    (state.files.d_color?.size || 0) +
+    (state.files.t_color?.size || 0) +
+    (state.files.blacklist?.size || 0) +
+    (state.files.whitelist?.size || 0) +
+    (state.files.qualifier_priority?.size || 0) +
+    state.linearSeqs.reduce((sum, seq) => {
+      return (
+        sum +
+        (seq.gb?.size || 0) +
+        (seq.gff?.size || 0) +
+        (seq.fasta?.size || 0) +
+        (seq.depth?.size || 0) +
+        (seq.blast?.size || 0)
+      );
+    }, 0) +
+    losatBytes;
+
+  if (totalBytes > 50 * 1024 * 1024) {
+    const proceed = confirm(
+      `Session file will include ${(totalBytes / (1024 * 1024)).toFixed(
+        1
+      )} MB of input data. Continue?`
+    );
+    if (!proceed) return;
+  }
+
+  const sessionData = {
+    format: 'gbdraw-session',
+    version: SESSION_VERSION,
+    createdAt: new Date().toISOString(),
+    title: resolvedTitle || undefined,
+    config: buildConfigData(),
+    ui: {
+      mode: state.mode.value,
+      zoom: state.zoom.value,
+      canvasPan: { x: state.canvasPan.x, y: state.canvasPan.y },
+      canvasPadding: { ...state.canvasPadding },
+      selectedResultIndex: state.selectedResultIndex.value,
+      generatedLegendPosition: state.generatedLegendPosition.value,
+      generatedMultiRecordCanvas: Boolean(state.generatedMultiRecordCanvas.value),
+      generatedCircularPlotTitlePosition: normalizeCircularPlotTitlePosition(
+        state.generatedCircularPlotTitlePosition.value
+      ),
+      legend: currentLegend,
+      circularLegendPosition: savedCircularLegend,
+      linearLegendPosition: savedLinearLegend,
+      circularPlotTitlePosition: savedCircularPlotTitlePosition,
+      linearPlotTitlePosition: savedLinearPlotTitlePosition,
+      circularSingleRecordLegendPosition: savedCircularSingleRecordLegendPosition,
+      circularSingleRecordPlotTitlePosition: savedCircularSingleRecordPlotTitlePosition,
+      circularMultiRecordLegendPosition: savedCircularMultiRecordLegendPosition,
+      circularMultiRecordPlotTitlePosition: savedCircularMultiRecordPlotTitlePosition,
+      featurePanelTab: state.featurePanelTab.value,
+      cInputType: state.cInputType.value,
+      lInputType: state.lInputType.value,
+      downloadDpi: state.downloadDpi.value,
+      autoLabelReflow: Boolean(state.autoLabelReflowEnabled.value),
+      paletteInstantPreviewEnabled: Boolean(state.paletteInstantPreviewEnabled.value),
+      appliedPaletteName: state.appliedPaletteName.value,
+      appliedPaletteColors: cloneColors(state.appliedPaletteColors.value),
+      pendingPaletteName: state.pendingPaletteName.value,
+      pendingPaletteColors: cloneColors(state.pendingPaletteColors.value)
+    },
+    files: await serializeFiles(),
+    results: serializeResults(),
+    features: {
+      extractedFeatures: state.extractedFeatures.value,
+      featureRecordIds: state.featureRecordIds.value,
+      selectedFeatureRecordIdx: state.selectedFeatureRecordIdx.value,
+      featureColorOverrides: JSON.parse(JSON.stringify(state.featureColorOverrides)),
+      featureVisibilityOverrides: JSON.parse(JSON.stringify(state.featureVisibilityOverrides)),
+      labelTextFeatureOverrides: JSON.parse(JSON.stringify(state.labelTextFeatureOverrides)),
+      labelTextBulkOverrides: JSON.parse(JSON.stringify(state.labelTextBulkOverrides)),
+      labelTextFeatureOverrideSources: JSON.parse(JSON.stringify(state.labelTextFeatureOverrideSources)),
+      labelVisibilityOverrides: JSON.parse(JSON.stringify(state.labelVisibilityOverrides)),
+      labelOverrideContextKey: String(state.labelOverrideContextKey.value || '')
+    },
+    orthogroupState: {
+      groups: Array.isArray(state.orthogroups.value) ? JSON.parse(JSON.stringify(state.orthogroups.value)) : [],
+      selectedOrthogroupId: String(state.selectedOrthogroupId.value || ''),
+      selectedOrthogroupAlignmentFeature: String(state.selectedOrthogroupAlignmentFeature.value || ''),
+      orthogroupNameOverrides: cloneStringMap(state.orthogroupNameOverrides),
+      orthogroupDescriptionOverrides: cloneStringMap(state.orthogroupDescriptionOverrides)
+    },
+    losatCache: {
+      entries: losatEntries
+    }
+  };
+
+  if (lastSessionFilename && lastSessionFilename === sessionFilename) {
+    const proceed = confirm(`Download "${sessionFilename}" again? Your browser may overwrite or rename the file.`);
+    if (!proceed) return;
+  }
+  lastSessionFilename = sessionFilename;
+  downloadJson(sessionData, sessionFilename);
+};
+
+export const importConfig = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  if (file.size > 10 * 1024 * 1024) {
+    alert('Config file is too large.');
+    return;
+  }
+
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text, (key, value) => {
+      if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+        return undefined;
+      }
+      return value;
+    });
+    state.suppressCircularMultiRecordDefaults.value = shouldSuppressCircularMultiRecordDefaults(data.form);
+    applyConfigData(data);
+    restorePaletteStateAfterConfigImport();
+    alert('Configuration loaded successfully!');
+  } catch (err) {
+    console.error(err);
+    state.suppressCircularMultiRecordDefaults.value = false;
+    alert('Failed to load config: Invalid JSON structure.');
+  } finally {
+    e.target.value = '';
+  }
+};
+
+export const importSession = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  if (file.size > 200 * 1024 * 1024) {
+    alert('Session file is too large.');
+    return;
+  }
+
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text, (key, value) => {
+      if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+        return undefined;
+      }
+      return value;
+    });
+
+    if (!data || data.format !== 'gbdraw-session') {
+      alert('Invalid session file.');
+      return;
+    }
+
+    const ui = data.ui || {};
+    state.sessionTitle.value = typeof data.title === 'string' ? data.title : '';
+    if (ui.mode) state.mode.value = ui.mode;
+    if (ui.cInputType) state.cInputType.value = ui.cInputType;
+    if (ui.lInputType) state.lInputType.value = ui.lInputType;
+    if (ui.downloadDpi) state.downloadDpi.value = ui.downloadDpi;
+    state.autoLabelReflowEnabled.value = Boolean(ui.autoLabelReflow);
+    state.paletteInstantPreviewEnabled.value = Boolean(ui.paletteInstantPreviewEnabled);
+    state.labelOverrideBuildWarning.value = '';
+    if (ui.featurePanelTab === 'labels' || ui.featurePanelTab === 'colors') {
+      state.featurePanelTab.value = ui.featurePanelTab;
+    } else {
+      state.featurePanelTab.value = 'colors';
+    }
+    state.generatedMode.value = ui.mode === 'linear' ? 'linear' : 'circular';
+    if (ui.linearLegendPosition) {
+      state.linearLegendPosition.value = normalizeLegendPosition(ui.linearLegendPosition, 'bottom');
+    }
+    if (ui.generatedLegendPosition) {
+      state.generatedLegendPosition.value = normalizeLegendPosition(
+        ui.generatedLegendPosition,
+        ui.mode === 'linear' ? 'bottom' : 'left'
+      );
+    }
+    state.generatedMultiRecordCanvas.value = Boolean(ui.generatedMultiRecordCanvas);
+    state.generatedCircularPlotTitlePosition.value = hasStoredLayoutValue(ui.generatedCircularPlotTitlePosition)
+      ? normalizeCircularPlotTitlePosition(ui.generatedCircularPlotTitlePosition)
+      : normalizeCircularPlotTitlePosition(ui.circularPlotTitlePosition);
+
+    if (data.config) {
+      state.suppressCircularMultiRecordDefaults.value = shouldSuppressCircularMultiRecordDefaults(data.config.form);
+      applyConfigData(data.config);
+    }
+    restorePaletteStateFromSession(ui);
+    restoreSessionCircularLayoutCaches(ui);
+    restoreSessionPlotTitlePositions(ui);
+
+    const { collapsedLinearSeqs } = applyFiles(data.files);
+    applyLosatCache(data.losatCache?.entries);
+    if (collapsedLinearSeqs) {
+      state.losatCacheInfo.value = [];
+    }
+
+    state.skipCaptureBaseConfig.value = false;
+    state.skipPositionReapply.value = false;
+
+    if (Array.isArray(data.results)) {
+      state.results.value = data.results.map((res, idx) => ({
+        name: res.name || `Result ${idx + 1}`,
+        content: res.content || ''
+      }));
+    } else {
+      state.results.value = [];
+    }
+
+    const features = data.features || {};
+    if (Array.isArray(features.extractedFeatures)) {
+      state.extractedFeatures.value = features.extractedFeatures;
+    } else {
+      state.extractedFeatures.value = [];
+    }
+    if (Array.isArray(features.featureRecordIds)) {
+      state.featureRecordIds.value = features.featureRecordIds;
+    } else {
+      state.featureRecordIds.value = [];
+    }
+    if (Number.isInteger(features.selectedFeatureRecordIdx)) {
+      state.selectedFeatureRecordIdx.value = features.selectedFeatureRecordIdx;
+    } else {
+      state.selectedFeatureRecordIdx.value = 0;
+    }
+    if (features.featureColorOverrides && typeof features.featureColorOverrides === 'object') {
+      Object.keys(state.featureColorOverrides).forEach((k) => delete state.featureColorOverrides[k]);
+      Object.entries(features.featureColorOverrides).forEach(([key, value]) => {
+        state.featureColorOverrides[key] = value;
+      });
+    } else {
+      Object.keys(state.featureColorOverrides).forEach((k) => delete state.featureColorOverrides[k]);
+    }
+    if (features.featureVisibilityOverrides && typeof features.featureVisibilityOverrides === 'object') {
+      Object.keys(state.featureVisibilityOverrides).forEach((k) => delete state.featureVisibilityOverrides[k]);
+      Object.entries(features.featureVisibilityOverrides).forEach(([key, value]) => {
+        const mode = String(value || '').trim().toLowerCase();
+        if (mode !== 'on' && mode !== 'off') return;
+        state.featureVisibilityOverrides[String(key || '')] = mode;
+      });
+    } else {
+      Object.keys(state.featureVisibilityOverrides).forEach((k) => delete state.featureVisibilityOverrides[k]);
+    }
+
+    if (features.labelTextFeatureOverrides && typeof features.labelTextFeatureOverrides === 'object') {
+      Object.keys(state.labelTextFeatureOverrides).forEach((k) => delete state.labelTextFeatureOverrides[k]);
+      Object.entries(features.labelTextFeatureOverrides).forEach(([key, value]) => {
+        state.labelTextFeatureOverrides[key] = String(value ?? '');
+      });
+    } else {
+      Object.keys(state.labelTextFeatureOverrides).forEach((k) => delete state.labelTextFeatureOverrides[k]);
+    }
+
+    if (features.labelTextBulkOverrides && typeof features.labelTextBulkOverrides === 'object') {
+      Object.keys(state.labelTextBulkOverrides).forEach((k) => delete state.labelTextBulkOverrides[k]);
+      Object.entries(features.labelTextBulkOverrides).forEach(([key, value]) => {
+        state.labelTextBulkOverrides[key] = String(value ?? '');
+      });
+    } else {
+      Object.keys(state.labelTextBulkOverrides).forEach((k) => delete state.labelTextBulkOverrides[k]);
+    }
+    if (features.labelTextFeatureOverrideSources && typeof features.labelTextFeatureOverrideSources === 'object') {
+      Object.keys(state.labelTextFeatureOverrideSources).forEach((k) => delete state.labelTextFeatureOverrideSources[k]);
+      Object.entries(features.labelTextFeatureOverrideSources).forEach(([key, value]) => {
+        state.labelTextFeatureOverrideSources[key] = String(value ?? '');
+      });
+    } else {
+      Object.keys(state.labelTextFeatureOverrideSources).forEach((k) => delete state.labelTextFeatureOverrideSources[k]);
+    }
+    if (features.labelVisibilityOverrides && typeof features.labelVisibilityOverrides === 'object') {
+      Object.keys(state.labelVisibilityOverrides).forEach((k) => delete state.labelVisibilityOverrides[k]);
+      Object.entries(features.labelVisibilityOverrides).forEach(([key, value]) => {
+        const normalized = String(value || '').trim().toLowerCase();
+        if (normalized !== 'on' && normalized !== 'off') return;
+        state.labelVisibilityOverrides[String(key || '')] = normalized;
+      });
+    } else {
+      Object.keys(state.labelVisibilityOverrides).forEach((k) => delete state.labelVisibilityOverrides[k]);
+    }
+    state.labelOverrideContextKey.value = String(features.labelOverrideContextKey || '');
+
+    applyOrthogroupState(
+      data.orthogroupState && typeof data.orthogroupState === 'object'
+        ? data.orthogroupState
+        : {
+            groups: Array.isArray(data.orthogroups) ? data.orthogroups : [],
+            selectedOrthogroupId: features.selectedOrthogroupId,
+            selectedOrthogroupAlignmentFeature: features.selectedOrthogroupAlignmentFeature,
+            orthogroupNameOverrides:
+              features.orthogroupNameOverrides ||
+              data.config?.webEdits?.orthogroupNameOverrides ||
+              {},
+            orthogroupDescriptionOverrides:
+              features.orthogroupDescriptionOverrides ||
+              data.config?.webEdits?.orthogroupDescriptionOverrides ||
+              {}
+          }
+    );
+
+    const resultCount = state.results.value.length;
+    if (resultCount > 0) {
+      const desiredIndex =
+        Number.isInteger(ui.selectedResultIndex) && ui.selectedResultIndex >= 0
+          ? ui.selectedResultIndex
+          : 0;
+      state.selectedResultIndex.value = Math.min(desiredIndex, resultCount - 1);
+    } else {
+      state.selectedResultIndex.value = 0;
+    }
+
+    if (ui.canvasPadding) {
+      state.canvasPadding.top = ui.canvasPadding.top || 0;
+      state.canvasPadding.right = ui.canvasPadding.right || 0;
+      state.canvasPadding.bottom = ui.canvasPadding.bottom || 0;
+      state.canvasPadding.left = ui.canvasPadding.left || 0;
+    }
+    if (ui.canvasPan) {
+      state.canvasPan.x = ui.canvasPan.x || 0;
+      state.canvasPan.y = ui.canvasPan.y || 0;
+    }
+    if (typeof ui.zoom === 'number') {
+      state.zoom.value = ui.zoom;
+    }
+
+    if (state.mode.value === 'linear') {
+      const nextLinearLegend = hasStoredLayoutValue(ui.linearLegendPosition)
+        ? normalizeLegendPosition(ui.linearLegendPosition, 'bottom')
+        : hasStoredLayoutValue(ui.legend)
+          ? normalizeLegendPosition(ui.legend, 'bottom')
+          : normalizeLegendPosition(state.form.legend, 'bottom');
+      state.form.legend = nextLinearLegend;
+      state.linearLegendPosition.value = nextLinearLegend;
+      state.adv.plot_title_position = state.linearPlotTitlePosition.value;
+    } else {
+      const activeCircularLayout = resolveActiveCircularLayout();
+      state.form.legend = activeCircularLayout.legend;
+      state.adv.plot_title_position = activeCircularLayout.plotTitlePosition;
+      state.circularLegendPosition.value = activeCircularLayout.legend;
+      state.circularPlotTitlePosition.value = activeCircularLayout.plotTitlePosition;
+    }
+
+    alert('Session loaded successfully!');
+  } catch (err) {
+    console.error(err);
+    state.suppressCircularMultiRecordDefaults.value = false;
+    alert('Failed to load session: Invalid JSON structure.');
+  } finally {
+    e.target.value = '';
+  }
+};

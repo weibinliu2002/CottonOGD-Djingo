@@ -1,4 +1,6 @@
-from django.urls import include, path
+from django.urls import path, re_path
+from django.views.static import serve as static_serve
+from django.conf import settings
 #from CottonOGD.views.jbrowes_file import *
 from CottonOGD.views.base import *
 from CottonOGD.views.base_info import *
@@ -13,9 +15,12 @@ from CottonOGD.views.expression_EFP import *
 from CottonOGD.views.DownloadGenome import download_genome_file
 from CottonOGD.views.gene_Go import go_annotation, go_enrichment
 from CottonOGD.views.gene_Kegg import kegg_annotation, kegg_enrichment
-from CottonOGD.views.Meilisearch import search_genes_meilisearch, search_genes
+from CottonOGD.views.Meilisearch import (
+    search_genes_meilisearch, search_genes, proxy_search, get_search_indexes,
+)
 from CottonOGD.views.genome_api import *
 from CottonOGD.views.protein3D import *
+from CottonOGD.views.ai_chat import ai_chat
 
 
 urlpatterns = [
@@ -36,6 +41,13 @@ urlpatterns = [
     path('extract_expression/genomes/', get_genomes_with_tissue, name='get_genomes_with_tissue'),
     path('search_genes/', search_genes, name='search_genes'),
     path('search_genes_meilisearch/', search_genes_meilisearch, name='search_genes_meilisearch'),
+    # 统一检索代理（前端零密钥，Meilisearch 请求全部经后端透传）
+    path('search/', proxy_search, name='search_proxy'),
+    # 可用索引列表（前端首页渲染「选择库」下拉）
+    path('get_search_indexes/', get_search_indexes, name='get_search_indexes'),
+
+    # ========== AI Chat（对话式人工智能，第一版：3 个工具，见 server/ai_tools.py） ==========
+    path('ai/chat/', ai_chat, name='ai_chat'),
     path('primer_design/', primer_design, name='primer_design'),
     path('blast_cmd/', blast_cmd, name='blast_cmd'),
     path('expression_EFP_image/', expression_EFP_image, name='expression_EFP_image'),
@@ -56,5 +68,17 @@ urlpatterns = [
     # Protein 3D search endpoints
     path('search_similar_structure/', search_similar_structure, name='search_similar_structure'),
     path('get_search_methods/', get_search_methods, name='get_search_methods'),
+
+    # ========== TF/TR 系统发生树静态文件转发（前端 Phylotree.js 直接 fetch，无 API 逻辑） ==========
+    # 路径示例：
+    #   /CottonOGD_api/tf_tree/tree/genome/<genome_pro_name>/TF/<tf_name>.treefile
+    #   /CottonOGD_api/tf_tree/tree/genome/<genome_pro_name>/TR/<tr_name>.treefile
+    # 直接返回 Newick 文本（Content-Type: text/plain），Django 不做任何业务处理。
+    re_path(
+        r'^tf_tree/(?P<path>tree/genome/[^/]+/(?:TF|TR)/[^/]+\.treefile)$',
+        static_serve,
+        kwargs={'document_root': str(settings.BASE_DIR / 'data' / 'tf_phylogeny')},
+        name='tf_tree_file',
+    ),
 
 ]

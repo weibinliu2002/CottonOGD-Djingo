@@ -2,8 +2,6 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import status
 from django.http import JsonResponse
-from CottonOGD.views.base import UuidManager
-from CottonOGD.views.location_ID import Id_map
 import os, json
 import subprocess
 import re
@@ -11,6 +9,10 @@ import platform
 from django.conf import settings
 import logging
 logger = logging.getLogger(__name__)
+
+from CottonOGD.views.gene_id_result import resolve_input_ids
+from CottonOGD.server.seq_fetch import fetch_region
+from CottonOGD.models import gene_info
 
 
 def parse_primer3_output(output):
@@ -99,28 +101,67 @@ def parse_primer3_output(output):
     return results
 
 
+def _fetch_sequence_for_primer(request):
+    """
+    获取引物设计模板序列。
+
+    优先级：
+      1. 请求直接携带 sequence（旧行为，完全兼容）；
+      2. db_id / gene_id（+可选 genome_id）：经公共解析定位基因后，
+         用 seq_fetch 从基因组 fa.gz 按坐标提取（fetch_region）。
+    返回 (sequence, error_message)。
+    """
+    sequence = request.data.get('sequence') or request.query_params.get('sequence')
+    if sequence:
+        return sequence.strip(), None
+
+    db_id = request.data.get('db_id') or request.query_params.get('db_id')
+    gene_id = request.data.get('gene_id') or request.query_params.get('gene_id')
+    genome_id = request.data.get('genome_id') or request.query_params.get('genome_id')
+
+    if db_id:
+        db_ids = [db_id]
+    elif gene_id:
+        db_ids = resolve_input_ids(gene_id, genome_id or None)
+    else:
+        return None, 'sequence or db_id or gene_id is required'
+
+    if not db_ids:
+        return None, f'cannot resolve gene: gene_id={gene_id!r} genome_id={genome_id!r}'
+
+    gene = (gene_info.objects.filter(id_id__in=db_ids, type='gene')
+            .select_related('genome').first())
+    if not gene:
+        return None, f'gene coordinates not found for db_id={db_ids[0]}'
+
+    genome_name = gene.genome.name if gene.genome else ''
+    seq = fetch_region(genome_name, gene.seqid, gene.start, gene.end, gene.strand or '+')
+    if not seq:
+        return None, (f'sequence not available from genome file for '
+                      f'{genome_name}:{gene.seqid}:{gene.start}-{gene.end} '
+                      f'(gene_seq 表回退未启用：primer 模板仅支持文件提取)')
+
+    logger.info(f"primer sequence fetched from file: {genome_name}:{gene.seqid}:"
+                f"{gene.start}-{gene.end} len={len(seq)}")
+    return seq, None
+
+
 @api_view(['POST'])
 def primer_design(request):
     if request.method == 'POST':
-        '''
-        uuid = request.headers.get('uuid')
-        if not uuid or uuid not in UuidManager.uuid_storage:
-            return Response({'error': 'uuid is required'}, status=status.HTTP_400_BAD_REQUEST)
-        '''
         # 获取序列和参数
-        sequence = request.data.get('sequence') or request.query_params.get('sequence')
+        sequence, err = _fetch_sequence_for_primer(request)
+        if err:
+            return Response({'error': err}, status=status.HTTP_400_BAD_REQUEST)
         sequence_id = request.data.get('sequence_id', 'default_id')
         parameters = request.data.get('parameters', {})
-        
-        # 验证序列
-        if not sequence:
-            return Response({'error': 'sequence is required'}, status=status.HTTP_400_BAD_REQUEST)
-        
+
         # 检查序列长度（限制最大长度为 5000 字符）
         if len(sequence) > 5000:
             return Response({'error': f'sequence is too long (max 5000 characters, got {len(sequence)})'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        # 检查序列是否只包含ACTG字符
+
+        # 检查序列是否只包含ACTG字符（含小写，统一转大写）
+        sequence = sequence.upper()
         if not re.match(r'^[ACTG]+$', sequence):
             return Response({'error': 'sequence must contain only ACTG characters'}, status=status.HTTP_400_BAD_REQUEST)
         

@@ -1,0 +1,9 @@
+Cython
+numpy
+pandas
+scipy
+psutil
+igraph
+longestrunsubsequence
+pysam
+pulp

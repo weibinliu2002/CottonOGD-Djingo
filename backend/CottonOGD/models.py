@@ -59,19 +59,41 @@ class GeneMaster(models.Model):
     def __str__(self):
         return f"{self.genome.name}:{self.geneid}"
 
+class TranscriptMaster(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    id_id = models.IntegerField(default='0')
+    transcriptid = models.CharField(max_length=200,unique=False)
+    genome = models.ForeignKey(Species_info, on_delete=models.CASCADE, to_field='id')
+    class Meta:
+        db_table = 'transcriptmaster'  # 确保表名与导入数据匹配
+        constraints = [
+            models.UniqueConstraint(fields=['genome','transcriptid'], name='genome_transcript')
+        ]
+        indexes = [
+            models.Index(fields=['transcriptid']),
+            models.Index(fields=['genome']),
+        ]
+    def save(self, *args, **kwargs):
+        # 自动生成 alias
+        self.alias = f"{self.genome_id}::{self.transcriptid}"
+        super().save(*args, **kwargs)
+    def __str__(self):
+        return f"{self.genome.name}:{self.transcriptid}"
+
 class Family(models.Model):
     id = models.OneToOneField(GeneMaster, on_delete=models.CASCADE, to_field='id',primary_key=True)
     
     # 关联 GeneMaster 的字段（新增）
     geneid=models.CharField(max_length=200,blank=True, null=True)
-    genome = models.ForeignKey(Species_info, on_delete=models.CASCADE, to_field='name') 
+    genome = models.ForeignKey(Species_info, on_delete=models.CASCADE, to_field='id') 
     TF_class = models.CharField(db_column='TF_class', max_length=100)  # Field name made lowercase in DB
+    class_name=models.CharField(db_column='class_name', max_length=100)  
     TF_name = models.CharField(db_column='TF_name', max_length=100)  # Field name made lowercase in DB
 
     class Meta:
         db_table = 'genefamily'  # 指定数据库中实际存在的表名
         indexes = [
-            models.Index(fields=['geneid','genome',]),           
+            models.Index(fields=['geneid','genome','id_id',]),           
         ]
         #managed = False  # 防止Django尝试修改这个表
 
@@ -131,9 +153,9 @@ class gene_info(models.Model):
     id=models.BigAutoField(primary_key=True)
     #id = models.OneToOneField(GeneMaster, on_delete=models.CASCADE, to_field='id',primary_key=True)
     id_id = models.IntegerField(default='0')
-    geneid_id=models.CharField(max_length=200,unique=False,default='0')
+    #geneid_id=models.CharField(max_length=200,unique=False,default='0')
     #parent_id=models.CharField(max_length=200,unique=False,default='0')
-    genome = models.ForeignKey(Species_info, on_delete=models.CASCADE, to_field='name') 
+    genome = models.ForeignKey(Species_info, on_delete=models.CASCADE, to_field='id') 
     seqid = models.CharField(max_length=100)
     source = models.CharField(max_length=100)
     type = models.CharField(max_length=100)
@@ -147,46 +169,100 @@ class gene_info(models.Model):
         db_table = 'gene_assembly'
         indexes = [
             models.Index(fields=['id_id']),
-            models.Index(fields=['seqid']),
-            models.Index(fields=['start']),
-            models.Index(fields=['end']),
+            models.Index(fields=['seqid','start','end'], name='idx_seqid_start_end'),
         ]
     def __str__(self):
         return self.geneid.geneid
 
-class transcript_info(gene_info):
-    pass    
 
-class feature_info(gene_info):
-    pass
+class AnnotationSource(models.Model):
+    """表1：注释来源类型表（如 uniprot, interproscan, eggnog, pfam 等）"""
+    id = models.BigAutoField(primary_key=True)
+    name = models.CharField(max_length=100, unique=True)  # 如 'uniprot', 'interproscan'
+    description = models.TextField(blank=True, null=True)
+
+    class Meta:
+        db_table = 'annotation_source'
+    
+    def __str__(self):
+        return self.name
+
+
+class AnnotationDetail(models.Model):
+    """表2：注释详细信息表（通过 source_id 关联表1）"""
+    id = models.BigAutoField(primary_key=True)
+    source = models.ForeignKey(AnnotationSource, on_delete=models.CASCADE, related_name='details')
+    annotation_id = models.CharField(max_length=100)  # 如 UniProt ID, PFAM ID, GO ID 等
+    description = models.TextField(blank=True, null=True)
+    
+    # UniProt专用字段
+    protein_name = models.TextField(blank=True, null=True)  # 蛋白名称
+    gene_name = models.CharField(max_length=200, blank=True, null=True)  # 基因名
+    species = models.CharField(max_length=500, blank=True, null=True)  # 物种
+    ox = models.IntegerField(blank=True, null=True)  # OX号
+    pe = models.IntegerField(blank=True, null=True)  # PE号
+    sv = models.IntegerField(blank=True, null=True)  # SV号
+    full_header = models.TextField(blank=True, null=True)  # 完整header
+    
+    # Pfam/SMART等结构域数据库字段
+    accession = models.CharField(max_length=50, blank=True, null=True)  # 如 PF00001.20
+    pfam_type = models.CharField(max_length=20, blank=True, null=True)  # Family, Domain, Repeat等
+    clan = models.CharField(max_length=20, blank=True, null=True)  # 家族分类
+    model_length = models.IntegerField(blank=True, null=True)  # 模型长度
+    gathering_threshold = models.FloatField(blank=True, null=True)  # 聚集阈值
+    
+    # eggNOG字段
+    cog_category = models.CharField(max_length=50, blank=True, null=True)  # COG/KOG类别
+    cog_class = models.CharField(max_length=50, blank=True, null=True)  # 功能类别
+    eggnog_og = models.CharField(max_length=50, blank=True, null=True)  # eggNOG orthologous group
+    
+    other_info = models.JSONField(blank=True, null=True)  # 存储其他相关信息，如 evalue, score, interpro_match 等
+    
+    class Meta:
+        db_table = 'annotation_detail'
+        unique_together = [['source', 'annotation_id']]
+        indexes = [
+            models.Index(fields=['source', 'annotation_id']),
+            models.Index(fields=['gene_name']),
+            models.Index(fields=['species']),
+            models.Index(fields=['accession']),
+            models.Index(fields=['clan']),
+        ]
+    
+    def __str__(self):
+        return f"{self.source.name}:{self.annotation_id}"
+
 
 class gene_annotation(models.Model):
-    id=models.BigAutoField(primary_key=True)
-    id_id = models.IntegerField(default='0')
-    geneid_id=models.CharField(max_length=200,unique=False,default='0')
-    geneid = models.CharField(max_length=100, blank=True, null=True)
-    genome = models.ForeignKey(Species_info, on_delete=models.CASCADE, to_field='name') 
-    annoation_source=models.CharField(max_length=100, blank=True, null=True)
-    annoation_id=models.CharField(max_length=100, blank=True, null=True)
-    annotation = models.TextField(blank=True, null=True)
-    def __str__(self):
-        return self.geneid
+    """表3：基因注释关联表（只存储关联关系，节省空间）"""
+    id = models.BigAutoField(primary_key=True)
+    id_id = models.ForeignKey(GeneMaster, on_delete=models.CASCADE, to_field='id',db_column='id_id', null=True)
+    genome = models.ForeignKey(Species_info, on_delete=models.CASCADE, to_field='id', null=True)
+    source = models.ForeignKey(AnnotationSource, on_delete=models.CASCADE, to_field='id', null=True)
+    annotation_detail = models.ForeignKey(AnnotationDetail, on_delete=models.CASCADE, null=True)
+    
     class Meta:
         db_table = 'gene_annotation'
         indexes = [
             models.Index(fields=['id_id']),
+            models.Index(fields=['source']),
+            models.Index(fields=['annotation_detail']),
         ]
+    
+    def __str__(self):
+        return f"{self.id_id}:{self.source.name if self.source else 'None'}"
 
 class gene_seq(models.Model):
     id = models.BigAutoField(primary_key=True)
     id_id = models.IntegerField(default='0')
-    geneid_id=models.CharField(max_length=200,unique=False,default='0')
-    genome = models.ForeignKey(Species_info, on_delete=models.CASCADE, to_field='name') 
+    tr_id = models.CharField(max_length=100, blank=True, null=True)
+    #geneid_id=models.CharField(max_length=200,unique=False,default='0')
+    genome = models.ForeignKey(Species_info, on_delete=models.CASCADE, to_field='id') 
     mrna_id = models.CharField(max_length=100, blank=True, null=True)
     gene_type = models.CharField(max_length=100, blank=True, null=True)
     sequence = models.TextField(blank=True, null=True)
     def __str__(self):
-        return str(self.geneid)
+        return f"{self.mrna_id}:{self.gene_type}"
     class Meta:
         db_table = 'gene_seq'
         indexes = [
@@ -195,11 +271,18 @@ class gene_seq(models.Model):
 
 class gene_go(models.Model):
     id = models.BigAutoField(primary_key=True)
-    id_id = models.IntegerField(default='0')
+    id_id = models.ForeignKey(GeneMaster, on_delete=models.CASCADE, to_field='id',db_column='id_id', null=True)
     #geneid_id=models.CharField(max_length=200,unique=False,default='0')
     #geneid = models.CharField(max_length=100, blank=True, null=True)
     #genome = models.IntegerField(default='0') 
-    go_id = models.CharField(max_length=100, blank=True, null=True)
+    go_id = models.ForeignKey(
+        'GoTerm', 
+        on_delete=models.SET_NULL, 
+        to_field='id',
+        blank=True, 
+        null=True,
+        db_column='go_id'
+    )
     #go_description = models.CharField(max_length=100, blank=True, null=True)
     #go_type = models.CharField(max_length=100, blank=True, null=True)
     def __str__(self):
@@ -212,11 +295,27 @@ class gene_go(models.Model):
 
 class gene_kegg(models.Model):
     id = models.BigAutoField(primary_key=True)
-    id_id = models.IntegerField(default='0')
+    id_id = models.ForeignKey(GeneMaster, on_delete=models.CASCADE, to_field='id',db_column='id_id', null=True)
     #geneid_id=models.CharField(max_length=200,unique=False,default='0')
     #geneid = models.CharField(max_length=100, blank=True, null=True)
     #genome = models.IntegerField(default='0') 
-    kegg_id = models.CharField(max_length=100, blank=True, null=True)
+    kegg_id = models.ForeignKey(
+        'KOTerm', 
+        on_delete=models.SET_NULL, 
+        to_field='ko_id',
+        blank=True, 
+        null=True,
+        db_column='kegg_id'
+    )
+    pathway = models.ForeignKey(
+        'MetabolicPathway', 
+        on_delete=models.SET_NULL, 
+        to_field='pathway_id',
+        blank=True, 
+        null=True,
+        db_column='pathway_id',
+        verbose_name='KEGG通路'
+    )
     #kegg_description = models.CharField(max_length=100, blank=True, null=True)
     #kegg_type = models.CharField(max_length=100, blank=True, null=True)
     def __str__(self):
