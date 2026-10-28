@@ -1,0 +1,42 @@
+species_name: G.raimondiiD5-3_BGI-CGP_draft_v1
+common_name: Gossypium raimondii
+ploidy: diploid
+assembly_version: draft_v1
+annotation_version: unknown
+literature:
+- title: Wang et al, 2012
+  url: https://www.cottongen.org/bio_data/634
+submitter: CottonOGD
+description: Gossypium raimondii (D5-3)
+assembly_version_source: derived_from_species_name
+source_db_id: 40
+alias: G.raimondii(D5-3)_BGI-CGP_draft_v1
+cotton_species: Gossypium raimondii
+genome_type: D5-3
+category: wild
+accession: null
+website: https://www.cottongen.org/bio_data/634
+article: Wang et al, 2012
+existing_qc:
+  genome_size: 775180285
+  lai: '6.41'
+  busco: '0.937'
+qc_completed:
+- genome_size
+- lai
+- busco
+qc_sources:
+  genome_size: mysql
+  lai: mysql
+  busco: mysql
+legacy_qc_conflicts:
+- metric: lai
+  database: '6.41'
+  legacy: '7.57'
+  source: Script/CottonOGD/LAI/result/LAI_summary.txt
+  action: conflict_kept_mysql
+- metric: busco
+  database: '0.937'
+  legacy: '0.9372'
+  source: Script/CottonOGD/busco/Busco_summary.txt
+  action: conflict_kept_mysql

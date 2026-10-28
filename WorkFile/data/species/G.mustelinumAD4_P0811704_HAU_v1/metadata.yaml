@@ -1,0 +1,42 @@
+species_name: G.mustelinumAD4_P0811704_HAU_v1
+common_name: Gossypium mustelinum
+ploidy: allotetraploid
+assembly_version: HAU_v1
+annotation_version: unknown
+literature:
+- title: Yang et al, 2023
+  url: https://cotton.hzau.edu.cn/EN/Download.htm
+submitter: CottonOGD
+description: Gossypium mustelinum (AD4)
+assembly_version_source: derived_from_species_name
+source_db_id: 144
+alias: G.mustelinum(AD4)P0811704_HAU_v1
+cotton_species: Gossypium mustelinum
+genome_type: AD4
+category: null
+accession: P0811704
+website: https://cotton.hzau.edu.cn/EN/Download.htm
+article: Yang et al, 2023
+existing_qc:
+  genome_size: 2302070806
+  lai: '15.42'
+  busco: '0.991'
+qc_completed:
+- genome_size
+- lai
+- busco
+qc_sources:
+  genome_size: mysql
+  lai: mysql
+  busco: mysql
+legacy_qc_conflicts:
+- metric: lai
+  database: '15.42'
+  legacy: '15.57'
+  source: Script/CottonOGD/LAI/result/LAI_summary.txt
+  action: conflict_kept_mysql
+- metric: busco
+  database: '0.991'
+  legacy: '0.9888'
+  source: Script/CottonOGD/busco/Busco_summary.txt
+  action: conflict_kept_mysql

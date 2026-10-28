@@ -1,0 +1,42 @@
+species_name: G.thurberiD1-5_CRI_v1
+common_name: Gossypium thurberi
+ploidy: diploid
+assembly_version: CRI_v1
+annotation_version: unknown
+literature:
+- title: Yang et al, 2021
+  url: https://www.cottongen.org/bio_data/6047957
+submitter: CottonOGD
+description: Gossypium thurberi (D1-5)
+assembly_version_source: derived_from_species_name
+source_db_id: 30
+alias: G.thurberi(D1-5)_CRI_v1
+cotton_species: Gossypium thurberi
+genome_type: D1-5
+category: wild
+accession: null
+website: https://www.cottongen.org/bio_data/6047957
+article: Yang et al, 2021
+existing_qc:
+  genome_size: 779609376
+  lai: '12.65'
+  busco: '0.987'
+qc_completed:
+- genome_size
+- lai
+- busco
+qc_sources:
+  genome_size: mysql
+  lai: mysql
+  busco: mysql
+legacy_qc_conflicts:
+- metric: lai
+  database: '12.65'
+  legacy: '12.68'
+  source: Script/CottonOGD/LAI/result/LAI_summary.txt
+  action: conflict_kept_mysql
+- metric: busco
+  database: '0.987'
+  legacy: '0.9867'
+  source: Script/CottonOGD/busco/Busco_summary.txt
+  action: conflict_kept_mysql

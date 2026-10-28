@@ -1,0 +1,42 @@
+species_name: G.longicalyxF1_HAU_v1
+common_name: Gossypium longicalyx
+ploidy: diploid
+assembly_version: HAU_v1
+annotation_version: unknown
+literature:
+- title: Wang et al., 2022
+  url: https://www.cottongen.org/bio_data/9309132
+submitter: CottonOGD
+description: Gossypium longicalyx (F1)
+assembly_version_source: derived_from_species_name
+source_db_id: 57
+alias: G.longicalyx(F1)_HAU_v1
+cotton_species: Gossypium longicalyx
+genome_type: F1
+category: wild
+accession: null
+website: https://www.cottongen.org/bio_data/9309132
+article: Wang et al., 2022
+existing_qc:
+  genome_size: 1198547475
+  lai: '10.49'
+  busco: '0.99'
+qc_completed:
+- genome_size
+- lai
+- busco
+qc_sources:
+  genome_size: mysql
+  lai: mysql
+  busco: mysql
+legacy_qc_conflicts:
+- metric: lai
+  database: '10.49'
+  legacy: '11.08'
+  source: Script/CottonOGD/LAI/result/LAI_summary.txt
+  action: conflict_kept_mysql
+- metric: busco
+  database: '0.99'
+  legacy: '0.9901'
+  source: Script/CottonOGD/busco/Busco_summary.txt
+  action: conflict_kept_mysql

@@ -1,0 +1,29 @@
+species_name: G.hirsutumAD1_N208_CRI_v1
+common_name: Gossypium hirsutum
+ploidy: allotetraploid
+assembly_version: CRI_v1
+annotation_version: unknown
+literature:
+- title: Gao et al, 2025
+  url: https://zenodo.org/records/17046697/files/genome_10.tar.gz?download=1
+submitter: CottonOGD
+description: Gossypium hirsutum (AD1)
+assembly_version_source: derived_from_species_name
+source_db_id: 160
+alias: G.hirsutum(AD1)N208_CRI_v1
+cotton_species: Gossypium hirsutum
+genome_type: AD1
+category: Cultivated
+accession: N208 Suyuan04-162
+website: https://zenodo.org/records/17046697/files/genome_10.tar.gz?download=1
+article: Gao et al, 2025
+existing_qc:
+  lai: '14.84'
+  busco: '0.9923'
+qc_completed:
+- lai
+- busco
+qc_sources:
+  lai: Script/CottonOGD/LAI/result/LAI_summary.txt
+  busco: Script/CottonOGD/busco/Busco_summary.txt
+legacy_qc_conflicts: []

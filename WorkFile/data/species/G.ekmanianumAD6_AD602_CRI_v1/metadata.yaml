@@ -1,0 +1,37 @@
+species_name: G.ekmanianumAD6_AD602_CRI_v1
+common_name: Gossypium ekmanianum
+ploidy: allotetraploid
+assembly_version: CRI_v1
+annotation_version: unknown
+literature:
+- title: Peng et al, 2022
+  url: https://www.cottongen.org/bio_data/8560639
+submitter: CottonOGD
+description: Gossypium ekmanianum (AD6)
+assembly_version_source: derived_from_species_name
+source_db_id: 146
+alias: G.ekmanianum(AD6)AD602_CRI_v1
+cotton_species: Gossypium ekmanianum
+genome_type: AD6
+category: null
+accession: AD602
+website: https://www.cottongen.org/bio_data/8560639
+article: Peng et al, 2022
+existing_qc:
+  genome_size: 2341873899
+  lai: '13.56'
+  busco: '0.968'
+qc_completed:
+- genome_size
+- lai
+- busco
+qc_sources:
+  genome_size: mysql
+  lai: mysql
+  busco: mysql
+legacy_qc_conflicts:
+- metric: lai
+  database: '13.56'
+  legacy: '13.82'
+  source: Script/CottonOGD/LAI/result/LAI_summary.txt
+  action: conflict_kept_mysql

@@ -1,0 +1,37 @@
+species_name: G.hirsutumAD1_Zhongmian_CRI_v1T2T
+common_name: Gossypium hirsutum
+ploidy: allotetraploid
+assembly_version: CRI_v1T2T
+annotation_version: unknown
+literature:
+- title: Hu et al, 2025
+  url: https://www.ncbi.nlm.nih.gov/datasets/genome/GCA_047301705.1/
+submitter: CottonOGD
+description: Gossypium hirsutum (AD1)
+assembly_version_source: derived_from_species_name
+source_db_id: 86
+alias: G.hirsutum(AD1)Zhongmian_CRI_v1T2T
+cotton_species: Gossypium hirsutum
+genome_type: AD1
+category: null
+accession: Zhongmian 113
+website: https://www.ncbi.nlm.nih.gov/datasets/genome/GCA_047301705.1/
+article: Hu et al, 2025
+existing_qc:
+  genome_size: 2299061504
+  lai: '14.9'
+  busco: '0.9802'
+qc_completed:
+- genome_size
+- lai
+- busco
+qc_sources:
+  genome_size: mysql
+  lai: mysql
+  busco: Script/CottonOGD/busco/Busco_summary.txt
+legacy_qc_conflicts:
+- metric: lai
+  database: '14.9'
+  legacy: '15.02'
+  source: Script/CottonOGD/LAI/result/LAI_summary.txt
+  action: conflict_kept_mysql

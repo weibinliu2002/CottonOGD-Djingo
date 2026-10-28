@@ -22,6 +22,12 @@ class Species_info(models.Model):
     Genome_size = models.BigIntegerField(blank=True, null=True, verbose_name='基因组大小')
     description = models.TextField(blank=True, null=True, verbose_name='描述')
     alias = models.CharField(max_length=255, blank=True, null=True, verbose_name='实际显示名', unique=True)
+    # Metadata supplied by the submitter; genome_size/LAI/BUSCO stay on the
+    # legacy columns and are always filled from computed QC results.
+    common_name = models.CharField(max_length=255, blank=True, null=True, verbose_name='通用名')
+    assembly_version = models.CharField(max_length=100, blank=True, null=True, verbose_name='组装版本')
+    annotation_version = models.CharField(max_length=100, blank=True, null=True, verbose_name='注释版本')
+    submitter = models.CharField(max_length=255, blank=True, null=True, verbose_name='提交者')
     
     class Meta:
         db_table = 'species'  # 确保表名与导入数据匹配
@@ -35,6 +41,84 @@ class Species_info(models.Model):
     def __str__(self):
         # 如果name为空，使用Cotton_Species作为显示名称
         return self.name if self.name else self.alias
+
+
+class SpeciesLiterature(models.Model):
+    """Per-species literature list (replaces the single Article field)."""
+    species = models.ForeignKey(
+        Species_info, on_delete=models.CASCADE, to_field='name',
+        db_column='species_id', related_name='literature')
+    title = models.TextField()
+    authors = models.TextField(blank=True, null=True)
+    journal = models.CharField(max_length=255, blank=True, null=True)
+    year = models.IntegerField(blank=True, null=True)
+    doi = models.CharField(max_length=255, blank=True, null=True)
+    url = models.TextField(blank=True, null=True)
+    order = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'species_literature'
+        indexes = [models.Index(fields=['species'])]
+
+
+class SpeciesQC(models.Model):
+    """Detailed QC values for one annotation version.
+
+    `species.Genome_size/LAI_value/Busco` remain the fast-access summary
+    columns; this table keeps the full counts and raw report.
+    """
+    species = models.ForeignKey(
+        Species_info, on_delete=models.CASCADE, to_field='name',
+        db_column='species_id', related_name='qc_records')
+    annotation_version = models.CharField(max_length=100)
+    genome_size = models.BigIntegerField(blank=True, null=True)
+    lai = models.DecimalField(max_digits=8, decimal_places=4, blank=True, null=True)
+    busco_complete = models.IntegerField(blank=True, null=True)
+    busco_single = models.IntegerField(blank=True, null=True)
+    busco_duplicated = models.IntegerField(blank=True, null=True)
+    busco_fragmented = models.IntegerField(blank=True, null=True)
+    busco_missing = models.IntegerField(blank=True, null=True)
+    busco_total = models.IntegerField(blank=True, null=True)
+    busco_lineage = models.CharField(max_length=100, blank=True, null=True)
+    busco_fraction = models.FloatField(blank=True, null=True)
+    te_content_pct = models.FloatField(blank=True, null=True)
+    ltr_count = models.IntegerField(blank=True, null=True)
+    intact_ltr_count = models.IntegerField(blank=True, null=True)
+    qc_json = models.JSONField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'species_qc'
+        constraints = [
+            models.UniqueConstraint(fields=['species', 'annotation_version'],
+                                    name='species_qc_version')
+        ]
+        indexes = [models.Index(fields=['species'])]
+
+
+class SpeciesUploadState(models.Model):
+    """Idempotency/audit record for the unified uploader."""
+    species = models.ForeignKey(
+        Species_info, on_delete=models.CASCADE, to_field='name',
+        db_column='species_id', related_name='upload_states')
+    annotation_version = models.CharField(max_length=100)
+    genome_sha256 = models.CharField(max_length=64, blank=True, null=True)
+    gff_sha256 = models.CharField(max_length=64, blank=True, null=True)
+    status = models.CharField(max_length=20, default='pending')
+    conflict_policy = models.CharField(max_length=20, default='skip')
+    upload_report = models.JSONField(blank=True, null=True)
+    uploader = models.CharField(max_length=100, blank=True, null=True)
+    uploaded_at = models.DateTimeField(blank=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'species_upload_state'
+        constraints = [
+            models.UniqueConstraint(fields=['species', 'annotation_version'],
+                                    name='species_upload_version')
+        ]
+        indexes = [models.Index(fields=['species'])]
 
 
 class GeneMaster(models.Model):

@@ -1,0 +1,42 @@
+species_name: G.kirkii_ISU_ISU_v3.0
+common_name: Gossypioides kirkii
+ploidy: unknown
+assembly_version: ISU_v3.0
+annotation_version: unknown
+literature:
+- title: Udall et al, 2019
+  url: https://www.cottongen.org/bio_data/594
+submitter: CottonOGD
+description: Gossypioides kirkii (unknown genome type)
+assembly_version_source: derived_from_species_name
+source_db_id: 151
+alias: G.kirkii()_ISU_ISU_v3.0
+cotton_species: Gossypioides kirkii
+genome_type: null
+category: null
+accession: null
+website: https://www.cottongen.org/bio_data/594
+article: Udall et al, 2019
+existing_qc:
+  genome_size: 538117542
+  lai: '9.62'
+  busco: '0.493'
+qc_completed:
+- genome_size
+- lai
+- busco
+qc_sources:
+  genome_size: mysql
+  lai: mysql
+  busco: mysql
+legacy_qc_conflicts:
+- metric: lai
+  database: '9.62'
+  legacy: '10.29'
+  source: Script/CottonOGD/LAI/result/LAI_summary.txt
+  action: conflict_kept_mysql
+- metric: busco
+  database: '0.493'
+  legacy: '0.4936'
+  source: Script/CottonOGD/busco/Busco_summary.txt
+  action: conflict_kept_mysql

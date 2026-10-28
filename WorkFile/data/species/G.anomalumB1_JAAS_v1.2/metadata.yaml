@@ -1,0 +1,42 @@
+species_name: G.anomalumB1_JAAS_v1.2
+common_name: Gossypium anomalum
+ploidy: diploid
+assembly_version: JAAS_v1.2
+annotation_version: unknown
+literature:
+- title: Xu et al., 2022
+  url: https://www.cottongen.org/bio_data/7712287
+submitter: CottonOGD
+description: Gossypium anomalum (B1)
+assembly_version_source: derived_from_species_name
+source_db_id: 26
+alias: G.anomalum(B1)_JAAS_v1.2
+cotton_species: Gossypium anomalum
+genome_type: B1
+category: wild
+accession: null
+website: https://www.cottongen.org/bio_data/7712287
+article: Xu et al., 2022
+existing_qc:
+  genome_size: 1208248306
+  lai: '15.22'
+  busco: '0.953'
+qc_completed:
+- genome_size
+- lai
+- busco
+qc_sources:
+  genome_size: mysql
+  lai: mysql
+  busco: mysql
+legacy_qc_conflicts:
+- metric: lai
+  database: '15.22'
+  legacy: '15.8'
+  source: Script/CottonOGD/LAI/result/LAI_summary.txt
+  action: conflict_kept_mysql
+- metric: busco
+  database: '0.953'
+  legacy: '0.9531'
+  source: Script/CottonOGD/busco/Busco_summary.txt
+  action: conflict_kept_mysql

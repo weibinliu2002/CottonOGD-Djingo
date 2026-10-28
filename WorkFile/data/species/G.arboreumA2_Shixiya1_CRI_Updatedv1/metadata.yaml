@@ -1,0 +1,37 @@
+species_name: G.arboreumA2_Shixiya1_CRI_Updatedv1
+common_name: Gossypium arboreum
+ploidy: diploid
+assembly_version: CRI_Updatedv1
+annotation_version: unknown
+literature:
+- title: Du et al, 2018
+  url: https://www.cottongen.org/bio_data/635
+submitter: CottonOGD
+description: Gossypium arboreum (A2)
+assembly_version_source: derived_from_species_name
+source_db_id: 6
+alias: G.arboreum(A2)Shixiya1_CRI_Updatedv1
+cotton_species: Gossypium arboreum
+genome_type: A2
+category: cultivar
+accession: Shixiya1
+website: https://www.cottongen.org/bio_data/635
+article: Du et al, 2018
+existing_qc:
+  genome_size: 1710104083
+  lai: '13.01'
+  busco: '0.988'
+qc_completed:
+- genome_size
+- lai
+- busco
+qc_sources:
+  genome_size: mysql
+  lai: mysql
+  busco: mysql
+legacy_qc_conflicts:
+- metric: lai
+  database: '13.01'
+  legacy: '13.52'
+  source: Script/CottonOGD/LAI/result/LAI_summary.txt
+  action: conflict_kept_mysql

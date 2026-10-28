@@ -1,0 +1,42 @@
+species_name: K.drynarioides_ISU_ISU_v1
+common_name: Kokia drynarioides
+ploidy: unknown
+assembly_version: ISU_v1
+annotation_version: unknown
+literature:
+- title: Kayal et al, 2024
+  url: https://www.cottongen.org/bio_data/12936156
+submitter: CottonOGD
+description: Kokia drynarioides (unknown genome type)
+assembly_version_source: derived_from_species_name
+source_db_id: 149
+alias: K.drynarioides()_ISU_ISU_v1
+cotton_species: Kokia drynarioides
+genome_type: null
+category: null
+accession: null
+website: https://www.cottongen.org/bio_data/12936156
+article: Kayal et al, 2024
+existing_qc:
+  genome_size: 511904237
+  lai: '7.79'
+  busco: '0.961'
+qc_completed:
+- genome_size
+- lai
+- busco
+qc_sources:
+  genome_size: mysql
+  lai: mysql
+  busco: mysql
+legacy_qc_conflicts:
+- metric: lai
+  database: '7.79'
+  legacy: '8.28'
+  source: Script/CottonOGD/LAI/result/LAI_summary.txt
+  action: conflict_kept_mysql
+- metric: busco
+  database: '0.961'
+  legacy: '0.2997'
+  source: Script/CottonOGD/busco/Busco_summary.txt
+  action: conflict_kept_mysql

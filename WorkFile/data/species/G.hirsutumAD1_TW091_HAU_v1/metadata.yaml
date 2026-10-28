@@ -1,0 +1,42 @@
+species_name: G.hirsutumAD1_TW091_HAU_v1
+common_name: Gossypium hirsutum
+ploidy: allotetraploid
+assembly_version: HAU_v1
+annotation_version: unknown
+literature:
+- title: Li et al, 2024
+  url: https://zenodo.org/records/11213271/files/TW091.tar.gz?download=1
+submitter: CottonOGD
+description: Gossypium hirsutum (AD1)
+assembly_version_source: derived_from_species_name
+source_db_id: 107
+alias: G.hirsutum(AD1)TW091_HAU_v1
+cotton_species: Gossypium hirsutum
+genome_type: AD1
+category: Semi-wild
+accession: TW091  Latifolium 258
+website: https://zenodo.org/records/11213271/files/TW091.tar.gz?download=1
+article: Li et al, 2024
+existing_qc:
+  genome_size: 2292807360
+  lai: '14.43'
+  busco: '0.984'
+qc_completed:
+- genome_size
+- lai
+- busco
+qc_sources:
+  genome_size: mysql
+  lai: mysql
+  busco: mysql
+legacy_qc_conflicts:
+- metric: lai
+  database: '14.43'
+  legacy: '15.08'
+  source: Script/CottonOGD/LAI/result/LAI_summary.txt
+  action: conflict_kept_mysql
+- metric: busco
+  database: '0.984'
+  legacy: '0.9837'
+  source: Script/CottonOGD/busco/Busco_summary.txt
+  action: conflict_kept_mysql

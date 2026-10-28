@@ -1,0 +1,42 @@
+species_name: G.sturtianumC1_HAU_v1
+common_name: Gossypium sturtianum
+ploidy: diploid
+assembly_version: HAU_v1
+annotation_version: unknown
+literature:
+- title: Wang et al., 2022
+  url: https://www.cottongen.org/bio_data/9309130
+submitter: CottonOGD
+description: Gossypium sturtianum (C1)
+assembly_version_source: derived_from_species_name
+source_db_id: 28
+alias: G.sturtianum(C1)_HAU_v1
+cotton_species: Gossypium sturtianum
+genome_type: C1
+category: wild
+accession: null
+website: https://www.cottongen.org/bio_data/9309130
+article: Wang et al., 2022
+existing_qc:
+  genome_size: 1903576288
+  lai: '12.95'
+  busco: '0.986'
+qc_completed:
+- genome_size
+- lai
+- busco
+qc_sources:
+  genome_size: mysql
+  lai: mysql
+  busco: mysql
+legacy_qc_conflicts:
+- metric: lai
+  database: '12.95'
+  legacy: '13.93'
+  source: Script/CottonOGD/LAI/result/LAI_summary.txt
+  action: conflict_kept_mysql
+- metric: busco
+  database: '0.986'
+  legacy: '0.9862'
+  source: Script/CottonOGD/busco/Busco_summary.txt
+  action: conflict_kept_mysql

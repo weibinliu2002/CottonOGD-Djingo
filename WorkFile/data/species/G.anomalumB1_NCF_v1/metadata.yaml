@@ -1,0 +1,42 @@
+species_name: G.anomalumB1_NCF_v1
+common_name: Gossypium anomalum
+ploidy: diploid
+assembly_version: NCF_v1
+annotation_version: unknown
+literature:
+- title: Grover et al, 2021
+  url: https://www.cottongen.org/bio_data/6607279
+submitter: CottonOGD
+description: Gossypium anomalum (B1)
+assembly_version_source: derived_from_species_name
+source_db_id: 27
+alias: G.anomalum(B1)_NCF_v1
+cotton_species: Gossypium anomalum
+genome_type: B1
+category: wild
+accession: null
+website: https://www.cottongen.org/bio_data/6607279
+article: Grover et al, 2021
+existing_qc:
+  genome_size: 1193340424
+  lai: '14.54'
+  busco: '0.915'
+qc_completed:
+- genome_size
+- lai
+- busco
+qc_sources:
+  genome_size: mysql
+  lai: mysql
+  busco: mysql
+legacy_qc_conflicts:
+- metric: lai
+  database: '14.54'
+  legacy: '15.3'
+  source: Script/CottonOGD/LAI/result/LAI_summary.txt
+  action: conflict_kept_mysql
+- metric: busco
+  database: '0.915'
+  legacy: '0.1883'
+  source: Script/CottonOGD/busco/Busco_summary.txt
+  action: conflict_kept_mysql

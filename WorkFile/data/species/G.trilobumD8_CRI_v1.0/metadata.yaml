@@ -1,0 +1,42 @@
+species_name: G.trilobumD8_CRI_v1.0
+common_name: Gossypium trilobum
+ploidy: diploid
+assembly_version: CRI_v1.0
+annotation_version: unknown
+literature:
+- title: Xu et al, 2024.
+  url: https://www.cottongen.org/bio_data/9803229
+submitter: CottonOGD
+description: Gossypium trilobum (D8)
+assembly_version_source: derived_from_species_name
+source_db_id: 49
+alias: G.trilobum(D8)_CRI_v1.0
+cotton_species: Gossypium trilobum
+genome_type: D8
+category: wild
+accession: null
+website: https://www.cottongen.org/bio_data/9803229
+article: Xu et al, 2024.
+existing_qc:
+  genome_size: 727583754
+  lai: '7.71'
+  busco: '0.952'
+qc_completed:
+- genome_size
+- lai
+- busco
+qc_sources:
+  genome_size: mysql
+  lai: mysql
+  busco: mysql
+legacy_qc_conflicts:
+- metric: lai
+  database: '7.71'
+  legacy: '8.64'
+  source: Script/CottonOGD/LAI/result/LAI_summary.txt
+  action: conflict_kept_mysql
+- metric: busco
+  database: '0.952'
+  legacy: '0.9523'
+  source: Script/CottonOGD/busco/Busco_summary.txt
+  action: conflict_kept_mysql

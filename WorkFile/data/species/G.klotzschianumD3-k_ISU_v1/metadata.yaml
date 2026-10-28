@@ -1,0 +1,42 @@
+species_name: G.klotzschianumD3-k_ISU_v1
+common_name: Gossypium klotzschianum
+ploidy: diploid
+assembly_version: ISU_v1
+annotation_version: unknown
+literature:
+- title: Grover et al, 2019
+  url: https://www.cottongen.org/bio_data/5491687
+submitter: CottonOGD
+description: Gossypium klotzschianum (D3-k)
+assembly_version_source: derived_from_species_name
+source_db_id: 37
+alias: G.klotzschianum(D3-k)_ISU_v1
+cotton_species: Gossypium klotzschianum
+genome_type: D3-k
+category: wild
+accession: null
+website: https://www.cottongen.org/bio_data/5491687
+article: Grover et al, 2019
+existing_qc:
+  genome_size: 670958353
+  lai: '6.15'
+  busco: '0.611'
+qc_completed:
+- genome_size
+- lai
+- busco
+qc_sources:
+  genome_size: mysql
+  lai: Script/CottonOGD/LAI/result/LAI_summary.txt
+  busco: mysql
+legacy_qc_conflicts:
+- metric: lai
+  database: NaN
+  legacy: '6.15'
+  source: Script/CottonOGD/LAI/result/LAI_summary.txt
+  action: invalid_mysql_replaced_by_legacy
+- metric: busco
+  database: '0.611'
+  legacy: '0.6109'
+  source: Script/CottonOGD/busco/Busco_summary.txt
+  action: conflict_kept_mysql

@@ -1,0 +1,42 @@
+species_name: G.harknessiiD2-2_CRI_v1.0
+common_name: Gossypium harknessii
+ploidy: diploid
+assembly_version: CRI_v1.0
+annotation_version: unknown
+literature:
+- title: Xu et al,2024.
+  url: https://www.cottongen.org/bio_data/9803226
+submitter: CottonOGD
+description: Gossypium harknessii (D2-2)
+assembly_version_source: derived_from_species_name
+source_db_id: 32
+alias: G.harknessii(D2-2)_CRI_v1.0
+cotton_species: Gossypium harknessii
+genome_type: D2-2
+category: wild
+accession: null
+website: https://www.cottongen.org/bio_data/9803226
+article: Xu et al,2024.
+existing_qc:
+  genome_size: 725645157
+  lai: '8.65'
+  busco: '0.913'
+qc_completed:
+- genome_size
+- lai
+- busco
+qc_sources:
+  genome_size: mysql
+  lai: mysql
+  busco: mysql
+legacy_qc_conflicts:
+- metric: lai
+  database: '8.65'
+  legacy: '8.7'
+  source: Script/CottonOGD/LAI/result/LAI_summary.txt
+  action: conflict_kept_mysql
+- metric: busco
+  database: '0.913'
+  legacy: '0.9127'
+  source: Script/CottonOGD/busco/Busco_summary.txt
+  action: conflict_kept_mysql

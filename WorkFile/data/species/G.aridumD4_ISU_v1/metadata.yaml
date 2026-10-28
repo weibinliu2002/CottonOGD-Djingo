@@ -1,0 +1,34 @@
+species_name: G.aridumD4_ISU_v1
+common_name: Gossypium aridum
+ploidy: diploid
+assembly_version: ISU_v1
+annotation_version: unknown
+literature:
+- title: Grover et al, 2019
+  url: https://www.cottongen.org/bio_data/5491688
+submitter: CottonOGD
+description: Gossypium aridum (D4)
+assembly_version_source: derived_from_species_name
+source_db_id: 38
+alias: G.aridum(D4)_ISU_v1
+cotton_species: Gossypium aridum
+genome_type: D4
+category: wild
+accession: null
+website: https://www.cottongen.org/bio_data/5491688
+article: Grover et al, 2019
+existing_qc:
+  genome_size: 739119247
+  busco: '0.436'
+qc_completed:
+- genome_size
+- busco
+qc_sources:
+  genome_size: mysql
+  busco: mysql
+legacy_qc_conflicts:
+- metric: busco
+  database: '0.436'
+  legacy: '0.4355'
+  source: Script/CottonOGD/busco/Busco_summary.txt
+  action: conflict_kept_mysql

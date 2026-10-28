@@ -1,0 +1,42 @@
+species_name: G.herbaceumA1_Mutema_WHU_v3
+common_name: Gossypium herbaceum
+ploidy: diploid
+assembly_version: WHU_v3
+annotation_version: unknown
+literature:
+- title: Huang et al., 2020
+  url: https://www.cottongen.org/bio_data/631
+submitter: CottonOGD
+description: Gossypium herbaceum (A1)
+assembly_version_source: derived_from_species_name
+source_db_id: 3
+alias: G.herbaceum(A1)Mutema_WHU_v3
+cotton_species: Gossypium herbaceum
+genome_type: A1
+category: variety africanum
+accession: Mutema
+website: https://www.cottongen.org/bio_data/631
+article: Huang et al., 2020
+existing_qc:
+  genome_size: 1556086907
+  lai: '15.77'
+  busco: '0.97'
+qc_completed:
+- genome_size
+- lai
+- busco
+qc_sources:
+  genome_size: mysql
+  lai: mysql
+  busco: mysql
+legacy_qc_conflicts:
+- metric: lai
+  database: '15.77'
+  legacy: '16.07'
+  source: Script/CottonOGD/LAI/result/LAI_summary.txt
+  action: conflict_kept_mysql
+- metric: busco
+  database: '0.97'
+  legacy: '0.9703'
+  source: Script/CottonOGD/busco/Busco_summary.txt
+  action: conflict_kept_mysql

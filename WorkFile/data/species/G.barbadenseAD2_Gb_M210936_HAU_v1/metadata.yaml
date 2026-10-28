@@ -1,0 +1,42 @@
+species_name: G.barbadenseAD2_Gb_M210936_HAU_v1
+common_name: Gossypium barbadense
+ploidy: allotetraploid
+assembly_version: HAU_v1
+annotation_version: unknown
+literature:
+- title: Meng et al, 2025
+  url: https://www.cottongen.org/bio_data/10847208
+submitter: CottonOGD
+description: Gossypium barbadense (AD2)
+assembly_version_source: derived_from_species_name
+source_db_id: 127
+alias: G.barbadense(AD2)Gb_M210936_HAU_v1
+cotton_species: Gossypium barbadense
+genome_type: AD2
+category: primitive
+accession: Gb_M210936
+website: https://www.cottongen.org/bio_data/10847208
+article: Meng et al, 2025
+existing_qc:
+  genome_size: 2242651981
+  lai: '13.37'
+  busco: '0.983'
+qc_completed:
+- genome_size
+- lai
+- busco
+qc_sources:
+  genome_size: mysql
+  lai: mysql
+  busco: mysql
+legacy_qc_conflicts:
+- metric: lai
+  database: '13.37'
+  legacy: '13.38'
+  source: Script/CottonOGD/LAI/result/LAI_summary.txt
+  action: conflict_kept_mysql
+- metric: busco
+  database: '0.983'
+  legacy: '0.9828'
+  source: Script/CottonOGD/busco/Busco_summary.txt
+  action: conflict_kept_mysql

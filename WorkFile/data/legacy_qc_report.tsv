@@ -1,0 +1,775 @@
+species	metric	database_value	legacy_value	used_value	source	action
+G.herbaceumA1a_HAU_v1	genome_size	1518510620	1518510620	1518510620	mysql	confirmed
+G.herbaceumA1a_HAU_v1	lai	12.46	13.21	12.46	mysql	conflict_kept_mysql
+G.herbaceumA1a_HAU_v1	busco	0.952	0.9518	0.952	mysql	conflict_kept_mysql
+G.herbaceumA1_ZhongCao1_HAU_v1	genome_size	1556086907	1514399279	1556086907	mysql	conflict_kept_mysql
+G.herbaceumA1_ZhongCao1_HAU_v1	lai	13.28	13.7	13.28	mysql	conflict_kept_mysql
+G.herbaceumA1_ZhongCao1_HAU_v1	busco	0.949	0.9488	0.949	mysql	conflict_kept_mysql
+G.herbaceumA1_Mutema_WHU_v3	genome_size	1556086907	1556086907	1556086907	mysql	confirmed
+G.herbaceumA1_Mutema_WHU_v3	lai	15.77	16.07	15.77	mysql	conflict_kept_mysql
+G.herbaceumA1_Mutema_WHU_v3	busco	0.97	0.9703	0.97	mysql	conflict_kept_mysql
+G.herbaceumA1_Wagad_USDA_v1	genome_size	1587827514	1587827514	1587827514	mysql	confirmed
+G.herbaceumA1_Wagad_USDA_v1	lai	16.76	17.76	16.76	mysql	conflict_kept_mysql
+G.herbaceumA1_Wagad_USDA_v1	busco	0.949	0.9493	0.949	mysql	conflict_kept_mysql
+G.arboreumA2_Shixiya1_BGI_v2	genome_size	1694649772	1694649772	1694649772	mysql	confirmed
+G.arboreumA2_Shixiya1_BGI_v2	lai	2.36	3.62	2.36	mysql	conflict_kept_mysql
+G.arboreumA2_Shixiya1_BGI_v2	busco	0.943		0.943	mysql	mysql_only
+G.arboreumA2_Shixiya1_CRI_Updatedv1	genome_size	1710104083	1710104083	1710104083	mysql	confirmed
+G.arboreumA2_Shixiya1_CRI_Updatedv1	lai	13.01	13.52	13.01	mysql	conflict_kept_mysql
+G.arboreumA2_Shixiya1_CRI_Updatedv1	busco	0.988	0.9880	0.988	mysql	confirmed
+G.arboreumA2_Shixiya1_HAU_v1	genome_size	1621030562	1621030562	1621030562	mysql	confirmed
+G.arboreumA2_Shixiya1_HAU_v1	lai	15.04	15.62	15.04	mysql	conflict_kept_mysql
+G.arboreumA2_Shixiya1_HAU_v1	busco	0.978	0.9776	0.978	mysql	conflict_kept_mysql
+G.arboreumA2_Shixiya1_HAU_v2	genome_size	1621352140	1621352140	1621352140	mysql	confirmed
+G.arboreumA2_Shixiya1_HAU_v2	lai	14.9	15.72	14.9	mysql	conflict_kept_mysql
+G.arboreumA2_Shixiya1_HAU_v2	busco	0.981		0.981	mysql	mysql_only
+G.arboreumA2_Shixiya1_WHU_v3	genome_size	1636985834	1636985834	1636985834	mysql	confirmed
+G.arboreumA2_Shixiya1_WHU_v3	lai	16.8	17.16	16.8	mysql	conflict_kept_mysql
+G.arboreumA2_Shixiya1_WHU_v3	busco	0.976	0.9759	0.976	mysql	conflict_kept_mysql
+G.arboreumA2_DC001_HAU_v1	genome_size	1656815208	1656815208	1656815208	mysql	confirmed
+G.arboreumA2_DC001_HAU_v1	lai	17.51	18.9	17.51	mysql	conflict_kept_mysql
+G.arboreumA2_DC001_HAU_v1	busco	0.973	0.1690	0.973	mysql	conflict_kept_mysql
+G.arboreumA2_DC053_HAU_v1	genome_size	1663983022	1663983022	1663983022	mysql	confirmed
+G.arboreumA2_DC053_HAU_v1	lai	17.86	19.38	17.86	mysql	conflict_kept_mysql
+G.arboreumA2_DC053_HAU_v1	busco	0.981	0.9807	0.981	mysql	conflict_kept_mysql
+G.arboreumA2_DC085_HAU_v1	genome_size	1670977190	1670977190	1670977190	mysql	confirmed
+G.arboreumA2_DC085_HAU_v1	lai	18.12	19.11	18.12	mysql	conflict_kept_mysql
+G.arboreumA2_DC085_HAU_v1	busco	0.979	0.9794	0.979	mysql	conflict_kept_mysql
+G.arboreumA2_DC086_HAU_v1	genome_size	1663511205	1663511205	1663511205	mysql	confirmed
+G.arboreumA2_DC086_HAU_v1	lai	18.1	19.26	18.1	mysql	conflict_kept_mysql
+G.arboreumA2_DC086_HAU_v1	busco	0.975	0.9751	0.975	mysql	conflict_kept_mysql
+G.arboreumA2_DC089_HAU_v1	genome_size	1667621086	1667621086	1667621086	mysql	confirmed
+G.arboreumA2_DC089_HAU_v1	lai	17.99	19.06	17.99	mysql	conflict_kept_mysql
+G.arboreumA2_DC089_HAU_v1	busco	0.976	0.9764	0.976	mysql	conflict_kept_mysql
+G.arboreumA2_DC097_HAU_v1	genome_size	1664761317	1664761317	1664761317	mysql	confirmed
+G.arboreumA2_DC097_HAU_v1	lai	17.44	18.79	17.44	mysql	conflict_kept_mysql
+G.arboreumA2_DC097_HAU_v1	busco	0.942	0.9420	0.942	mysql	confirmed
+G.arboreumA2_DC098_HAU_v1	genome_size	1703911587	1703911587	1703911587	mysql	confirmed
+G.arboreumA2_DC098_HAU_v1	lai	17.01	18.19	17.01	mysql	conflict_kept_mysql
+G.arboreumA2_DC098_HAU_v1	busco	0.979	0.9789	0.979	mysql	conflict_kept_mysql
+G.arboreumA2_DC113_HAU_v1	genome_size	1668392177	1668392177	1668392177	mysql	confirmed
+G.arboreumA2_DC113_HAU_v1	lai	17.71	19.29	17.71	mysql	conflict_kept_mysql
+G.arboreumA2_DC113_HAU_v1	busco	0.978	0.9781	0.978	mysql	conflict_kept_mysql
+G.arboreumA2_DC119_HAU_v1	genome_size	1664706126	1664706126	1664706126	mysql	confirmed
+G.arboreumA2_DC119_HAU_v1	lai	17.42	18.93	17.42	mysql	conflict_kept_mysql
+G.arboreumA2_DC119_HAU_v1	busco	0.977	0.9772	0.977	mysql	conflict_kept_mysql
+G.arboreumA2_DC133_HAU_v1	genome_size	1667486631	1667486631	1667486631	mysql	confirmed
+G.arboreumA2_DC133_HAU_v1	lai	18.05	19.22	18.05	mysql	conflict_kept_mysql
+G.arboreumA2_DC133_HAU_v1	busco	0.976	0.9764	0.976	mysql	conflict_kept_mysql
+G.arboreumA2_DC146_HAU_v1	genome_size	1693766349	1693766349	1693766349	mysql	confirmed
+G.arboreumA2_DC146_HAU_v1	lai	17.21	18.25	17.21	mysql	conflict_kept_mysql
+G.arboreumA2_DC146_HAU_v1	busco	0.977	0.1694	0.977	mysql	conflict_kept_mysql
+G.arboreumA2_DC151_HAU_v1	genome_size	1666468447	1666468447	1666468447	mysql	confirmed
+G.arboreumA2_DC151_HAU_v1	lai	17.98	19.12	17.98	mysql	conflict_kept_mysql
+G.arboreumA2_DC151_HAU_v1	busco	0.979	0.9785	0.979	mysql	conflict_kept_mysql
+G.arboreumA2_DC165_HAU_v1	genome_size	1667355370	1667355370	1667355370	mysql	confirmed
+G.arboreumA2_DC165_HAU_v1	lai	18.23	19.32	18.23	mysql	conflict_kept_mysql
+G.arboreumA2_DC165_HAU_v1	busco	0.973	0.9729	0.973	mysql	conflict_kept_mysql
+G.arboreumA2_DC175_HAU_v1	genome_size	1665411085	1665411085	1665411085	mysql	confirmed
+G.arboreumA2_DC175_HAU_v1	lai	18.16	19.35	18.16	mysql	conflict_kept_mysql
+G.arboreumA2_DC175_HAU_v1	busco	0.977	0.9772	0.977	mysql	conflict_kept_mysql
+G.arboreumA2_DC212_HAU_v1	genome_size	1664079571	1664079571	1664079571	mysql	confirmed
+G.arboreumA2_DC212_HAU_v1	lai	17.88	19.21	17.88	mysql	conflict_kept_mysql
+G.arboreumA2_DC212_HAU_v1	busco	0.976	0.9759	0.976	mysql	conflict_kept_mysql
+G.anomalumB1_HAU_v1	genome_size	1202738338	1202738338	1202738338	mysql	confirmed
+G.anomalumB1_HAU_v1	lai	13.73	14.34	13.73	mysql	conflict_kept_mysql
+G.anomalumB1_HAU_v1	busco	0.988	0.9880	0.988	mysql	confirmed
+G.anomalumB1_JAAS_v1.2	genome_size	1208248306	1208248306	1208248306	mysql	confirmed
+G.anomalumB1_JAAS_v1.2	lai	15.22	15.8	15.22	mysql	conflict_kept_mysql
+G.anomalumB1_JAAS_v1.2	busco	0.953	0.9531	0.953	mysql	conflict_kept_mysql
+G.anomalumB1_NCF_v1	genome_size	1193340424	1193340424	1193340424	mysql	confirmed
+G.anomalumB1_NCF_v1	lai	14.54	15.3	14.54	mysql	conflict_kept_mysql
+G.anomalumB1_NCF_v1	busco	0.915	0.1883	0.915	mysql	conflict_kept_mysql
+G.sturtianumC1_HAU_v1	genome_size	1903576288	1903576288	1903576288	mysql	confirmed
+G.sturtianumC1_HAU_v1	lai	12.95	13.93	12.95	mysql	conflict_kept_mysql
+G.sturtianumC1_HAU_v1	busco	0.986	0.9862	0.986	mysql	conflict_kept_mysql
+G.thurberiD1-35_ISU_v1	genome_size	496766117	496766117	496766117	mysql	confirmed
+G.thurberiD1-35_ISU_v1	lai	NaN	6.1	6.1	Script/CottonOGD/LAI/result/LAI_summary.txt	invalid_mysql_replaced_by_legacy
+G.thurberiD1-35_ISU_v1	busco	0.754	0.0000	0.754	mysql	conflict_kept_mysql
+G.thurberiD1-5_CRI_v1	genome_size	779609376	779609376	779609376	mysql	confirmed
+G.thurberiD1-5_CRI_v1	lai	12.65	12.68	12.65	mysql	conflict_kept_mysql
+G.thurberiD1-5_CRI_v1	busco	0.987	0.9867	0.987	mysql	conflict_kept_mysql
+G.armourianumD2-1_ISU_v1	genome_size	780950899	780950899	780950899	mysql	confirmed
+G.armourianumD2-1_ISU_v1	lai	NaN				invalid_mysql_ignored
+G.armourianumD2-1_ISU_v1	busco	0.476	0.4759	0.476	mysql	conflict_kept_mysql
+G.harknessiiD2-2_CRI_v1.0	genome_size	725645157	725645157	725645157	mysql	confirmed
+G.harknessiiD2-2_CRI_v1.0	lai	8.65	8.7	8.65	mysql	conflict_kept_mysql
+G.harknessiiD2-2_CRI_v1.0	busco	0.913	0.9127	0.913	mysql	conflict_kept_mysql
+G.harknessiiD2-2_ISU_v1.0	genome_size	732154658	732154658	732154658	mysql	confirmed
+G.harknessiiD2-2_ISU_v1.0	lai	NaN				invalid_mysql_ignored
+G.harknessiiD2-2_ISU_v1.0	busco	0.456	0.4561	0.456	mysql	conflict_kept_mysql
+G.davidsoniiD3d-27_ISU_v1	genome_size	704223819	704223819	704223819	mysql	confirmed
+G.davidsoniiD3d-27_ISU_v1	lai	NaN	6.09	6.09	Script/CottonOGD/LAI/result/LAI_summary.txt	invalid_mysql_replaced_by_legacy
+G.davidsoniiD3d-27_ISU_v1	busco	0.604	0.6040	0.604	mysql	confirmed
+G.davidsoniiD3d-8_CRI_v1	genome_size	801265919	801265919	801265919	mysql	confirmed
+G.davidsoniiD3d-8_CRI_v1	lai	12.2	12.35	12.2	mysql	conflict_kept_mysql
+G.davidsoniiD3d-8_CRI_v1	busco	0.994	0.9940	0.994	mysql	confirmed
+G.klotzschianumD3-k_CRI_v1.0	genome_size	809440250	809440250	809440250	mysql	confirmed
+G.klotzschianumD3-k_CRI_v1.0	lai	15.05	15.5	15.05	mysql	conflict_kept_mysql
+G.klotzschianumD3-k_CRI_v1.0	busco	0.944	0.9441	0.944	mysql	conflict_kept_mysql
+G.klotzschianumD3-k_ISU_v1	genome_size	670958353	670958353	670958353	mysql	confirmed
+G.klotzschianumD3-k_ISU_v1	lai	NaN	6.15	6.15	Script/CottonOGD/LAI/result/LAI_summary.txt	invalid_mysql_replaced_by_legacy
+G.klotzschianumD3-k_ISU_v1	busco	0.611	0.6109	0.611	mysql	conflict_kept_mysql
+G.aridumD4_ISU_v1	genome_size	739119247	739119247	739119247	mysql	confirmed
+G.aridumD4_ISU_v1	lai	NaN				invalid_mysql_ignored
+G.aridumD4_ISU_v1	busco	0.436	0.4355	0.436	mysql	conflict_kept_mysql
+G.raimondiiD5_JGI_v2.1	genome_size	761406121	761406121	761406121	mysql	confirmed
+G.raimondiiD5_JGI_v2.1	lai	9.02	9.29	9.02	mysql	conflict_kept_mysql
+G.raimondiiD5_JGI_v2.1	busco	0.985	0.2214	0.985	mysql	conflict_kept_mysql
+G.raimondiiD5-3_BGI-CGP_draft_v1	genome_size	775180285	775180285	775180285	mysql	confirmed
+G.raimondiiD5-3_BGI-CGP_draft_v1	lai	6.41	7.57	6.41	mysql	conflict_kept_mysql
+G.raimondiiD5-3_BGI-CGP_draft_v1	busco	0.937	0.9372	0.937	mysql	conflict_kept_mysql
+G.raimondiiD5-3_PKU_v1T2T	genome_size	776015441	776015441	776015441	mysql	confirmed
+G.raimondiiD5-3_PKU_v1T2T	lai					missing
+G.raimondiiD5-3_PKU_v1T2T	busco	0.979	0.9789	0.979	mysql	conflict_kept_mysql
+G.raimondiiD5-4_NCF_v1	genome_size	734884094	734884094	734884094	mysql	confirmed
+G.raimondiiD5-4_NCF_v1	lai	12.53	12.68	12.53	mysql	conflict_kept_mysql
+G.raimondiiD5-4_NCF_v1	busco	0.837	0.8375	0.837	mysql	conflict_kept_mysql
+G.raimondiiD5-8_ISU_v1	genome_size	615032910	615032910	615032910	mysql	confirmed
+G.raimondiiD5-8_ISU_v1	lai	NaN				invalid_mysql_ignored
+G.raimondiiD5-8_ISU_v1	busco	0.529	0.5292	0.529	mysql	conflict_kept_mysql
+G.raimondiiD5_D502_HAU_v1	genome_size	750205487		750205487	mysql	mysql_only
+G.raimondiiD5_D502_HAU_v1	lai	13562	12.45	12.45	Script/CottonOGD/LAI/result/LAI_summary.txt	invalid_mysql_replaced_by_legacy
+G.raimondiiD5_D502_HAU_v1	busco	12.31				invalid_mysql_ignored
+G.raimondiiD5_HAU_v1	genome_size	751041726	751041726	751041726	mysql	confirmed
+G.raimondiiD5_HAU_v1	lai	12.14	12.45	12.14	mysql	conflict_kept_mysql
+G.raimondiiD5_HAU_v1	busco	0.99		0.99	mysql	mysql_only
+G.gossypioidesD6_CRI_v1.0	genome_size	738508074	738508074	738508074	mysql	confirmed
+G.gossypioidesD6_CRI_v1.0	lai	7.92	9.22	7.92	mysql	conflict_kept_mysql
+G.gossypioidesD6_CRI_v1.0	busco	0.954	0.9540	0.954	mysql	confirmed
+G.gossypioidesD6_ISU_v1.0	genome_size	664724314	664724314	664724314	mysql	confirmed
+G.gossypioidesD6_ISU_v1.0	lai	NaN	6.26	6.26	Script/CottonOGD/LAI/result/LAI_summary.txt	invalid_mysql_replaced_by_legacy
+G.gossypioidesD6_ISU_v1.0	busco	0.45	0.4501	0.45	mysql	conflict_kept_mysql
+G.lobatumD7_ISU_v1.0	genome_size	744535494	744535494	744535494	mysql	confirmed
+G.lobatumD7_ISU_v1.0	lai	NaN				invalid_mysql_ignored
+G.lobatumD7_ISU_v1.0	busco	0.482	0.4819	0.482	mysql	conflict_kept_mysql
+G.trilobumD8_CRI_v1.0	genome_size	727583754	727583754	727583754	mysql	confirmed
+G.trilobumD8_CRI_v1.0	lai	7.71	8.64	7.71	mysql	conflict_kept_mysql
+G.trilobumD8_CRI_v1.0	busco	0.952	0.9523	0.952	mysql	conflict_kept_mysql
+G.trilobumD8_ISU_v1	genome_size	655376848	655376848	655376848	mysql	confirmed
+G.trilobumD8_ISU_v1	lai	NaN	6.09	6.09	Script/CottonOGD/LAI/result/LAI_summary.txt	invalid_mysql_replaced_by_legacy
+G.trilobumD8_ISU_v1	busco	0.607	0.6066	0.607	mysql	conflict_kept_mysql
+G.laxumD9_ISU_v1	genome_size	833895178	833895178	833895178	mysql	confirmed
+G.laxumD9_ISU_v1	lai	NaN				invalid_mysql_ignored
+G.laxumD9_ISU_v1	busco	0.558	0.5580	0.558	mysql	confirmed
+G.turneriD10_NCF_v1.2	genome_size	755203240	755203240	755203240	mysql	confirmed
+G.turneriD10_NCF_v1.2	lai	14.2	14.31	14.2	mysql	conflict_kept_mysql
+G.turneriD10_NCF_v1.2	busco	0.924	0.9325	0.924	mysql	conflict_kept_mysql
+G.schwendimaniiD11_ISU_v1.0	genome_size	729428757	729428757	729428757	mysql	confirmed
+G.schwendimaniiD11_ISU_v1.0	lai	NaN	6.08	6.08	Script/CottonOGD/LAI/result/LAI_summary.txt	invalid_mysql_replaced_by_legacy
+G.schwendimaniiD11_ISU_v1.0	busco	0.636	0.6363	0.636	mysql	conflict_kept_mysql
+G.stocksiiE1_HAU_v1	genome_size	1442098089	1442098089	1442098089	mysql	confirmed
+G.stocksiiE1_HAU_v1	lai	13.81	14.78	13.81	mysql	conflict_kept_mysql
+G.stocksiiE1_HAU_v1	busco	0.988	0.9884	0.988	mysql	conflict_kept_mysql
+G.stocksiiE1_NCF_v1	genome_size	1424416851	1424416851	1424416851	mysql	confirmed
+G.stocksiiE1_NCF_v1	lai	14.71	15.69	14.71	mysql	conflict_kept_mysql
+G.stocksiiE1_NCF_v1	busco	0.943	0.2562	0.943	mysql	conflict_kept_mysql
+G.stocksiiE1_ZJSU_v1	genome_size	1448113609	1448113609	1448113609	mysql	confirmed
+G.stocksiiE1_ZJSU_v1	lai	14.69	15.81	14.69	mysql	conflict_kept_mysql
+G.stocksiiE1_ZJSU_v1	busco	0.977	0.9772	0.977	mysql	conflict_kept_mysql
+G.longicalyxF1_HAU_v1	genome_size	1198547475	1198547475	1198547475	mysql	confirmed
+G.longicalyxF1_HAU_v1	lai	10.49	11.08	10.49	mysql	conflict_kept_mysql
+G.longicalyxF1_HAU_v1	busco	0.99	0.9901	0.99	mysql	conflict_kept_mysql
+G.longicalyxF1_NCF_v1	genome_size	1189905995	1189905995	1189905995	mysql	confirmed
+G.longicalyxF1_NCF_v1	lai	10.23	10.99	10.23	mysql	conflict_kept_mysql
+G.longicalyxF1_NCF_v1	busco	0.918	0.2309	0.918	mysql	conflict_kept_mysql
+G.bickiiG1_HAU_v1	genome_size	1606445567	1606445567	1606445567	mysql	confirmed
+G.bickiiG1_HAU_v1	lai	12.1	13.11	12.1	mysql	conflict_kept_mysql
+G.bickiiG1_HAU_v1	busco	0.99	0.9901	0.99	mysql	conflict_kept_mysql
+G.bickiiG1_ZJU_v1	genome_size	1766069608	1766069608	1766069608	mysql	confirmed
+G.bickiiG1_ZJU_v1	lai	11.62	12.35	11.62	mysql	conflict_kept_mysql
+G.bickiiG1_ZJU_v1	busco	0.99	0.9604	0.99	mysql	conflict_kept_mysql
+G.australeG2_CRI_v1.1	genome_size	1743386794	1743386794	1743386794	mysql	confirmed
+G.australeG2_CRI_v1.1	lai	14.15	15.38	14.15	mysql	conflict_kept_mysql
+G.australeG2_CRI_v1.1	busco	0.748	0.7481	0.748	mysql	conflict_kept_mysql
+G.hirsutumAD1_TM-1_BGI-CGI_v1	genome_size	2150929310	2150929310	2150929310	mysql	confirmed
+G.hirsutumAD1_TM-1_BGI-CGI_v1	lai	4.18	4.22	4.18	mysql	conflict_kept_mysql
+G.hirsutumAD1_TM-1_BGI-CGI_v1	busco	0.935	0.9299	0.935	mysql	conflict_kept_mysql
+G.hirsutumAD1_TM-1_CRI_v1	genome_size	2289066421	2289066421	2289066421	mysql	confirmed
+G.hirsutumAD1_TM-1_CRI_v1	lai	14.3	14.4	14.3	mysql	conflict_kept_mysql
+G.hirsutumAD1_TM-1_CRI_v1	busco	0.997	0.9966	0.997	mysql	conflict_kept_mysql
+G.hirsutumAD1_TM-1_NJAU-NBT_v1.1	genome_size	2546077166	2546077166	2546077166	mysql	confirmed
+G.hirsutumAD1_TM-1_NJAU-NBT_v1.1	lai	3.15	3.25	3.15	mysql	conflict_kept_mysql
+G.hirsutumAD1_TM-1_NJAU-NBT_v1.1	busco	0.989	0.9893	0.989	mysql	conflict_kept_mysql
+G.hirsutumAD1_TM-1_JGI-ATU_v1.1	genome_size	2341876381	2341876381	2341876381	mysql	confirmed
+G.hirsutumAD1_TM-1_JGI-ATU_v1.1	lai	9.86	9.95	9.86	mysql	conflict_kept_mysql
+G.hirsutumAD1_TM-1_JGI-ATU_v1.1	busco	0.984	0.9841	0.984	mysql	conflict_kept_mysql
+G.hirsutumAD1_TM-1_ATU_v2.1	genome_size	2305241538	2305241538	2305241538	mysql	confirmed
+G.hirsutumAD1_TM-1_ATU_v2.1	lai	12.55	12.71	12.55	mysql	conflict_kept_mysql
+G.hirsutumAD1_TM-1_ATU_v2.1	busco	0.99	0.9901	0.99	mysql	conflict_kept_mysql
+G.hirsutumAD1_TM-1_HAU_v1.1	genome_size	2348137562	2348137562	2348137562	mysql	confirmed
+G.hirsutumAD1_TM-1_HAU_v1.1	lai	12.45	12.46	12.45	mysql	conflict_kept_mysql
+G.hirsutumAD1_TM-1_HAU_v1.1	busco	0.994	0.9936	0.994	mysql	conflict_kept_mysql
+G.hirsutumAD1_TM-1_HAU_v1	genome_size	2348137562	2347160336	2348137562	mysql	conflict_kept_mysql
+G.hirsutumAD1_TM-1_HAU_v1	lai	12.45	12.46	12.45	mysql	conflict_kept_mysql
+G.hirsutumAD1_TM-1_HAU_v1	busco	0.994	0.9931	0.994	mysql	conflict_kept_mysql
+G.hirsutumAD1_TM-1_WHU_v1	genome_size	2290427971	2290427971	2290427971	mysql	confirmed
+G.hirsutumAD1_TM-1_WHU_v1	lai	14.7	14.83	14.7	mysql	conflict_kept_mysql
+G.hirsutumAD1_TM-1_WHU_v1	busco	0.979	0.9785	0.979	mysql	conflict_kept_mysql
+G.hirsutumAD1_TM-1_ZJU_v2.1	genome_size	2298437019	2298437019	2298437019	mysql	confirmed
+G.hirsutumAD1_TM-1_ZJU_v2.1	lai	14.85	9.76	14.85	mysql	conflict_kept_mysql
+G.hirsutumAD1_TM-1_ZJU_v2.1	busco	0.978	0.9781	0.978	mysql	conflict_kept_mysql
+G.hirsutumAD1_TM-1_ZJU_assembly_v2.1	genome_size	2299599581		2299599581	mysql	mysql_only
+G.hirsutumAD1_TM-1_ZJU_assembly_v2.1	lai	15.45	9.77	15.45	mysql	conflict_kept_mysql
+G.hirsutumAD1_TM-1_ZJU_assembly_v2.1	busco	0.981		0.981	mysql	mysql_only
+G.hirsutumAD1_TM-1_ZJU_v1.1T2T	genome_size	2298437019	2299599581	2298437019	mysql	conflict_kept_mysql
+G.hirsutumAD1_TM-1_ZJU_v1.1T2T	lai	89093	14.97	14.97	Script/CottonOGD/LAI/result/LAI_summary.txt	invalid_mysql_replaced_by_legacy
+G.hirsutumAD1_TM-1_ZJU_v1.1T2T	busco	9.62	0.9811	0.9811	Script/CottonOGD/busco/Busco_summary.txt	invalid_mysql_replaced_by_legacy
+G.hirsutumAD1_BARBREN-713_NCF_v1	genome_size	2296054235	2296054235	2296054235	mysql	confirmed
+G.hirsutumAD1_BARBREN-713_NCF_v1	lai	15.03	15.17	15.03	mysql	conflict_kept_mysql
+G.hirsutumAD1_BARBREN-713_NCF_v1	busco	0.96	0.2575	0.96	mysql	conflict_kept_mysql
+G.hirsutumAD1_BAR_NCF_v1	genome_size	2296536638	2296536638	2296536638	mysql	confirmed
+G.hirsutumAD1_BAR_NCF_v1	lai	14.69	14.63	14.69	mysql	conflict_kept_mysql
+G.hirsutumAD1_BAR_NCF_v1	busco	0.976		0.976	mysql	mysql_only
+G.hirsutumAD1_CSX8308_HGSC_v1.1	genome_size	2277944585	2277944585	2277944585	mysql	confirmed
+G.hirsutumAD1_CSX8308_HGSC_v1.1	lai	15.12	15.24	15.12	mysql	conflict_kept_mysql
+G.hirsutumAD1_CSX8308_HGSC_v1.1	busco	0.991	0.9910	0.991	mysql	confirmed
+G.hirsutumAD1_HPF17_ZJU_v1	genome_size		2558691823	2558691823	Script/CottonOGD/LAI/Genome_size/Genome_size.txt	filled_from_legacy
+G.hirsutumAD1_HPF17_ZJU_v1	lai		11.56	11.56	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_HPF17_ZJU_v1	busco	0.98	0.9794	0.98	mysql	conflict_kept_mysql
+G.hirsutumAD1_NDM8_HBAU_v1	genome_size	2291769868	2291769868	2291769868	mysql	confirmed
+G.hirsutumAD1_NDM8_HBAU_v1	lai	14.87	15.01	14.87	mysql	conflict_kept_mysql
+G.hirsutumAD1_NDM8_HBAU_v1	busco	0.991	0.9905	0.991	mysql	conflict_kept_mysql
+G.hirsutumAD1_PSC355_USDA_v1	genome_size	2294331380	2294331380	2294331380	mysql	confirmed
+G.hirsutumAD1_PSC355_USDA_v1	lai	14.92	14.87	14.92	mysql	conflict_kept_mysql
+G.hirsutumAD1_PSC355_USDA_v1	busco	0.975	0.2971	0.975	mysql	conflict_kept_mysql
+G.hirsutumAD1_Punctatum_CRI_v1	genome_size	2292484390	2292484390	2292484390	mysql	confirmed
+G.hirsutumAD1_Punctatum_CRI_v1	lai	15.28	15.22	15.28	mysql	conflict_kept_mysql
+G.hirsutumAD1_Punctatum_CRI_v1	busco	0.977		0.977	mysql	mysql_only
+G.hirsutumAD1_UA48_HGSC_v1	genome_size	2293500691	2293500691	2293500691	mysql	confirmed
+G.hirsutumAD1_UA48_HGSC_v1	lai	14.68	14.79	14.68	mysql	conflict_kept_mysql
+G.hirsutumAD1_UA48_HGSC_v1	busco	0.99	0.9897	0.99	mysql	conflict_kept_mysql
+G.hirsutumAD1_UGA230_HGSC_v1	genome_size	2276397218	2276397218	2276397218	mysql	confirmed
+G.hirsutumAD1_UGA230_HGSC_v1	lai	15.19	15.3	15.19	mysql	conflict_kept_mysql
+G.hirsutumAD1_UGA230_HGSC_v1	busco	0.991	0.9905	0.991	mysql	conflict_kept_mysql
+G.hirsutumAD1_YM11_XJAAS_v1	genome_size	2343057070	2343057070	2343057070	mysql	confirmed
+G.hirsutumAD1_YM11_XJAAS_v1	lai	15.05	16.49	15.05	mysql	conflict_kept_mysql
+G.hirsutumAD1_YM11_XJAAS_v1	busco	0.985	0.9854	0.985	mysql	conflict_kept_mysql
+G.hirsutumAD1_ZM24_CRI_v1	genome_size	2309266482	2309266482	2309266482	mysql	confirmed
+G.hirsutumAD1_ZM24_CRI_v1	lai	14.31	14.34	14.31	mysql	conflict_kept_mysql
+G.hirsutumAD1_ZM24_CRI_v1	busco	0.993	0.9927	0.993	mysql	conflict_kept_mysql
+G.hirsutumAD1_Jin668_HAU_v1T2T	genome_size	2370731625	2370731625	2370731625	mysql	confirmed
+G.hirsutumAD1_Jin668_HAU_v1T2T	lai	15.18		15.18	mysql	mysql_only
+G.hirsutumAD1_Jin668_HAU_v1T2T	busco	0.993	0.9893	0.993	mysql	conflict_kept_mysql
+G.hirsutumAD1_YZ1_HAU_v1	genome_size	2306416115	2306416115	2306416115	mysql	confirmed
+G.hirsutumAD1_YZ1_HAU_v1	lai	14.68	14.8	14.68	mysql	conflict_kept_mysql
+G.hirsutumAD1_YZ1_HAU_v1	busco	0.973	0.9733	0.973	mysql	conflict_kept_mysql
+G.hirsutumAD1_Zhongmian_CRI_v1T2T	genome_size	2299061504	2299061504	2299061504	mysql	confirmed
+G.hirsutumAD1_Zhongmian_CRI_v1T2T	lai	14.9	15.02	14.9	mysql	conflict_kept_mysql
+G.hirsutumAD1_Zhongmian_CRI_v1T2T	busco		0.9802	0.9802	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_HC04_HAU_v1	genome_size	2297180987	2297180987	2297180987	mysql	confirmed
+G.hirsutumAD1_HC04_HAU_v1	lai	14.59	14.96	14.59	mysql	conflict_kept_mysql
+G.hirsutumAD1_HC04_HAU_v1	busco	0.982	0.9819	0.982	mysql	conflict_kept_mysql
+G.hirsutumAD1_HC15_HAU_v1	genome_size	2298206332	2298206332	2298206332	mysql	confirmed
+G.hirsutumAD1_HC15_HAU_v1	lai	14.11	14.83	14.11	mysql	conflict_kept_mysql
+G.hirsutumAD1_HC15_HAU_v1	busco	0.972	0.9716	0.972	mysql	conflict_kept_mysql
+G.hirsutumAD1_HW03_HAU_v1	genome_size	2313123504	2313123504	2313123504	mysql	confirmed
+G.hirsutumAD1_HW03_HAU_v1	lai	14.22	14.86	14.22	mysql	conflict_kept_mysql
+G.hirsutumAD1_HW03_HAU_v1	busco	0.982	0.9815	0.982	mysql	conflict_kept_mysql
+G.hirsutumAD1_HW05_HAU_v1	genome_size	2298922598	2298922598	2298922598	mysql	confirmed
+G.hirsutumAD1_HW05_HAU_v1	lai	14.16	15.03	14.16	mysql	conflict_kept_mysql
+G.hirsutumAD1_HW05_HAU_v1	busco	0.982	0.9819	0.982	mysql	conflict_kept_mysql
+G.hirsutumAD1_HW06_HAU_v1	genome_size	2295353112	2295353112	2295353112	mysql	confirmed
+G.hirsutumAD1_HW06_HAU_v1	lai	14.7	15.14	14.7	mysql	conflict_kept_mysql
+G.hirsutumAD1_HW06_HAU_v1	busco	0.976	0.9759	0.976	mysql	conflict_kept_mysql
+G.hirsutumAD1_HW07_HAU_v1	genome_size	2302691667	2302691667	2302691667	mysql	confirmed
+G.hirsutumAD1_HW07_HAU_v1	lai	14.09	14.87	14.09	mysql	conflict_kept_mysql
+G.hirsutumAD1_HW07_HAU_v1	busco	0.975	0.9751	0.975	mysql	conflict_kept_mysql
+G.hirsutumAD1_P01_HAU_v1	genome_size	2294205364	2294205364	2294205364	mysql	confirmed
+G.hirsutumAD1_P01_HAU_v1	lai	14.33	14.77	14.33	mysql	conflict_kept_mysql
+G.hirsutumAD1_P01_HAU_v1	busco	0.981	0.9807	0.981	mysql	conflict_kept_mysql
+G.hirsutumAD1_P02_HAU_v1	genome_size	2293500538	2293500538	2293500538	mysql	confirmed
+G.hirsutumAD1_P02_HAU_v1	lai	14.46	15.03	14.46	mysql	conflict_kept_mysql
+G.hirsutumAD1_P02_HAU_v1	busco	0.983	0.9828	0.983	mysql	conflict_kept_mysql
+G.hirsutumAD1_P04_HAU_v1	genome_size	2302947319	2302947319	2302947319	mysql	confirmed
+G.hirsutumAD1_P04_HAU_v1	lai	14.84	15.24	14.84	mysql	conflict_kept_mysql
+G.hirsutumAD1_P04_HAU_v1	busco	0.98	0.9798	0.98	mysql	conflict_kept_mysql
+G.hirsutumAD1_P19_HAU_v1	genome_size	2296884621	2296884621	2296884621	mysql	confirmed
+G.hirsutumAD1_P19_HAU_v1	lai	14.22	15	14.22	mysql	conflict_kept_mysql
+G.hirsutumAD1_P19_HAU_v1	busco	0.978	0.9776	0.978	mysql	conflict_kept_mysql
+G.hirsutumAD1_P20_HAU_v1	genome_size	2301333959	2301333959	2301333959	mysql	confirmed
+G.hirsutumAD1_P20_HAU_v1	lai	14.16	14.82	14.16	mysql	conflict_kept_mysql
+G.hirsutumAD1_P20_HAU_v1	busco	0.976	0.9759	0.976	mysql	conflict_kept_mysql
+G.hirsutumAD1_TW007_HAU_v1	genome_size	2302648163	2302648163	2302648163	mysql	confirmed
+G.hirsutumAD1_TW007_HAU_v1	lai	14.86	15.23	14.86	mysql	conflict_kept_mysql
+G.hirsutumAD1_TW007_HAU_v1	busco	0.981	0.9811	0.981	mysql	conflict_kept_mysql
+G.hirsutumAD1_TW013_HAU_v1	genome_size	2302623716	2302623716	2302623716	mysql	confirmed
+G.hirsutumAD1_TW013_HAU_v1	lai	14.59	15.29	14.59	mysql	conflict_kept_mysql
+G.hirsutumAD1_TW013_HAU_v1	busco	0.983	0.9832	0.983	mysql	conflict_kept_mysql
+G.hirsutumAD1_TW026_HAU_v1	genome_size	2289077951	2289077951	2289077951	mysql	confirmed
+G.hirsutumAD1_TW026_HAU_v1	lai	14.11	14.82	14.11	mysql	conflict_kept_mysql
+G.hirsutumAD1_TW026_HAU_v1	busco	0.983	0.9828	0.983	mysql	conflict_kept_mysql
+G.hirsutumAD1_TW029_HAU_v1	genome_size	2292197088	2292197088	2292197088	mysql	confirmed
+G.hirsutumAD1_TW029_HAU_v1	lai	14.32	14.82	14.32	mysql	conflict_kept_mysql
+G.hirsutumAD1_TW029_HAU_v1	busco	0.984	0.9841	0.984	mysql	conflict_kept_mysql
+G.hirsutumAD1_TW031_HAU_v1	genome_size	2304842346	2304842346	2304842346	mysql	confirmed
+G.hirsutumAD1_TW031_HAU_v1	lai	14.69	14.81	14.69	mysql	conflict_kept_mysql
+G.hirsutumAD1_TW031_HAU_v1	busco	0.976	0.9759	0.976	mysql	conflict_kept_mysql
+G.hirsutumAD1_TW055_HAU_v1	genome_size	2294607548	2294607548	2294607548	mysql	confirmed
+G.hirsutumAD1_TW055_HAU_v1	lai	14.87	15.39	14.87	mysql	conflict_kept_mysql
+G.hirsutumAD1_TW055_HAU_v1	busco	0.983	0.9832	0.983	mysql	conflict_kept_mysql
+G.hirsutumAD1_TW064_HAU_v1	genome_size	2308159082	2308159082	2308159082	mysql	confirmed
+G.hirsutumAD1_TW064_HAU_v1	lai	14.59	15.22	14.59	mysql	conflict_kept_mysql
+G.hirsutumAD1_TW064_HAU_v1	busco	0.981	0.9807	0.981	mysql	conflict_kept_mysql
+G.hirsutumAD1_TW075_HAU_v1	genome_size	2305980075	2305980075	2305980075	mysql	confirmed
+G.hirsutumAD1_TW075_HAU_v1	lai	14.18	14.66	14.18	mysql	conflict_kept_mysql
+G.hirsutumAD1_TW075_HAU_v1	busco	0.984	0.9837	0.984	mysql	conflict_kept_mysql
+G.hirsutumAD1_TW077_HAU_v1	genome_size	2294191472	2294191472	2294191472	mysql	confirmed
+G.hirsutumAD1_TW077_HAU_v1	lai	14.78	15.26	14.78	mysql	conflict_kept_mysql
+G.hirsutumAD1_TW077_HAU_v1	busco	0.982	0.9819	0.982	mysql	conflict_kept_mysql
+G.hirsutumAD1_TW091_HAU_v1	genome_size	2292807360	2292807360	2292807360	mysql	confirmed
+G.hirsutumAD1_TW091_HAU_v1	lai	14.43	15.08	14.43	mysql	conflict_kept_mysql
+G.hirsutumAD1_TW091_HAU_v1	busco	0.984	0.9837	0.984	mysql	conflict_kept_mysql
+G.hirsutumAD1_TW094_HAU_v1	genome_size	2292057399	2292057399	2292057399	mysql	confirmed
+G.hirsutumAD1_TW094_HAU_v1	lai	14.41	15.05	14.41	mysql	conflict_kept_mysql
+G.hirsutumAD1_TW094_HAU_v1	busco	0.985	0.9850	0.985	mysql	confirmed
+G.hirsutumAD1_TW100_HAU_v1	genome_size	2316243858	2316243858	2316243858	mysql	confirmed
+G.hirsutumAD1_TW100_HAU_v1	lai	14.64	15.18	14.64	mysql	conflict_kept_mysql
+G.hirsutumAD1_TW100_HAU_v1	busco	0.984	0.9837	0.984	mysql	conflict_kept_mysql
+G.hirsutumAD1_TW134_HAU_v1	genome_size	2294352706	2294352706	2294352706	mysql	confirmed
+G.hirsutumAD1_TW134_HAU_v1	lai	14.49	15.11	14.49	mysql	conflict_kept_mysql
+G.hirsutumAD1_TW134_HAU_v1	busco	0.986	0.9858	0.986	mysql	conflict_kept_mysql
+G.hirsutumAD1_XJ74_HAU_v1	genome_size	2299047121	2299047121	2299047121	mysql	confirmed
+G.hirsutumAD1_XJ74_HAU_v1	lai	14.27	14.77	14.27	mysql	conflict_kept_mysql
+G.hirsutumAD1_XJ74_HAU_v1	busco	0.98	0.9798	0.98	mysql	conflict_kept_mysql
+G.hirsutumAD1_XZ142_HAU_v1	genome_size	2297129101	2297129101	2297129101	mysql	confirmed
+G.hirsutumAD1_XZ142_HAU_v1	lai	14.4	15.07	14.4	mysql	conflict_kept_mysql
+G.hirsutumAD1_XZ142_HAU_v1	busco	0.983	0.9832	0.983	mysql	conflict_kept_mysql
+G.hirsutumAD1_ZY006_HAU_v1	genome_size	2296035961	2296035961	2296035961	mysql	confirmed
+G.hirsutumAD1_ZY006_HAU_v1	lai	14.88	14.85	14.88	mysql	conflict_kept_mysql
+G.hirsutumAD1_ZY006_HAU_v1	busco	0.981	0.9811	0.981	mysql	conflict_kept_mysql
+G.hirsutumAD1_ZY10_HAU_v1	genome_size	2298789068	2298789068	2298789068	mysql	confirmed
+G.hirsutumAD1_ZY10_HAU_v1	lai	14.49	14.84	14.49	mysql	conflict_kept_mysql
+G.hirsutumAD1_ZY10_HAU_v1	busco	0.985	0.9845	0.985	mysql	conflict_kept_mysql
+G.hirsutumAD1_ZY184_HAU_v1	genome_size	2295773721	2295773721	2295773721	mysql	confirmed
+G.hirsutumAD1_ZY184_HAU_v1	lai	14.55	15.19	14.55	mysql	conflict_kept_mysql
+G.hirsutumAD1_ZY184_HAU_v1	busco	0.975	0.9751	0.975	mysql	conflict_kept_mysql
+G.hirsutumAD1_ZY236_HAU_v1	genome_size	2295890949	2295890949	2295890949	mysql	confirmed
+G.hirsutumAD1_ZY236_HAU_v1	lai	14.61	14.81	14.61	mysql	conflict_kept_mysql
+G.hirsutumAD1_ZY236_HAU_v1	busco	0.983	0.9832	0.983	mysql	conflict_kept_mysql
+G.hirsutumAD1_ZY238_HAU_v1	genome_size	2298934339	2298934339	2298934339	mysql	confirmed
+G.hirsutumAD1_ZY238_HAU_v1	lai	14.58	15.27	14.58	mysql	conflict_kept_mysql
+G.hirsutumAD1_ZY238_HAU_v1	busco	0.976	0.9759	0.976	mysql	conflict_kept_mysql
+G.hirsutumAD1_ZY354_HAU_v1	genome_size	2297158569	2297158569	2297158569	mysql	confirmed
+G.hirsutumAD1_ZY354_HAU_v1	lai	14.51	15.06	14.51	mysql	conflict_kept_mysql
+G.hirsutumAD1_ZY354_HAU_v1	busco	0.979	0.9785	0.979	mysql	conflict_kept_mysql
+G.hirsutumAD1_ZY381_HAU_v1	genome_size	2299217634	2299217634	2299217634	mysql	confirmed
+G.hirsutumAD1_ZY381_HAU_v1	lai	14.7	15.04	14.7	mysql	conflict_kept_mysql
+G.hirsutumAD1_ZY381_HAU_v1	busco	0.982	0.9815	0.982	mysql	conflict_kept_mysql
+G.hirsutumAD1_ZY384_HAU_v1	genome_size	2296567393	2296567393	2296567393	mysql	confirmed
+G.hirsutumAD1_ZY384_HAU_v1	lai	14.83	14.88	14.83	mysql	conflict_kept_mysql
+G.hirsutumAD1_ZY384_HAU_v1	busco	0.982	0.9815	0.982	mysql	conflict_kept_mysql
+G.hirsutumAD1_ZY461_HAU_v1	genome_size	2299900476	2299900476	2299900476	mysql	confirmed
+G.hirsutumAD1_ZY461_HAU_v1	lai	14.31	14.84	14.31	mysql	conflict_kept_mysql
+G.hirsutumAD1_ZY461_HAU_v1	busco	0.976	0.9764	0.976	mysql	conflict_kept_mysql
+G.barbadenseAD2_3-79_HAU_v1	genome_size	2573185887	258722865	2573185887	mysql	conflict_kept_mysql
+G.barbadenseAD2_3-79_HAU_v1	lai	0.83		0.83	mysql	mysql_only
+G.barbadenseAD2_3-79_HAU_v1	busco	0.948		0.948	mysql	mysql_only
+G.barbadenseAD2_3-79_HAU_v2.0_a1	genome_size	2266746731	2266746731	2266746731	mysql	confirmed
+G.barbadenseAD2_3-79_HAU_v2.0_a1	lai	11.49	11.44	11.49	mysql	conflict_kept_mysql
+G.barbadenseAD2_3-79_HAU_v2.0_a1	busco	0.996	0.9957	0.996	mysql	conflict_kept_mysql
+G.barbadenseAD2_3-79_HGSC_v1.1	genome_size	4324128435	4324128435	4324128435	mysql	confirmed
+G.barbadenseAD2_3-79_HGSC_v1.1	lai	4.11	4.14	4.11	mysql	conflict_kept_mysql
+G.barbadenseAD2_3-79_HGSC_v1.1	busco	0.991	0.9914	0.991	mysql	conflict_kept_mysql
+G.barbadenseAD2_GB0307_HAU_AZB339HAU_v1	genome_size	2247382228	2247382228	2247382228	mysql	confirmed
+G.barbadenseAD2_GB0307_HAU_AZB339HAU_v1	lai	13.23	13.42	13.23	mysql	conflict_kept_mysql
+G.barbadenseAD2_GB0307_HAU_AZB339HAU_v1	busco	0.988	0.9884	0.988	mysql	conflict_kept_mysql
+G.barbadenseAD2_GB0333_HAU_AZB375HAU_v1	genome_size	2237039913	2237039913	2237039913	mysql	confirmed
+G.barbadenseAD2_GB0333_HAU_AZB375HAU_v1	lai	13.57	13.39	13.57	mysql	conflict_kept_mysql
+G.barbadenseAD2_GB0333_HAU_AZB375HAU_v1	busco	0.987	0.9871	0.987	mysql	conflict_kept_mysql
+G.barbadenseAD2_Gb_M210936_HAU_v1	genome_size	2242651981	2242651981	2242651981	mysql	confirmed
+G.barbadenseAD2_Gb_M210936_HAU_v1	lai	13.37	13.38	13.37	mysql	conflict_kept_mysql
+G.barbadenseAD2_Gb_M210936_HAU_v1	busco	0.983	0.9828	0.983	mysql	conflict_kept_mysql
+G.barbadenseAD2_GB0414_HAU_AZB634HAU_v1	genome_size	2251664899	2251664899	2251664899	mysql	confirmed
+G.barbadenseAD2_GB0414_HAU_AZB634HAU_v1	lai	13.53	13.57	13.53	mysql	conflict_kept_mysql
+G.barbadenseAD2_GB0414_HAU_AZB634HAU_v1	busco	0.988	0.9880	0.988	mysql	confirmed
+G.barbadenseAD2_K101_HAU_AZK101HAU_v1	genome_size	2235598662	2235598662	2235598662	mysql	confirmed
+G.barbadenseAD2_K101_HAU_AZK101HAU_v1	lai	13.77	13.92	13.77	mysql	conflict_kept_mysql
+G.barbadenseAD2_K101_HAU_AZK101HAU_v1	busco	0.986	0.9867	0.986	mysql	conflict_kept_mysql
+G.barbadenseAD2_CEG_HAU_v1	genome_size	2250887985	2250887985	2250887985	mysql	confirmed
+G.barbadenseAD2_CEG_HAU_v1	lai	13.4	13.62	13.4	mysql	conflict_kept_mysql
+G.barbadenseAD2_CEG_HAU_v1	busco	0.988	0.9875	0.988	mysql	conflict_kept_mysql
+G.barbadenseAD2_GB0660_HAU_GB-0660HAU_v1	genome_size	2235218017	2235218017	2235218017	mysql	confirmed
+G.barbadenseAD2_GB0660_HAU_GB-0660HAU_v1	lai	13.61	13.75	13.61	mysql	conflict_kept_mysql
+G.barbadenseAD2_GB0660_HAU_GB-0660HAU_v1	busco	0.992	0.9923	0.992	mysql	conflict_kept_mysql
+G.barbadenseAD2_GB0776_HAU_GB-0776HAU_v1	genome_size	2269366270	2269366270	2269366270	mysql	confirmed
+G.barbadenseAD2_GB0776_HAU_GB-0776HAU_v1	lai	13.18	13.3	13.18	mysql	conflict_kept_mysql
+G.barbadenseAD2_GB0776_HAU_GB-0776HAU_v1	busco	0.991	0.9905	0.991	mysql	conflict_kept_mysql
+G.barbadenseAD2_GB0249_HAU_GB249HAU_v1	genome_size	2239933879	2239933879	2239933879	mysql	confirmed
+G.barbadenseAD2_GB0249_HAU_GB249HAU_v1	lai	13.59	13.75	13.59	mysql	conflict_kept_mysql
+G.barbadenseAD2_GB0249_HAU_GB249HAU_v1	busco	0.988	0.9884	0.988	mysql	conflict_kept_mysql
+G.barbadenseAD2_GB0262_HAU_AZB51HAU_v1	genome_size	2298730595	2298730595	2298730595	mysql	confirmed
+G.barbadenseAD2_GB0262_HAU_AZB51HAU_v1	lai	14.02	14.18	14.02	mysql	conflict_kept_mysql
+G.barbadenseAD2_GB0262_HAU_AZB51HAU_v1	busco	0.988	0.9875	0.988	mysql	conflict_kept_mysql
+G.barbadenseAD2_Giza7_HAU_v1	genome_size	2236833143	2236833143	2236833143	mysql	confirmed
+G.barbadenseAD2_Giza7_HAU_v1	lai	13.58	13.7	13.58	mysql	conflict_kept_mysql
+G.barbadenseAD2_Giza7_HAU_v1	busco	0.99	0.9897	0.99	mysql	conflict_kept_mysql
+G.barbadenseAD2_Junhai-1_HAU_v1	genome_size	2266771881	2266771881	2266771881	mysql	confirmed
+G.barbadenseAD2_Junhai-1_HAU_v1	lai	13.28	13.4	13.28	mysql	conflict_kept_mysql
+G.barbadenseAD2_Junhai-1_HAU_v1	busco	0.986	0.9858	0.986	mysql	conflict_kept_mysql
+G.barbadenseAD2_Yuma_HAU_v1	genome_size	2244354197	2244354197	2244354197	mysql	confirmed
+G.barbadenseAD2_Yuma_HAU_v1	lai	13.29	13.41	13.29	mysql	conflict_kept_mysql
+G.barbadenseAD2_Yuma_HAU_v1	busco	0.989	0.9888	0.989	mysql	conflict_kept_mysql
+G.hirsutumAD1_Hai7124_ZJU_v1.1_a1	genome_size	2226679100		2226679100	mysql	mysql_only
+G.hirsutumAD1_Hai7124_ZJU_v1.1_a1	lai	75519	9.77	9.77	Script/CottonOGD/LAI/result/LAI_summary.txt	invalid_mysql_replaced_by_legacy
+G.hirsutumAD1_Hai7124_ZJU_v1.1_a1	busco	9.74				invalid_mysql_ignored
+G.hirsutumAD1_Hai7125_ZJU_Hai7124	genome_size	2226679100	2226679100	2226679100	mysql	confirmed
+G.hirsutumAD1_Hai7125_ZJU_Hai7124	lai	9.73		9.73	mysql	mysql_only
+G.hirsutumAD1_Hai7125_ZJU_Hai7124	busco	0.979		0.979	mysql	mysql_only
+G.barbadenseAD2_Pima90_HBAU_v1	genome_size	2210138243	2210138243	2210138243	mysql	confirmed
+G.barbadenseAD2_Pima90_HBAU_v1	lai	13.51	13.65	13.51	mysql	conflict_kept_mysql
+G.barbadenseAD2_Pima90_HBAU_v1	busco	0.991	0.9905	0.991	mysql	conflict_kept_mysql
+G.tomentosumAD3_HAU_v1	genome_size	2228718597	2228718597	2228718597	mysql	confirmed
+G.tomentosumAD3_HAU_v1	lai	13	14.5	13	mysql	conflict_kept_mysql
+G.tomentosumAD3_HAU_v1	busco	0.989	0.9893	0.989	mysql	conflict_kept_mysql
+G.tomentosumAD3_HGSC_v1.1	genome_size	2193557323	2193557323	2193557323	mysql	confirmed
+G.tomentosumAD3_HGSC_v1.1	lai	13.55	13.18	13.55	mysql	conflict_kept_mysql
+G.tomentosumAD3_HGSC_v1.1	busco	0.994	0.9940	0.994	mysql	confirmed
+G.mustelinumAD4_JGI_JGI-AD4	genome_size	4590223133	4590223133	4590223133	mysql	confirmed
+G.mustelinumAD4_JGI_JGI-AD4	lai	7.97		7.97	mysql	mysql_only
+G.mustelinumAD4_JGI_JGI-AD4	busco	0.988	0.9884	0.988	mysql	conflict_kept_mysql
+G.mustelinumAD4_P0811704_HAU_v1	genome_size	2302070806	2302070806	2302070806	mysql	confirmed
+G.mustelinumAD4_P0811704_HAU_v1	lai	15.42	15.57	15.42	mysql	conflict_kept_mysql
+G.mustelinumAD4_P0811704_HAU_v1	busco	0.991	0.9888	0.991	mysql	conflict_kept_mysql
+G.darwiniiAD5_HGSC_HGS_v1.1	genome_size	2182957963	2182957963	2182957963	mysql	confirmed
+G.darwiniiAD5_HGSC_HGS_v1.1	lai	13.42	13.46	13.42	mysql	conflict_kept_mysql
+G.darwiniiAD5_HGSC_HGS_v1.1	busco	0.994	0.9940	0.994	mysql	confirmed
+G.ekmanianumAD6_AD602_CRI_v1	genome_size	2341873899	2341873899	2341873899	mysql	confirmed
+G.ekmanianumAD6_AD602_CRI_v1	lai	13.56	13.82	13.56	mysql	conflict_kept_mysql
+G.ekmanianumAD6_AD602_CRI_v1	busco	0.968		0.968	mysql	mysql_only
+G.stephensiiAD7_AD701_CRI_v1	genome_size	2290224625	2290224625	2290224625	mysql	confirmed
+G.stephensiiAD7_AD701_CRI_v1	lai	13.55	13.73	13.55	mysql	conflict_kept_mysql
+G.stephensiiAD7_AD701_CRI_v1	busco	0.975		0.975	mysql	mysql_only
+K.cookei_WAI_ISU_ISU_v1	genome_size	563551662	563551662	563551662	mysql	confirmed
+K.cookei_WAI_ISU_ISU_v1	lai	7.83	8.23	7.83	mysql	conflict_kept_mysql
+K.cookei_WAI_ISU_ISU_v1	busco	0.938	0.3100	0.938	mysql	conflict_kept_mysql
+K.drynarioides_ISU_ISU_v1	genome_size	511904237	511904237	511904237	mysql	confirmed
+K.drynarioides_ISU_ISU_v1	lai	7.79	8.28	7.79	mysql	conflict_kept_mysql
+K.drynarioides_ISU_ISU_v1	busco	0.961	0.2997	0.961	mysql	conflict_kept_mysql
+K.kauaiensis_WAI_ISU_ISU_v1	genome_size	556827260	556827260	556827260	mysql	confirmed
+K.kauaiensis_WAI_ISU_ISU_v1	lai	7.83	8.41	7.83	mysql	conflict_kept_mysql
+K.kauaiensis_WAI_ISU_ISU_v1	busco	0.959	0.3190	0.959	mysql	conflict_kept_mysql
+G.kirkii_ISU_ISU_v3.0	genome_size	538117542	538117542	538117542	mysql	confirmed
+G.kirkii_ISU_ISU_v3.0	lai	9.62	10.29	9.62	mysql	conflict_kept_mysql
+G.kirkii_ISU_ISU_v3.0	busco	0.493	0.4936	0.493	mysql	conflict_kept_mysql
+G.hirsutumAD1_N200_CRI_v1	genome_size					missing
+G.hirsutumAD1_N200_CRI_v1	lai		14.78	14.78	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N200_CRI_v1	busco		0.9936	0.9936	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N201_CRI_v1	genome_size					missing
+G.hirsutumAD1_N201_CRI_v1	lai		14.8	14.8	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N201_CRI_v1	busco		0.9944	0.9944	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N202_CRI_v1	genome_size					missing
+G.hirsutumAD1_N202_CRI_v1	lai		14.94	14.94	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N202_CRI_v1	busco		0.9953	0.9953	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N203_CRI_v1	genome_size					missing
+G.hirsutumAD1_N203_CRI_v1	lai		14.9	14.9	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N203_CRI_v1	busco		0.9957	0.9957	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N204_CRI_v1	genome_size					missing
+G.hirsutumAD1_N204_CRI_v1	lai		14.86	14.86	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N204_CRI_v1	busco		0.9957	0.9957	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N205_CRI_v1	genome_size					missing
+G.hirsutumAD1_N205_CRI_v1	lai		14.76	14.76	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N205_CRI_v1	busco		0.9944	0.9944	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N206_CRI_v1	genome_size					missing
+G.hirsutumAD1_N206_CRI_v1	lai		15.26	15.26	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N206_CRI_v1	busco		0.9953	0.9953	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N207_CRI_v1	genome_size					missing
+G.hirsutumAD1_N207_CRI_v1	lai		14.93	14.93	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N207_CRI_v1	busco		0.9936	0.9936	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N208_CRI_v1	genome_size					missing
+G.hirsutumAD1_N208_CRI_v1	lai		14.84	14.84	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N208_CRI_v1	busco		0.9923	0.9923	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N209_CRI_v1	genome_size					missing
+G.hirsutumAD1_N209_CRI_v1	lai		14.91	14.91	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N209_CRI_v1	busco		0.9948	0.9948	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N210_CRI_v1	genome_size					missing
+G.hirsutumAD1_N210_CRI_v1	lai		14.94	14.94	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N210_CRI_v1	busco		0.9948	0.9948	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N211_CRI_v1	genome_size					missing
+G.hirsutumAD1_N211_CRI_v1	lai		14.96	14.96	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N211_CRI_v1	busco		0.9948	0.9948	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N212_CRI_v1	genome_size					missing
+G.hirsutumAD1_N212_CRI_v1	lai		14.96	14.96	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N212_CRI_v1	busco		0.9944	0.9944	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N213_CRI_v1	genome_size					missing
+G.hirsutumAD1_N213_CRI_v1	lai		14.98	14.98	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N213_CRI_v1	busco		0.9944	0.9944	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N214_CRI_v1	genome_size					missing
+G.hirsutumAD1_N214_CRI_v1	lai		14.9	14.9	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N214_CRI_v1	busco		0.9940	0.9940	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N215_CRI_v1	genome_size					missing
+G.hirsutumAD1_N215_CRI_v1	lai		14.63	14.63	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N215_CRI_v1	busco		0.9931	0.9931	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N216_CRI_v1	genome_size					missing
+G.hirsutumAD1_N216_CRI_v1	lai		14.92	14.92	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N216_CRI_v1	busco		0.9751	0.9751	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N217_CRI_v1	genome_size					missing
+G.hirsutumAD1_N217_CRI_v1	lai		15.06	15.06	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N217_CRI_v1	busco		0.9966	0.9966	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N218_CRI_v1	genome_size					missing
+G.hirsutumAD1_N218_CRI_v1	lai		14.9	14.9	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N218_CRI_v1	busco		0.9948	0.9948	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N219_CRI_v1	genome_size					missing
+G.hirsutumAD1_N219_CRI_v1	lai		14.78	14.78	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N219_CRI_v1	busco		0.9936	0.9936	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N220_CRI_v1	genome_size					missing
+G.hirsutumAD1_N220_CRI_v1	lai		14.89	14.89	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N220_CRI_v1	busco		0.9944	0.9944	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N221_CRI_v1	genome_size					missing
+G.hirsutumAD1_N221_CRI_v1	lai		14.74	14.74	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N221_CRI_v1	busco		0.9936	0.9936	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N222_CRI_v1	genome_size					missing
+G.hirsutumAD1_N222_CRI_v1	lai		14.66	14.66	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N222_CRI_v1	busco		0.9957	0.9957	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N223_CRI_v1	genome_size					missing
+G.hirsutumAD1_N223_CRI_v1	lai		14.73	14.73	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N223_CRI_v1	busco		0.9953	0.9953	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N224_CRI_v1	genome_size					missing
+G.hirsutumAD1_N224_CRI_v1	lai		15.08	15.08	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N224_CRI_v1	busco		0.9927	0.9927	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N225_CRI_v1	genome_size					missing
+G.hirsutumAD1_N225_CRI_v1	lai		15.05	15.05	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N225_CRI_v1	busco		0.9948	0.9948	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N226_CRI_v1	genome_size					missing
+G.hirsutumAD1_N226_CRI_v1	lai		14.98	14.98	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N226_CRI_v1	busco		0.9966	0.9966	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N227_CRI_v1	genome_size					missing
+G.hirsutumAD1_N227_CRI_v1	lai		15.26	15.26	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N227_CRI_v1	busco		0.9957	0.9957	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N228_CRI_v1	genome_size					missing
+G.hirsutumAD1_N228_CRI_v1	lai		15.16	15.16	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N228_CRI_v1	busco		0.9936	0.9936	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N229_CRI_v1	genome_size					missing
+G.hirsutumAD1_N229_CRI_v1	lai		14.74	14.74	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N229_CRI_v1	busco		0.9944	0.9944	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N230_CRI_v1	genome_size					missing
+G.hirsutumAD1_N230_CRI_v1	lai		14.93	14.93	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N230_CRI_v1	busco		0.9944	0.9944	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N231_CRI_v1	genome_size					missing
+G.hirsutumAD1_N231_CRI_v1	lai		14.73	14.73	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N231_CRI_v1	busco		0.9957	0.9957	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N232_CRI_v1	genome_size					missing
+G.hirsutumAD1_N232_CRI_v1	lai		15.23	15.23	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N232_CRI_v1	busco		0.9953	0.9953	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N233_CRI_v1	genome_size					missing
+G.hirsutumAD1_N233_CRI_v1	lai		14.87	14.87	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N233_CRI_v1	busco		0.9953	0.9953	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N234_CRI_v1	genome_size					missing
+G.hirsutumAD1_N234_CRI_v1	lai		14.87	14.87	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N234_CRI_v1	busco		0.9931	0.9931	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N235_CRI_v1	genome_size					missing
+G.hirsutumAD1_N235_CRI_v1	lai		15.02	15.02	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N235_CRI_v1	busco		0.9931	0.9931	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N236_CRI_v1	genome_size					missing
+G.hirsutumAD1_N236_CRI_v1	lai		15.08	15.08	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N236_CRI_v1	busco		0.9936	0.9936	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N237_CRI_v1	genome_size					missing
+G.hirsutumAD1_N237_CRI_v1	lai		15.17	15.17	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N237_CRI_v1	busco		0.9961	0.9961	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N238_CRI_v1	genome_size					missing
+G.hirsutumAD1_N238_CRI_v1	lai		14.73	14.73	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N238_CRI_v1	busco		0.9944	0.9944	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N239_CRI_v1	genome_size					missing
+G.hirsutumAD1_N239_CRI_v1	lai		14.77	14.77	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N239_CRI_v1	busco		0.9961	0.9961	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N240_CRI_v1	genome_size					missing
+G.hirsutumAD1_N240_CRI_v1	lai		14.71	14.71	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N240_CRI_v1	busco		0.9957	0.9957	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N241_CRI_v1	genome_size					missing
+G.hirsutumAD1_N241_CRI_v1	lai		14.82	14.82	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N241_CRI_v1	busco		0.9948	0.9948	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N242_CRI_v1	genome_size					missing
+G.hirsutumAD1_N242_CRI_v1	lai		14.76	14.76	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N242_CRI_v1	busco		0.9953	0.9953	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N243_CRI_v1	genome_size					missing
+G.hirsutumAD1_N243_CRI_v1	lai		14.85	14.85	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N243_CRI_v1	busco		0.9944	0.9944	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N244_CRI_v1	genome_size					missing
+G.hirsutumAD1_N244_CRI_v1	lai		14.89	14.89	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N244_CRI_v1	busco		0.9927	0.9927	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N245_CRI_v1	genome_size					missing
+G.hirsutumAD1_N245_CRI_v1	lai		15.27	15.27	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N245_CRI_v1	busco		0.9953	0.9953	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N246_CRI_v1	genome_size					missing
+G.hirsutumAD1_N246_CRI_v1	lai		14.78	14.78	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N246_CRI_v1	busco		0.9957	0.9957	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N247_CRI_v1	genome_size					missing
+G.hirsutumAD1_N247_CRI_v1	lai		14.83	14.83	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N247_CRI_v1	busco		0.9944	0.9944	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N248_CRI_v1	genome_size					missing
+G.hirsutumAD1_N248_CRI_v1	lai		15.05	15.05	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N248_CRI_v1	busco		0.9953	0.9953	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N249_CRI_v1	genome_size					missing
+G.hirsutumAD1_N249_CRI_v1	lai		14.85	14.85	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N249_CRI_v1	busco		0.9953	0.9953	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N250_CRI_v1	genome_size					missing
+G.hirsutumAD1_N250_CRI_v1	lai		14.8	14.8	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N250_CRI_v1	busco		0.9953	0.9953	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N251_CRI_v1	genome_size					missing
+G.hirsutumAD1_N251_CRI_v1	lai		15.17	15.17	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N251_CRI_v1	busco		0.9948	0.9948	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N252_CRI_v1	genome_size					missing
+G.hirsutumAD1_N252_CRI_v1	lai		14.88	14.88	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N252_CRI_v1	busco		0.9948	0.9948	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N253_CRI_v1	genome_size					missing
+G.hirsutumAD1_N253_CRI_v1	lai		14.74	14.74	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N253_CRI_v1	busco		0.9944	0.9944	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N254_CRI_v1	genome_size					missing
+G.hirsutumAD1_N254_CRI_v1	lai		14.87	14.87	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N254_CRI_v1	busco		0.9966	0.9966	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N255_CRI_v1	genome_size					missing
+G.hirsutumAD1_N255_CRI_v1	lai		14.74	14.74	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N255_CRI_v1	busco		0.9953	0.9953	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N256_CRI_v1	genome_size					missing
+G.hirsutumAD1_N256_CRI_v1	lai		14.86	14.86	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N256_CRI_v1	busco		0.9948	0.9948	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N257_CRI_v1	genome_size					missing
+G.hirsutumAD1_N257_CRI_v1	lai		14.88	14.88	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N257_CRI_v1	busco		0.9948	0.9948	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N258_CRI_v1	genome_size					missing
+G.hirsutumAD1_N258_CRI_v1	lai		14.83	14.83	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N258_CRI_v1	busco		0.9948	0.9948	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N259_CRI_v1	genome_size					missing
+G.hirsutumAD1_N259_CRI_v1	lai		14.73	14.73	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N259_CRI_v1	busco		0.9944	0.9944	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N260_CRI_v1	genome_size					missing
+G.hirsutumAD1_N260_CRI_v1	lai		14.72	14.72	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N260_CRI_v1	busco		0.9948	0.9948	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N261_CRI_v1	genome_size					missing
+G.hirsutumAD1_N261_CRI_v1	lai		14.73	14.73	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N261_CRI_v1	busco		0.9957	0.9957	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N262_CRI_v1	genome_size					missing
+G.hirsutumAD1_N262_CRI_v1	lai		14.61	14.61	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N262_CRI_v1	busco		0.9927	0.9927	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N263_CRI_v1	genome_size					missing
+G.hirsutumAD1_N263_CRI_v1	lai		14.98	14.98	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N263_CRI_v1	busco		0.9927	0.9927	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N264_CRI_v1	genome_size					missing
+G.hirsutumAD1_N264_CRI_v1	lai		14.72	14.72	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N264_CRI_v1	busco		0.9953	0.9953	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N265_CRI_v1	genome_size					missing
+G.hirsutumAD1_N265_CRI_v1	lai		15.19	15.19	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N265_CRI_v1	busco		0.9953	0.9953	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N266_CRI_v1	genome_size					missing
+G.hirsutumAD1_N266_CRI_v1	lai		14.66	14.66	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N266_CRI_v1	busco		0.9948	0.9948	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N267_CRI_v1	genome_size					missing
+G.hirsutumAD1_N267_CRI_v1	lai		14.63	14.63	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N267_CRI_v1	busco		0.9948	0.9948	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N268_CRI_v1	genome_size					missing
+G.hirsutumAD1_N268_CRI_v1	lai		14.93	14.93	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N268_CRI_v1	busco		0.9948	0.9948	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N269_CRI_v1	genome_size					missing
+G.hirsutumAD1_N269_CRI_v1	lai		14.79	14.79	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N269_CRI_v1	busco		0.9948	0.9948	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N270_CRI_v1	genome_size					missing
+G.hirsutumAD1_N270_CRI_v1	lai		14.6	14.6	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N270_CRI_v1	busco		0.9948	0.9948	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N271_CRI_v1	genome_size					missing
+G.hirsutumAD1_N271_CRI_v1	lai		15.17	15.17	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N271_CRI_v1	busco		0.9944	0.9944	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N272_CRI_v1	genome_size					missing
+G.hirsutumAD1_N272_CRI_v1	lai		14.72	14.72	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N272_CRI_v1	busco		0.9948	0.9948	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N273_CRI_v1	genome_size					missing
+G.hirsutumAD1_N273_CRI_v1	lai		14.63	14.63	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N273_CRI_v1	busco		0.9948	0.9948	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N274_CRI_v1	genome_size					missing
+G.hirsutumAD1_N274_CRI_v1	lai		14.82	14.82	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N274_CRI_v1	busco		0.9948	0.9948	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N275_CRI_v1	genome_size					missing
+G.hirsutumAD1_N275_CRI_v1	lai		14.65	14.65	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N275_CRI_v1	busco		0.9957	0.9957	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N276_CRI_v1	genome_size					missing
+G.hirsutumAD1_N276_CRI_v1	lai		14.88	14.88	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N276_CRI_v1	busco		0.9944	0.9944	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N277_CRI_v1	genome_size					missing
+G.hirsutumAD1_N277_CRI_v1	lai		14.71	14.71	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N277_CRI_v1	busco		0.9953	0.9953	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N278_CRI_v1	genome_size					missing
+G.hirsutumAD1_N278_CRI_v1	lai		14.84	14.84	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N278_CRI_v1	busco		0.9961	0.9961	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N279_CRI_v1	genome_size					missing
+G.hirsutumAD1_N279_CRI_v1	lai		14.73	14.73	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N279_CRI_v1	busco		0.9957	0.9957	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N280_CRI_v1	genome_size					missing
+G.hirsutumAD1_N280_CRI_v1	lai		14.81	14.81	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N280_CRI_v1	busco		0.9944	0.9944	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N281_CRI_v1	genome_size					missing
+G.hirsutumAD1_N281_CRI_v1	lai		14.47	14.47	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N281_CRI_v1	busco		0.9957	0.9957	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N282_CRI_v1	genome_size					missing
+G.hirsutumAD1_N282_CRI_v1	lai		14.6	14.6	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N282_CRI_v1	busco		0.9948	0.9948	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N283_CRI_v1	genome_size					missing
+G.hirsutumAD1_N283_CRI_v1	lai		14.65	14.65	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N283_CRI_v1	busco		0.9948	0.9948	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N284_CRI_v1	genome_size					missing
+G.hirsutumAD1_N284_CRI_v1	lai		14.98	14.98	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N284_CRI_v1	busco		0.9944	0.9944	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N285_CRI_v1	genome_size					missing
+G.hirsutumAD1_N285_CRI_v1	lai		14.64	14.64	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N285_CRI_v1	busco		0.9961	0.9961	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N286_CRI_v1	genome_size					missing
+G.hirsutumAD1_N286_CRI_v1	lai		14.38	14.38	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N286_CRI_v1	busco		0.9940	0.9940	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N287_CRI_v1	genome_size					missing
+G.hirsutumAD1_N287_CRI_v1	lai		14.98	14.98	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N287_CRI_v1	busco		0.9944	0.9944	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N288_CRI_v1	genome_size					missing
+G.hirsutumAD1_N288_CRI_v1	lai		14.7	14.7	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N288_CRI_v1	busco		0.9957	0.9957	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N289_CRI_v1	genome_size					missing
+G.hirsutumAD1_N289_CRI_v1	lai		14.74	14.74	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N289_CRI_v1	busco		0.9953	0.9953	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N290_CRI_v1	genome_size					missing
+G.hirsutumAD1_N290_CRI_v1	lai		14.93	14.93	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N290_CRI_v1	busco		0.9944	0.9944	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N291_CRI_v1	genome_size					missing
+G.hirsutumAD1_N291_CRI_v1	lai		14.71	14.71	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N291_CRI_v1	busco		0.9948	0.9948	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N292_CRI_v1	genome_size					missing
+G.hirsutumAD1_N292_CRI_v1	lai		14.75	14.75	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N292_CRI_v1	busco		0.9957	0.9957	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N293_CRI_v1	genome_size					missing
+G.hirsutumAD1_N293_CRI_v1	lai		14.7	14.7	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N293_CRI_v1	busco		0.9927	0.9927	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N294_CRI_v1	genome_size					missing
+G.hirsutumAD1_N294_CRI_v1	lai		14.77	14.77	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N294_CRI_v1	busco		0.9936	0.9936	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N295_CRI_v1	genome_size					missing
+G.hirsutumAD1_N295_CRI_v1	lai		15.08	15.08	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N295_CRI_v1	busco		0.9953	0.9953	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N296_CRI_v1	genome_size					missing
+G.hirsutumAD1_N296_CRI_v1	lai		14.61	14.61	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N296_CRI_v1	busco		0.9927	0.9927	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N297_CRI_v1	genome_size					missing
+G.hirsutumAD1_N297_CRI_v1	lai		14.52	14.52	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N297_CRI_v1	busco		0.9940	0.9940	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N298_CRI_v1	genome_size					missing
+G.hirsutumAD1_N298_CRI_v1	lai		14.89	14.89	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N298_CRI_v1	busco		0.9914	0.9914	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N299_CRI_v1	genome_size					missing
+G.hirsutumAD1_N299_CRI_v1	lai		15.16	15.16	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N299_CRI_v1	busco		0.9957	0.9957	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N300_CRI_v1	genome_size					missing
+G.hirsutumAD1_N300_CRI_v1	lai		14.62	14.62	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N300_CRI_v1	busco		0.9953	0.9953	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N301_CRI_v1	genome_size					missing
+G.hirsutumAD1_N301_CRI_v1	lai		15.13	15.13	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N301_CRI_v1	busco		0.9957	0.9957	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N302_CRI_v1	genome_size					missing
+G.hirsutumAD1_N302_CRI_v1	lai		14.75	14.75	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N302_CRI_v1	busco		0.9944	0.9944	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N303_CRI_v1	genome_size					missing
+G.hirsutumAD1_N303_CRI_v1	lai		14.89	14.89	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N303_CRI_v1	busco		0.9966	0.9966	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N304_CRI_v1	genome_size					missing
+G.hirsutumAD1_N304_CRI_v1	lai		15.1	15.1	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N304_CRI_v1	busco		0.9961	0.9961	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N305_CRI_v1	genome_size					missing
+G.hirsutumAD1_N305_CRI_v1	lai		15.17	15.17	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N305_CRI_v1	busco		0.9957	0.9957	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy
+G.hirsutumAD1_N306_CRI_v1	genome_size					missing
+G.hirsutumAD1_N306_CRI_v1	lai		14.5	14.5	Script/CottonOGD/LAI/result/LAI_summary.txt	filled_from_legacy
+G.hirsutumAD1_N306_CRI_v1	busco		0.9957	0.9957	Script/CottonOGD/busco/Busco_summary.txt	filled_from_legacy

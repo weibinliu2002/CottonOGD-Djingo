@@ -1,0 +1,145 @@
+# CottonOGD unified Snakemake configuration.
+# Secrets are intentionally not stored here: db_upload.py reads MYSQL_* / REDIS_*
+# environment variables first, then backend/.env as a fallback.
+
+base_dir: /data/web/CottonOGD/OGD/WorkFile
+samples_file: samples.yaml
+results_dir: results
+
+validate:
+  # 单物种调试时允许 --config species 与 metadata.species_name 不同；
+  # 不一致会记录 warning，正式批量入库前仍建议保持两者一致。
+  allow_id_alias: true
+
+tools:
+  python: /data/web/CottonOGD/OGD/backend/venv/bin/python
+  snakemake: /data/wbliu/soft/home/.conda/envs/snakemake/bin/snakemake
+  # User-specified longest-protein implementation (do not reimplement).
+  longest_protein_by_gene: /home/web/bin/longest_protein_by_gene.py
+  busco: /data/wbliu/soft/home/.conda/envs/busco/bin/busco
+  busco_lineage_dir: /data/wbliu/data/CottonOGD/busco/busco_downloads/lineages
+  eggnog_mapper: /data/wbliu/soft/eggnog-mapper-2.1.13/emapper.py
+  eggnog_data_dir: /public2/wbliu/data/pfam_data/eggnog
+  itak: /data/wbliu/soft/iTAK-2.0.2/iTAK.py
+  itak_python: /data/wbliu/soft/home/.conda/envs/busco/bin/python
+  interproscan: /data/wbliu/soft/interproscan-5.77-108.0/interproscan.sh
+  uniprot_db: /public2/wbliu/data/pfam_data/uniprot/uniprot
+  uniprot_fasta: /public2/wbliu/data/pfam_data/uniprot/uniprot_sprot.fasta
+  blastp: /data/web/CottonOGD/OGD/backend/soft/UNIX/blast+/bin/blastp
+  orthofinder: /data/wbliu/soft/Orthofinder3.2/of3_env/bin/orthofinder
+  gffread: /home/web/bin/gffread
+  samtools: /usr/local/bin/samtools
+  bgzip: /usr/local/bin/bgzip
+  tabix: /usr/local/bin/tabix
+  jbrowse: /home/web/.npm-global/bin/jbrowse
+  go_obo: /data/web/CottonOGD/OGD/backend/data/go_ontology/go-basic.obo
+  kegg_pathway_desc: /data/wbliu/data/CottonOGD/eggnog_annoation/rest.kegg.jp.txt
+  makeblastdb: /data/web/CottonOGD/OGD/backend/soft/UNIX/blast+/bin/makeblastdb
+  ltr_finder_parallel: /home/web/bin/LTR_FINDER_parallel
+  gt: /home/web/bin/gt
+  ltr_retriever: /home/web/bin/LTR_retriever
+  lai: /home/web/bin/LAI
+  edta: /home/web/bin/EDTA.pl
+  mmseqs: /home/web/bin/mmseqs
+
+paths:
+  backend_data: /data/web/CottonOGD/OGD/backend/data
+  genome_by_species: /data/web/CottonOGD/OGD/backend/data/genome
+  genome_by_type: /data/web/CottonOGD/OGD/backend/data/Genome
+  blast_db: /data/web/CottonOGD/OGD/backend/data/blast_db/CottonOGD
+  jbrowse_data: /data/web/CottonOGD/OGD/backend/static/jbrowse/data
+  jbrowse_scripts: /data/web/CottonOGD/OGD/backend/static/jbrowse
+  gokegg_track: /data/web/CottonOGD/OGD/backend/data/gokegg_track
+
+qc:
+  genome_size:
+    enabled: true
+  lai:
+    enabled: true
+    ltr_finder_threads: 7
+    ltr_retriever_threads: 35
+    lai_threads: 20
+    ltr_finder_size: 1000000
+    ltr_finder_time: 300
+  busco:
+    enabled: true
+    lineage: eudicots_odb10
+    mode: proteins
+    augustus_species: Arabidopsis
+
+longest:
+  min_mapping_rate: 0.80
+  consistency_check: true
+
+modules:
+  te:
+    enabled: false          # EDTA is expensive; enable explicitly
+    threads: 32
+    sensitive: 1
+  jbrowse:
+    enabled: true
+    tracks: true
+    te_track: true
+    set_default_tracks: true
+  blast:
+    enabled: true
+  functional_annotation:
+    enabled: true
+    use_longest_proteins: false
+    eggnog: true
+    eggnog_threads: 16
+    eggnog_offline: false
+    eggnog_kegg_orgs: ["all"]
+    itak: true
+    itak_threads: 8
+    uniprot: true
+    uniprot_threads: 16
+    uniprot_evalue: "1e-5"
+    interproscan: true
+    interproscan_threads: 16
+  orthofinder:
+    enabled: false          # placeholder only
+    threads: 32
+    search: diamond
+
+resources:
+  default:    {threads: 1,  mem_mb: 2000}
+  validate:   {threads: 1,  mem_mb: 2000}
+  qc:         {threads: 4,  mem_mb: 8000}
+  busco:      {threads: 10, mem_mb: 16000}
+  ltr:        {threads: 16, mem_mb: 32000}
+  lai:        {threads: 20, mem_mb: 32000}
+  edta:       {threads: 32, mem_mb: 64000}
+  eggnog:     {threads: 16, mem_mb: 32000}
+  itak:       {threads: 8,  mem_mb: 8000}
+  interpro:   {threads: 16, mem_mb: 16000}
+  uniprot:    {threads: 16, mem_mb: 16000}
+  blast:      {threads: 8,  mem_mb: 16000}
+  jbrowse:    {threads: 2,  mem_mb: 8000}
+  orthofinder: {threads: 32, mem_mb: 500000}
+
+publish:
+  overwrite: false
+
+upload:
+  enabled: true
+  dry_run: true             # default: never write unless --apply is explicit
+  conflict_policy: skip     # skip | overwrite | version
+  lock_timeout_sec: 300
+  batch_size: 5000
+  sync_search: true
+  sync_cache: true
+  verbose: false
+  sequence_types: [mrna, cdna, cds, pro, gene_genome, upstream, downstream]
+
+db:
+  host: localhost
+  port: 3306
+  database: cottonogd-ortho
+  # user/password intentionally read from environment / backend/.env
+
+redis:
+  host: 172.28.226.114
+  port: 6379
+  db: 1
+  # password intentionally read from environment / backend/.env

@@ -41,7 +41,15 @@ backend/data/**
 backend/temp/
 backend/venv/
 frontend/node_modules/
-Script/snakemake/.snakemake/ 
+Script/snakemake/.snakemake/
+# 新统一流程的运行状态、结果与共享缓存
+.snakemake/
+results/
+workflow/cache/
+Workflow/data/
+Workflow/result/
+Script/CottonOGD
+WorkFile/workflow/sql/
 # wrangler files
 # Created by venv; see https://docs.python.org/3/library/venv.html
 
@@ -68,6 +76,7 @@ __pycache__/
 .env
 .idea
 .ipynb_checkpoints
+test_frontend.py
 # 忽略 JBrowse 数据（除了 config.json）
 static/jbrowse/data/**
 !static/jbrowse/data/**/config.json

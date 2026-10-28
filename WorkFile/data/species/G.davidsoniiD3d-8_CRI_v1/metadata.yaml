@@ -1,0 +1,37 @@
+species_name: G.davidsoniiD3d-8_CRI_v1
+common_name: Gossypium davidsonii
+ploidy: diploid
+assembly_version: CRI_v1
+annotation_version: unknown
+literature:
+- title: Yang et al, 2021
+  url: https://www.cottongen.org/bio_data/6047959
+submitter: CottonOGD
+description: Gossypium davidsonii (D3d-8)
+assembly_version_source: derived_from_species_name
+source_db_id: 35
+alias: G.davidsonii(D3d-8)_CRI_v1
+cotton_species: Gossypium davidsonii
+genome_type: D3d-8
+category: wild
+accession: null
+website: https://www.cottongen.org/bio_data/6047959
+article: Yang et al, 2021
+existing_qc:
+  genome_size: 801265919
+  lai: '12.2'
+  busco: '0.994'
+qc_completed:
+- genome_size
+- lai
+- busco
+qc_sources:
+  genome_size: mysql
+  lai: mysql
+  busco: mysql
+legacy_qc_conflicts:
+- metric: lai
+  database: '12.2'
+  legacy: '12.35'
+  source: Script/CottonOGD/LAI/result/LAI_summary.txt
+  action: conflict_kept_mysql

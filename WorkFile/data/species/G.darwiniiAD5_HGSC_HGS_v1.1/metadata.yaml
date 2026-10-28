@@ -1,0 +1,35 @@
+species_name: G.darwiniiAD5_HGSC_HGS_v1.1
+common_name: Gossypium darwinii
+ploidy: allotetraploid
+assembly_version: HGS_v1.1
+annotation_version: unknown
+literature: []
+submitter: CottonOGD
+description: Gossypium darwinii (AD5)
+assembly_version_source: derived_from_species_name
+source_db_id: 145
+alias: G.darwinii(AD5)_HGSC_HGS_v1.1
+cotton_species: Gossypium darwinii
+genome_type: AD5
+category: null
+accession: null
+website: https://yanglab.hzau.edu.cn/CottonMD/download.1
+article: ''
+existing_qc:
+  genome_size: 2182957963
+  lai: '13.42'
+  busco: '0.994'
+qc_completed:
+- genome_size
+- lai
+- busco
+qc_sources:
+  genome_size: mysql
+  lai: mysql
+  busco: mysql
+legacy_qc_conflicts:
+- metric: lai
+  database: '13.42'
+  legacy: '13.46'
+  source: Script/CottonOGD/LAI/result/LAI_summary.txt
+  action: conflict_kept_mysql

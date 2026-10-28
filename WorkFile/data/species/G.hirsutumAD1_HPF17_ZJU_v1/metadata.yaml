@@ -1,0 +1,37 @@
+species_name: G.hirsutumAD1_HPF17_ZJU_v1
+common_name: Gossypium hirsutum
+ploidy: allotetraploid
+assembly_version: ZJU_v1
+annotation_version: unknown
+literature:
+- title: Cheng et al, 2024
+  url: https://www.cottongen.org/bio_data/12770884
+submitter: CottonOGD
+description: Gossypium hirsutum (AD1)
+assembly_version_source: derived_from_species_name
+source_db_id: 76
+alias: G.hirsutum(AD1)HPF17_ZJU_v1
+cotton_species: Gossypium hirsutum
+genome_type: AD1
+category: wild
+accession: HPF17
+website: https://www.cottongen.org/bio_data/12770884
+article: Cheng et al, 2024
+existing_qc:
+  genome_size: 2558691823
+  lai: '11.56'
+  busco: '0.98'
+qc_completed:
+- genome_size
+- lai
+- busco
+qc_sources:
+  genome_size: Script/CottonOGD/LAI/Genome_size/Genome_size.txt
+  lai: Script/CottonOGD/LAI/result/LAI_summary.txt
+  busco: mysql
+legacy_qc_conflicts:
+- metric: busco
+  database: '0.98'
+  legacy: '0.9794'
+  source: Script/CottonOGD/busco/Busco_summary.txt
+  action: conflict_kept_mysql

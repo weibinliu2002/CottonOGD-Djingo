@@ -1,0 +1,37 @@
+species_name: G.davidsoniiD3d-27_ISU_v1
+common_name: Gossypium davidsonii
+ploidy: diploid
+assembly_version: ISU_v1
+annotation_version: unknown
+literature:
+- title: Grover et al, 2019
+  url: https://www.cottongen.org/bio_data/5491686
+submitter: CottonOGD
+description: Gossypium davidsonii (D3d-27)
+assembly_version_source: derived_from_species_name
+source_db_id: 34
+alias: G.davidsonii(D3d-27)_ISU_v1
+cotton_species: Gossypium davidsonii
+genome_type: D3d-27
+category: wild
+accession: null
+website: https://www.cottongen.org/bio_data/5491686
+article: Grover et al, 2019
+existing_qc:
+  genome_size: 704223819
+  lai: '6.09'
+  busco: '0.604'
+qc_completed:
+- genome_size
+- lai
+- busco
+qc_sources:
+  genome_size: mysql
+  lai: Script/CottonOGD/LAI/result/LAI_summary.txt
+  busco: mysql
+legacy_qc_conflicts:
+- metric: lai
+  database: NaN
+  legacy: '6.09'
+  source: Script/CottonOGD/LAI/result/LAI_summary.txt
+  action: invalid_mysql_replaced_by_legacy

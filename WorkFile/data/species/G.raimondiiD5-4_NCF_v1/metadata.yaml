@@ -1,0 +1,42 @@
+species_name: G.raimondiiD5-4_NCF_v1
+common_name: Gossypium raimondii
+ploidy: diploid
+assembly_version: NCF_v1
+annotation_version: unknown
+literature:
+- title: Udall et al, 2019
+  url: https://www.cottongen.org/bio_data/584
+submitter: CottonOGD
+description: Gossypium raimondii (D5-4)
+assembly_version_source: derived_from_species_name
+source_db_id: 42
+alias: G.raimondii(D5-4)_NCF_v1
+cotton_species: Gossypium raimondii
+genome_type: D5-4
+category: wild
+accession: null
+website: https://www.cottongen.org/bio_data/584
+article: Udall et al, 2019
+existing_qc:
+  genome_size: 734884094
+  lai: '12.53'
+  busco: '0.837'
+qc_completed:
+- genome_size
+- lai
+- busco
+qc_sources:
+  genome_size: mysql
+  lai: mysql
+  busco: mysql
+legacy_qc_conflicts:
+- metric: lai
+  database: '12.53'
+  legacy: '12.68'
+  source: Script/CottonOGD/LAI/result/LAI_summary.txt
+  action: conflict_kept_mysql
+- metric: busco
+  database: '0.837'
+  legacy: '0.8375'
+  source: Script/CottonOGD/busco/Busco_summary.txt
+  action: conflict_kept_mysql

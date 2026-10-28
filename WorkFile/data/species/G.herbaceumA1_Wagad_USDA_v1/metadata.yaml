@@ -1,0 +1,42 @@
+species_name: G.herbaceumA1_Wagad_USDA_v1
+common_name: Gossypium herbaceum
+ploidy: diploid
+assembly_version: USDA_v1
+annotation_version: unknown
+literature:
+- title: Ramaraj et al, 2023
+  url: https://www.cottongen.org/bio_data/7712139
+submitter: CottonOGD
+description: Gossypium herbaceum (A1)
+assembly_version_source: derived_from_species_name
+source_db_id: 4
+alias: G.herbaceum(A1)Wagad_USDA_v1
+cotton_species: Gossypium herbaceum
+genome_type: A1
+category: variety
+accession: Wagad
+website: https://www.cottongen.org/bio_data/7712139
+article: Ramaraj et al, 2023
+existing_qc:
+  genome_size: 1587827514
+  lai: '16.76'
+  busco: '0.949'
+qc_completed:
+- genome_size
+- lai
+- busco
+qc_sources:
+  genome_size: mysql
+  lai: mysql
+  busco: mysql
+legacy_qc_conflicts:
+- metric: lai
+  database: '16.76'
+  legacy: '17.76'
+  source: Script/CottonOGD/LAI/result/LAI_summary.txt
+  action: conflict_kept_mysql
+- metric: busco
+  database: '0.949'
+  legacy: '0.9493'
+  source: Script/CottonOGD/busco/Busco_summary.txt
+  action: conflict_kept_mysql

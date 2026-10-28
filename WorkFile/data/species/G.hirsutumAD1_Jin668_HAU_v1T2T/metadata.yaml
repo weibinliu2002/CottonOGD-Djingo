@@ -1,0 +1,37 @@
+species_name: G.hirsutumAD1_Jin668_HAU_v1T2T
+common_name: Gossypium hirsutum
+ploidy: allotetraploid
+assembly_version: HAU_v1T2T
+annotation_version: unknown
+literature:
+- title: Xu et al, 2025
+  url: http://jinlab.hzau.edu.cn/T2TCottonHub/download/
+submitter: CottonOGD
+description: Gossypium hirsutum (AD1)
+assembly_version_source: derived_from_species_name
+source_db_id: 84
+alias: G.hirsutum(AD1)Jin668_HAU_v1T2T
+cotton_species: Gossypium hirsutum
+genome_type: AD1
+category: cultivar
+accession: Jin668
+website: http://jinlab.hzau.edu.cn/T2TCottonHub/download/
+article: Xu et al, 2025
+existing_qc:
+  genome_size: 2370731625
+  lai: '15.18'
+  busco: '0.993'
+qc_completed:
+- genome_size
+- lai
+- busco
+qc_sources:
+  genome_size: mysql
+  lai: mysql
+  busco: mysql
+legacy_qc_conflicts:
+- metric: busco
+  database: '0.993'
+  legacy: '0.9893'
+  source: Script/CottonOGD/busco/Busco_summary.txt
+  action: conflict_kept_mysql

@@ -1,0 +1,37 @@
+species_name: G.hirsutumAD1_Punctatum_CRI_v1
+common_name: Gossypium hirsutum
+ploidy: allotetraploid
+assembly_version: CRI_v1
+annotation_version: unknown
+literature:
+- title: Peng et al, 2022
+  url: https://www.cottongen.org/bio_data/8560638
+submitter: CottonOGD
+description: Gossypium hirsutum (AD1)
+assembly_version_source: derived_from_species_name
+source_db_id: 79
+alias: G.hirsutum(AD1)Punctatum_CRI_v1
+cotton_species: Gossypium hirsutum
+genome_type: AD1
+category: null
+accession: Punctatum 25 (TX-1000)
+website: https://www.cottongen.org/bio_data/8560638
+article: Peng et al, 2022
+existing_qc:
+  genome_size: 2292484390
+  lai: '15.28'
+  busco: '0.977'
+qc_completed:
+- genome_size
+- lai
+- busco
+qc_sources:
+  genome_size: mysql
+  lai: mysql
+  busco: mysql
+legacy_qc_conflicts:
+- metric: lai
+  database: '15.28'
+  legacy: '15.22'
+  source: Script/CottonOGD/LAI/result/LAI_summary.txt
+  action: conflict_kept_mysql

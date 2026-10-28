@@ -1,0 +1,66 @@
+#!/usr/bin/env snakemake
+# -*- snakemake -*-
+"""CottonOGD unified genome processing workflow.
+
+The Snakefile only orchestrates the DAG. All commands and parsers live in
+workflow/scripts and are parameterised through config.yaml / samples.yaml.
+"""
+
+configfile: "config.yaml"
+
+include: "workflow/rules/common.smk"
+
+# ---------------------------------------------------------------------------
+# Default targets
+# ---------------------------------------------------------------------------
+_targets = []
+_sample_ids = [s["id"] for s in SAMPLES]
+# expand() gives one QC report per enabled sample; the remaining targets are
+# conditional on module switches, so they are appended per species.
+_targets.extend(expand(
+    os.path.join(RESULTS_DIR, "{species}", "qc", "qc_report.yaml"),
+    species=_sample_ids,
+))
+for _sid in _sample_ids:
+    if config.get("longest", {}).get("consistency_check", True):
+        _targets.append(os.path.join(RESULTS_DIR, _sid, "longest", "longest_check.json"))
+    if config.get("upload", {}).get("enabled", True):
+        _targets.append(os.path.join(RESULTS_DIR, _sid, "upload", "upload_report.json"))
+    if module_enabled("jbrowse"):
+        _targets.append(os.path.join(RESULTS_DIR, _sid, "jbrowse", "jbrowse.done"))
+        if module_opt("jbrowse", "tracks", True):
+            _targets.append(os.path.join(RESULTS_DIR, _sid, "jbrowse", "tracks.done"))
+    if module_enabled("blast"):
+        _targets.append(os.path.join(RESULTS_DIR, _sid, "blast", "blast.done"))
+_targets.extend([
+    os.path.join(RESULTS_DIR, "summary.tsv"),
+    os.path.join(RESULTS_DIR, "summary.html"),
+])
+
+rule all:
+    """Build every requested per-species output plus the batch summary."""
+    input:
+        _targets
+
+
+# ---------------------------------------------------------------------------
+# Rule files
+# ---------------------------------------------------------------------------
+include: "workflow/rules/validate.smk"
+include: "workflow/rules/sequences.smk"
+include: "workflow/rules/longest.smk"
+include: "workflow/rules/qc.smk"
+include: "workflow/rules/te_ltr.smk"
+include: "workflow/rules/annotation.smk"
+include: "workflow/rules/publish.smk"
+
+if module_enabled("jbrowse"):
+    include: "workflow/rules/jbrowse.smk"
+if module_enabled("blast"):
+    include: "workflow/rules/blast.smk"
+
+include: "workflow/rules/upload.smk"
+include: "workflow/rules/report.smk"
+
+if module_enabled("orthofinder"):
+    include: "workflow/rules/orthofinder.smk"

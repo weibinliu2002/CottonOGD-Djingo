@@ -1,0 +1,25 @@
+# CottonOGD species metadata template.
+# Required fields: species_name, common_name, ploidy, assembly_version,
+# annotation_version, literature (may be an empty list), submitter, description.
+# genome_size / LAI / BUSCO are computed by the pipeline. If present here they
+# are treated as hints only; computed values win and a warning is emitted.
+
+species_name: Gossypium_hirsutum
+common_name: Upland cotton
+ploidy: allotetraploid
+assembly_version: "UTX-T2T-v1.0"
+annotation_version: "CottON-v1.0"
+literature:
+  - title: "Example paper title"
+    doi: "10.0000/example"
+    url: "https://example.org"
+    authors: "Doe J, Roe R"
+    journal: "Example Journal"
+    year: 2024
+submitter: "example@example.org"
+description: "Short free-text description."
+
+# Do not rely on these; they are overwritten by computed QC values.
+# genome_size: 0
+# LAI: 0
+# BUSCO: 0

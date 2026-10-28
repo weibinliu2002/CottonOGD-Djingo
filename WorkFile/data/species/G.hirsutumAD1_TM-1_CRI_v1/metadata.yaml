@@ -1,0 +1,42 @@
+species_name: G.hirsutumAD1_TM-1_CRI_v1
+common_name: Gossypium hirsutum
+ploidy: allotetraploid
+assembly_version: CRI_v1
+annotation_version: unknown
+literature:
+- title: Yang et al, 2019
+  url: https://www.cottongen.org/bio_data/589
+submitter: CottonOGD
+description: Gossypium hirsutum (AD1)
+assembly_version_source: derived_from_species_name
+source_db_id: 63
+alias: G.hirsutum(AD1)TM-1_CRI_v1
+cotton_species: Gossypium hirsutum
+genome_type: AD1
+category: genetic standard line
+accession: TM-1
+website: https://www.cottongen.org/bio_data/589
+article: Yang et al, 2019
+existing_qc:
+  genome_size: 2289066421
+  lai: '14.3'
+  busco: '0.997'
+qc_completed:
+- genome_size
+- lai
+- busco
+qc_sources:
+  genome_size: mysql
+  lai: mysql
+  busco: mysql
+legacy_qc_conflicts:
+- metric: lai
+  database: '14.3'
+  legacy: '14.4'
+  source: Script/CottonOGD/LAI/result/LAI_summary.txt
+  action: conflict_kept_mysql
+- metric: busco
+  database: '0.997'
+  legacy: '0.9966'
+  source: Script/CottonOGD/busco/Busco_summary.txt
+  action: conflict_kept_mysql

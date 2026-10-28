@@ -1,0 +1,35 @@
+species_name: G.mustelinumAD4_JGI_JGI-AD4
+common_name: Gossypium mustelinum
+ploidy: allotetraploid
+assembly_version: JGI_JGI-AD4
+annotation_version: unknown
+literature: []
+submitter: CottonOGD
+description: Gossypium mustelinum (AD4)
+assembly_version_source: derived_from_species_name
+source_db_id: 143
+alias: G.mustelinum(AD4)_JGI_JGI-AD4
+cotton_species: Gossypium mustelinum
+genome_type: AD4
+category: null
+accession: null
+website: https://yanglab.hzau.edu.cn/CottonMD/download.1
+article: ''
+existing_qc:
+  genome_size: 4590223133
+  lai: '7.97'
+  busco: '0.988'
+qc_completed:
+- genome_size
+- lai
+- busco
+qc_sources:
+  genome_size: mysql
+  lai: mysql
+  busco: mysql
+legacy_qc_conflicts:
+- metric: busco
+  database: '0.988'
+  legacy: '0.9884'
+  source: Script/CottonOGD/busco/Busco_summary.txt
+  action: conflict_kept_mysql

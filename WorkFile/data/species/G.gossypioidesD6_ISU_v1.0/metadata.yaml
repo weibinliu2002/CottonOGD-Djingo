@@ -1,0 +1,42 @@
+species_name: G.gossypioidesD6_ISU_v1.0
+common_name: Gossypium gossypioides
+ploidy: diploid
+assembly_version: ISU_v1.0
+annotation_version: unknown
+literature:
+- title: Grover et al, 2019
+  url: https://www.cottongen.org/bio_data/5491695
+submitter: CottonOGD
+description: Gossypium gossypioides (D6)
+assembly_version_source: derived_from_species_name
+source_db_id: 47
+alias: G.gossypioides(D6)_ISU_v1.0
+cotton_species: Gossypium gossypioides
+genome_type: D6
+category: Wild
+accession: null
+website: https://www.cottongen.org/bio_data/5491695
+article: Grover et al, 2019
+existing_qc:
+  genome_size: 664724314
+  lai: '6.26'
+  busco: '0.45'
+qc_completed:
+- genome_size
+- lai
+- busco
+qc_sources:
+  genome_size: mysql
+  lai: Script/CottonOGD/LAI/result/LAI_summary.txt
+  busco: mysql
+legacy_qc_conflicts:
+- metric: lai
+  database: NaN
+  legacy: '6.26'
+  source: Script/CottonOGD/LAI/result/LAI_summary.txt
+  action: invalid_mysql_replaced_by_legacy
+- metric: busco
+  database: '0.45'
+  legacy: '0.4501'
+  source: Script/CottonOGD/busco/Busco_summary.txt
+  action: conflict_kept_mysql

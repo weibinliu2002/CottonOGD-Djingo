@@ -1,0 +1,42 @@
+species_name: G.tomentosumAD3_HAU_v1
+common_name: Gossypium tomentosum
+ploidy: allotetraploid
+assembly_version: HAU_v1
+annotation_version: unknown
+literature:
+- title: Shen et al, 2021
+  url: https://www.cottongen.org/bio_data/7712249
+submitter: CottonOGD
+description: Gossypium tomentosum (AD3)
+assembly_version_source: derived_from_species_name
+source_db_id: 141
+alias: G.tomentosum(AD3)_HAU_v1
+cotton_species: Gossypium tomentosum
+genome_type: AD3
+category: wild
+accession: null
+website: https://www.cottongen.org/bio_data/7712249
+article: Shen et al, 2021
+existing_qc:
+  genome_size: 2228718597
+  lai: '13'
+  busco: '0.989'
+qc_completed:
+- genome_size
+- lai
+- busco
+qc_sources:
+  genome_size: mysql
+  lai: mysql
+  busco: mysql
+legacy_qc_conflicts:
+- metric: lai
+  database: '13'
+  legacy: '14.5'
+  source: Script/CottonOGD/LAI/result/LAI_summary.txt
+  action: conflict_kept_mysql
+- metric: busco
+  database: '0.989'
+  legacy: '0.9893'
+  source: Script/CottonOGD/busco/Busco_summary.txt
+  action: conflict_kept_mysql

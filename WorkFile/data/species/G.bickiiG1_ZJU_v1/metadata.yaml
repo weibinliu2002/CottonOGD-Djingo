@@ -1,0 +1,42 @@
+species_name: G.bickiiG1_ZJU_v1
+common_name: Gossypium bickii
+ploidy: diploid
+assembly_version: ZJU_v1
+annotation_version: unknown
+literature:
+- title: Sheng et al, 2023
+  url: https://www.cottongen.org/bio_data/8018111
+submitter: CottonOGD
+description: Gossypium bickii (G1)
+assembly_version_source: derived_from_species_name
+source_db_id: 60
+alias: G.bickii(G1)_ZJU_v1
+cotton_species: Gossypium bickii
+genome_type: G1
+category: wild
+accession: null
+website: https://www.cottongen.org/bio_data/8018111
+article: Sheng et al, 2023
+existing_qc:
+  genome_size: 1766069608
+  lai: '11.62'
+  busco: '0.99'
+qc_completed:
+- genome_size
+- lai
+- busco
+qc_sources:
+  genome_size: mysql
+  lai: mysql
+  busco: mysql
+legacy_qc_conflicts:
+- metric: lai
+  database: '11.62'
+  legacy: '12.35'
+  source: Script/CottonOGD/LAI/result/LAI_summary.txt
+  action: conflict_kept_mysql
+- metric: busco
+  database: '0.99'
+  legacy: '0.9604'
+  source: Script/CottonOGD/busco/Busco_summary.txt
+  action: conflict_kept_mysql

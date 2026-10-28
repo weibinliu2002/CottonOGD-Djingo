@@ -1,0 +1,37 @@
+species_name: G.hirsutumAD1_CSX8308_HGSC_v1.1
+common_name: Gossypium hirsutum
+ploidy: allotetraploid
+assembly_version: HGSC_v1.1
+annotation_version: unknown
+literature:
+- title: Sreedasyam et al, 2024
+  url: https://www.cottongen.org/bio_data/13019599
+submitter: CottonOGD
+description: Gossypium hirsutum (AD1)
+assembly_version_source: derived_from_species_name
+source_db_id: 75
+alias: G.hirsutum(AD1)CSX8308_HGSC_v1.1
+cotton_species: Gossypium hirsutum
+genome_type: AD1
+category: cultivar
+accession: CSX8308
+website: https://www.cottongen.org/bio_data/13019599
+article: Sreedasyam et al, 2024
+existing_qc:
+  genome_size: 2277944585
+  lai: '15.12'
+  busco: '0.991'
+qc_completed:
+- genome_size
+- lai
+- busco
+qc_sources:
+  genome_size: mysql
+  lai: mysql
+  busco: mysql
+legacy_qc_conflicts:
+- metric: lai
+  database: '15.12'
+  legacy: '15.24'
+  source: Script/CottonOGD/LAI/result/LAI_summary.txt
+  action: conflict_kept_mysql

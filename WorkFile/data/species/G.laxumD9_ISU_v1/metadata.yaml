@@ -1,0 +1,29 @@
+species_name: G.laxumD9_ISU_v1
+common_name: Gossypium laxum
+ploidy: diploid
+assembly_version: ISU_v1
+annotation_version: unknown
+literature:
+- title: Grover et al, 2019
+  url: https://www.cottongen.org/bio_data/5491698
+submitter: CottonOGD
+description: Gossypium laxum (D9)
+assembly_version_source: derived_from_species_name
+source_db_id: 51
+alias: G.laxum(D9)_ISU_v1
+cotton_species: Gossypium laxum
+genome_type: D9
+category: wild
+accession: null
+website: https://www.cottongen.org/bio_data/5491698
+article: Grover et al, 2019
+existing_qc:
+  genome_size: 833895178
+  busco: '0.558'
+qc_completed:
+- genome_size
+- busco
+qc_sources:
+  genome_size: mysql
+  busco: mysql
+legacy_qc_conflicts: []

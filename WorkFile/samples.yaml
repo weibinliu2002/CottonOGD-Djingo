@@ -1,0 +1,2214 @@
+# Generated from MySQL species + legacy Script/CottonOGD QC summaries.
+# Paths are relative to base_dir (config.yaml).
+# qc_completed marks metrics already in MySQL or found in a legacy summary;
+# those heavy QC rules are skipped, while longest protein/CDS/mRNA extraction
+# always runs. See data/legacy_qc_report.tsv for provenance/conflicts.
+# Run one or a few species with:
+#   snakemake -n --config species_filter=species_A,species_B
+samples:
+- id: G.herbaceumA1a_HAU_v1
+  enabled: true
+  genome: data/species/G.herbaceumA1a_HAU_v1/genome.fasta
+  gff: data/species/G.herbaceumA1a_HAU_v1/genes.gff3
+  metadata: data/species/G.herbaceumA1a_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.herbaceumA1_ZhongCao1_HAU_v1
+  enabled: true
+  genome: data/species/G.herbaceumA1_ZhongCao1_HAU_v1/genome.fasta
+  gff: data/species/G.herbaceumA1_ZhongCao1_HAU_v1/genes.gff3
+  metadata: data/species/G.herbaceumA1_ZhongCao1_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.herbaceumA1_Mutema_WHU_v3
+  enabled: true
+  genome: data/species/G.herbaceumA1_Mutema_WHU_v3/genome.fasta
+  gff: data/species/G.herbaceumA1_Mutema_WHU_v3/genes.gff3
+  metadata: data/species/G.herbaceumA1_Mutema_WHU_v3/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.herbaceumA1_Wagad_USDA_v1
+  enabled: true
+  genome: data/species/G.herbaceumA1_Wagad_USDA_v1/genome.fasta
+  gff: data/species/G.herbaceumA1_Wagad_USDA_v1/genes.gff3
+  metadata: data/species/G.herbaceumA1_Wagad_USDA_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.arboreumA2_Shixiya1_BGI_v2
+  enabled: true
+  genome: data/species/G.arboreumA2_Shixiya1_BGI_v2/genome.fasta
+  gff: data/species/G.arboreumA2_Shixiya1_BGI_v2/genes.gff3
+  metadata: data/species/G.arboreumA2_Shixiya1_BGI_v2/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.arboreumA2_Shixiya1_CRI_Updatedv1
+  enabled: true
+  genome: data/species/G.arboreumA2_Shixiya1_CRI_Updatedv1/genome.fasta
+  gff: data/species/G.arboreumA2_Shixiya1_CRI_Updatedv1/genes.gff3
+  metadata: data/species/G.arboreumA2_Shixiya1_CRI_Updatedv1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.arboreumA2_Shixiya1_HAU_v1
+  enabled: true
+  genome: data/species/G.arboreumA2_Shixiya1_HAU_v1/genome.fasta
+  gff: data/species/G.arboreumA2_Shixiya1_HAU_v1/genes.gff3
+  metadata: data/species/G.arboreumA2_Shixiya1_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.arboreumA2_Shixiya1_HAU_v2
+  enabled: true
+  genome: data/species/G.arboreumA2_Shixiya1_HAU_v2/genome.fasta
+  gff: data/species/G.arboreumA2_Shixiya1_HAU_v2/genes.gff3
+  metadata: data/species/G.arboreumA2_Shixiya1_HAU_v2/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.arboreumA2_Shixiya1_WHU_v3
+  enabled: true
+  genome: data/species/G.arboreumA2_Shixiya1_WHU_v3/genome.fasta
+  gff: data/species/G.arboreumA2_Shixiya1_WHU_v3/genes.gff3
+  metadata: data/species/G.arboreumA2_Shixiya1_WHU_v3/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.arboreumA2_DC001_HAU_v1
+  enabled: true
+  genome: data/species/G.arboreumA2_DC001_HAU_v1/genome.fasta
+  gff: data/species/G.arboreumA2_DC001_HAU_v1/genes.gff3
+  metadata: data/species/G.arboreumA2_DC001_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.arboreumA2_DC053_HAU_v1
+  enabled: true
+  genome: data/species/G.arboreumA2_DC053_HAU_v1/genome.fasta
+  gff: data/species/G.arboreumA2_DC053_HAU_v1/genes.gff3
+  metadata: data/species/G.arboreumA2_DC053_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.arboreumA2_DC085_HAU_v1
+  enabled: true
+  genome: data/species/G.arboreumA2_DC085_HAU_v1/genome.fasta
+  gff: data/species/G.arboreumA2_DC085_HAU_v1/genes.gff3
+  metadata: data/species/G.arboreumA2_DC085_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.arboreumA2_DC086_HAU_v1
+  enabled: true
+  genome: data/species/G.arboreumA2_DC086_HAU_v1/genome.fasta
+  gff: data/species/G.arboreumA2_DC086_HAU_v1/genes.gff3
+  metadata: data/species/G.arboreumA2_DC086_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.arboreumA2_DC089_HAU_v1
+  enabled: true
+  genome: data/species/G.arboreumA2_DC089_HAU_v1/genome.fasta
+  gff: data/species/G.arboreumA2_DC089_HAU_v1/genes.gff3
+  metadata: data/species/G.arboreumA2_DC089_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.arboreumA2_DC097_HAU_v1
+  enabled: true
+  genome: data/species/G.arboreumA2_DC097_HAU_v1/genome.fasta
+  gff: data/species/G.arboreumA2_DC097_HAU_v1/genes.gff3
+  metadata: data/species/G.arboreumA2_DC097_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.arboreumA2_DC098_HAU_v1
+  enabled: true
+  genome: data/species/G.arboreumA2_DC098_HAU_v1/genome.fasta
+  gff: data/species/G.arboreumA2_DC098_HAU_v1/genes.gff3
+  metadata: data/species/G.arboreumA2_DC098_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.arboreumA2_DC113_HAU_v1
+  enabled: true
+  genome: data/species/G.arboreumA2_DC113_HAU_v1/genome.fasta
+  gff: data/species/G.arboreumA2_DC113_HAU_v1/genes.gff3
+  metadata: data/species/G.arboreumA2_DC113_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.arboreumA2_DC119_HAU_v1
+  enabled: true
+  genome: data/species/G.arboreumA2_DC119_HAU_v1/genome.fasta
+  gff: data/species/G.arboreumA2_DC119_HAU_v1/genes.gff3
+  metadata: data/species/G.arboreumA2_DC119_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.arboreumA2_DC133_HAU_v1
+  enabled: true
+  genome: data/species/G.arboreumA2_DC133_HAU_v1/genome.fasta
+  gff: data/species/G.arboreumA2_DC133_HAU_v1/genes.gff3
+  metadata: data/species/G.arboreumA2_DC133_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.arboreumA2_DC146_HAU_v1
+  enabled: true
+  genome: data/species/G.arboreumA2_DC146_HAU_v1/genome.fasta
+  gff: data/species/G.arboreumA2_DC146_HAU_v1/genes.gff3
+  metadata: data/species/G.arboreumA2_DC146_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.arboreumA2_DC151_HAU_v1
+  enabled: true
+  genome: data/species/G.arboreumA2_DC151_HAU_v1/genome.fasta
+  gff: data/species/G.arboreumA2_DC151_HAU_v1/genes.gff3
+  metadata: data/species/G.arboreumA2_DC151_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.arboreumA2_DC165_HAU_v1
+  enabled: true
+  genome: data/species/G.arboreumA2_DC165_HAU_v1/genome.fasta
+  gff: data/species/G.arboreumA2_DC165_HAU_v1/genes.gff3
+  metadata: data/species/G.arboreumA2_DC165_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.arboreumA2_DC175_HAU_v1
+  enabled: true
+  genome: data/species/G.arboreumA2_DC175_HAU_v1/genome.fasta
+  gff: data/species/G.arboreumA2_DC175_HAU_v1/genes.gff3
+  metadata: data/species/G.arboreumA2_DC175_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.arboreumA2_DC212_HAU_v1
+  enabled: true
+  genome: data/species/G.arboreumA2_DC212_HAU_v1/genome.fasta
+  gff: data/species/G.arboreumA2_DC212_HAU_v1/genes.gff3
+  metadata: data/species/G.arboreumA2_DC212_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.anomalumB1_HAU_v1
+  enabled: true
+  genome: data/species/G.anomalumB1_HAU_v1/genome.fasta
+  gff: data/species/G.anomalumB1_HAU_v1/genes.gff3
+  metadata: data/species/G.anomalumB1_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.anomalumB1_JAAS_v1.2
+  enabled: true
+  genome: data/species/G.anomalumB1_JAAS_v1.2/genome.fasta
+  gff: data/species/G.anomalumB1_JAAS_v1.2/genes.gff3
+  metadata: data/species/G.anomalumB1_JAAS_v1.2/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.anomalumB1_NCF_v1
+  enabled: true
+  genome: data/species/G.anomalumB1_NCF_v1/genome.fasta
+  gff: data/species/G.anomalumB1_NCF_v1/genes.gff3
+  metadata: data/species/G.anomalumB1_NCF_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.sturtianumC1_HAU_v1
+  enabled: true
+  genome: data/species/G.sturtianumC1_HAU_v1/genome.fasta
+  gff: data/species/G.sturtianumC1_HAU_v1/genes.gff3
+  metadata: data/species/G.sturtianumC1_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.thurberiD1-35_ISU_v1
+  enabled: true
+  genome: data/species/G.thurberiD1-35_ISU_v1/genome.fasta
+  gff: data/species/G.thurberiD1-35_ISU_v1/genes.gff3
+  metadata: data/species/G.thurberiD1-35_ISU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.thurberiD1-5_CRI_v1
+  enabled: true
+  genome: data/species/G.thurberiD1-5_CRI_v1/genome.fasta
+  gff: data/species/G.thurberiD1-5_CRI_v1/genes.gff3
+  metadata: data/species/G.thurberiD1-5_CRI_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.armourianumD2-1_ISU_v1
+  enabled: true
+  genome: data/species/G.armourianumD2-1_ISU_v1/genome.fasta
+  gff: data/species/G.armourianumD2-1_ISU_v1/genes.gff3
+  metadata: data/species/G.armourianumD2-1_ISU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - busco
+- id: G.harknessiiD2-2_CRI_v1.0
+  enabled: true
+  genome: data/species/G.harknessiiD2-2_CRI_v1.0/genome.fasta
+  gff: data/species/G.harknessiiD2-2_CRI_v1.0/genes.gff3
+  metadata: data/species/G.harknessiiD2-2_CRI_v1.0/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.harknessiiD2-2_ISU_v1.0
+  enabled: true
+  genome: data/species/G.harknessiiD2-2_ISU_v1.0/genome.fasta
+  gff: data/species/G.harknessiiD2-2_ISU_v1.0/genes.gff3
+  metadata: data/species/G.harknessiiD2-2_ISU_v1.0/metadata.yaml
+  qc_completed:
+  - genome_size
+  - busco
+- id: G.davidsoniiD3d-27_ISU_v1
+  enabled: true
+  genome: data/species/G.davidsoniiD3d-27_ISU_v1/genome.fasta
+  gff: data/species/G.davidsoniiD3d-27_ISU_v1/genes.gff3
+  metadata: data/species/G.davidsoniiD3d-27_ISU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.davidsoniiD3d-8_CRI_v1
+  enabled: true
+  genome: data/species/G.davidsoniiD3d-8_CRI_v1/genome.fasta
+  gff: data/species/G.davidsoniiD3d-8_CRI_v1/genes.gff3
+  metadata: data/species/G.davidsoniiD3d-8_CRI_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.klotzschianumD3-k_CRI_v1.0
+  enabled: true
+  genome: data/species/G.klotzschianumD3-k_CRI_v1.0/genome.fasta
+  gff: data/species/G.klotzschianumD3-k_CRI_v1.0/genes.gff3
+  metadata: data/species/G.klotzschianumD3-k_CRI_v1.0/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.klotzschianumD3-k_ISU_v1
+  enabled: true
+  genome: data/species/G.klotzschianumD3-k_ISU_v1/genome.fasta
+  gff: data/species/G.klotzschianumD3-k_ISU_v1/genes.gff3
+  metadata: data/species/G.klotzschianumD3-k_ISU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.aridumD4_ISU_v1
+  enabled: true
+  genome: data/species/G.aridumD4_ISU_v1/genome.fasta
+  gff: data/species/G.aridumD4_ISU_v1/genes.gff3
+  metadata: data/species/G.aridumD4_ISU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - busco
+- id: G.raimondiiD5_JGI_v2.1
+  enabled: true
+  genome: data/species/G.raimondiiD5_JGI_v2.1/genome.fasta
+  gff: data/species/G.raimondiiD5_JGI_v2.1/genes.gff3
+  metadata: data/species/G.raimondiiD5_JGI_v2.1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.raimondiiD5-3_BGI-CGP_draft_v1
+  enabled: true
+  genome: data/species/G.raimondiiD5-3_BGI-CGP_draft_v1/genome.fasta
+  gff: data/species/G.raimondiiD5-3_BGI-CGP_draft_v1/genes.gff3
+  metadata: data/species/G.raimondiiD5-3_BGI-CGP_draft_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.raimondiiD5-3_PKU_v1T2T
+  enabled: true
+  genome: data/species/G.raimondiiD5-3_PKU_v1T2T/genome.fasta
+  gff: data/species/G.raimondiiD5-3_PKU_v1T2T/genes.gff3
+  metadata: data/species/G.raimondiiD5-3_PKU_v1T2T/metadata.yaml
+  qc_completed:
+  - genome_size
+  - busco
+- id: G.raimondiiD5-4_NCF_v1
+  enabled: true
+  genome: data/species/G.raimondiiD5-4_NCF_v1/genome.fasta
+  gff: data/species/G.raimondiiD5-4_NCF_v1/genes.gff3
+  metadata: data/species/G.raimondiiD5-4_NCF_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.raimondiiD5-8_ISU_v1
+  enabled: true
+  genome: data/species/G.raimondiiD5-8_ISU_v1/genome.fasta
+  gff: data/species/G.raimondiiD5-8_ISU_v1/genes.gff3
+  metadata: data/species/G.raimondiiD5-8_ISU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - busco
+- id: G.raimondiiD5_D502_HAU_v1
+  enabled: true
+  genome: data/species/G.raimondiiD5_D502_HAU_v1/genome.fasta
+  gff: data/species/G.raimondiiD5_D502_HAU_v1/genes.gff3
+  metadata: data/species/G.raimondiiD5_D502_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+- id: G.raimondiiD5_HAU_v1
+  enabled: true
+  genome: data/species/G.raimondiiD5_HAU_v1/genome.fasta
+  gff: data/species/G.raimondiiD5_HAU_v1/genes.gff3
+  metadata: data/species/G.raimondiiD5_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.gossypioidesD6_CRI_v1.0
+  enabled: true
+  genome: data/species/G.gossypioidesD6_CRI_v1.0/genome.fasta
+  gff: data/species/G.gossypioidesD6_CRI_v1.0/genes.gff3
+  metadata: data/species/G.gossypioidesD6_CRI_v1.0/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.gossypioidesD6_ISU_v1.0
+  enabled: true
+  genome: data/species/G.gossypioidesD6_ISU_v1.0/genome.fasta
+  gff: data/species/G.gossypioidesD6_ISU_v1.0/genes.gff3
+  metadata: data/species/G.gossypioidesD6_ISU_v1.0/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.lobatumD7_ISU_v1.0
+  enabled: true
+  genome: data/species/G.lobatumD7_ISU_v1.0/genome.fasta
+  gff: data/species/G.lobatumD7_ISU_v1.0/genes.gff3
+  metadata: data/species/G.lobatumD7_ISU_v1.0/metadata.yaml
+  qc_completed:
+  - genome_size
+  - busco
+- id: G.trilobumD8_CRI_v1.0
+  enabled: true
+  genome: data/species/G.trilobumD8_CRI_v1.0/genome.fasta
+  gff: data/species/G.trilobumD8_CRI_v1.0/genes.gff3
+  metadata: data/species/G.trilobumD8_CRI_v1.0/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.trilobumD8_ISU_v1
+  enabled: true
+  genome: data/species/G.trilobumD8_ISU_v1/genome.fasta
+  gff: data/species/G.trilobumD8_ISU_v1/genes.gff3
+  metadata: data/species/G.trilobumD8_ISU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.laxumD9_ISU_v1
+  enabled: true
+  genome: data/species/G.laxumD9_ISU_v1/genome.fasta
+  gff: data/species/G.laxumD9_ISU_v1/genes.gff3
+  metadata: data/species/G.laxumD9_ISU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - busco
+- id: G.turneriD10_NCF_v1.2
+  enabled: true
+  genome: data/species/G.turneriD10_NCF_v1.2/genome.fasta
+  gff: data/species/G.turneriD10_NCF_v1.2/genes.gff3
+  metadata: data/species/G.turneriD10_NCF_v1.2/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.schwendimaniiD11_ISU_v1.0
+  enabled: true
+  genome: data/species/G.schwendimaniiD11_ISU_v1.0/genome.fasta
+  gff: data/species/G.schwendimaniiD11_ISU_v1.0/genes.gff3
+  metadata: data/species/G.schwendimaniiD11_ISU_v1.0/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.stocksiiE1_HAU_v1
+  enabled: true
+  genome: data/species/G.stocksiiE1_HAU_v1/genome.fasta
+  gff: data/species/G.stocksiiE1_HAU_v1/genes.gff3
+  metadata: data/species/G.stocksiiE1_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.stocksiiE1_NCF_v1
+  enabled: true
+  genome: data/species/G.stocksiiE1_NCF_v1/genome.fasta
+  gff: data/species/G.stocksiiE1_NCF_v1/genes.gff3
+  metadata: data/species/G.stocksiiE1_NCF_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.stocksiiE1_ZJSU_v1
+  enabled: true
+  genome: data/species/G.stocksiiE1_ZJSU_v1/genome.fasta
+  gff: data/species/G.stocksiiE1_ZJSU_v1/genes.gff3
+  metadata: data/species/G.stocksiiE1_ZJSU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.longicalyxF1_HAU_v1
+  enabled: true
+  genome: data/species/G.longicalyxF1_HAU_v1/genome.fasta
+  gff: data/species/G.longicalyxF1_HAU_v1/genes.gff3
+  metadata: data/species/G.longicalyxF1_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.longicalyxF1_NCF_v1
+  enabled: true
+  genome: data/species/G.longicalyxF1_NCF_v1/genome.fasta
+  gff: data/species/G.longicalyxF1_NCF_v1/genes.gff3
+  metadata: data/species/G.longicalyxF1_NCF_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.bickiiG1_HAU_v1
+  enabled: true
+  genome: data/species/G.bickiiG1_HAU_v1/genome.fasta
+  gff: data/species/G.bickiiG1_HAU_v1/genes.gff3
+  metadata: data/species/G.bickiiG1_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.bickiiG1_ZJU_v1
+  enabled: true
+  genome: data/species/G.bickiiG1_ZJU_v1/genome.fasta
+  gff: data/species/G.bickiiG1_ZJU_v1/genes.gff3
+  metadata: data/species/G.bickiiG1_ZJU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.australeG2_CRI_v1.1
+  enabled: true
+  genome: data/species/G.australeG2_CRI_v1.1/genome.fasta
+  gff: data/species/G.australeG2_CRI_v1.1/genes.gff3
+  metadata: data/species/G.australeG2_CRI_v1.1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_TM-1_BGI-CGI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_TM-1_BGI-CGI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_TM-1_BGI-CGI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_TM-1_BGI-CGI_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_TM-1_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_TM-1_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_TM-1_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_TM-1_CRI_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_TM-1_NJAU-NBT_v1.1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_TM-1_NJAU-NBT_v1.1/genome.fasta
+  gff: data/species/G.hirsutumAD1_TM-1_NJAU-NBT_v1.1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_TM-1_NJAU-NBT_v1.1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_TM-1_JGI-ATU_v1.1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_TM-1_JGI-ATU_v1.1/genome.fasta
+  gff: data/species/G.hirsutumAD1_TM-1_JGI-ATU_v1.1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_TM-1_JGI-ATU_v1.1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_TM-1_ATU_v2.1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_TM-1_ATU_v2.1/genome.fasta
+  gff: data/species/G.hirsutumAD1_TM-1_ATU_v2.1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_TM-1_ATU_v2.1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_TM-1_HAU_v1.1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_TM-1_HAU_v1.1/genome.fasta
+  gff: data/species/G.hirsutumAD1_TM-1_HAU_v1.1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_TM-1_HAU_v1.1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_TM-1_HAU_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_TM-1_HAU_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_TM-1_HAU_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_TM-1_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_TM-1_WHU_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_TM-1_WHU_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_TM-1_WHU_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_TM-1_WHU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_TM-1_ZJU_v2.1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_TM-1_ZJU_v2.1/genome.fasta
+  gff: data/species/G.hirsutumAD1_TM-1_ZJU_v2.1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_TM-1_ZJU_v2.1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_TM-1_ZJU_assembly_v2.1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_TM-1_ZJU_assembly_v2.1/genome.fasta
+  gff: data/species/G.hirsutumAD1_TM-1_ZJU_assembly_v2.1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_TM-1_ZJU_assembly_v2.1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_TM-1_ZJU_v1.1T2T
+  enabled: true
+  genome: data/species/G.hirsutumAD1_TM-1_ZJU_v1.1T2T/genome.fasta
+  gff: data/species/G.hirsutumAD1_TM-1_ZJU_v1.1T2T/genes.gff3
+  metadata: data/species/G.hirsutumAD1_TM-1_ZJU_v1.1T2T/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_BARBREN-713_NCF_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_BARBREN-713_NCF_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_BARBREN-713_NCF_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_BARBREN-713_NCF_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_BAR_NCF_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_BAR_NCF_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_BAR_NCF_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_BAR_NCF_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_CSX8308_HGSC_v1.1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_CSX8308_HGSC_v1.1/genome.fasta
+  gff: data/species/G.hirsutumAD1_CSX8308_HGSC_v1.1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_CSX8308_HGSC_v1.1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_HPF17_ZJU_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_HPF17_ZJU_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_HPF17_ZJU_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_HPF17_ZJU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_NDM8_HBAU_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_NDM8_HBAU_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_NDM8_HBAU_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_NDM8_HBAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_PSC355_USDA_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_PSC355_USDA_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_PSC355_USDA_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_PSC355_USDA_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_Punctatum_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_Punctatum_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_Punctatum_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_Punctatum_CRI_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_UA48_HGSC_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_UA48_HGSC_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_UA48_HGSC_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_UA48_HGSC_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_UGA230_HGSC_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_UGA230_HGSC_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_UGA230_HGSC_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_UGA230_HGSC_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_YM11_XJAAS_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_YM11_XJAAS_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_YM11_XJAAS_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_YM11_XJAAS_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_ZM24_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_ZM24_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_ZM24_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_ZM24_CRI_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_Jin668_HAU_v1T2T
+  enabled: true
+  genome: data/species/G.hirsutumAD1_Jin668_HAU_v1T2T/genome.fasta
+  gff: data/species/G.hirsutumAD1_Jin668_HAU_v1T2T/genes.gff3
+  metadata: data/species/G.hirsutumAD1_Jin668_HAU_v1T2T/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_YZ1_HAU_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_YZ1_HAU_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_YZ1_HAU_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_YZ1_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_Zhongmian_CRI_v1T2T
+  enabled: true
+  genome: data/species/G.hirsutumAD1_Zhongmian_CRI_v1T2T/genome.fasta
+  gff: data/species/G.hirsutumAD1_Zhongmian_CRI_v1T2T/genes.gff3
+  metadata: data/species/G.hirsutumAD1_Zhongmian_CRI_v1T2T/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_HC04_HAU_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_HC04_HAU_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_HC04_HAU_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_HC04_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_HC15_HAU_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_HC15_HAU_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_HC15_HAU_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_HC15_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_HW03_HAU_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_HW03_HAU_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_HW03_HAU_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_HW03_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_HW05_HAU_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_HW05_HAU_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_HW05_HAU_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_HW05_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_HW06_HAU_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_HW06_HAU_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_HW06_HAU_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_HW06_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_HW07_HAU_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_HW07_HAU_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_HW07_HAU_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_HW07_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_P01_HAU_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_P01_HAU_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_P01_HAU_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_P01_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_P02_HAU_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_P02_HAU_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_P02_HAU_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_P02_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_P04_HAU_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_P04_HAU_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_P04_HAU_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_P04_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_P19_HAU_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_P19_HAU_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_P19_HAU_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_P19_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_P20_HAU_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_P20_HAU_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_P20_HAU_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_P20_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_TW007_HAU_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_TW007_HAU_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_TW007_HAU_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_TW007_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_TW013_HAU_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_TW013_HAU_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_TW013_HAU_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_TW013_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_TW026_HAU_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_TW026_HAU_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_TW026_HAU_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_TW026_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_TW029_HAU_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_TW029_HAU_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_TW029_HAU_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_TW029_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_TW031_HAU_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_TW031_HAU_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_TW031_HAU_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_TW031_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_TW055_HAU_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_TW055_HAU_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_TW055_HAU_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_TW055_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_TW064_HAU_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_TW064_HAU_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_TW064_HAU_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_TW064_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_TW075_HAU_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_TW075_HAU_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_TW075_HAU_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_TW075_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_TW077_HAU_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_TW077_HAU_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_TW077_HAU_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_TW077_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_TW091_HAU_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_TW091_HAU_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_TW091_HAU_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_TW091_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_TW094_HAU_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_TW094_HAU_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_TW094_HAU_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_TW094_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_TW100_HAU_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_TW100_HAU_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_TW100_HAU_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_TW100_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_TW134_HAU_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_TW134_HAU_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_TW134_HAU_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_TW134_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_XJ74_HAU_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_XJ74_HAU_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_XJ74_HAU_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_XJ74_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_XZ142_HAU_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_XZ142_HAU_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_XZ142_HAU_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_XZ142_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_ZY006_HAU_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_ZY006_HAU_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_ZY006_HAU_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_ZY006_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_ZY10_HAU_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_ZY10_HAU_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_ZY10_HAU_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_ZY10_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_ZY184_HAU_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_ZY184_HAU_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_ZY184_HAU_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_ZY184_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_ZY236_HAU_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_ZY236_HAU_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_ZY236_HAU_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_ZY236_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_ZY238_HAU_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_ZY238_HAU_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_ZY238_HAU_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_ZY238_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_ZY354_HAU_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_ZY354_HAU_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_ZY354_HAU_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_ZY354_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_ZY381_HAU_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_ZY381_HAU_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_ZY381_HAU_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_ZY381_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_ZY384_HAU_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_ZY384_HAU_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_ZY384_HAU_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_ZY384_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_ZY461_HAU_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_ZY461_HAU_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_ZY461_HAU_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_ZY461_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.barbadenseAD2_3-79_HAU_v1
+  enabled: true
+  genome: data/species/G.barbadenseAD2_3-79_HAU_v1/genome.fasta
+  gff: data/species/G.barbadenseAD2_3-79_HAU_v1/genes.gff3
+  metadata: data/species/G.barbadenseAD2_3-79_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.barbadenseAD2_3-79_HAU_v2.0_a1
+  enabled: true
+  genome: data/species/G.barbadenseAD2_3-79_HAU_v2.0_a1/genome.fasta
+  gff: data/species/G.barbadenseAD2_3-79_HAU_v2.0_a1/genes.gff3
+  metadata: data/species/G.barbadenseAD2_3-79_HAU_v2.0_a1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.barbadenseAD2_3-79_HGSC_v1.1
+  enabled: true
+  genome: data/species/G.barbadenseAD2_3-79_HGSC_v1.1/genome.fasta
+  gff: data/species/G.barbadenseAD2_3-79_HGSC_v1.1/genes.gff3
+  metadata: data/species/G.barbadenseAD2_3-79_HGSC_v1.1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.barbadenseAD2_GB0307_HAU_AZB339HAU_v1
+  enabled: true
+  genome: data/species/G.barbadenseAD2_GB0307_HAU_AZB339HAU_v1/genome.fasta
+  gff: data/species/G.barbadenseAD2_GB0307_HAU_AZB339HAU_v1/genes.gff3
+  metadata: data/species/G.barbadenseAD2_GB0307_HAU_AZB339HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.barbadenseAD2_GB0333_HAU_AZB375HAU_v1
+  enabled: true
+  genome: data/species/G.barbadenseAD2_GB0333_HAU_AZB375HAU_v1/genome.fasta
+  gff: data/species/G.barbadenseAD2_GB0333_HAU_AZB375HAU_v1/genes.gff3
+  metadata: data/species/G.barbadenseAD2_GB0333_HAU_AZB375HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.barbadenseAD2_Gb_M210936_HAU_v1
+  enabled: true
+  genome: data/species/G.barbadenseAD2_Gb_M210936_HAU_v1/genome.fasta
+  gff: data/species/G.barbadenseAD2_Gb_M210936_HAU_v1/genes.gff3
+  metadata: data/species/G.barbadenseAD2_Gb_M210936_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.barbadenseAD2_GB0414_HAU_AZB634HAU_v1
+  enabled: true
+  genome: data/species/G.barbadenseAD2_GB0414_HAU_AZB634HAU_v1/genome.fasta
+  gff: data/species/G.barbadenseAD2_GB0414_HAU_AZB634HAU_v1/genes.gff3
+  metadata: data/species/G.barbadenseAD2_GB0414_HAU_AZB634HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.barbadenseAD2_K101_HAU_AZK101HAU_v1
+  enabled: true
+  genome: data/species/G.barbadenseAD2_K101_HAU_AZK101HAU_v1/genome.fasta
+  gff: data/species/G.barbadenseAD2_K101_HAU_AZK101HAU_v1/genes.gff3
+  metadata: data/species/G.barbadenseAD2_K101_HAU_AZK101HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.barbadenseAD2_CEG_HAU_v1
+  enabled: true
+  genome: data/species/G.barbadenseAD2_CEG_HAU_v1/genome.fasta
+  gff: data/species/G.barbadenseAD2_CEG_HAU_v1/genes.gff3
+  metadata: data/species/G.barbadenseAD2_CEG_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.barbadenseAD2_GB0660_HAU_GB-0660HAU_v1
+  enabled: true
+  genome: data/species/G.barbadenseAD2_GB0660_HAU_GB-0660HAU_v1/genome.fasta
+  gff: data/species/G.barbadenseAD2_GB0660_HAU_GB-0660HAU_v1/genes.gff3
+  metadata: data/species/G.barbadenseAD2_GB0660_HAU_GB-0660HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.barbadenseAD2_GB0776_HAU_GB-0776HAU_v1
+  enabled: true
+  genome: data/species/G.barbadenseAD2_GB0776_HAU_GB-0776HAU_v1/genome.fasta
+  gff: data/species/G.barbadenseAD2_GB0776_HAU_GB-0776HAU_v1/genes.gff3
+  metadata: data/species/G.barbadenseAD2_GB0776_HAU_GB-0776HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.barbadenseAD2_GB0249_HAU_GB249HAU_v1
+  enabled: true
+  genome: data/species/G.barbadenseAD2_GB0249_HAU_GB249HAU_v1/genome.fasta
+  gff: data/species/G.barbadenseAD2_GB0249_HAU_GB249HAU_v1/genes.gff3
+  metadata: data/species/G.barbadenseAD2_GB0249_HAU_GB249HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.barbadenseAD2_GB0262_HAU_AZB51HAU_v1
+  enabled: true
+  genome: data/species/G.barbadenseAD2_GB0262_HAU_AZB51HAU_v1/genome.fasta
+  gff: data/species/G.barbadenseAD2_GB0262_HAU_AZB51HAU_v1/genes.gff3
+  metadata: data/species/G.barbadenseAD2_GB0262_HAU_AZB51HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.barbadenseAD2_Giza7_HAU_v1
+  enabled: true
+  genome: data/species/G.barbadenseAD2_Giza7_HAU_v1/genome.fasta
+  gff: data/species/G.barbadenseAD2_Giza7_HAU_v1/genes.gff3
+  metadata: data/species/G.barbadenseAD2_Giza7_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.barbadenseAD2_Junhai-1_HAU_v1
+  enabled: true
+  genome: data/species/G.barbadenseAD2_Junhai-1_HAU_v1/genome.fasta
+  gff: data/species/G.barbadenseAD2_Junhai-1_HAU_v1/genes.gff3
+  metadata: data/species/G.barbadenseAD2_Junhai-1_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.barbadenseAD2_Yuma_HAU_v1
+  enabled: true
+  genome: data/species/G.barbadenseAD2_Yuma_HAU_v1/genome.fasta
+  gff: data/species/G.barbadenseAD2_Yuma_HAU_v1/genes.gff3
+  metadata: data/species/G.barbadenseAD2_Yuma_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_Hai7124_ZJU_v1.1_a1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_Hai7124_ZJU_v1.1_a1/genome.fasta
+  gff: data/species/G.hirsutumAD1_Hai7124_ZJU_v1.1_a1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_Hai7124_ZJU_v1.1_a1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+- id: G.hirsutumAD1_Hai7125_ZJU_Hai7124
+  enabled: true
+  genome: data/species/G.hirsutumAD1_Hai7125_ZJU_Hai7124/genome.fasta
+  gff: data/species/G.hirsutumAD1_Hai7125_ZJU_Hai7124/genes.gff3
+  metadata: data/species/G.hirsutumAD1_Hai7125_ZJU_Hai7124/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.barbadenseAD2_Pima90_HBAU_v1
+  enabled: true
+  genome: data/species/G.barbadenseAD2_Pima90_HBAU_v1/genome.fasta
+  gff: data/species/G.barbadenseAD2_Pima90_HBAU_v1/genes.gff3
+  metadata: data/species/G.barbadenseAD2_Pima90_HBAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.tomentosumAD3_HAU_v1
+  enabled: true
+  genome: data/species/G.tomentosumAD3_HAU_v1/genome.fasta
+  gff: data/species/G.tomentosumAD3_HAU_v1/genes.gff3
+  metadata: data/species/G.tomentosumAD3_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.tomentosumAD3_HGSC_v1.1
+  enabled: true
+  genome: data/species/G.tomentosumAD3_HGSC_v1.1/genome.fasta
+  gff: data/species/G.tomentosumAD3_HGSC_v1.1/genes.gff3
+  metadata: data/species/G.tomentosumAD3_HGSC_v1.1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.mustelinumAD4_JGI_JGI-AD4
+  enabled: true
+  genome: data/species/G.mustelinumAD4_JGI_JGI-AD4/genome.fasta
+  gff: data/species/G.mustelinumAD4_JGI_JGI-AD4/genes.gff3
+  metadata: data/species/G.mustelinumAD4_JGI_JGI-AD4/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.mustelinumAD4_P0811704_HAU_v1
+  enabled: true
+  genome: data/species/G.mustelinumAD4_P0811704_HAU_v1/genome.fasta
+  gff: data/species/G.mustelinumAD4_P0811704_HAU_v1/genes.gff3
+  metadata: data/species/G.mustelinumAD4_P0811704_HAU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.darwiniiAD5_HGSC_HGS_v1.1
+  enabled: true
+  genome: data/species/G.darwiniiAD5_HGSC_HGS_v1.1/genome.fasta
+  gff: data/species/G.darwiniiAD5_HGSC_HGS_v1.1/genes.gff3
+  metadata: data/species/G.darwiniiAD5_HGSC_HGS_v1.1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.ekmanianumAD6_AD602_CRI_v1
+  enabled: true
+  genome: data/species/G.ekmanianumAD6_AD602_CRI_v1/genome.fasta
+  gff: data/species/G.ekmanianumAD6_AD602_CRI_v1/genes.gff3
+  metadata: data/species/G.ekmanianumAD6_AD602_CRI_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.stephensiiAD7_AD701_CRI_v1
+  enabled: true
+  genome: data/species/G.stephensiiAD7_AD701_CRI_v1/genome.fasta
+  gff: data/species/G.stephensiiAD7_AD701_CRI_v1/genes.gff3
+  metadata: data/species/G.stephensiiAD7_AD701_CRI_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: K.cookei_WAI_ISU_ISU_v1
+  enabled: true
+  genome: data/species/K.cookei_WAI_ISU_ISU_v1/genome.fasta
+  gff: data/species/K.cookei_WAI_ISU_ISU_v1/genes.gff3
+  metadata: data/species/K.cookei_WAI_ISU_ISU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: K.drynarioides_ISU_ISU_v1
+  enabled: true
+  genome: data/species/K.drynarioides_ISU_ISU_v1/genome.fasta
+  gff: data/species/K.drynarioides_ISU_ISU_v1/genes.gff3
+  metadata: data/species/K.drynarioides_ISU_ISU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: K.kauaiensis_WAI_ISU_ISU_v1
+  enabled: true
+  genome: data/species/K.kauaiensis_WAI_ISU_ISU_v1/genome.fasta
+  gff: data/species/K.kauaiensis_WAI_ISU_ISU_v1/genes.gff3
+  metadata: data/species/K.kauaiensis_WAI_ISU_ISU_v1/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.kirkii_ISU_ISU_v3.0
+  enabled: true
+  genome: data/species/G.kirkii_ISU_ISU_v3.0/genome.fasta
+  gff: data/species/G.kirkii_ISU_ISU_v3.0/genes.gff3
+  metadata: data/species/G.kirkii_ISU_ISU_v3.0/metadata.yaml
+  qc_completed:
+  - genome_size
+  - lai
+  - busco
+- id: G.hirsutumAD1_N200_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N200_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N200_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N200_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N201_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N201_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N201_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N201_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N202_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N202_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N202_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N202_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N203_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N203_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N203_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N203_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N204_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N204_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N204_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N204_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N205_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N205_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N205_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N205_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N206_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N206_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N206_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N206_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N207_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N207_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N207_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N207_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N208_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N208_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N208_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N208_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N209_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N209_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N209_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N209_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N210_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N210_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N210_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N210_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N211_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N211_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N211_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N211_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N212_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N212_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N212_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N212_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N213_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N213_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N213_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N213_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N214_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N214_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N214_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N214_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N215_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N215_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N215_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N215_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N216_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N216_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N216_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N216_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N217_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N217_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N217_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N217_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N218_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N218_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N218_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N218_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N219_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N219_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N219_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N219_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N220_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N220_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N220_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N220_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N221_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N221_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N221_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N221_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N222_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N222_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N222_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N222_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N223_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N223_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N223_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N223_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N224_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N224_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N224_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N224_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N225_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N225_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N225_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N225_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N226_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N226_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N226_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N226_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N227_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N227_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N227_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N227_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N228_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N228_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N228_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N228_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N229_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N229_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N229_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N229_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N230_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N230_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N230_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N230_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N231_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N231_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N231_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N231_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N232_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N232_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N232_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N232_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N233_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N233_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N233_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N233_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N234_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N234_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N234_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N234_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N235_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N235_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N235_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N235_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N236_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N236_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N236_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N236_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N237_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N237_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N237_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N237_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N238_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N238_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N238_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N238_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N239_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N239_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N239_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N239_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N240_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N240_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N240_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N240_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N241_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N241_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N241_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N241_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N242_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N242_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N242_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N242_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N243_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N243_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N243_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N243_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N244_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N244_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N244_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N244_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N245_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N245_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N245_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N245_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N246_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N246_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N246_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N246_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N247_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N247_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N247_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N247_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N248_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N248_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N248_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N248_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N249_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N249_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N249_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N249_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N250_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N250_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N250_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N250_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N251_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N251_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N251_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N251_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N252_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N252_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N252_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N252_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N253_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N253_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N253_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N253_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N254_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N254_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N254_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N254_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N255_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N255_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N255_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N255_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N256_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N256_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N256_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N256_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N257_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N257_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N257_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N257_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N258_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N258_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N258_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N258_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N259_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N259_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N259_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N259_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N260_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N260_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N260_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N260_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N261_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N261_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N261_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N261_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N262_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N262_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N262_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N262_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N263_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N263_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N263_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N263_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N264_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N264_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N264_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N264_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N265_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N265_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N265_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N265_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N266_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N266_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N266_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N266_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N267_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N267_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N267_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N267_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N268_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N268_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N268_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N268_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N269_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N269_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N269_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N269_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N270_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N270_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N270_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N270_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N271_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N271_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N271_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N271_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N272_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N272_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N272_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N272_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N273_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N273_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N273_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N273_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N274_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N274_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N274_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N274_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N275_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N275_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N275_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N275_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N276_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N276_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N276_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N276_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N277_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N277_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N277_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N277_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N278_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N278_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N278_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N278_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N279_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N279_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N279_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N279_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N280_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N280_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N280_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N280_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N281_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N281_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N281_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N281_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N282_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N282_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N282_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N282_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N283_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N283_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N283_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N283_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N284_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N284_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N284_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N284_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N285_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N285_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N285_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N285_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N286_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N286_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N286_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N286_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N287_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N287_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N287_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N287_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N288_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N288_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N288_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N288_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N289_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N289_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N289_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N289_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N290_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N290_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N290_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N290_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N291_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N291_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N291_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N291_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N292_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N292_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N292_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N292_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N293_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N293_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N293_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N293_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N294_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N294_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N294_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N294_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N295_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N295_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N295_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N295_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N296_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N296_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N296_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N296_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N297_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N297_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N297_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N297_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N298_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N298_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N298_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N298_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N299_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N299_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N299_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N299_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N300_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N300_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N300_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N300_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N301_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N301_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N301_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N301_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N302_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N302_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N302_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N302_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N303_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N303_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N303_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N303_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N304_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N304_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N304_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N304_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N305_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N305_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N305_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N305_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco
+- id: G.hirsutumAD1_N306_CRI_v1
+  enabled: true
+  genome: data/species/G.hirsutumAD1_N306_CRI_v1/genome.fasta
+  gff: data/species/G.hirsutumAD1_N306_CRI_v1/genes.gff3
+  metadata: data/species/G.hirsutumAD1_N306_CRI_v1/metadata.yaml
+  qc_completed:
+  - lai
+  - busco

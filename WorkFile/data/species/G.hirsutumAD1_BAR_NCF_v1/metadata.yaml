@@ -1,0 +1,37 @@
+species_name: G.hirsutumAD1_BAR_NCF_v1
+common_name: Gossypium hirsutum
+ploidy: allotetraploid
+assembly_version: NCF_v1
+annotation_version: unknown
+literature:
+- title: Perkin et al, 2021
+  url: https://www.cottongen.org/bio_data/7184772
+submitter: CottonOGD
+description: Gossypium hirsutum (AD1)
+assembly_version_source: derived_from_species_name
+source_db_id: 74
+alias: G.hirsutum(AD1)BAR_NCF_v1
+cotton_species: Gossypium hirsutum
+genome_type: AD1
+category: breeding line
+accession: BAR 32-30
+website: https://www.cottongen.org/bio_data/7184772
+article: Perkin et al, 2021
+existing_qc:
+  genome_size: 2296536638
+  lai: '14.69'
+  busco: '0.976'
+qc_completed:
+- genome_size
+- lai
+- busco
+qc_sources:
+  genome_size: mysql
+  lai: mysql
+  busco: mysql
+legacy_qc_conflicts:
+- metric: lai
+  database: '14.69'
+  legacy: '14.63'
+  source: Script/CottonOGD/LAI/result/LAI_summary.txt
+  action: conflict_kept_mysql

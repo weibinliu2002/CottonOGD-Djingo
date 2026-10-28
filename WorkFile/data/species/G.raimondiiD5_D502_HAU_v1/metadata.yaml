@@ -1,0 +1,34 @@
+species_name: G.raimondiiD5_D502_HAU_v1
+common_name: Gossypium raimondii
+ploidy: diploid
+assembly_version: HAU_v1
+annotation_version: unknown
+literature:
+- title: Wang et al, 2021
+  url: https://www.cottongen.org/bio_data/6607284
+submitter: CottonOGD
+description: Gossypium raimondii (D5)
+assembly_version_source: derived_from_species_name
+source_db_id: 44
+alias: G.raimondii(D5)D502_HAU_v1
+cotton_species: Gossypium raimondii
+genome_type: D5
+category: wild
+accession: D502
+website: https://www.cottongen.org/bio_data/6607284
+article: Wang et al, 2021
+existing_qc:
+  genome_size: 750205487
+  lai: '12.45'
+qc_completed:
+- genome_size
+- lai
+qc_sources:
+  genome_size: mysql
+  lai: Script/CottonOGD/LAI/result/LAI_summary.txt
+legacy_qc_conflicts:
+- metric: lai
+  database: '13562'
+  legacy: '12.45'
+  source: Script/CottonOGD/LAI/result/LAI_summary.txt
+  action: invalid_mysql_replaced_by_legacy

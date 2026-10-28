@@ -1,0 +1,42 @@
+species_name: G.turneriD10_NCF_v1.2
+common_name: Gossypium turneri
+ploidy: diploid
+assembly_version: NCF_v1.2
+annotation_version: unknown
+literature:
+- title: Udall et al, 2019
+  url: https://www.cottongen.org/bio_data/585
+submitter: CottonOGD
+description: Gossypium turneri (D10)
+assembly_version_source: derived_from_species_name
+source_db_id: 52
+alias: G.turneri(D10)_NCF_v1.2
+cotton_species: Gossypium turneri
+genome_type: D10
+category: wild
+accession: null
+website: https://www.cottongen.org/bio_data/585
+article: Udall et al, 2019
+existing_qc:
+  genome_size: 755203240
+  lai: '14.2'
+  busco: '0.924'
+qc_completed:
+- genome_size
+- lai
+- busco
+qc_sources:
+  genome_size: mysql
+  lai: mysql
+  busco: mysql
+legacy_qc_conflicts:
+- metric: lai
+  database: '14.2'
+  legacy: '14.31'
+  source: Script/CottonOGD/LAI/result/LAI_summary.txt
+  action: conflict_kept_mysql
+- metric: busco
+  database: '0.924'
+  legacy: '0.9325'
+  source: Script/CottonOGD/busco/Busco_summary.txt
+  action: conflict_kept_mysql

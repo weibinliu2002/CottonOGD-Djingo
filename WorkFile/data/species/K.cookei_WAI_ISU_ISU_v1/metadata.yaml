@@ -1,0 +1,42 @@
+species_name: K.cookei_WAI_ISU_ISU_v1
+common_name: Kokia cookei
+ploidy: unknown
+assembly_version: ISU_v1
+annotation_version: unknown
+literature:
+- title: Kayal et al, 2024
+  url: https://www.cottongen.org/bio_data/12936155
+submitter: CottonOGD
+description: Kokia cookei (unknown genome type)
+assembly_version_source: derived_from_species_name
+source_db_id: 148
+alias: K.cookei()WAI_ISU_ISU_v1
+cotton_species: Kokia cookei
+genome_type: null
+category: null
+accession: WAI 16c69
+website: https://www.cottongen.org/bio_data/12936155
+article: Kayal et al, 2024
+existing_qc:
+  genome_size: 563551662
+  lai: '7.83'
+  busco: '0.938'
+qc_completed:
+- genome_size
+- lai
+- busco
+qc_sources:
+  genome_size: mysql
+  lai: mysql
+  busco: mysql
+legacy_qc_conflicts:
+- metric: lai
+  database: '7.83'
+  legacy: '8.23'
+  source: Script/CottonOGD/LAI/result/LAI_summary.txt
+  action: conflict_kept_mysql
+- metric: busco
+  database: '0.938'
+  legacy: '0.3100'
+  source: Script/CottonOGD/busco/Busco_summary.txt
+  action: conflict_kept_mysql

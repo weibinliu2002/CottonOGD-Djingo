@@ -1,0 +1,37 @@
+species_name: G.stephensiiAD7_AD701_CRI_v1
+common_name: Gossypium stephensii
+ploidy: allotetraploid
+assembly_version: CRI_v1
+annotation_version: unknown
+literature:
+- title: Peng et al, 2022
+  url: https://www.cottongen.org/bio_data/8560640
+submitter: CottonOGD
+description: Gossypium stephensii (AD7)
+assembly_version_source: derived_from_species_name
+source_db_id: 147
+alias: G.stephensii(AD7)AD701_CRI_v1
+cotton_species: Gossypium stephensii
+genome_type: AD7
+category: null
+accession: AD701
+website: https://www.cottongen.org/bio_data/8560640
+article: Peng et al, 2022
+existing_qc:
+  genome_size: 2290224625
+  lai: '13.55'
+  busco: '0.975'
+qc_completed:
+- genome_size
+- lai
+- busco
+qc_sources:
+  genome_size: mysql
+  lai: mysql
+  busco: mysql
+legacy_qc_conflicts:
+- metric: lai
+  database: '13.55'
+  legacy: '13.73'
+  source: Script/CottonOGD/LAI/result/LAI_summary.txt
+  action: conflict_kept_mysql

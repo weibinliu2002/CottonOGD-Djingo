@@ -1,0 +1,37 @@
+species_name: G.gossypioidesD6_CRI_v1.0
+common_name: Gossypium gossypioides
+ploidy: diploid
+assembly_version: CRI_v1.0
+annotation_version: unknown
+literature:
+- title: Xu et al, 2024.
+  url: https://www.cottongen.org/bio_data/9803228
+submitter: CottonOGD
+description: Gossypium gossypioides (D6)
+assembly_version_source: derived_from_species_name
+source_db_id: 46
+alias: G.gossypioides(D6)_CRI_v1.0
+cotton_species: Gossypium gossypioides
+genome_type: D6
+category: wild
+accession: null
+website: https://www.cottongen.org/bio_data/9803228
+article: Xu et al, 2024.
+existing_qc:
+  genome_size: 738508074
+  lai: '7.92'
+  busco: '0.954'
+qc_completed:
+- genome_size
+- lai
+- busco
+qc_sources:
+  genome_size: mysql
+  lai: mysql
+  busco: mysql
+legacy_qc_conflicts:
+- metric: lai
+  database: '7.92'
+  legacy: '9.22'
+  source: Script/CottonOGD/LAI/result/LAI_summary.txt
+  action: conflict_kept_mysql

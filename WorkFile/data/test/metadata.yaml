@@ -1,0 +1,14 @@
+species_name: Gossypium_hirsutum
+common_name: Upland cotton
+ploidy: allotetraploid
+assembly_version: "test"
+annotation_version: "test"
+literature:
+  - title: "Example paper title"
+    doi: "10.0000/example"
+    url: "https://example.org"
+    authors: "Doe J, Roe R"
+    journal: "Example Journal"
+    year: 2024
+submitter: "example@example.org"
+description: "Short free-text description."

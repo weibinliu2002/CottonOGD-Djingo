@@ -1,0 +1,34 @@
+species_name: G.raimondiiD5-3_PKU_v1T2T
+common_name: Gossypium raimondii
+ploidy: diploid
+assembly_version: PKU_v1T2T
+annotation_version: unknown
+literature:
+- title: Huang et al., 2024
+  url: https://download.cncb.ac.cn/gwh/Plants/Gossypium_raimondii_T2T_DD5_v5.0_GWHBISS00000000/
+submitter: CottonOGD
+description: Gossypium raimondii (D5-3)
+assembly_version_source: derived_from_species_name
+source_db_id: 41
+alias: G.raimondii(D5-3)_PKU_v1T2T
+cotton_species: Gossypium raimondii
+genome_type: D5-3
+category: wild
+accession: null
+website: https://download.cncb.ac.cn/gwh/Plants/Gossypium_raimondii_T2T_DD5_v5.0_GWHBISS00000000/
+article: Huang et al., 2024
+existing_qc:
+  genome_size: 776015441
+  busco: '0.979'
+qc_completed:
+- genome_size
+- busco
+qc_sources:
+  genome_size: mysql
+  busco: mysql
+legacy_qc_conflicts:
+- metric: busco
+  database: '0.979'
+  legacy: '0.9789'
+  source: Script/CottonOGD/busco/Busco_summary.txt
+  action: conflict_kept_mysql
