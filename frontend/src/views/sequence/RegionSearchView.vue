@@ -65,20 +65,45 @@
         </div>
       </template>
 
-      <el-table :data="store.regionSearchResult.genes" style="width: 100%">
-        <el-table-column prop="geneid_id" :label="t('gene_id')" width="200">
+      <el-table
+        :data="table.pagedData"
+        style="width: 100%"
+        @sort-change="table.handleSortChange"
+      >
+        <el-table-column prop="geneid_id" :label="t('gene_id')" width="200" sortable="custom">
           <template #default="scope">
             <a href="javascript:void(0)" @click="navigateToGeneDetail(scope.row)">
               {{ scope.row.geneid_id }}
             </a>
           </template>
         </el-table-column>
-        <el-table-column prop="seqid" :label="t('chromosome')" width="150" />
-        <el-table-column prop="start" :label="t('start_position')" width="150" />
-        <el-table-column prop="end" :label="t('end_position')" width="150" />
-        <el-table-column prop="strand" :label="t('strand')" width="100" />
-        <el-table-column prop="type" :label="t('type')" width="100" />
+        <el-table-column prop="seqid" :label="t('chromosome')" width="150" sortable="custom" />
+        <el-table-column prop="start" :label="t('start_position')" width="150" sortable="custom" />
+        <el-table-column prop="end" :label="t('end_position')" width="150" sortable="custom" />
+        <el-table-column prop="strand" :label="t('strand')" width="100" sortable="custom" />
+        <el-table-column prop="type" :label="t('type')" width="100" sortable="custom" />
       </el-table>
+
+      <!-- 关键词筛选 + 计数 + 导出（阶段 3.2 新增） -->
+      <TableToolbar
+        v-model="table.keyword"
+        :total="table.total"
+        :columns="regionExportColumns"
+        :rows="table.sortedRows"
+        filename="region_search_results.csv"
+        class="mt-3"
+      />
+
+      <!-- 分页（阶段 3.2 新增：原页面无分页，区间内基因多时无法浏览） -->
+      <div v-if="table.total > table.pageSize" class="pagination-container">
+        <el-pagination
+          v-model:current-page="table.currentPage"
+          v-model:page-size="table.pageSize"
+          :page-sizes="table.pageSizes"
+          layout="total, sizes, prev, pager, next, jumper"
+          :total="table.total"
+        />
+      </div>
     </el-card>
 
     <el-backtop :right="40" :bottom="40" />
@@ -95,6 +120,8 @@ import { useGenomeSelector } from '@/composables/features/useGenomeBrowser'
 import { useNavigationStore } from '@/stores/modules/navigation'
 import { useGeneSearchStore } from '@/stores/modules/geneSearch'
 import httpInstance from '@/utils/http.js'
+import { useEnhancedTable } from '@/composables/core/useEnhancedTable'
+import type { ExportColumn } from '@/utils/exportTable'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -109,6 +136,33 @@ const { genomeOptions, genomeLoading, ensureGenomesLoaded, pickDefaultGenome, al
 
 const selectedGenome = ref('')
 const region = ref('')
+
+/**
+ * 表格增强（阶段 3.2）
+ *
+ * 区间检索结果原先全量渲染、无分页；这里叠加筛选 / 排序 / 分页 / 导出。
+ * 数据源仍为 store.regionSearchResult.genes，取数逻辑不动。
+ */
+type RegionRow = Record<string, any>
+
+const table = useEnhancedTable<RegionRow>(
+  () => (store.regionSearchResult?.genes ?? []) as RegionRow[],
+  {
+    pageSize: 10,
+    pageSizes: [10, 20, 50, 100],
+    searchFields: ['geneid_id', 'seqid', 'type', 'strand'],
+  },
+)
+
+/** 导出列定义 */
+const regionExportColumns: ExportColumn<RegionRow>[] = [
+  { key: 'geneid_id', label: 'Gene ID' },
+  { key: 'seqid', label: 'Chromosome' },
+  { key: 'start', label: 'Start' },
+  { key: 'end', label: 'End' },
+  { key: 'strand', label: 'Strand' },
+  { key: 'type', label: 'Type' },
+]
 
 onMounted(async () => {
   await ensureGenomesLoaded()
@@ -213,4 +267,11 @@ const navigateToGeneDetail = async (gene: any) => {
 .d-flex { display: flex; }
 .justify-content-between { justify-content: space-between; }
 .align-items-center { align-items: center; }
+
+/* 分页容器（阶段 3.2 新增分页条） */
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+}
 </style>

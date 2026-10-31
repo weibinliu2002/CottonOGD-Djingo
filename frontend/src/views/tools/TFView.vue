@@ -76,6 +76,15 @@
                   clearable
                 />
               </div>
+              <!-- 导出当前筛选结果（阶段 3.2 新增） -->
+              <el-button
+                type="primary"
+                size="small"
+                :disabled="!tfData.length"
+                @click="exportCurrent"
+              >
+                {{ t('export') }}
+              </el-button>
             </div>
 
             <el-skeleton v-if="loading" :rows="5" animated />
@@ -88,20 +97,21 @@
                 row-key="TF_gene"
                 @row-click="handleRowClick"
                 @selection-change="handleSelectionChange"
+                @sort-change="handleSortChange"
                 stripe
                 border
               >
                 <el-table-column type="selection" width="48" reserve-selection />
-                <el-table-column prop="TF_name" :label="t('tf_name')" min-width="50" />
-                <el-table-column prop="TF_class" :label="t('tf_class')" min-width="50" />
-                <el-table-column prop="TF_gene" :label="t('gene')" min-width="120">
+                <el-table-column prop="TF_name" :label="t('tf_name')" min-width="50" sortable="custom" />
+                <el-table-column prop="TF_class" :label="t('tf_class')" min-width="50" sortable="custom" />
+                <el-table-column prop="TF_gene" :label="t('gene')" min-width="120" sortable="custom">
                   <template #default="scope">
                     <el-link type="primary" :underline="false" @click.stop="handleGeneClick(scope.row.db_id)" class="gene-link">
                       {{ scope.row.TF_gene }}
                     </el-link>
                   </template>
                 </el-table-column>
-                <el-table-column prop="TF_genome" :label="t('genome')" min-width="120" />
+                <el-table-column prop="TF_genome" :label="t('genome')" min-width="120" sortable="custom" />
               </el-table>
 
               <div class="d-flex justify-content-between align-items-center mt-3">
@@ -157,6 +167,7 @@ import router from '@/router'
 import { useGenomeSelector } from '@/composables/features/useGenomeBrowser'
 import { useFamilyStore } from '@/stores/modules/family'
 import { useNavigationStore } from '@/stores/modules/navigation'
+import { exportCsv } from '@/utils/exportTable'
 
 export default {
   name: 'TFView',
@@ -257,6 +268,37 @@ export default {
       return tfData.value.slice(startIndex, endIndex)
     })
 
+    // 排序状态（阶段 3.2）
+    const sortProp = ref('')
+    const sortOrder = ref(null)
+
+    // 表头排序：直接对当前页之后的完整筛选结果排序，排序后回到第一页
+    const handleSortChange = (payload) => {
+      sortProp.value = payload && payload.prop ? payload.prop : ''
+      sortOrder.value = payload && payload.order ? payload.order : null
+      currentPage.value = 1
+      filterTFData()
+    }
+
+    // 导出当前筛选结果（阶段 3.2）
+    const exportCurrent = () => {
+      if (!tfData.value.length) {
+        ElMessage.warning(t('no_data_to_download'))
+        return
+      }
+      exportCsv(
+        tfData.value,
+        [
+          { key: 'TF_name', label: 'TF Name' },
+          { key: 'TF_class', label: 'TF Class' },
+          { key: 'TF_gene', label: 'Gene' },
+          { key: 'TF_genome', label: 'Genome' },
+        ],
+        'transcription_factors.csv',
+      )
+      ElMessage.success(t('table_export_success'))
+    }
+
     // 根据选择的基因组获取转录因子数据
     const fetchTFDataByGenome = async () => {
       if (selectedGenome.value.length === 0) {
@@ -322,7 +364,7 @@ export default {
       }
 
       // 处理数据格式
-      tfData.value = filteredData.map((item) => ({
+      const mapped = filteredData.map((item) => ({
         TF_name: item.TF_name || 'Unknown',
         TF_class: item.TF_class || 'Unknown',
         TF_gene: item.geneid || 'Unknown',
@@ -330,6 +372,25 @@ export default {
         TF_genome: genome
       }))
 
+      // 排序（阶段 3.2）：数字按数值比，文本按本地化字符串比；空值恒排末尾
+      if (sortProp.value && sortOrder.value) {
+        const dir = sortOrder.value === 'ascending' ? 1 : -1
+        mapped.sort((a, b) => {
+          const va = a[sortProp.value]
+          const vb = b[sortProp.value]
+          const emptyA = va === null || va === undefined || va === ''
+          const emptyB = vb === null || vb === undefined || vb === ''
+          if (emptyA && emptyB) return 0
+          if (emptyA) return 1
+          if (emptyB) return -1
+          const na = Number(va)
+          const nb = Number(vb)
+          if (!Number.isNaN(na) && !Number.isNaN(nb)) return (na - nb) * dir
+          return String(va).localeCompare(String(vb), 'zh-Hans-CN', { numeric: true }) * dir
+        })
+      }
+
+      tfData.value = mapped
       totalCount.value = tfData.value.length || 0
     }
 
@@ -497,7 +558,9 @@ export default {
       handlePageChange,
       handlePageSizeChange,
       handleRowClick,
-      handleGeneClick
+      handleGeneClick,
+      handleSortChange,
+      exportCurrent
     }
   }
 }

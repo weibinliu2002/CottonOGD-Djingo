@@ -60,9 +60,13 @@
           </template>
           
           <!-- 表格区域 -->
-          <el-table :data="paginatedResults" style="width: 100%">
-            <el-table-column prop="pathway_id" :label="t('pathway_id')" width="120"></el-table-column>
-            <el-table-column prop="description.name" :label="t('description')">
+          <el-table
+            :data="table.pagedData"
+            style="width: 100%"
+            @sort-change="table.handleSortChange"
+          >
+            <el-table-column prop="pathway_id" :label="t('pathway_id')" width="120" sortable="custom" />
+            <el-table-column prop="description.name" :label="t('description')" sortable="custom">
               <template #default="scope">
                 <div>
                   {{ scope.row.description?.name || '' }}
@@ -72,41 +76,49 @@
                 </div>
               </template>
             </el-table-column>
-            <el-table-column prop="gene_ratio" :label="t('gene_ratio')" width="120"></el-table-column>
-            <el-table-column prop="bg_ratio" :label="t('bg_ratio')" width="120"></el-table-column>
-            <el-table-column :label="t('rich_factor')" width="120">
+            <el-table-column prop="gene_ratio" :label="t('gene_ratio')" width="120" sortable="custom" />
+            <el-table-column prop="bg_ratio" :label="t('bg_ratio')" width="120" sortable="custom" />
+            <el-table-column prop="rich_factor" :label="t('rich_factor')" width="120" sortable="custom">
               <template #default="scope">
                 {{ parseFloat(scope.row.rich_factor || 0).toFixed(4) }}
               </template>
             </el-table-column>
-            <el-table-column :label="t('fold_enrichment')" width="150">
+            <el-table-column prop="fold_enrichment" :label="t('fold_enrichment')" width="150" sortable="custom">
               <template #default="scope">
                 {{ parseFloat(scope.row.fold_enrichment || 0).toFixed(4) }}
               </template>
             </el-table-column>
-            <el-table-column :label="t('z_score')" width="100">
+            <el-table-column prop="z_score" :label="t('z_score')" width="100" sortable="custom">
               <template #default="scope">
                 {{ parseFloat(scope.row.z_score || 0).toFixed(4) }}
               </template>
             </el-table-column>
-            <el-table-column :label="t('pvalue')" width="150">
+            <el-table-column prop="p_value" :label="t('pvalue')" width="150" sortable="custom">
               <template #default="scope">
                 {{ parseFloat(scope.row.p_value || 0).toFixed(6) }}
               </template>
             </el-table-column>
           </el-table>
         </el-card>
-        
-        <!-- 分页组件 (只有总数大于10时显示) -->
-        <div v-if="totalItems > 10" class="pagination-container">
+
+        <!-- 关键词筛选 + 计数 + 导出（阶段 3.2 新增） -->
+        <TableToolbar
+          v-model="table.keyword"
+          :total="table.total"
+          :columns="keggExportColumns"
+          :rows="table.sortedRows"
+          filename="kegg_enrichment_results.csv"
+          class="mt-4"
+        />
+
+        <!-- 分页组件 -->
+        <div class="pagination-container">
           <el-pagination
-            @size-change="handleSizeChange"
-            @current-change="handleCurrentChange"
-            :current-page="currentPage"
-            :page-sizes="[10, 25, 50]"
-            :page-size="perPage"
-            :total="totalItems"
+            v-model:current-page="table.currentPage"
+            v-model:page-size="table.pageSize"
+            :page-sizes="table.pageSizes"
             layout="total, sizes, prev, pager, next, jumper"
+            :total="table.total"
           />
         </div>
       </div>
@@ -118,7 +130,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, inject } from 'vue'
+import { ref, computed, onMounted, inject, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useEnrichmentStore } from '@/stores/modules/enrichment'
@@ -151,6 +163,39 @@ const paginatedResults = computed(() => {
 
 // 使用统一的axios实例
 import axios from '@/utils/http.js'
+import { useEnhancedTable } from '@/composables/core/useEnhancedTable'
+import type { ExportColumn } from '@/utils/exportTable'
+
+/**
+ * 表格增强（阶段 3.2）
+ *
+ * 在原分页（paginatedResults / currentPage / perPage）之上叠加筛选与排序。
+ * 原有分页状态与回调全部保留，仅将表格改绑到 table.*。
+ */
+type KeggEnrichRow = Record<string, any>
+
+const table = useEnhancedTable<KeggEnrichRow>(allResults, {
+  pageSize: perPage.value,
+  pageSizes: [10, 25, 50],
+  searchFields: ['pathway_id', 'gene_ratio', 'p_value'],
+})
+
+// 与原 perPage 联动
+watch(perPage, (size) => {
+  table.pageSize.value = size
+})
+
+/** 导出列定义 */
+const keggExportColumns: ExportColumn<KeggEnrichRow>[] = [
+  { key: 'pathway_id', label: 'Pathway ID' },
+  { key: 'description', label: 'Description', formatter: (row) => row.description?.name ?? '' },
+  { key: 'gene_ratio', label: 'Gene Ratio' },
+  { key: 'bg_ratio', label: 'Bg Ratio' },
+  { key: 'rich_factor', label: 'Rich Factor', formatter: (row) => Number(row.rich_factor ?? 0).toFixed(4) },
+  { key: 'fold_enrichment', label: 'Fold Enrichment', formatter: (row) => Number(row.fold_enrichment ?? 0).toFixed(4) },
+  { key: 'z_score', label: 'z-score', formatter: (row) => Number(row.z_score ?? 0).toFixed(4) },
+  { key: 'p_value', label: 'p-value', formatter: (row) => Number(row.p_value ?? 0).toFixed(6) },
+]
 
 const fetchResults = async () => {
   showLoading?.()

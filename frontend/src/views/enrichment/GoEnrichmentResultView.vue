@@ -74,49 +74,61 @@
           
           <!-- 结果表格 -->
           <el-card class="mb-4">
-            <el-table :data="categoryData.results" style="width: 100%">
-              <el-table-column prop="go_id" :label="t('go_id')" width="150"></el-table-column>
-              <el-table-column prop="description" :label="t('description')">
+            <!-- 关键词筛选 + 计数 + 导出（阶段 3.2 新增） -->
+            <TableToolbar
+              v-model="tableOf(category).keyword"
+              :total="tableOf(category).total"
+              :columns="goExportColumns"
+              :rows="tableOf(category).sortedRows"
+              :filename="`go_enrichment_${category}.csv`"
+              class="mb-3"
+            />
+
+            <el-table
+              :data="tableOf(category).pagedData"
+              style="width: 100%"
+              @sort-change="tableOf(category).handleSortChange"
+            >
+              <el-table-column prop="go_id" :label="t('go_id')" width="150" sortable="custom" />
+              <el-table-column prop="description" :label="t('description')" sortable="custom">
                 <template #default="scope">
                   {{ scope.row.description?.name || '' }}
                 </template>
               </el-table-column>
-              <el-table-column prop="gene_ratio" :label="t('gene_ratio')" width="120"></el-table-column>
-              <el-table-column prop="bg_ratio" :label="t('bg_ratio')" width="120"></el-table-column>
-              <el-table-column :label="t('rich_factor')" width="120">
+              <el-table-column prop="gene_ratio" :label="t('gene_ratio')" width="120" sortable="custom" />
+              <el-table-column prop="bg_ratio" :label="t('bg_ratio')" width="120" sortable="custom" />
+              <el-table-column prop="rich_factor" :label="t('rich_factor')" width="120" sortable="custom">
                 <template #default="scope">
                   {{ parseFloat(scope.row.rich_factor || 0).toFixed(4) }}
-                </template>
+              </template>
               </el-table-column>
-              <el-table-column :label="t('fold_enrichment')" width="120">
+              <el-table-column prop="fold_enrichment" :label="t('fold_enrichment')" width="120" sortable="custom">
                 <template #default="scope">
                   {{ parseFloat(scope.row.fold_enrichment || 0).toFixed(4) }}
-                </template>
+              </template>
               </el-table-column>
-              <el-table-column :label="t('z_score')" width="100">
+              <el-table-column prop="z_score" :label="t('z_score')" width="100" sortable="custom">
                 <template #default="scope">
                   {{ parseFloat(scope.row.z_score || 0).toFixed(4) }}
-                </template>
+              </template>
               </el-table-column>
-              <el-table-column :label="t('p_value')" width="120">
+              <el-table-column prop="p_value" :label="t('p_value')" width="120" sortable="custom">
                 <template #default="scope">
                   {{ parseFloat(scope.row.p_value || 0).toFixed(6) }}
-                </template>
+              </template>
               </el-table-column>
-              <el-table-column prop="genes" :label="t('number_of_genes')"></el-table-column>
+              <el-table-column prop="genes" :label="t('number_of_genes')" sortable="custom" />
             </el-table>
           </el-card>
-          
-          <!-- Element Plus 分页组件 -->
+
+          <!-- 分页组件：原分页已改绑到增强表格，行为保持一致（前端分页，不重新请求） -->
           <div class="pagination-container">
             <el-pagination
-              @size-change="(size: number) => handleSizeChange(category, size)"
-              @current-change="(page: number) => handleCurrentChange(category, page)"
-              :current-page="currentPages[category] ?? 1"
-              :page-sizes="[5, 10, 25, 50]"
-              :page-size="perPage"
-              :total="allResults[category]?.total || 0"
+              v-model:current-page="tableOf(category).currentPage"
+              v-model:page-size="tableOf(category).pageSize"
+              :page-sizes="tableOf(category).pageSizes"
               layout="total, sizes, prev, pager, next, jumper"
+              :total="tableOf(category).total"
             />
           </div>
         </div>
@@ -129,7 +141,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, inject } from 'vue'
+import { ref, computed, onMounted, inject, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useEnrichmentStore } from '@/stores/modules/enrichment'
@@ -168,8 +180,69 @@ const errorMessage = ref('')
 
 // 使用配置好的axios实例
 import axios from '@/utils/http.js'
+import { useEnhancedTable } from '@/composables/core/useEnhancedTable'
+import type { ExportColumn } from '@/utils/exportTable'
 
-// 分页后的结果
+/**
+ * 表格增强（阶段 3.2）
+ *
+ * GO 富集结果按 BP / MF / CC 三类分开展示，
+ * 因此为每类各建一个增强表格实例，互不干扰（各自独立筛选、排序、分页）。
+ */
+type EnrichRow = Record<string, any>
+
+const CATEGORIES = ['BP', 'MF', 'CC'] as const
+
+const tables = {
+  BP: useEnhancedTable<EnrichRow>(() => allResults.value.BP?.results ?? [], {
+    pageSize: perPage.value,
+    pageSizes: [5, 10, 25, 50],
+    searchFields: ['go_id', 'gene_ratio', 'p_value'],
+  }),
+  MF: useEnhancedTable<EnrichRow>(() => allResults.value.MF?.results ?? [], {
+    pageSize: perPage.value,
+    pageSizes: [5, 10, 25, 50],
+    searchFields: ['go_id', 'gene_ratio', 'p_value'],
+  }),
+  CC: useEnhancedTable<EnrichRow>(() => allResults.value.CC?.results ?? [], {
+    pageSize: perPage.value,
+    pageSizes: [5, 10, 25, 50],
+    searchFields: ['go_id', 'gene_ratio', 'p_value'],
+  }),
+}
+
+/**
+ * 按类别取增强表格实例。
+ * 模板里 v-for 的 key 是 string，直接下标访问会被 TS 判为可能 undefined，
+ * 这里收敛为穷举分支，既消除告警也杜绝拼错类别名。
+ */
+function tableOf(category: string) {
+  if (category === 'MF') return tables.MF
+  if (category === 'CC') return tables.CC
+  return tables.BP
+}
+
+// 与原 perPage 联动：原下拉修改时同步所有分类的每页条数
+watch(perPage, (size) => {
+  CATEGORIES.forEach((c) => {
+    tables[c].pageSize.value = size
+  })
+})
+
+/** 导出列定义（三类共用） */
+const goExportColumns: ExportColumn<EnrichRow>[] = [
+  { key: 'go_id', label: 'GO ID' },
+  { key: 'description', label: 'Description', formatter: (row) => row.description?.name ?? '' },
+  { key: 'gene_ratio', label: 'Gene Ratio' },
+  { key: 'bg_ratio', label: 'Bg Ratio' },
+  { key: 'rich_factor', label: 'Rich Factor', formatter: (row) => Number(row.rich_factor ?? 0).toFixed(4) },
+  { key: 'fold_enrichment', label: 'Fold Enrichment', formatter: (row) => Number(row.fold_enrichment ?? 0).toFixed(4) },
+  { key: 'z_score', label: 'z-score', formatter: (row) => Number(row.z_score ?? 0).toFixed(4) },
+  { key: 'p_value', label: 'p-value', formatter: (row) => Number(row.p_value ?? 0).toFixed(6) },
+  { key: 'genes', label: 'Genes' },
+]
+
+// 分页后的结果（原逻辑保留，供模板其余部分使用）
 const paginatedResults = computed(() => {
   const result: Record<string, any> = {
     BP: { results: [], total: 0 },

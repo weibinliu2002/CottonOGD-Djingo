@@ -59,14 +59,40 @@
             <el-tag type="primary">{{ totalItems }} results</el-tag>
           </div>
         </template>
-        <el-table :data="results" style="width: 100%">
-          <el-table-column prop="Chr" label="Chr" width="80"></el-table-column>
-          <el-table-column prop="Start" label="Start" width="100"></el-table-column>
-          <el-table-column prop="End" label="End" width="100"></el-table-column>
-          <el-table-column prop="ID" label="ID" width="150"></el-table-column>
-          <el-table-column prop="match" label="KO" width="120"></el-table-column>
-          <el-table-column prop="Description" :label="t('pathway_name')"></el-table-column>
+
+        <!-- 关键词筛选 + 计数 + 导出（阶段 3.2 新增） -->
+        <TableToolbar
+          v-model="table.keyword"
+          :total="table.total"
+          :columns="exportColumns"
+          :rows="table.sortedRows"
+          filename="kegg_annotation_results.csv"
+          class="mb-3"
+        />
+
+        <el-table
+          :data="table.pagedData"
+          style="width: 100%"
+          @sort-change="table.handleSortChange"
+        >
+          <el-table-column prop="Chr" label="Chr" width="80" sortable="custom" />
+          <el-table-column prop="Start" label="Start" width="100" sortable="custom" />
+          <el-table-column prop="End" label="End" width="100" sortable="custom" />
+          <el-table-column prop="ID" label="ID" width="150" sortable="custom" />
+          <el-table-column prop="match" label="KO" width="120" sortable="custom" />
+          <el-table-column prop="Description" :label="t('pathway_name')" sortable="custom" />
         </el-table>
+
+        <!-- 分页（阶段 3.2 新增：原页面无分页，结果多时无法浏览） -->
+        <div v-if="table.total > table.pageSize" class="pagination-container">
+          <el-pagination
+            v-model:current-page="table.currentPage"
+            v-model:page-size="table.pageSize"
+            :page-sizes="table.pageSizes"
+            layout="total, sizes, prev, pager, next, jumper"
+            :total="table.total"
+          />
+        </div>
       </el-card>
     </div>
     
@@ -105,6 +131,32 @@ const chartData = ref<{ labels: string[], data: number[] }>({ labels: [], data: 
 
 // 使用统一的axios实例
 import axios from '@/utils/http.js'
+import { useEnhancedTable } from '@/composables/core/useEnhancedTable'
+import type { ExportColumn } from '@/utils/exportTable'
+
+/**
+ * 表格增强（阶段 3.2）
+ *
+ * 原页面直接把 results 全量渲染、无分页；
+ * 这里在不改动取数逻辑的前提下补上筛选 / 排序 / 分页 / 导出。
+ */
+type KeggRow = Record<string, any>
+
+const table = useEnhancedTable<KeggRow>(results, {
+  pageSize: 10,
+  pageSizes: [10, 25, 50],
+  searchFields: ['ID', 'match', 'Description', 'Chr'],
+})
+
+/** 导出列定义 */
+const exportColumns: ExportColumn<KeggRow>[] = [
+  { key: 'Chr', label: 'Chr' },
+  { key: 'Start', label: 'Start' },
+  { key: 'End', label: 'End' },
+  { key: 'ID', label: 'ID' },
+  { key: 'match', label: 'KO' },
+  { key: 'Description', label: 'Description' },
+]
 
 const fetchResults = async () => {
   showLoading?.()

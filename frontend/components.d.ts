@@ -79,6 +79,7 @@ declare module 'vue' {
     RouterView: typeof import('vue-router')['RouterView']
     SequenceDisplay: typeof import('./src/components/data-display/SequenceDisplay.vue')['default']
     SequenceModal: typeof import('./src/components/data-display/SequenceModal.vue')['default']
+    TableToolbar: typeof import('./src/components/data-display/TableToolbar.vue')['default']
     TiandituMap: typeof import('./src/components/data-display/TiandituMap.vue')['default']
     TranscriptSelector: typeof import('./src/components/data-display/TranscriptSelector.vue')['default']
   }
@@ -156,6 +157,7 @@ declare global {
   const RouterView: typeof import('vue-router')['RouterView']
   const SequenceDisplay: typeof import('./src/components/data-display/SequenceDisplay.vue')['default']
   const SequenceModal: typeof import('./src/components/data-display/SequenceModal.vue')['default']
+  const TableToolbar: typeof import('./src/components/data-display/TableToolbar.vue')['default']
   const TiandituMap: typeof import('./src/components/data-display/TiandituMap.vue')['default']
   const TranscriptSelector: typeof import('./src/components/data-display/TranscriptSelector.vue')['default']
 }

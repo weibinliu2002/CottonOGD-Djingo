@@ -258,14 +258,28 @@
         </el-table-column>
       </el-table>
 
-      <div class="d-flex justify-content-end mt-3">
-        <el-pagination
-          v-model:current-page="currentPage"
-          v-model:page-size="pageSize"
-          :page-sizes="[10, 20, 50, 100]"
-          layout="total, sizes, prev, pager, next, jumper"
-          :total="filteredData.length"
-        />
+      <div class="d-flex justify-content-between align-items-center mt-3">
+        <span class="table-info">
+          Showing {{ startIndex }} to {{ endIndex }} of {{ filteredData.length }} genomes
+        </span>
+        <div class="d-flex align-items-center gap-2">
+          <!-- 导出当前筛选结果（阶段 3.2 新增） -->
+          <el-button
+            type="primary"
+            size="small"
+            :disabled="!filteredData.length"
+            @click="exportCurrent"
+          >
+            Export
+          </el-button>
+          <el-pagination
+            v-model:current-page="currentPage"
+            v-model:page-size="pageSize"
+            :page-sizes="[10, 20, 50, 100]"
+            layout="total, sizes, prev, pager, next, jumper"
+            :total="filteredData.length"
+          />
+        </div>
       </div>
     </template>
 
@@ -280,6 +294,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useGenomeStore } from '@/stores/modules/genome'
 import type { Species } from '@/stores/modules/genome'
+import { exportCsv } from '@/utils/exportTable'
 
 const router = useRouter()
 const route = useRoute()
@@ -376,6 +391,43 @@ function resetFilters(): void {
   filters.lai = ''
   applyFixedPloidyFilter()
   currentPage.value = 1
+}
+
+// ============ 导出（阶段 3.2 新增） ============
+/**
+ * 导出当前筛选后的全部基因组（不是仅当前页）。
+ * 各列取值与表格单元格保持一致，空值统一输出 '-'。
+ */
+function exportCurrent(): void {
+  if (!filteredData.value.length) {
+    ElMessage.warning('No data to export')
+    return
+  }
+  exportCsv(
+    filteredData.value as unknown as Record<string, unknown>[],
+    [
+      { key: 'alias', label: 'Genome Alias', formatter: (row) => (row as any).alias || (row as any).name || '-' },
+      { key: 'Cotton_Species', label: 'Cotton Species', formatter: (row) => (row as any).Cotton_Species || '-' },
+      { key: 'Genome_type', label: 'Type', formatter: (row) => (row as any).Genome_type || '-' },
+      { key: 'Ploidy', label: 'Ploidy', formatter: (row) => (row as any).Ploidy || '-' },
+      { key: 'Category', label: 'Category', formatter: (row) => (row as any).Category || '-' },
+      {
+        key: 'Genome_size',
+        label: 'Genome Size (Gb)',
+        formatter: (row) => formatGenomeSize((row as any).Genome_size),
+      },
+      { key: 'Busco', label: 'BUSCO', formatter: (row) => formatBusco((row as any).Busco) },
+      { key: 'LAI_value', label: 'LAI', formatter: (row) => (row as any).LAI_value || '-' },
+      {
+        key: 'Assembling_institution',
+        label: 'Assembling Institution',
+        formatter: (row) => (row as any).Assembling_institution || '-',
+      },
+      { key: 'Article', label: 'Article', formatter: (row) => (row as any).Article || '-' },
+    ],
+    'cotton_genomes.csv',
+  )
+  ElMessage.success('Export started')
 }
 
 // ============ 路由 query → 筛选条件（首页图表点击跳转） ============

@@ -43,26 +43,40 @@
               <span>{{ t('annotation_results') }}</span>
             </div>
           </template>
-          <el-table :data="paginatedResults" style="width: 100%">
-            <el-table-column prop="Chr" :label="t('chromosome')" width="80"></el-table-column>
-            <el-table-column prop="Start" :label="t('start_position')" width="100"></el-table-column>
-            <el-table-column prop="End" :label="t('end_position')" width="100"></el-table-column>
-            <el-table-column prop="Gene_ID" :label="t('gene_id')" width="150"></el-table-column>
-            <el-table-column prop="GO_ID" :label="t('go_id')" width="150"></el-table-column>
-            <el-table-column prop="Description" :label="t('description')"></el-table-column>
-            <el-table-column prop="Gene_Ontology" :label="t('go_category')" width="150"></el-table-column>
+          <el-table
+            :data="table.pagedData"
+            style="width: 100%"
+            @sort-change="table.handleSortChange"
+          >
+            <el-table-column prop="Chr" :label="t('chromosome')" width="80" sortable="custom" />
+            <el-table-column prop="Start" :label="t('start_position')" width="100" sortable="custom" />
+            <el-table-column prop="End" :label="t('end_position')" width="100" sortable="custom" />
+            <el-table-column prop="Gene_ID" :label="t('gene_id')" width="150" sortable="custom" />
+            <el-table-column prop="GO_ID" :label="t('go_id')" width="150" sortable="custom" />
+            <el-table-column prop="Description" :label="t('description')" sortable="custom" />
+            <el-table-column prop="Gene_Ontology" :label="t('go_category')" width="150" sortable="custom" />
           </el-table>
         </el-card>
 
+        <!-- 关键词筛选 + 计数 + 导出（阶段 3.2 新增，不改变下方原有分页行为） -->
+        <TableToolbar
+          v-model="table.keyword"
+          :total="table.total"
+          :columns="exportColumns"
+          :rows="table.sortedRows"
+          filename="go_annotation_results.csv"
+          class="mt-4"
+        />
+
         <el-pagination
-          v-if="total > perPage"
-          v-model:current-page="currentPage"
-          v-model:page-size="perPage"
-          :page-sizes="[5, 10, 25, 50]"
+          v-if="table.total > table.pageSize"
+          v-model:current-page="table.currentPage"
+          v-model:page-size="table.pageSize"
+          :page-sizes="table.pageSizes"
           layout="total, sizes, prev, pager, next, jumper"
-          :total="total"
-          @size-change="handlePerPageChange"
-          @current-change="changePage"
+          :total="table.total"
+          @size-change="table.handleSizeChange"
+          @current-change="table.handleCurrentChange"
           class="mt-4"
         />
       </div>
@@ -90,10 +104,12 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
-import { ref, computed, onMounted, inject } from 'vue'
+import { ref, computed, onMounted, inject, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import httpInstance from '@/utils/http.js'
 import { useEnrichmentStore } from '@/stores/modules/enrichment'
+import { useEnhancedTable } from '@/composables/core/useEnhancedTable'
+import type { ExportColumn } from '@/utils/exportTable'
 
 const route = useRoute()
 const showLoading = inject('showLoading') as (() => void) | undefined
@@ -116,6 +132,37 @@ const paginatedResults = computed(() => {
   const end = start + perPage.value
   return allResults.value.slice(start, end)
 })
+
+/**
+ * 表格增强（阶段 3.2）
+ *
+ * 在原分页逻辑之上叠加「关键词筛选 + 列排序 + 导出」。
+ * 保留 perPage/currentPage/total/paginatedResults 等原有状态，
+ * 仅将 el-table 与 el-pagination 改绑到 table.*，行为保持一致。
+ */
+type GoRow = Record<string, any>
+
+const table = useEnhancedTable<GoRow>(allResults, {
+  pageSize: perPage.value,
+  pageSizes: [5, 10, 25, 50],
+  searchFields: ['Gene_ID', 'GO_ID', 'Description', 'Gene_Ontology', 'Chr'],
+})
+
+// 与原 perPage 联动：原下拉修改 perPage 时同步到增强分页
+watch(perPage, (size) => {
+  table.pageSize.value = size
+})
+
+/** 导出列定义 */
+const exportColumns: ExportColumn<GoRow>[] = [
+  { key: 'Chr', label: 'Chr' },
+  { key: 'Start', label: 'Start' },
+  { key: 'End', label: 'End' },
+  { key: 'Gene_ID', label: 'Gene ID' },
+  { key: 'GO_ID', label: 'GO ID' },
+  { key: 'Description', label: 'Description' },
+  { key: 'Gene_Ontology', label: 'Gene Ontology' },
+]
 
 // 总页数
 const totalPages = computed(() => Math.ceil(total.value / perPage.value))
