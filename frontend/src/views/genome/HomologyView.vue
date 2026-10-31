@@ -71,8 +71,8 @@ async function loadList(): Promise<void> {
     const res = await getOrthogroups({
       keyword: keyword.value,
       singleCopyOnly: singleCopyOnly.value,
-      page: table.currentPage.value,
-      pageSize: table.pageSize.value,
+      page: table.currentPage,
+      pageSize: table.pageSize,
     })
     if (res.code !== 0) {
       errorText.value = res.message || t('global_search_error')
@@ -92,10 +92,10 @@ async function loadList(): Promise<void> {
 }
 
 // 页码变化：重新取数
-watch(table.currentPage, () => loadList())
+watch(() => table.currentPage, () => loadList())
 
 // 每页条数变化：回到第一页再取数
-watch(table.pageSize, () => {
+watch(() => table.pageSize, () => {
   table.resetPage()
   loadList()
 })

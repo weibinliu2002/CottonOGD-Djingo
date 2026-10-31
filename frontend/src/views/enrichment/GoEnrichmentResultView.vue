@@ -225,7 +225,7 @@ function tableOf(category: string) {
 // 与原 perPage 联动：原下拉修改时同步所有分类的每页条数
 watch(perPage, (size) => {
   CATEGORIES.forEach((c) => {
-    tables[c].pageSize.value = size
+    tables[c].pageSize = size
   })
 })
 

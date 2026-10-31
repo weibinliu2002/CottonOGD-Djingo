@@ -150,7 +150,7 @@ const table = useEnhancedTable<GoRow>(allResults, {
 
 // 与原 perPage 联动：原下拉修改 perPage 时同步到增强分页
 watch(perPage, (size) => {
-  table.pageSize.value = size
+  table.pageSize = size
 })
 
 /** 导出列定义 */

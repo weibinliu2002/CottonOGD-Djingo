@@ -14,7 +14,7 @@
  *   //       v-model="table.keyword"
  *   //       :current-page="table.currentPage" :page-size="table.pageSize" :total="table.total"
  */
-import { ref, computed, watch, type Ref } from 'vue'
+import { ref, computed, watch, reactive, type Ref } from 'vue'
 import { useTablePagination, type UseTablePaginationOptions } from './useTablePagination'
 import { exportCsv, type ExportColumn } from '@/utils/exportTable'
 
@@ -109,7 +109,7 @@ export function useEnhancedTable<T extends Record<string, any>>(
     exportCsv(sortedRows.value, columns, filename)
   }
 
-  return {
+  return reactive({
     /** 关键词筛选框绑定值 */
     keyword,
     sortProp,
@@ -119,5 +119,5 @@ export function useEnhancedTable<T extends Record<string, any>>(
     ...pagination,
     handleSortChange,
     exportRows,
-  }
+  })
 }
