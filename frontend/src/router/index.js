@@ -15,6 +15,7 @@ const JbrowseView = () => import('@/views/genome/JbrowseView.vue')
 const IGVView = () => import('@/views/genome/IGVView.vue')
 const GenomeSyntenyView = () => import('@/views/genome/GenomeSyntenyView.vue')
 const GeneLocationView = () => import('@/views/genome/GeneLocationView.vue')
+const HomologyView = () => import('@/views/genome/HomologyView.vue')
 
 // Annotation module
 const GoAnnotationView = () => import('@/views/annotation/GoAnnotationView.vue')
@@ -137,6 +138,12 @@ const routes = [
     path: '/genome/gene-location',
     name: 'GeneLocation',
     component: GeneLocationView
+  },
+  // 同源分析浏览（阶段 3.3 新增；后端暂无 orthogroup 接口，走 api 层 mock）
+  {
+    path: '/homology',
+    name: 'Homology',
+    component: HomologyView
   },
 
   // Browse routes (legacy - will redirect to new paths)
