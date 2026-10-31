@@ -490,6 +490,20 @@
     "chat_welcome": "Hello! I'm the iCotton AI assistant. Ask me about cotton genes, transcription factors, genome data or how to use the tools.",
     "chat_error": "Request failed, please try again later.",
     "chat_thinking": "Thinking...",
-    "chat_tools_used": "Tools used"
+    "chat_tools_used": "Tools used",
+    "global_search_placeholder": "Search genes, regions, variants, germplasm...",
+    "global_search_hint": "Press Enter to search",
+    "global_search_gene": "Gene",
+    "global_search_region": "Region",
+    "global_search_no_index": "No searchable index available",
+    "global_search_error": "Search failed, please try again later",
+    "global_search_enter_keyword": "Please enter a keyword",
+    "global_search_see_all": "See all results",
+    "module_genome": "Genome",
+    "module_variome": "Variome",
+    "module_transcriptome": "Transcriptome",
+    "module_phenome": "Phenome",
+    "module_homology": "Homology",
+    "module_synteny": "Synteny"
   }
 }

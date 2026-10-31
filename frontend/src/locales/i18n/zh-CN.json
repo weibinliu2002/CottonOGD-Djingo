@@ -489,6 +489,20 @@
     "chat_welcome": "你好！我是 iCotton 智能助手，可以帮你查询棉花基因、转录因子、基因组数据，以及解答工具使用问题。",
     "chat_error": "请求失败，请稍后重试。",
     "chat_thinking": "思考中…",
-    "chat_tools_used": "调用的工具"
+    "chat_tools_used": "调用的工具",
+    "global_search_placeholder": "搜索基因、区间、变异、种质...",
+    "global_search_hint": "按回车搜索",
+    "global_search_gene": "基因",
+    "global_search_region": "区间",
+    "global_search_no_index": "暂无可检索的索引",
+    "global_search_error": "搜索失败，请稍后重试",
+    "global_search_enter_keyword": "请输入关键词",
+    "global_search_see_all": "查看全部结果",
+    "module_genome": "基因组",
+    "module_variome": "变异组",
+    "module_transcriptome": "转录组",
+    "module_phenome": "表型组",
+    "module_homology": "同源",
+    "module_synteny": "共线性"
   }
 }
