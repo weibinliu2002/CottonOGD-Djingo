@@ -20,6 +20,7 @@ import {
 import { useGenomeStore } from '@/stores/modules/genome'
 import echarts from '@/utils/echarts'
 import NewsBox from '@/components/home/NewsBox.vue'
+import ModuleCard from '@/components/home/ModuleCard.vue'
 
 const genomeStore = useGenomeStore()
 const router = useRouter()
@@ -640,6 +641,63 @@ const fillExample = (example: string) => {
   searchQuery.value = example
   searchNow()
 }
+
+// ==================== 六大模块入口（对标 SoyOmics 首页卡片区） ====================
+// 所有链接均指向既有路由，不新增也不删除任何原有入口。
+// disabled 的模块后端暂无数据支撑，点击不做跳转，待接口就绪后放开。
+interface ModuleQuickLink {
+  labelKey: string
+  to: { name: string } | { path: string }
+}
+
+interface ModuleEntry {
+  key: string
+  titleKey: string
+  descKey: string
+  icon: string
+  color: string
+  links: ModuleQuickLink[]
+  disabled?: boolean
+}
+
+const moduleEntries: ModuleEntry[] = [
+  {
+    key: 'genome',
+    titleKey: 'module_genome',
+    descKey: 'module_genome_desc',
+    icon: 'fas fa-dna',
+    color: '#3a6ea5',
+    links: [
+      { labelKey: 'BrowseGenome', to: { name: 'BrowseGenome' } },
+      { labelKey: 'diploid', to: { name: 'DiploidSpecies' } },
+    ],
+  },
+  {
+    key: 'transcriptome',
+    titleKey: 'module_transcriptome',
+    descKey: 'module_transcriptome_desc',
+    icon: 'fas fa-chart-line',
+    color: '#52c41a',
+    links: [{ labelKey: 'gene_expression', to: { name: 'GeneExpression' } }],
+  },
+  {
+    key: 'homology',
+    titleKey: 'module_homology',
+    descKey: 'module_homology_desc',
+    icon: 'fas fa-sitemap',
+    color: '#7297bd',
+    links: [{ labelKey: 'homology_browse', to: { path: '/homology' } }],
+  },
+  {
+    key: 'synteny',
+    titleKey: 'module_synteny',
+    descKey: 'module_synteny_desc',
+    icon: 'fas fa-project-diagram',
+    color: '#909399',
+    links: [{ labelKey: 'genome_synteny', to: { name: 'GenomeSynteny' } }],
+  },
+]
+
 </script>
 
 <template>
@@ -848,6 +906,25 @@ const fillExample = (example: string) => {
       </div>
     </section>
     -->
+    <!-- 六大模块入口（对标 SoyOmics 首页卡片区） -->
+    <section class="modules-section">
+      <div class="container">
+        <h2 class="section-title">{{ t('module_entries') }}</h2>
+        <el-row :gutter="24">
+          <el-col v-for="mod in moduleEntries" :key="mod.key" :xs="24" :sm="12" :md="8" class="module-col">
+            <ModuleCard
+              :title-key="mod.titleKey"
+              :desc-key="mod.descKey"
+              :icon="mod.icon"
+              :color="mod.color"
+              :links="mod.links"
+              :disabled="mod.disabled"
+            />
+          </el-col>
+        </el-row>
+      </div>
+    </section>
+
     <!-- 图表可视化区域 -->
     <section class="charts-section">
       <div class="container">

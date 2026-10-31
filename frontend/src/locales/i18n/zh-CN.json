@@ -503,6 +503,19 @@
     "module_transcriptome": "转录组",
     "module_phenome": "表型组",
     "module_homology": "同源",
-    "module_synteny": "共线性"
+    "module_synteny": "共线性",
+    "module_genome_desc": "浏览基因组组装、基因结构与功能注释",
+    "module_variome_desc": "查看群体变异位点与等位基因频率",
+    "module_transcriptome_desc": "查询基因在不同组织与时期的表达谱",
+    "module_phenome_desc": "浏览表型性状及其关联位点",
+    "module_homology_desc": "检索同源基因簇、基因家族与演化关系",
+    "module_synteny_desc": "可视化基因组间共线性区块与结构变异",
+    "module_coming_soon": "敬请期待",
+    "quick_links": "快捷入口",
+    "browse_species": "浏览物种",
+    "tools_title": "分析工具",
+    "gene": "基因",
+    "module_entries": "数据模块",
+    "homology_browse": "同源浏览"
   }
 }

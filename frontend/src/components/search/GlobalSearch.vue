@@ -1,19 +1,21 @@
 <script setup lang="ts">
 /**
- * 全局搜索框（阶段 2）
+ * 全局搜索框（阶段 3.1）
  *
- * 对标 SoyOmics 首页顶部搜索框：支持基因 ID / 区间 / 关键词的统一检索，
- * 下拉展示即时结果，点击结果跳转基因详情页，回车跳转搜索页查看全部。
+ * 对标 SoyOmics 首页顶部搜索框：支持基因 ID / 区间 / 关键词的统一检索。
+ * - 下拉展示即时结果（前 8 条），点击结果跳基因详情页
+ * - 回车跳转 /sequence/search 查看全部结果
+ * - 结果过多时支持在下拉内翻页
  *
  * 数据来源：统一检索接口 POST /CottonOGD_api/search/（经后端代理 Meilisearch），
  * 见 src/api/index.ts 的 searchGenes / getSearchIndexes。
  *
- * 说明：本阶段只做 UI 与路由跳转，不改变任何既有页面/数据流。
+ * 复用：既可作为首页主搜索框（受控 v-model），也可挂到导航栏（非受控）。
  */
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { Search, Loading } from '@element-plus/icons-vue'
+import { Search, Loading, ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
 import { useNavigationStore } from '@/stores/modules/navigation'
 import {
   searchGenes,
@@ -26,8 +28,34 @@ const { t } = useI18n()
 const router = useRouter()
 const navigationStore = useNavigationStore()
 
-/** 搜索关键词 */
-const keyword = ref('')
+const props = withDefaults(
+  defineProps<{
+    /** v-model：外部受控关键词；不传则组件内部自持 */
+    modelValue?: string
+    /** 每页展示条数（下拉内） */
+    pageSize?: number
+    /** 占位文案覆盖 */
+    placeholder?: string
+  }>(),
+  { pageSize: 8 },
+)
+
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: string): void
+}>()
+
+/** 内部自持关键词（非受控模式） */
+const innerKeyword = ref('')
+
+/** 搜索关键词：受控优先 */
+const keyword = computed({
+  get: () => (props.modelValue !== undefined ? props.modelValue : innerKeyword.value),
+  set: (value: string) => {
+    if (props.modelValue !== undefined) emit('update:modelValue', value)
+    else innerKeyword.value = value
+  },
+})
+
 /** 是否正在检索 */
 const searching = ref(false)
 /** 检索耗时（ms） */
@@ -38,13 +66,16 @@ const totalHits = ref(0)
 const hits = ref<Record<string, unknown>[]>([])
 /** 错误信息 */
 const errorText = ref('')
-/** 检索库下拉：来自后端索引清单 */
+/** 可用检索库 */
 const indexes = ref<SearchIndexInfo[]>([])
 const activeIndex = ref('genemaster')
-/** 是否显示结果下拉 */
+/** 下拉是否可见 */
 const visible = ref(false)
-/** 根元素，用于点击外部关闭 */
+/** 下拉内页码 */
+const page = ref(1)
+/** 根元素与输入框，用于点击外部关闭 / 焦点控制 */
 const rootRef = ref<HTMLElement | null>(null)
+const inputRef = ref<{ focus: () => void } | null>(null)
 
 const indexOptions = computed(() =>
   indexes.value.filter((i) => i.available).map((i) => ({ label: i.label, value: i.uid })),
@@ -72,8 +103,8 @@ async function run(): Promise<void> {
     const res = await searchGenes({
       q,
       index: activeIndex.value,
-      offset: 0,
-      limit: 8,
+      offset: (page.value - 1) * props.pageSize,
+      limit: props.pageSize,
       withFacets: false,
     })
     if (cur !== seq) return
@@ -86,7 +117,7 @@ async function run(): Promise<void> {
     hits.value = res.data.hits
     totalHits.value = res.data.estimatedTotalHits
     costMs.value = res.data.processingTimeMs
-  } catch (e) {
+  } catch {
     if (cur === seq) {
       errorText.value = t('global_search_error')
       hits.value = []
@@ -100,8 +131,9 @@ async function run(): Promise<void> {
   }
 }
 
-/** 输入防抖 300ms */
+/** 输入防抖 300ms（并回到第一页） */
 function onInput(): void {
+  page.value = 1
   if (timer) clearTimeout(timer)
   timer = setTimeout(run, 300)
 }
@@ -118,55 +150,83 @@ function onSubmit(): void {
   router.push({ name: 'idSearch', query: { query: q, index: activeIndex.value } })
 }
 
-/**
- * 点击命中项：复用项目既有的 geneid_summary 流程
- * （与 HomeView / RegionSearchView 写法一致），拉取摘要后跳 idSearchSummary。
- */
-async function onPick(hit: Record<string, unknown>): Promise<void> {
-  const geneid = hit.geneid as string | undefined
-  if (!geneid) return
+/** 清空 */
+function onClear(): void {
+  hits.value = []
+  totalHits.value = 0
+  costMs.value = 0
+  errorText.value = ''
+  page.value = 1
   visible.value = false
+}
+
+/** 切换检索库：重新检索 */
+watch(activeIndex, () => {
+  page.value = 1
+  if (keyword.value.trim()) run()
+})
+
+/** 下拉内翻页 */
+function goPrev(): void {
+  if (page.value > 1) {
+    page.value--
+    run()
+  }
+}
+function goNext(): void {
+  if (page.value * props.pageSize < totalHits.value) {
+    page.value++
+    run()
+  }
+}
+
+/** 打开详情页：复用既有 geneid_summary 流程（与 HomeView 原实现一致） */
+async function openGeneDetail(geneid: string, genomeId?: unknown): Promise<void> {
   const requestId = `gs_${Date.now()}`
   try {
     const response = (await httpInstance.post('/CottonOGD_api/geneid_summary/', {
       gene_id: geneid,
-      genome_id: hit.genome_id,
+      genome_id: genomeId,
       request_id: requestId,
-    })) as any
-    if (response && response.geneid_result) {
-      const results = {
-        geneid_result:
-          typeof response.geneid_result === 'string'
-            ? JSON.parse(response.geneid_result)
-            : response.geneid_result,
-        gene_info_result:
-          typeof response.gene_info_result === 'string'
-            ? JSON.parse(response.gene_info_result)
-            : response.gene_info_result,
-        search_map:
-          typeof response.search_map === 'string'
-            ? JSON.parse(response.search_map)
-            : response.search_map,
-        gene_go_result: response.gene_go_result || [],
-        gene_kegg_result: response.gene_kegg_result || [],
-      }
-      const dbIds = results.search_map
-        ? Object.values(results.search_map)
-            .map((item: any) => item?.db_id)
-            .filter(Boolean)
-        : []
-      navigationStore.setNavigationData('geneSearch', {
-        results,
-        dbIds,
-        requestId,
-      })
-      router.push({ name: 'idSearchSummary' })
-    } else {
+    })) as unknown as Record<string, any>
+
+    if (!response?.geneid_result) {
       errorText.value = t('global_search_error')
+      return
     }
+    const results = {
+      geneid_result:
+        typeof response.geneid_result === 'string'
+          ? JSON.parse(response.geneid_result)
+          : response.geneid_result,
+      gene_info_result:
+        typeof response.gene_info_result === 'string'
+          ? JSON.parse(response.gene_info_result)
+          : response.gene_info_result,
+      search_map:
+        typeof response.search_map === 'string'
+          ? JSON.parse(response.search_map)
+          : response.search_map,
+      gene_go_result: response.gene_go_result || [],
+      gene_kegg_result: response.gene_kegg_result || [],
+    }
+    const dbIds = results.search_map
+      ? Object.values(results.search_map)
+          .map((item: any) => item?.db_id)
+          .filter(Boolean)
+      : []
+    navigationStore.setNavigationData('geneSearch', { results, dbIds, requestId })
+    router.push({ name: 'idSearchSummary' })
   } catch {
     errorText.value = t('global_search_error')
   }
+}
+
+function onPick(hit: Record<string, unknown>): void {
+  const geneid = hit.geneid as string | undefined
+  if (!geneid) return
+  visible.value = false
+  openGeneDetail(geneid, hit.genome_id)
 }
 
 /** 点击组件外部关闭下拉 */
@@ -175,6 +235,11 @@ function onClickOutside(event: MouseEvent): void {
   if (el && event.target instanceof Node && !el.contains(event.target)) {
     visible.value = false
   }
+}
+
+/** 聚焦输入框（供父组件调用） */
+function focus(): void {
+  nextTick(() => inputRef.value?.focus())
 }
 
 onMounted(async () => {
@@ -193,6 +258,8 @@ onBeforeUnmount(() => {
   if (timer) clearTimeout(timer)
 })
 
+defineExpose({ focus })
+
 /** 取字段用于展示：优先高亮片段 */
 function hitText(hit: Record<string, unknown>, field: string): string {
   const formatted = hit._formatted as Record<string, string> | undefined
@@ -203,29 +270,47 @@ function hitText(hit: Record<string, unknown>, field: string): string {
 
 <template>
   <div ref="rootRef" class="global-search">
-    <el-input
-      v-model="keyword"
-      class="global-search__input"
-      :placeholder="t('global_search_placeholder')"
-      clearable
-      size="large"
-      :suffix-icon="searching ? Loading : Search"
-      @input="onInput"
-      @keyup.enter="onSubmit"
-      @clear="hits = []"
-      @focus="keyword.trim() && (visible = true)"
-    >
-      <template v-if="indexOptions.length" #prepend>
-        <el-select v-model="activeIndex" class="global-search__index" size="large">
-          <el-option
-            v-for="opt in indexOptions"
-            :key="opt.value"
-            :label="opt.label"
-            :value="opt.value"
-          />
-        </el-select>
-      </template>
-    </el-input>
+    <div class="global-search__bar">
+      <!-- 检索库选择 -->
+      <el-select
+        v-if="indexOptions.length"
+        v-model="activeIndex"
+        class="global-search__index"
+        size="large"
+      >
+        <el-option
+          v-for="opt in indexOptions"
+          :key="opt.value"
+          :label="opt.label"
+          :value="opt.value"
+        />
+      </el-select>
+
+      <el-input
+        ref="inputRef"
+        v-model="keyword"
+        class="global-search__input"
+        :placeholder="placeholder || t('global_search_placeholder')"
+        clearable
+        size="large"
+        @input="onInput"
+        @keyup.enter="onSubmit"
+        @clear="onClear"
+        @focus="keyword.trim() && (visible = true)"
+      >
+        <template #append>
+          <el-button
+            type="primary"
+            :loading="searching"
+            class="global-search__btn"
+            @click="onSubmit"
+          >
+            <el-icon v-if="!searching"><Search /></el-icon>
+            {{ t('search') }}
+          </el-button>
+        </template>
+      </el-input>
+    </div>
 
     <!-- 即时结果下拉 -->
     <transition name="el-zoom-in-top">
@@ -248,10 +333,15 @@ function hitText(hit: Record<string, unknown>, field: string): string {
         </div>
 
         <template v-else>
+          <div class="global-search__meta">
+            <span>~{{ totalHits.toLocaleString() }} hits</span>
+            <el-tag size="small" type="info" effect="plain">{{ costMs }} ms</el-tag>
+          </div>
+
           <ul class="global-search__list">
             <li
               v-for="(hit, idx) in hits"
-              :key="(hit.id as string) || idx"
+              :key="(hit.id as string) || String(idx)"
               class="global-search__item"
               :class="{ 'is-clickable': !!hit.geneid }"
               @click="onPick(hit)"
@@ -270,13 +360,34 @@ function hitText(hit: Record<string, unknown>, field: string): string {
                 ></span>
               </div>
               <el-tag v-if="hit.genome_id" size="small" type="success" effect="light">
-                {{ hit.genome_id }}
-              </el-tag>
+                    {{ hit.genome_id }}
+                  </el-tag>
             </li>
           </ul>
 
           <div class="global-search__footer">
-            <span>~{{ totalHits.toLocaleString() }} hits · {{ costMs }} ms</span>
+            <span>{{ t('page') }} {{ page }}</span>
+            <div class="global-search__pager">
+              <el-button
+                size="small"
+                :disabled="page <= 1 || searching"
+                @click="goPrev"
+              >
+                <el-icon><ArrowLeft /></el-icon>
+                {{ t('previous') }}
+              </el-button>
+              <el-button
+                size="small"
+                :disabled="page * pageSize >= totalHits || searching"
+                @click="goNext"
+              >
+                {{ t('next') }}
+                <el-icon><ArrowRight /></el-icon>
+              </el-button>
+            </div>
+          </div>
+
+          <div class="global-search__seeall">
             <el-button link type="primary" size="small" @click="onSubmit">
               {{ t('global_search_see_all') }}
             </el-button>
@@ -293,8 +404,30 @@ function hitText(hit: Record<string, unknown>, field: string): string {
   width: 100%;
 }
 
+.global-search__bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .global-search__index {
   width: 150px;
+  flex-shrink: 0;
+}
+
+.global-search__input {
+  flex: 1;
+}
+
+.global-search__btn {
+  background-color: #3a6ea5;
+  border-color: #3a6ea5;
+  color: #ffffff;
+}
+
+.global-search__btn:hover {
+  background-color: #2c5282;
+  border-color: #2c5282;
 }
 
 .global-search__panel {
@@ -318,6 +451,16 @@ function hitText(hit: Record<string, unknown>, field: string): string {
   padding: 20px 12px;
   color: #6c757d;
   font-size: 14px;
+}
+
+.global-search__meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  font-size: 13px;
+  color: #495057;
+  border-bottom: 1px solid #eef2f7;
 }
 
 .global-search__list {
@@ -384,5 +527,15 @@ function hitText(hit: Record<string, unknown>, field: string): string {
   border-top: 1px solid #eef2f7;
   font-size: 12px;
   color: #6c757d;
+}
+
+.global-search__pager {
+  display: flex;
+  gap: 8px;
+}
+
+.global-search__seeall {
+  text-align: center;
+  padding: 6px 14px 10px;
 }
 </style>

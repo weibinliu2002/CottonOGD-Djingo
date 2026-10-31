@@ -504,6 +504,18 @@
     "module_transcriptome": "Transcriptome",
     "module_phenome": "Phenome",
     "module_homology": "Homology",
-    "module_synteny": "Synteny"
+    "module_synteny": "Synteny",
+    "module_genome_desc": "Browse genome assemblies, gene structures and annotations",
+    "module_variome_desc": "Explore genomic variations and allele frequency across populations",
+    "module_transcriptome_desc": "Query gene expression profiles across tissues and stages",
+    "module_phenome_desc": "Browse phenotypic traits and their associated loci",
+    "module_homology_desc": "Explore orthogroups, gene families and evolutionary relationships",
+    "module_synteny_desc": "Visualize syntenic blocks and structural variations between genomes",
+    "module_coming_soon": "Coming soon",
+    "quick_links": "Quick links",
+    "browse_species": "Browse species",
+    "tools_title": "Tools",
+    "module_entries": "Data Modules",
+    "homology_browse": "Homology Browser"
   }
 }
