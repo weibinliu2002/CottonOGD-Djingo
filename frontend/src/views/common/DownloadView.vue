@@ -12,13 +12,14 @@ const isLoading = ref(false)
 const errorMessage = ref('')
 
 // 涓嬭浇绫诲瀷瀹氫箟
+// 锛堟敞锛歴uffix 涓庡悗绔?CottonOGD/views/DownloadGenome.py 鐨?FILE_TYPE_MAPPING 涓€涓€瀵瑰簲锛?
 const downloadTypes = [
-  { value: 'genome', label: 'Genome', icon: 'File' },
-  { value: 'gene', label: 'Gene', icon: 'File' },
-  { value: 'cds', label: 'CDS', icon: 'File' },
-  { value: 'protein', label: 'Protein', icon: 'File' },
-  { value: 'upstream2000', label: 'Upstream 2000', icon: 'File' },
-  { value: 'gff3', label: 'GFF3', icon: 'File' }
+  { value: 'genome', label: 'Genome', icon: 'File', suffix: '.genome.fa.gz' },
+  { value: 'gene', label: 'Gene', icon: 'File', suffix: '.gene_genome.fa.gz' },
+  { value: 'cds', label: 'CDS', icon: 'File', suffix: '.cds.fa.gz' },
+  { value: 'protein', label: 'Protein', icon: 'File', suffix: '.pro.fa.gz' },
+  { value: 'upstream2000', label: 'Upstream 2000', icon: 'File', suffix: '.upstream.fa.gz' },
+  { value: 'gff3', label: 'GFF3', icon: 'File', suffix: '.gff.gz' }
 ]
 
 // Type鏄犲皠瀹氫箟锛堢敤鎴峰彲鑷仙啓鏄犲皠鍐呭锛?
@@ -196,6 +197,24 @@ const activeNames = ref<string[]>([])
         </el-row>
       </div>-->
       
+      <!-- 下载类型说明（阶段 3.4 新增：明确各文件后缀，避免用户下错文件） -->
+      <el-card class="mb-6 download-legend">
+        <template #header>
+          <div class="card-header">
+            <span>{{ t('download_options') }}</span>
+          </div>
+        </template>
+        <el-descriptions :column="2" border size="small">
+          <el-descriptions-item
+            v-for="type in downloadTypes"
+            :key="type.value"
+            :label="type.label"
+          >
+            <code>{{ type.suffix }}</code>
+          </el-descriptions-item>
+        </el-descriptions>
+      </el-card>
+
       <!-- 閿欒淇℃伅 -->
       <el-alert
         v-if="errorMessage"
