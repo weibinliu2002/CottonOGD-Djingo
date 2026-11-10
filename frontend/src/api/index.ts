@@ -975,3 +975,163 @@ export async function getSingleCopyGenes(params?: {
   }))
   return ok(list)
 }
+
+// ==================== 十六、Ortholog / Orthogroup 查询（后端已就绪） ====================
+
+/** 一个物种内的成员基因条目 */
+export interface OrthologMemberGene {
+  /** 该物种内的同源基因名（始终有值） */
+  ortho_gene: string
+  /** genemaster 中的 geneid；约 16% 基因无对应，可能为 null，原样展示 */
+  genemaster_geneid: string | null
+}
+
+/** 一个物种在某 orthogroup 下的成员 */
+export interface OrthologSpeciesMember {
+  /** 物种内部名（如 G.stocksiiE1_HAU_v1） */
+  species: string
+  /** 展示用名（优先使用，回退 species） */
+  display_name?: string
+  /** 该物种成员基因数 */
+  n: number
+  genes: OrthologMemberGene[]
+}
+
+/** 一个 orthogroup 的查询结果 */
+export interface OrthologOrthogroup {
+  og_code: string
+  species_count: number
+  gene_count: number
+  is_single_copy: boolean
+  /** one_to_one | one_to_many | many_to_one | many_to_many | single | none */
+  relation_type: string
+  species_members: OrthologSpeciesMember[]
+}
+
+/** 按基因查询直系同源的响应 */
+export interface OrthologGeneResponse {
+  query_gene: string
+  found: boolean
+  orthogroups: OrthologOrthogroup[]
+}
+
+/** 物种元数据条目（orthofinder/meta/） */
+export interface OrthologSpeciesMeta {
+  name: string
+  alias?: string
+  Cotton_Species?: string
+  Genome_type?: string
+  Category?: string
+}
+
+/** 按物种筛选 orthogroup 的单个命中（带分页信息） */
+export interface OrthogroupsBySpeciesResponse {
+  found: boolean
+  mode: string
+  species: string[]
+  total: number
+  limit: number
+  offset: number
+  orthogroups: OrthologOrthogroup[]
+}
+
+/**
+ * 按基因查询直系同源。
+ * POST /CottonOGD_api/orthofinder/ortholog_gene/，body { geneid }。
+ * 未命中时后端返回 found:false、orthogroups:[]。
+ */
+export async function getOrthologByGene(geneid: string): Promise<OrthologGeneResponse> {
+  try {
+    const res = await httpInstance.post('/CottonOGD_api/orthofinder/ortholog_gene/', {
+      geneid,
+    }) as unknown as OrthologGeneResponse
+    return res ?? { query_gene: geneid, found: false, orthogroups: [] }
+  } catch {
+    return { query_gene: geneid, found: false, orthogroups: [] }
+  }
+}
+
+/**
+ * 查询单个 orthogroup 的全部成员。
+ * POST /CottonOGD_api/orthofinder/orthogroup_detail/，body { og_code }。
+ */
+export async function getOrthogroupDetailV2(ogCode: string): Promise<OrthologOrthogroup | null> {
+  try {
+    const res = await httpInstance.post('/CottonOGD_api/orthofinder/orthogroup_detail/', {
+      og_code: ogCode,
+    }) as unknown as { found: boolean; orthogroup?: OrthologOrthogroup }
+    if (res && res.found && res.orthogroup) return res.orthogroup
+    return null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * 按物种筛选 orthogroup（跨物种共有）。
+ * POST /CottonOGD_api/orthofinder/orthogroups_by_species/。
+ * mode: all=全部选中物种共有（默认）；any=任一物种含有。
+ */
+export async function getOrthogroupsBySpecies(params: {
+  species: string[]
+  mode?: 'all' | 'any'
+  limit?: number
+  offset?: number
+}): Promise<OrthogroupsBySpeciesResponse> {
+  try {
+    const res = await httpInstance.post('/CottonOGD_api/orthofinder/orthogroups_by_species/', {
+      species: params.species,
+      mode: params.mode ?? 'all',
+      limit: params.limit ?? 50,
+      offset: params.offset ?? 0,
+    }) as unknown as OrthogroupsBySpeciesResponse
+    return res ?? {
+      found: false, mode: params.mode ?? 'all', species: params.species,
+      total: 0, limit: params.limit ?? 50, offset: params.offset ?? 0, orthogroups: [],
+    }
+  } catch {
+    return {
+      found: false, mode: params.mode ?? 'all', species: params.species,
+      total: 0, limit: params.limit ?? 50, offset: params.offset ?? 0, orthogroups: [],
+    }
+  }
+}
+
+/**
+ * 拉取物种元数据（供物种下拉/筛选）。
+ * GET /CottonOGD_api/orthofinder/meta/，无参。
+ */
+export async function getOrthologMeta(): Promise<OrthologSpeciesMeta[]> {
+  try {
+    const res = await httpInstance.get('/CottonOGD_api/orthofinder/meta/') as unknown as OrthologSpeciesMeta[]
+    return Array.isArray(res) ? res : []
+  } catch {
+    return []
+  }
+}
+
+/**
+ * 拉取单个 orthogroup 的 FASTA 序列文本（按需，零全量加载）。
+ * GET /CottonOGD_api/orthofinder/sequence/<og_code>
+ */
+export async function getOrthogroupSequence(ogCode: string): Promise<string> {
+  try {
+    const res = await httpInstance.get(`/CottonOGD_api/orthofinder/sequence/${ogCode}`) as unknown as string
+    return typeof res === 'string' ? res : ''
+  } catch {
+    return ''
+  }
+}
+
+/**
+ * 拉取单个 orthogroup 的基因树（newick 文本，按需）。
+ * GET /CottonOGD_api/orthofinder/tree/<og_code>
+ */
+export async function getOrthogroupTree(ogCode: string): Promise<string> {
+  try {
+    const res = await httpInstance.get(`/CottonOGD_api/orthofinder/tree/${ogCode}`) as unknown as string
+    return typeof res === 'string' ? res : ''
+  } catch {
+    return ''
+  }
+}

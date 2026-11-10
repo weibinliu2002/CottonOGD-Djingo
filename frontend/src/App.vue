@@ -81,6 +81,7 @@
                 <li><router-link class="dropdown-item" to="/enrichment/go">{{ t('go_enrichment') }}</router-link></li>
                 <li><router-link class="dropdown-item" to="/enrichment/kegg">{{ t('kegg_enrichment') }}</router-link></li>
                 <li><router-link class="dropdown-item" to="/tools/primer-design">{{ t('primer_design') }}</router-link></li>
+                <li><router-link class="dropdown-item" to="/tools/orthogroup">{{ t('orthogroup') }}</router-link></li>
                 <li><router-link class="dropdown-item" to="/sequence/server">{{ t('sequence_server') }}</router-link></li>
               </ul>
             </li>
