@@ -686,7 +686,7 @@ const moduleEntries: ModuleEntry[] = [
     descKey: 'module_homology_desc',
     icon: 'fas fa-sitemap',
     color: '#7297bd',
-    links: [{ labelKey: 'homology_browse', to: { path: '/homology' } }],
+    links: [{ labelKey: 'homology_browse', to: { path: '/tools/orthogroup' } }],
   },
   {
     key: 'synteny',

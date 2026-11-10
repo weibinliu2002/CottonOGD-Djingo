@@ -997,7 +997,7 @@ export interface OrthologSpeciesMember {
   genes: OrthologMemberGene[]
 }
 
-/** 一个 orthogroup 的查询结果 */
+/** 一个 orthogroup 的查询结果（列表与明细共用） */
 export interface OrthologOrthogroup {
   og_code: string
   species_count: number
@@ -1006,6 +1006,8 @@ export interface OrthologOrthogroup {
   /** one_to_one | one_to_many | many_to_one | many_to_many | single | none */
   relation_type: string
   species_members: OrthologSpeciesMember[]
+  /** 功能注释；后端当前未返回，预留字段，补齐后列表/明细自动生效 */
+  annotation?: string
 }
 
 /** 按基因查询直系同源的响应 */
@@ -1054,13 +1056,17 @@ export async function getOrthologByGene(geneid: string): Promise<OrthologGeneRes
 /**
  * 查询单个 orthogroup 的全部成员。
  * POST /CottonOGD_api/orthofinder/orthogroup_detail/，body { og_code }。
+ * 后端返回**扁平结构**：{ found, og_code, species_count, ..., species_members }。
  */
 export async function getOrthogroupDetailV2(ogCode: string): Promise<OrthologOrthogroup | null> {
   try {
     const res = await httpInstance.post('/CottonOGD_api/orthofinder/orthogroup_detail/', {
       og_code: ogCode,
-    }) as unknown as { found: boolean; orthogroup?: OrthologOrthogroup }
-    if (res && res.found && res.orthogroup) return res.orthogroup
+    }) as unknown as OrthologOrthogroup & { found: boolean }
+    // 后端 found:true 但 orthogroup 为空对象时也视为未命中
+    if (res && res.found && (res.og_code || (res.species_members && res.species_members.length))) {
+      return res
+    }
     return null
   } catch {
     return null
