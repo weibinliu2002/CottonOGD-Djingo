@@ -117,9 +117,16 @@ async function loadOgs(reset = true): Promise<void> {
     ogOffset.value = 0
     ogList.value = []
   }
+  // 防护：未取到任何物种名（meta 解析失败）时不发空 species 请求，避免后端 400
+  const querySpecies = resolveQuerySpecies()
+  if (querySpecies.length === 0) {
+    ogLoading.value = false
+    ogError.value = t('ortholog_not_found')
+    return
+  }
   try {
     const res = await getOrthogroupsBySpecies({
-      species: resolveQuerySpecies(),
+      species: querySpecies,
       mode: resolveQueryMode(),
       limit: ogLimit.value,
       offset: ogOffset.value,

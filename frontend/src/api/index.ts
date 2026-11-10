@@ -1118,8 +1118,15 @@ export async function getOrthogroupsBySpecies(params: {
  */
 export async function getOrthologMeta(): Promise<OrthologSpeciesMeta[]> {
   try {
-    const res = await httpInstance.get('/CottonOGD_api/orthofinder/meta/') as unknown as OrthologSpeciesMeta[]
-    return Array.isArray(res) ? res : []
+    // 后端返回 { species: [...] }（而非裸数组），两种形态都兼容
+    const res = await httpInstance.get('/CottonOGD_api/orthofinder/meta/') as unknown as
+      | OrthologSpeciesMeta[]
+      | { species?: OrthologSpeciesMeta[] }
+    if (Array.isArray(res)) return res
+    if (res && Array.isArray((res as { species?: OrthologSpeciesMeta[] }).species)) {
+      return (res as { species: OrthologSpeciesMeta[] }).species
+    }
+    return []
   } catch {
     return []
   }
