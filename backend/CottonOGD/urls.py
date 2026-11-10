@@ -24,6 +24,7 @@ from CottonOGD.views.ai_chat import ai_chat
 from CottonOGD.views.orthofinder import (
     ortholog_gene, orthogroup_detail, orthogroups_by_species,
     orthofinder_meta, orthofinder_sequence, orthofinder_tree,
+    orthofinder_msa, orthofinder_wgs, orthofinder_tandem, orthofinder_wgd,
 )
 
 
@@ -76,6 +77,10 @@ urlpatterns = [
     path('orthofinder/meta/', orthofinder_meta, name='orthofinder_meta'),
     path('orthofinder/sequence/<str:og_code>', orthofinder_sequence, name='orthofinder_sequence'),
     path('orthofinder/tree/<str:og_code>', orthofinder_tree, name='orthofinder_tree'),
+    path('orthofinder/msa/<str:og_code>', orthofinder_msa, name='orthofinder_msa'),
+    path('orthofinder/wgs/<str:og_code>', orthofinder_wgs, name='orthofinder_wgs'),
+    path('orthofinder/tandem/<str:og_code>', orthofinder_tandem, name='orthofinder_tandem'),
+    path('orthofinder/wgd/<str:og_code>', orthofinder_wgd, name='orthofinder_wgd'),
 
     # ========== TF/TR 系统发生树静态文件转发（前端 Phylotree.js 直接 fetch，无 API 逻辑） ==========
     # 路径示例：

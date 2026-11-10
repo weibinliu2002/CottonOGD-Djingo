@@ -5,11 +5,15 @@ OrthoFinder 直系同源（Ortholog）查询接口。
 基因 id 即 TranscriptMaster.transcriptid；查询时按需 join 到 GeneMaster 以链接既有基因详情页。
 
 一对一 / 一对多 / 多对多 由每个物种在 OG 内的成员数实时判定，不落表。
+
+按需单文件读取（MSA / 序列 / 基因树 / WGS）零全量加载，文件不存在返回裸 404（前端静默降级）。
+基因重复事件（tandem / wgd 端点）实时解析 Gene_Duplication_Events/Duplications.tsv。
 """
 from __future__ import annotations
 
 import os
 import re
+import json
 
 from django.conf import settings
 from django.db.models import Count
@@ -30,6 +34,19 @@ _VERSION_RE = re.compile(r'\.\d+$')
 
 def _strip_version(gid: str) -> str:
     return _VERSION_RE.sub('', gid) if gid else gid
+
+
+def _clean_dup_gene(raw: str, species_node: str = '') -> str:
+    """Duplications.tsv 的基因列形如 <SpeciesWithUnderscores>_<GeneidWithUnderscores>
+    （逗号聚合多个基因）。去掉已知 Species 前缀（注意 species 名里的 . 在基因列里是 _），
+    再把基因部分内部的 _ 还原为 .（版本号）。"""
+    raw = raw.strip()
+    if species_node:
+        prefix = species_node.replace('.', '_') + '_'
+        if raw.startswith(prefix):
+            raw = raw[len(prefix):]
+    # 其余下划线视为版本号分隔（如 Gano_07G007520.1）
+    return raw.replace('_', '.')
 
 
 def _resolve_genemaster(species_name: str, geneids: list[str]) -> dict[str, str]:
@@ -258,7 +275,7 @@ def settings_orthofinder_species():
     return set(OrthofinderOgGene.objects.values_list('species', flat=True).distinct())
 
 
-# ---------- 按需单文件读取（序列 / 基因树） ----------
+# ---------- 按需单文件读取（序列 / 基因树 / MSA / WGS） ----------
 @api_view(['GET'])
 def orthofinder_sequence(request, og_code):
     """按 OG id 读取单个 Orthogroup_Sequences/<og>.fa（零全量加载）。"""
@@ -275,15 +292,148 @@ def orthofinder_tree(request, og_code):
         content_type='text/plain; charset=utf-8')
 
 
-def _serve_orthofinder_file(request, og_code, subdir, ext, content_type):
+@api_view(['GET'])
+def orthofinder_msa(request, og_code):
+    """MSA（多序列比对）：读取 MultipleSequenceAlignments/<og>.fa（FASTA，纯文本）。未就绪 404。"""
+    return _serve_orthofinder_file(
+        request, og_code, subdir='MultipleSequenceAlignments', ext='.fa',
+        content_type='text/plain; charset=utf-8')
+
+
+@api_view(['GET'])
+def orthofinder_wgs(request, og_code):
+    """
+    WGS（全基因组区块 / 比对数据）：读取 <results>/WGS/<og>.*。
+    OrthoFinder 标准结果不含 WGS 区块数据，文件缺失时返回裸 404，前端静默降级。
+    """
     results_dir = getattr(settings, 'ORTHOFINDER_RESULTS_DIR', None)
     if not results_dir:
-        return Response({'error': 'ORTHOFINDER_RESULTS_DIR not configured'},
-                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    base = os.path.join(os.path.abspath(results_dir), 'WGS', og_code)
+    for ext in ('.fa', '.fasta', '.bed', '.txt', '.tsv'):
+        path = base + ext
+        if os.path.isfile(path):
+            from django.http import FileResponse
+            return FileResponse(open(path, 'rb'),
+                               content_type='text/plain; charset=utf-8',
+                               filename=f'{og_code}{ext}')
+    return Response(status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['GET'])
+def orthofinder_tandem(request, og_code):
+    """
+    基因重复事件（基于 Gene_Duplication_Events/Duplications.tsv 实时解析）。
+
+    OrthoFinder 不输出「串联重复」专门数据，但产出更全面的全基因组/片段/末端重复事件。
+    本端点把这些事件按 OG 下发，供前端在进化树/表格中展示重复类型与涉及基因簇。
+
+    成功（200）返回 JSON：
+    {
+      "og_code": "OG0000001",
+      "events": [
+        {"species": "G.anomalumB1_HAU_v1", "type": "Terminal",
+         "support": 1.0, "gene_tree_node": "n2642",
+         "genes1": ["Gano_09G024420.1"], "genes2": ["Gano_09G025120.1"]},
+        ...
+      ]
+    }
+    若 OG 无重复事件或无 Duplications.tsv，返回空对象 {}（前端显示「暂未就绪」）。
+    """
+    results_dir = getattr(settings, 'ORTHOFINDER_RESULTS_DIR', None)
+    if not results_dir:
+        return Response({}, status=status.HTTP_200_OK)
+    dup_tsv = os.path.join(os.path.abspath(results_dir),
+                          'Gene_Duplication_Events', 'Duplications.tsv')
+    if not os.path.isfile(dup_tsv):
+        return Response({}, status=status.HTTP_200_OK)
+
+    events = []
+    try:
+        with open(dup_tsv, 'r', encoding='utf-8') as fh:
+            header = fh.readline()  # 跳过表头
+            for line in fh:
+                if not line.strip():
+                    continue
+                parts = line.rstrip('\n').split('\t')
+                if len(parts) < 7 or parts[0] != og_code:
+                    continue
+                # Orthogroup, Species Node, Gene Tree Node, Support, Type, Genes1, Genes2
+                _, species_node, gene_node, support, dtype, g1, g2 = parts[:7]
+                species_short = species_node.split('_')[0] if species_node else ''
+                events.append({
+                    'species': species_node,
+                    'species_short': species_short,
+                    'type': dtype,
+                    'support': float(support) if support else None,
+                    'gene_tree_node': gene_node,
+                    'genes1': [_clean_dup_gene(g, species_node) for g in g1.split(',') if g.strip()],
+                    'genes2': [_clean_dup_gene(g, species_node) for g in g2.split(',') if g.strip()],
+                })
+    except OSError:
+        return Response({}, status=status.HTTP_200_OK)
+
+    return Response({'og_code': og_code, 'events': events},
+                    status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+def orthofinder_wgd(request, og_code):
+    """
+    该 OG 的重复事件汇总（按类型/物种计数），便于前端渲染重复类型徽标或小图。
+
+    成功（200）返回 JSON：
+    {
+      "og_code": "OG0000001",
+      "total": 12,
+      "by_type": {"Terminal": 8, "Non-Terminal": 3, "Non-Terminal: STRIDE": 1},
+      "by_species": {"G.anomalumB1_HAU_v1": 5, ...}
+    }
+    无数据时返回空对象 {}（前端显示「暂未就绪」）。
+    """
+    results_dir = getattr(settings, 'ORTHOFINDER_RESULTS_DIR', None)
+    if not results_dir:
+        return Response({}, status=status.HTTP_200_OK)
+    dup_tsv = os.path.join(os.path.abspath(results_dir),
+                          'Gene_Duplication_Events', 'Duplications.tsv')
+    if not os.path.isfile(dup_tsv):
+        return Response({}, status=status.HTTP_200_OK)
+
+    by_type: dict[str, int] = {}
+    by_species: dict[str, int] = {}
+    total = 0
+    try:
+        with open(dup_tsv, 'r', encoding='utf-8') as fh:
+            fh.readline()  # 表头
+            for line in fh:
+                if not line.strip():
+                    continue
+                parts = line.rstrip('\n').split('\t')
+                if len(parts) < 5 or parts[0] != og_code:
+                    continue
+                species_node, _, _, _, dtype = parts[:5]
+                total += 1
+                by_type[dtype] = by_type.get(dtype, 0) + 1
+                by_species[species_node] = by_species.get(species_node, 0) + 1
+    except OSError:
+        return Response({}, status=status.HTTP_200_OK)
+
+    return Response({
+        'og_code': og_code,
+        'total': total,
+        'by_type': by_type,
+        'by_species': by_species,
+    }, status=status.HTTP_200_OK)
+
+
+def _serve_orthofinder_file(request, og_code, subdir, ext, content_type):
+    """按需读取单个 OG 文件（MSA/序列/基因树）。文件不存在返回裸 404（前端静默降级）。"""
+    results_dir = getattr(settings, 'ORTHOFINDER_RESULTS_DIR', None)
+    if not results_dir:
+        return Response(status=status.HTTP_404_NOT_FOUND)
     path = os.path.join(os.path.abspath(results_dir), subdir, f'{og_code}{ext}')
     if not os.path.isfile(path):
-        return Response({'error': f'file not found: {og_code}{ext}'},
-                        status=status.HTTP_404_NOT_FOUND)
+        return Response(status=status.HTTP_404_NOT_FOUND)
     from django.http import FileResponse
     return FileResponse(open(path, 'rb'), content_type=content_type,
                         filename=f'{og_code}{ext}')
