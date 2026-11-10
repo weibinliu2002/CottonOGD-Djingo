@@ -7,26 +7,26 @@
  *
  * 展示分区（各模块独立 loading / error，互不阻塞）：
  *  1. OG 元信息（species_count / gene_count / 是否单拷贝）
- *  2. 成员基因表（分页，可跳基因详情；来自 orthogroup_detail）
- *  3. MSA（多序列比对，FASTA 文本；后端接口用户后续补齐，未就绪静默降级）
- *  4. Tree（基因树 newick，复用 OrthogroupTreeViewer；后端无 treefile 时友好提示）
- *  5. WGS（后端接口用户后续补齐）
- *  6. 串联重复（tandem，后端接口用户后续补齐）
+ *  2. 成员基因表（可跳基因详情；来自 orthogroup_detail）
+ *  3. MSA（多序列比对，纯文本 FASTA；后端无此 OG 的 MSA 时返回 404，静默隐藏）
+ *  4. Tree（基因树 newick 纯文本，复用 OrthogroupTreeViewer；404 静默隐藏）
+ *  5. Sequence（OG 合并序列，纯文本 FASTA；404 静默隐藏）
+ *
+ * ⚠️ 按后端约定，WGS / WGD / 串联重复（tandem）三个模块 OrthoFinder 不含对应数据，
+ * 已不在本页展示。
  *
  * 数据源：全部走真实后端 /CottonOGD_api/orthofinder/，无 mock。
  */
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { Search, Download } from '@element-plus/icons-vue'
+import { Download } from '@element-plus/icons-vue'
 import OrthogroupTreeViewer from '@/components/data-display/OrthogroupTreeViewer.vue'
 import {
   getOrthogroupDetailV2,
   getOrthogroupSequence,
   getOrthogroupTree,
   getOrthogroupMsa,
-  getOrthogroupWgs,
-  getOrthogroupTandem,
   type OrthologOrthogroup,
   type OrthologSpeciesMember,
 } from '@/api/index'
@@ -93,16 +93,10 @@ const msaError = ref('')
 const treeText = ref('')
 const treeError = ref('')
 
-// ============ WGS ============
-const wgsLoading = ref(false)
-const wgsText = ref('')
-const wgsError = ref('')
-
-// ============ 串联重复 ============
-const tandemLoading = ref(false)
-const tandemData = ref<Record<string, { geneid: string; n: number }[]> | null>(null)
-const tandemError = ref('')
-const tandemSpecies = computed(() => (tandemData.value ? Object.keys(tandemData.value) : []))
+// ============ Sequence（OG 合并序列，纯文本 FASTA） ============
+const seqLoading = ref(false)
+const seqText = ref('')
+const seqError = ref('')
 
 // ============ 加载逻辑 ============
 async function loadDetail(): Promise<void> {
@@ -139,7 +133,8 @@ async function loadTree(): Promise<void> {
   treeError.value = ''
   try {
     const txt = await getOrthogroupTree(ogCode.value)
-    if (!txt || txt.trim().startsWith('{"error"')) {
+    if (!txt) {
+      // 后端无该 OG 基因树文件时返回 404（catch 落到这里），静默隐藏区块
       treeError.value = t('og_tree_not_found')
       treeText.value = ''
     } else {
@@ -151,33 +146,18 @@ async function loadTree(): Promise<void> {
   }
 }
 
-async function loadWgs(): Promise<void> {
-  wgsLoading.value = true
-  wgsError.value = ''
-  wgsText.value = ''
+async function loadSequence(): Promise<void> {
+  seqLoading.value = true
+  seqError.value = ''
+  seqText.value = ''
   try {
-    const txt = await getOrthogroupWgs(ogCode.value)
-    if (!txt) wgsError.value = t('og_module_not_ready')
-    else wgsText.value = txt
+    const txt = await getOrthogroupSequence(ogCode.value)
+    if (!txt) seqError.value = t('og_module_not_ready')
+    else seqText.value = txt
   } catch {
-    wgsError.value = t('og_module_not_ready')
+    seqError.value = t('og_module_not_ready')
   } finally {
-    wgsLoading.value = false
-  }
-}
-
-async function loadTandem(): Promise<void> {
-  tandemLoading.value = true
-  tandemError.value = ''
-  tandemData.value = null
-  try {
-    const data = await getOrthogroupTandem(ogCode.value)
-    if (!data || Object.keys(data).length === 0) tandemError.value = t('og_module_not_ready')
-    else tandemData.value = data
-  } catch {
-    tandemError.value = t('og_module_not_ready')
-  } finally {
-    tandemLoading.value = false
+    seqLoading.value = false
   }
 }
 
@@ -197,13 +177,13 @@ onMounted(async () => {
   }
   await loadDetail()
   // 列表/明细就绪后再并行拉取各分析模块（各自独立失败不影响整体）
-  await Promise.allSettled([loadMsa(), loadTree(), loadWgs(), loadTandem()])
+  await Promise.allSettled([loadMsa(), loadTree(), loadSequence()])
 })
 
 watch(ogCode, async () => {
   treeText.value = ''
   await loadDetail()
-  await Promise.allSettled([loadMsa(), loadTree(), loadWgs(), loadTandem()])
+  await Promise.allSettled([loadMsa(), loadTree(), loadSequence()])
 })
 </script>
 
@@ -308,31 +288,12 @@ watch(ogCode, async () => {
       <OrthogroupTreeViewer v-else :newick="treeText" />
     </el-card>
 
-    <!-- WGS -->
+    <!-- Sequence（OG 合并序列，纯文本 FASTA；404 静默隐藏） -->
     <el-card class="og-card" shadow="never">
-      <template #header><span>{{ t('og_wgs') }}</span></template>
-      <div v-loading="wgsLoading">
-        <el-alert v-if="wgsError" type="info" :title="wgsError" show-icon :closable="false" />
-        <pre v-else-if="wgsText" class="og-fasta">{{ wgsText }}</pre>
-        <el-empty v-else :description="t('no_data')" />
-      </div>
-    </el-card>
-
-    <!-- 串联重复 -->
-    <el-card class="og-card" shadow="never">
-      <template #header><span>{{ t('og_tandem') }}</span></template>
-      <div v-loading="tandemLoading">
-        <el-alert v-if="tandemError" type="info" :title="tandemError" show-icon :closable="false" />
-        <template v-else-if="tandemData">
-          <el-collapse>
-            <el-collapse-item v-for="sp in tandemSpecies" :key="sp" :title="sp" :name="sp">
-              <el-table :data="tandemData[sp]" stripe border size="small">
-                <el-table-column :label="t('ortholog_genes')" prop="geneid" min-width="220" />
-                <el-table-column :label="t('n_genes')" prop="n" width="120" align="center" />
-              </el-table>
-            </el-collapse-item>
-          </el-collapse>
-        </template>
+      <template #header><span>{{ t('og_sequence') }}</span></template>
+      <div v-loading="seqLoading">
+        <el-alert v-if="seqError" type="info" :title="seqError" show-icon :closable="false" />
+        <pre v-else-if="seqText" class="og-fasta">{{ seqText }}</pre>
         <el-empty v-else :description="t('no_data')" />
       </div>
     </el-card>

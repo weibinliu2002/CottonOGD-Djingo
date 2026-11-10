@@ -1138,7 +1138,9 @@ export async function getOrthologMeta(): Promise<OrthologSpeciesMeta[]> {
  */
 export async function getOrthogroupSequence(ogCode: string): Promise<string> {
   try {
-    const res = await httpInstance.get(`/CottonOGD_api/orthofinder/sequence/${ogCode}`) as unknown as string
+    const res = await httpInstance.get(`/CottonOGD_api/orthofinder/sequence/${ogCode}`, {
+      responseType: 'text',
+    }) as unknown as string
     return typeof res === 'string' ? res : ''
   } catch {
     return ''
@@ -1146,12 +1148,16 @@ export async function getOrthogroupSequence(ogCode: string): Promise<string> {
 }
 
 /**
- * 拉取单个 orthogroup 的基因树（newick 文本，按需）。
+ * 拉取单个 orthogroup 的基因树（newick 纯文本）。
  * GET /CottonOGD_api/orthofinder/tree/<og_code>
+ * 内容为标准 newick 字符串，可直接喂给 phylotree.js / D3 渲染。
+ * 资源不存在时后端返回 HTTP 404，前端 catch 后静默隐藏该区块。
  */
 export async function getOrthogroupTree(ogCode: string): Promise<string> {
   try {
-    const res = await httpInstance.get(`/CottonOGD_api/orthofinder/tree/${ogCode}`) as unknown as string
+    const res = await httpInstance.get(`/CottonOGD_api/orthofinder/tree/${ogCode}`, {
+      responseType: 'text',
+    }) as unknown as string
     return typeof res === 'string' ? res : ''
   } catch {
     return ''
@@ -1159,47 +1165,17 @@ export async function getOrthogroupTree(ogCode: string): Promise<string> {
 }
 
 /**
- * 拉取单个 orthogroup 的多序列比对（MSA）文本（FASTA / clustal 等）。
+ * 拉取单个 orthogroup 的多序列比对（MSA）纯文本 FASTA。
  * GET /CottonOGD_api/orthofinder/msa/<og_code>
- * ⚠️ 后端接口由用户后续补充；当前未就绪时返回空字符串，前端静默降级。
+ * 资源不存在时后端返回 HTTP 404，前端 catch 后静默隐藏该面板（约 7.1 万/8.4 万有 MSA）。
  */
 export async function getOrthogroupMsa(ogCode: string): Promise<string> {
   try {
-    const res = await httpInstance.get(`/CottonOGD_api/orthofinder/msa/${ogCode}`) as unknown as string
+    const res = await httpInstance.get(`/CottonOGD_api/orthofinder/msa/${ogCode}`, {
+      responseType: 'text',
+    }) as unknown as string
     return typeof res === 'string' ? res : ''
   } catch {
     return ''
-  }
-}
-
-/**
- * 拉取单个 orthogroup 的 WGS 数据（文本，按需）。
- * GET /CottonOGD_api/orthofinder/wgs/<og_code>
- * ⚠️ 后端接口由用户后续补充；未就绪时返回空字符串，前端静默降级。
- */
-export async function getOrthogroupWgs(ogCode: string): Promise<string> {
-  try {
-    const res = await httpInstance.get(`/CottonOGD_api/orthofinder/wgs/${ogCode}`) as unknown as string
-    return typeof res === 'string' ? res : ''
-  } catch {
-    return ''
-  }
-}
-
-/**
- * 拉取单个 orthogroup 的串联重复（tandem duplication）汇总信息。
- * GET /CottonOGD_api/orthofinder/tandem/<og_code>
- * ⚠️ 后端接口由用户后续补充；未就绪时返回 null，前端静默降级。
- */
-export interface OrthogroupTandem {
-  /** 各物种的串联重复基因簇（key=物种名） */
-  [species: string]: { geneid: string; n: number }[]
-}
-export async function getOrthogroupTandem(ogCode: string): Promise<OrthogroupTandem | null> {
-  try {
-    const res = await httpInstance.get(`/CottonOGD_api/orthofinder/tandem/${ogCode}`) as unknown as OrthogroupTandem | null
-    return res && typeof res === 'object' ? res : null
-  } catch {
-    return null
   }
 }
