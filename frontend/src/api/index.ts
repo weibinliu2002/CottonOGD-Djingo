@@ -358,6 +358,9 @@ export interface SearchResult {
   genomeFacets: Record<string, number>
 }
 
+/** 同源分析（Orthologs）Meilisearch 索引 uid（注意大写 O，与后端登记一致） */
+export const ORTHOLOG_INDEX = 'Orthologs'
+
 /** 检索入参 */
 export interface SearchParams {
   q: string
@@ -365,6 +368,8 @@ export interface SearchParams {
   offset?: number
   limit?: number
   genomeIds?: string[]
+  /** 透传 Meilisearch 过滤表达式（如 'og_code = "OG0000001"'），与 genomeIds 二选一或叠加 */
+  filter?: string
   withFacets?: boolean
   facets?: string[]
   attributesToRetrieve?: string[]
@@ -385,6 +390,7 @@ export async function searchGenes(params: SearchParams): Promise<ApiResult<Searc
     offset = 0,
     limit = 20,
     genomeIds = [],
+    filter,
     withFacets = true,
     facets = ['genome_id'],
     attributesToRetrieve,
@@ -403,6 +409,9 @@ export async function searchGenes(params: SearchParams): Promise<ApiResult<Searc
   if (genomeIds.length) {
     const conds = genomeIds.map((g) => `genome_id = "${escapeFilterValue(g)}"`)
     body.filter = genomeIds.length === 1 ? conds[0] : `(${conds.join(' OR ')})`
+  } else if (filter) {
+    // 显式过滤表达式优先（如 og_code = "OG0000001"），与 genomeIds 互斥
+    body.filter = filter
   }
   if (withFacets) body.facets = facets
 

@@ -106,6 +106,8 @@ async function run(): Promise<void> {
       offset: (page.value - 1) * props.pageSize,
       limit: props.pageSize,
       withFacets: false,
+      attributesToHighlight:
+        activeIndex.value === 'Orthologs' ? ['geneid', 'genemaster_geneid', 'og_code'] : undefined,
     })
     if (cur !== seq) return
     if (res.code !== 0) {
@@ -147,6 +149,11 @@ function onSubmit(): void {
     return
   }
   visible.value = false
+  // 在 Orthologs 索引下，回车直接跳到同源簇页并携带 og_code 查询
+  if (activeIndex.value === 'Orthologs') {
+    router.push({ name: 'Orthogroup', query: { og: q } })
+    return
+  }
   router.push({ name: 'idSearch', query: { query: q, index: activeIndex.value } })
 }
 
@@ -223,6 +230,13 @@ async function openGeneDetail(geneid: string, genomeId?: unknown): Promise<void>
 }
 
 function onPick(hit: Record<string, unknown>): void {
+  // Orthologs 索引命中：直接跳同源簇页并携带 og_code
+  if (isOrthologHit(hit)) {
+    const og = hit.og_code as string
+    visible.value = false
+    router.push({ name: 'Orthogroup', query: { og } })
+    return
+  }
   const geneid = hit.geneid as string | undefined
   if (!geneid) return
   visible.value = false
@@ -259,6 +273,11 @@ onBeforeUnmount(() => {
 })
 
 defineExpose({ focus })
+
+/** 命中项是否来自 Orthologs 索引（按 og_code 字段识别） */
+function isOrthologHit(hit: Record<string, unknown>): boolean {
+  return activeIndex.value === 'Orthologs' && !!hit.og_code
+}
 
 /** 取字段用于展示：优先高亮片段 */
 function hitText(hit: Record<string, unknown>, field: string): string {
@@ -343,25 +362,38 @@ function hitText(hit: Record<string, unknown>, field: string): string {
               v-for="(hit, idx) in hits"
               :key="(hit.id as string) || String(idx)"
               class="global-search__item"
-              :class="{ 'is-clickable': !!hit.geneid }"
+              :class="{ 'is-clickable': !!(hit.geneid || hit.og_code) }"
               @click="onPick(hit)"
             >
-              <div class="global-search__main">
-                <span
-                  v-if="hit.geneid"
-                  class="global-search__geneid"
-                  v-html="hitText(hit, 'geneid')"
-                ></span>
-                <span v-else class="global-search__geneid">{{ hit.id }}</span>
-                <span
-                  v-if="hit.alias"
-                  class="global-search__alias"
-                  v-html="hitText(hit, 'alias')"
-                ></span>
-              </div>
-              <el-tag v-if="hit.genome_id" size="small" type="success" effect="light">
-                    {{ hit.genome_id }}
-                  </el-tag>
+              <!-- Orthologs 索引命中：展示物种 + 同源簇编码 -->
+              <template v-if="isOrthologHit(hit)">
+                <div class="global-search__main">
+                  <span class="global-search__geneid">{{ hit.og_code }}</span>
+                  <span class="global-search__alias">{{ hit.species }}</span>
+                </div>
+                <el-tag size="small" type="primary" effect="light">
+                  {{ hit.geneid }}
+                </el-tag>
+              </template>
+              <!-- 基因索引命中：展示 geneid + alias + genome -->
+              <template v-else>
+                <div class="global-search__main">
+                  <span
+                    v-if="hit.geneid"
+                    class="global-search__geneid"
+                    v-html="hitText(hit, 'geneid')"
+                  ></span>
+                  <span v-else class="global-search__geneid">{{ hit.id }}</span>
+                  <span
+                    v-if="hit.alias"
+                    class="global-search__alias"
+                    v-html="hitText(hit, 'alias')"
+                  ></span>
+                </div>
+                <el-tag v-if="hit.genome_id" size="small" type="success" effect="light">
+                  {{ hit.genome_id }}
+                </el-tag>
+              </template>
             </li>
           </ul>
 

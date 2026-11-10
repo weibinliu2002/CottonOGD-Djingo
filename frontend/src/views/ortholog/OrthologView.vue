@@ -15,14 +15,15 @@
  * 真正的「按成员基因/注释筛选」放在 OG 明细抽屉内（成员基因 id 在明细中可用）。
  */
 import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
 import { Search } from '@element-plus/icons-vue'
 import {
-  getOrthologByGene,
   getOrthogroupDetailV2,
   getOrthogroupsBySpecies,
   getOrthologMeta,
+  searchGenes,
+  ORTHOLOG_INDEX,
   type OrthologOrthogroup,
   type OrthologSpeciesMember,
   type OrthologSpeciesMeta,
@@ -30,6 +31,7 @@ import {
 
 const { t } = useI18n()
 const router = useRouter()
+const route = useRoute()
 
 const activeTab = ref<'browse' | 'gene'>('browse')
 
@@ -195,21 +197,33 @@ function openGene(genemasterGeneid: string | null): void {
   router.push({ name: 'GenomeDetail', params: { key: genemasterGeneid } })
 }
 
-// ============ Tab「按基因查」（保留原 OrthologView 功能） ============
+// ============ Tab「按基因查」（走 Meilisearch Orthologs 索引） ============
+// 设计：用户输入基因 id → 在 Orthologs 索引检索，命中按所属 og_code 聚合，
+// 得到该基因参与的若干 OG；点击某个 OG → 用 og_code 过滤 + 分页拉取成员基因
+// （替代 orthofinder 巨型 payload 接口，前端只取展示所需的分页窗口）。
 const geneInput = ref('')
 const geneLoading = ref(false)
 const geneError = ref('')
-const orthoResult = ref<{ query_gene: string; found: boolean; orthogroups: OrthologOrthogroup[] } | null>(null)
-
-function relationLabel(type: string): string {
-  const map: Record<string, string> = {
-    one_to_one: t('one_to_one'),
-    one_to_many: t('one_to_many'),
-    many_to_one: t('many_to_one'),
-    many_to_many: t('many_to_many'),
-  }
-  return map[type] ?? type
+/** 该基因命中的 OG 聚合条目（来自 Meilisearch 命中里提取去重的 og_code） */
+interface GeneOgEntry {
+  og_code: string
+  species: string
+  geneid: string
+  genemaster_geneid: string
 }
+const geneOgs = ref<GeneOgEntry[]>([])
+/** 选中的 OG（点击后用于加载成员基因） */
+const selectedOg = ref<string>('')
+const memberGenes = ref<GeneOgEntry[]>([])
+const memberTotal = ref(0)
+const memberOffset = ref(0)
+const memberLimit = ref(20)
+/** Meilisearch 代理限制 offset+limit ≤ 1000，分页拉取时不越界 */
+const memberSafeLimit = computed(() => Math.max(1, Math.min(memberLimit.value, 1000 - memberOffset.value)))
+const memberLoading = ref(false)
+const memberGeneFilter = ref('')
+
+const memberHasMore = computed(() => memberGenes.value.length < memberTotal.value)
 
 async function searchByGene(): Promise<void> {
   const geneid = geneInput.value.trim()
@@ -219,11 +233,32 @@ async function searchByGene(): Promise<void> {
   }
   geneLoading.value = true
   geneError.value = ''
-  orthoResult.value = null
+  geneOgs.value = []
+  selectedOg.value = ''
+  memberGenes.value = []
+  memberTotal.value = 0
   try {
-    const res = await getOrthologByGene(geneid)
-    orthoResult.value = res
-    if (!res.found) geneError.value = t('ortholog_not_found')
+    // 基因 id 检索：精确命中该基因，从 _formatted/字段取 og_code
+    const res = await searchGenes({
+      q: geneid,
+      index: ORTHOLOG_INDEX,
+      limit: 50,
+      offset: 0,
+      withFacets: false,
+      attributesToRetrieve: ['geneid', 'genemaster_geneid', 'species', 'og_code'],
+      attributesToHighlight: ['geneid', 'genemaster_geneid', 'og_code'],
+    })
+    const hits = (res.data?.hits ?? []) as unknown as Array<Record<string, any>>
+    if (res.code !== 0 || hits.length === 0) {
+      geneError.value = t('ortholog_not_found')
+      return
+    }
+    geneOgs.value = hits.map((h) => ({
+      og_code: h.og_code as string,
+      species: h.species as string,
+      geneid: h.geneid as string,
+      genemaster_geneid: (h.genemaster_geneid as string) || (h.geneid as string),
+    }))
   } catch {
     geneError.value = t('ortholog_not_found')
   } finally {
@@ -231,10 +266,88 @@ async function searchByGene(): Promise<void> {
   }
 }
 
+/** 去重后的 og_code 列表（按首次出现顺序） */
+const geneOgCodes = computed(() => {
+  const seen = new Set<string>()
+  const out: string[] = []
+  geneOgs.value.forEach((o) => {
+    if (o.og_code && !seen.has(o.og_code)) {
+      seen.add(o.og_code)
+      out.push(o.og_code)
+    }
+  })
+  return out
+})
+
+async function loadMembers(ogCode: string, reset = true): Promise<void> {
+  if (!ogCode) return
+  memberLoading.value = true
+  if (reset) {
+    memberOffset.value = 0
+    memberGenes.value = []
+  }
+  try {
+    const res = await searchGenes({
+      q: '',
+      index: ORTHOLOG_INDEX,
+      limit: memberSafeLimit.value,
+      offset: memberOffset.value,
+      withFacets: false,
+      filter: `og_code = "${ogCode}"`,
+      attributesToRetrieve: ['geneid', 'genemaster_geneid', 'species', 'og_code'],
+      attributesToHighlight: ['geneid', 'genemaster_geneid', 'og_code'],
+    })
+    const hits = (res.data?.hits ?? []) as unknown as Array<Record<string, any>>
+    const items: GeneOgEntry[] = hits.map((h) => ({
+      og_code: h.og_code as string,
+      species: h.species as string,
+      geneid: h.geneid as string,
+      genemaster_geneid: (h.genemaster_geneid as string) || (h.geneid as string),
+    }))
+    memberTotal.value = res.data?.estimatedTotalHits ?? items.length
+    memberGenes.value = reset ? items : [...memberGenes.value, ...items]
+  } catch {
+    memberGenes.value = []
+    memberTotal.value = 0
+  } finally {
+    memberLoading.value = false
+  }
+}
+
+function selectOg(ogCode: string): void {
+  selectedOg.value = ogCode
+  memberGeneFilter.value = ''
+  loadMembers(ogCode, true)
+}
+
+function loadMoreMembers(): void {
+  if (!memberHasMore.value || memberLoading.value) return
+  memberOffset.value += memberLimit.value
+  loadMembers(selectedOg.value, false)
+}
+
+const filteredMemberGenes = computed<GeneOgEntry[]>(() => {
+  const kw = memberGeneFilter.value.trim().toLowerCase()
+  if (!kw) return memberGenes.value
+  return memberGenes.value.filter(
+    (g) =>
+      g.geneid.toLowerCase().includes(kw) ||
+      g.genemaster_geneid.toLowerCase().includes(kw) ||
+      g.species.toLowerCase().includes(kw),
+  )
+})
+
 onMounted(async () => {
   const meta = await getOrthologMeta()
   metaList.value = meta
   await loadOgs(true)
+  // 主页 Orthologs 检索深链：?og=OG0000001 跳到「按基因查」并加载该簇成员
+  const og = route.query.og as string | undefined
+  if (og) {
+    activeTab.value = 'gene'
+    geneOgs.value = [{ og_code: og, species: '', geneid: '', genemaster_geneid: '' }]
+    selectOg(og)
+  }
 })
 </script>
 
@@ -359,7 +472,7 @@ onMounted(async () => {
         </el-row>
       </el-tab-pane>
 
-      <!-- Tab 2：按基因查直系同源（保留原功能） -->
+      <!-- Tab 2：按基因查直系同源（走 Meilisearch Orthologs 索引） -->
       <el-tab-pane :label="t('ortholog_search')" name="gene">
         <el-card class="ortholog-card" shadow="never">
           <el-form inline @submit.prevent="searchByGene">
@@ -380,60 +493,80 @@ onMounted(async () => {
           </el-form>
 
           <el-alert v-if="geneError" type="warning" :title="geneError" show-icon class="mb-4" />
-          <el-alert
-            v-else-if="orthoResult && orthoResult.found"
-            type="success"
-            :closable="false"
-            class="mb-4"
-            :title="`${t('ortholog_search')}: ${orthoResult.query_gene}`"
-          />
 
-          <div v-if="orthoResult && orthoResult.found" class="ortholog-results">
-            <el-card
-              v-for="og in orthoResult.orthogroups"
-              :key="og.og_code"
-              class="ortholog-og"
-              shadow="hover"
-            >
-              <template #header>
-                <div class="ortholog-og__head">
-                  <span class="ortholog-og__code">{{ og.og_code }}</span>
-                  <el-tag size="small" type="primary" effect="plain">
-                    {{ relationLabel(og.relation_type) }}
-                  </el-tag>
-                  <el-tag v-if="og.is_single_copy" size="small" type="success" effect="light">
-                    {{ t('homology_single_copy') }}
-                  </el-tag>
-                  <span class="ortholog-og__meta">
-                    {{ t('species_count') }}: {{ og.species_count }} ·
-                    {{ t('gene_count') }}: {{ og.gene_count }}
-                  </span>
-                </div>
-              </template>
+          <!-- 命中的 OG 列表（点击加载成员基因） -->
+          <template v-if="geneOgs.length">
+            <h4 class="ortholog-subhead">{{ t('ortholog_matched_ogs') }}</h4>
+            <div class="ortholog-og-chips">
+              <el-tag
+                v-for="code in geneOgCodes"
+                :key="code"
+                class="ortholog-og-chip"
+                size="large"
+                :type="selectedOg === code ? 'primary' : 'info'"
+                effect="plain"
+                @click="selectOg(code)"
+              >
+                {{ code }}
+              </el-tag>
+            </div>
 
-              <el-table :data="og.species_members" stripe border size="small">
-                <el-table-column :label="t('ortholog_species')" min-width="220">
-                  <template #default="scope">{{ speciesName(scope.row) }}</template>
-                </el-table-column>
-                <el-table-column :label="t('ortholog_genes')" min-width="360">
+            <!-- 成员基因表（分页，替代重型明细接口） -->
+            <div class="mb-4 mt-4">
+              <div class="browse-filters">
+                <el-input
+                  v-model="memberGeneFilter"
+                  class="browse-filters__ann"
+                  :placeholder="t('detail_gene_filter_placeholder')"
+                  clearable
+                  size="default"
+                />
+                <span class="ortholog-og__meta">
+                  {{ t('ortholog_member_genes') }} · {{ t('og_code') }}: {{ selectedOg || t('ortholog_no_og_selected') }}
+                </span>
+              </div>
+
+              <el-table
+                v-loading="memberLoading"
+                :data="filteredMemberGenes"
+                stripe
+                border
+                size="small"
+                class="mt-4"
+              >
+                <el-table-column :label="t('ortholog_species')" prop="species" min-width="220" />
+                <el-table-column :label="t('ortholog_genes')" min-width="240">
                   <template #default="scope">
-                    <span v-for="(g, idx) in scope.row.genes" :key="g.ortho_gene" class="ortholog-gene">
-                      <a
-                        v-if="g.genemaster_geneid"
-                        class="ortholog-gene__link"
-                        @click="openGene(g.genemaster_geneid)"
-                      >{{ g.genemaster_geneid }}</a>
-                      <span v-else class="ortholog-gene__plain">{{ g.ortho_gene }}</span>
-                      <span
-                        v-if="idx !== scope.row.genes.length - 1"
-                        class="ortholog-gene__sep"
-                      >, </span>
-                    </span>
+                    <a
+                      v-if="scope.row.genemaster_geneid"
+                      class="ortholog-gene__link"
+                      @click="openGene(scope.row.genemaster_geneid)"
+                    >{{ scope.row.genemaster_geneid }}</a>
+                    <span v-else class="ortholog-gene__plain">{{ scope.row.geneid }}</span>
                   </template>
                 </el-table-column>
+                <el-table-column :label="t('og_code')" prop="og_code" min-width="180" />
               </el-table>
-            </el-card>
-          </div>
+
+              <div class="ortholog-oglist__total">
+                {{ t('total') }} {{ memberTotal }} {{ t('records') }}
+              </div>
+              <div class="ortholog-oglist__more">
+                <el-button v-if="memberHasMore" :loading="memberLoading" @click="loadMoreMembers">
+                  {{ t('load_more') }}
+                </el-button>
+                <span v-else class="ortholog-oglist__end">{{ t('no_more') }}</span>
+              </div>
+            </div>
+          </template>
+
+          <el-alert
+            v-else-if="!geneLoading && !geneError"
+            type="info"
+            :closable="false"
+            class="mb-4"
+            :title="t('ortholog_select_og_hint')"
+          />
         </el-card>
       </el-tab-pane>
     </el-tabs>
@@ -649,6 +782,28 @@ onMounted(async () => {
 
 .ortholog-card__input {
   width: 360px;
+}
+
+.ortholog-subhead {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0 0 0.75rem;
+}
+
+.ortholog-og-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.ortholog-og-chip {
+  cursor: pointer;
+}
+
+.mt-4 {
+  margin-top: 1.5rem;
 }
 
 .mb-4 {
