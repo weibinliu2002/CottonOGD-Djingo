@@ -22,6 +22,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Download } from '@element-plus/icons-vue'
 import OrthogroupTreeViewer from '@/components/data-display/OrthogroupTreeViewer.vue'
+import MsaViewer from '@/components/data-display/MsaViewer.vue'
 import {
   getOrthogroupDetailV2,
   getOrthogroupSequence,
@@ -276,7 +277,7 @@ watch(ogCode, async () => {
       <template #header><span>{{ t('og_msa') }}</span></template>
       <div v-loading="msaLoading">
         <el-alert v-if="msaError" type="info" :title="msaError" show-icon :closable="false" />
-        <pre v-else-if="msaText" class="og-fasta">{{ msaText }}</pre>
+        <MsaViewer v-else-if="msaText" :fasta="msaText" />
         <el-empty v-else :description="t('no_data')" />
       </div>
     </el-card>
