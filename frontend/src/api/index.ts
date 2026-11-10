@@ -13,6 +13,7 @@
  * - 本层不做全局响应拦截抽象：后端各接口包裹格式差异较大（见 docs/API.md），逐接口适配更稳。
  */
 import httpInstance from '@/utils/http.js'
+import { parsePpiNetwork, type PpiNetwork } from '@/utils/ppiNetwork'
 
 // ==================== 通用类型 ====================
 
@@ -1181,4 +1182,16 @@ export async function getOrthogroupMsa(ogCode: string): Promise<string> {
   } catch {
     return ''
   }
+}
+
+/**
+ * Submit gene identifiers and genome for STRING annotation and return a Cytoscape network.
+ * The matching backend endpoint is part of the PPI frontend/backend handoff.
+ */
+export async function getStringPpiNetwork(payload: {
+  gene_ids: string[]
+  genome_id: string
+}): Promise<PpiNetwork> {
+  const response = await httpInstance.post('/CottonOGD_api/ppi/string/', payload)
+  return parsePpiNetwork(response)
 }

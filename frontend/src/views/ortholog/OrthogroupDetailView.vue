@@ -8,7 +8,7 @@
  * 展示分区（各模块独立 loading / error，互不阻塞）：
  *  1. OG 元信息（species_count / gene_count / 是否单拷贝）
  *  2. 成员基因表（可跳基因详情；来自 orthogroup_detail）
- *  3. MSA（多序列比对，纯文本 FASTA；后端无此 OG 的 MSA 时返回 404，静默隐藏）
+ *  3. MSA（多序列比对可视化；加载失败时回退为 FASTA 文本）
  *  4. Tree（基因树 newick 纯文本，复用 OrthogroupTreeViewer；404 静默隐藏）
  *  5. Sequence（OG 合并序列，纯文本 FASTA；404 静默隐藏）
  *
