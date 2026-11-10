@@ -454,7 +454,7 @@
     "select_tissue": "选择组织",
     "select_tissue_placeholder": "-- 选择组织 --",
     "select_variation_type": "选择变异类型",
-    "selected_genomes": "选择的基因组",
+    "selected_genomes": "已选基因组",
     "selectedblasttype__blastp": "selectedBlastType === 'blastp' || selectedBlastType === 'blastx' ? '请输入FASTA或纯文本格式的蛋白质序列' : '请输入FASTA或纯文本格式的核苷酸序列'",
     "self_any": "自身互补",
     "self_dimer": "自二聚体",
@@ -574,6 +574,9 @@
     "og_tandem": "串联重复",
     "copy_og_code": "复制 OG 编号",
     "og_module_not_ready": "该模块暂未就绪（后端接口待补充）",
-    "og_tree_not_found": "该同源簇暂无基因树"
+    "og_tree_not_found": "该同源簇暂无基因树",
+    "og_filter_notice": "仅显示所选的 {n} 个基因组成员",
+    "og_members_collapsed_title": "成员基因明细（{n} 个基因组）",
+    "uncategorized": "未分类"
   }
 }

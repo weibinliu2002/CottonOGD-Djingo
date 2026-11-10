@@ -38,23 +38,65 @@ const activeTab = ref<'browse' | 'gene'>('browse')
 // ============ 物种元数据（左侧复选框 + 默认列表用） ============
 const metaList = ref<OrthologSpeciesMeta[]>([])
 const allSpeciesNames = computed(() => metaList.value.map((m) => m.name))
-const speciesOptions = computed(() =>
-  metaList.value.map((m) => ({
-    name: m.name,
-    label: m.alias || m.Cotton_Species || m.name,
-  })),
-)
+/** 物种层级树：父节点 = Genome_type 分组（可批量选中），子节点 = 单个基因组 */
+interface SpeciesTreeNode {
+  id: string
+  label: string
+  children?: SpeciesTreeNode[]
+}
+
+const treeRef = ref<any>(null)
 const selectedSpecies = ref<string[]>([])
+
+/** 按 Genome_type 将 61 个基因组聚合成「分组 → 单个基因组」的树结构 */
+const speciesTree = computed<SpeciesTreeNode[]>(() => {
+  const byType = new Map<string, OrthologSpeciesMeta[]>()
+  for (const m of metaList.value) {
+    const key = m.Genome_type || ''
+    if (!byType.has(key)) byType.set(key, [])
+    byType.get(key)!.push(m)
+  }
+  const typeKeys = [...byType.keys()].sort((a, b) => {
+    const ua = a.toUpperCase()
+    const ub = b.toUpperCase()
+    if (ua && !ub) return -1
+    if (!ua && ub) return 1
+    return ua.localeCompare(ub)
+  })
+  const nodes: SpeciesTreeNode[] = []
+  for (const k of typeKeys) {
+    const metas = byType.get(k)!
+    metas.sort((a, b) => a.name.localeCompare(b.name))
+    const label = k ? `${k} (${metas.length})` : t('uncategorized')
+    const children: SpeciesTreeNode[] = metas.map((m) => ({
+      id: m.name,
+      label: m.alias || m.Cotton_Species || m.name,
+    }))
+    nodes.push({ id: k ? `__group__${k}` : '__group__uncategorized', label, children })
+  }
+  return nodes
+})
 
 /** 选中「全选」= 未勾选任何基因组 → 默认列表（any + 全部） */
 const isAllSelected = computed(
   () => selectedSpecies.value.length === allSpeciesNames.value.length,
 )
 function toggleSelectAll(): void {
-  selectedSpecies.value =
-    selectedSpecies.value.length === allSpeciesNames.value.length
-      ? []
-      : [...allSpeciesNames.value]
+  const tree = treeRef.value
+  if (isAllSelected.value) {
+    tree?.setCheckedKeys([])
+    selectedSpecies.value = []
+  } else {
+    tree?.setCheckedKeys(allSpeciesNames.value)
+    selectedSpecies.value = [...allSpeciesNames.value]
+  }
+}
+
+/** 树勾选变化：仅取叶子（单个基因组）key，勾选父分组会自动级联勾选其下所有基因组 */
+function onTreeCheck(): void {
+  const tree = treeRef.value
+  if (!tree) return
+  selectedSpecies.value = (tree.getCheckedKeys(true) as string[]) ?? []
 }
 
 // ============ 浏览 Tab：筛选 + 列表 ============
@@ -204,10 +246,16 @@ function openGene(genemasterGeneid: string | null): void {
   router.push({ name: 'GenomeDetail', params: { key: genemasterGeneid } })
 }
 
-/** 点 OG id → 跳独立详情页（含 MSA / 树 / WGS / 串联重复） */
+/** 点 OG id → 跳独立详情页（含 MSA / 树 / WGS / 串联重复）
+ * 若左侧已筛选了特定基因组，则通过 query.species 传入选中基因组，
+ * 详情页据此只展示这些基因组的成员（保持浏览筛选语义一致）。 */
 function openOgDetail(ogCode: string): void {
   if (!ogCode) return
-  router.push({ name: 'OrthogroupDetail', params: { og_code: ogCode } })
+  const query =
+    selectedSpecies.value.length === allSpeciesNames.value.length
+      ? undefined
+      : { species: selectedSpecies.value.join(',') }
+  router.push({ name: 'OrthogroupDetail', params: { og_code: ogCode }, query })
 }
 
 // ============ Tab「按基因查」（走 Meilisearch Orthologs 索引） ============
@@ -381,18 +429,20 @@ onMounted(async () => {
                   </el-button>
                 </div>
               </template>
-              <el-checkbox-group v-model="selectedSpecies" class="genome-panel__list">
-                <el-checkbox
-                  v-for="opt in speciesOptions"
-                  :key="opt.name"
-                  :value="opt.name"
-                  class="genome-panel__item"
-                >
-                  {{ opt.label }}
-                </el-checkbox>
-              </el-checkbox-group>
+              <el-tree
+                ref="treeRef"
+                class="genome-panel__tree"
+                :data="speciesTree"
+                :props="{ children: 'children', label: 'label' }"
+                node-key="id"
+                show-checkbox
+                check-on-click-node
+                :default-expand-all="false"
+                :expand-on-click-node="false"
+                @check="onTreeCheck"
+              />
               <div class="genome-panel__count">
-                {{ t('selected') }} {{ selectedSpecies.length }} / {{ allSpeciesNames.length }}
+                {{ t('selected_genomes') }} {{ selectedSpecies.length }} / {{ allSpeciesNames.length }}
               </div>
             </el-card>
           </el-col>
@@ -669,20 +719,17 @@ onMounted(async () => {
   font-weight: 600;
 }
 
-.genome-panel__list {
-  display: flex;
-  flex-direction: column;
+.genome-panel__tree {
   max-height: 60vh;
   overflow-y: auto;
-  gap: 4px;
+  border: 1px solid #eef1f4;
+  border-radius: 8px;
+  padding: 8px;
+  --el-color-primary: #3a6ea5;
 }
 
-.genome-panel__item {
-  width: 100%;
-  margin-right: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.genome-panel__tree :deep(.el-tree-node__content) {
+  height: 28px;
 }
 
 .genome-panel__count {

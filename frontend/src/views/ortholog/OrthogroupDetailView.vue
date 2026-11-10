@@ -37,16 +37,32 @@ const router = useRouter()
 
 const ogCode = computed(() => (route.params.og_code as string) || '')
 
+/**
+ * 从浏览页带过来的「只看所选基因组」筛选（route.query.species 逗号分隔）。
+ * 主页 `?og=` 深链或全选进入时无该 query，则显示全部基因组成员。
+ */
+const selectedSpeciesFilter = computed<string[]>(() => {
+  const raw = route.query.species
+  if (Array.isArray(raw)) return raw.filter(Boolean) as string[]
+  if (typeof raw === 'string' && raw.trim()) return raw.split(',').filter(Boolean)
+  return []
+})
+
 // ============ OG 元信息 + 成员 ============
 const detailLoading = ref(false)
 const detailData = ref<OrthologOrthogroup | null>(null)
 const detailError = ref('')
 const detailGeneFilter = ref('')
+/** 成员基因表默认折叠；点击展开后再展示各物种基因明细 */
+const membersCollapse = ref([''])
 
 const filteredMembers = computed<OrthologSpeciesMember[]>(() => {
   if (!detailData.value) return []
   const kw = detailGeneFilter.value.trim().toLowerCase()
-  const members = detailData.value.species_members || []
+  const filterSet = selectedSpeciesFilter.value
+  const members = (detailData.value.species_members || []).filter(
+    (m) => filterSet.length === 0 || filterSet.includes(m.species),
+  )
   if (!kw) return members
   return members
     .map((m) => ({
@@ -239,25 +255,37 @@ watch(ogCode, async () => {
             <span class="og-og__meta">{{ t('ortholog_genes') }} · {{ filteredMembers.length }} / {{ (detailData.species_members || []).length }} {{ t('species') }}</span>
           </div>
 
-          <el-table :data="filteredMembers" stripe border size="small">
-            <el-table-column :label="t('ortholog_species')" min-width="220">
-              <template #default="scope">{{ speciesName(scope.row) }}</template>
-            </el-table-column>
-            <el-table-column :label="t('n_genes')" prop="n" width="100" align="center" />
-            <el-table-column :label="t('ortholog_genes')" min-width="420">
-              <template #default="scope">
-                <span v-for="(g, idx) in scope.row.genes" :key="g.ortho_gene" class="ortholog-gene">
-                  <a
-                    v-if="g.genemaster_geneid"
-                    class="ortholog-gene__link"
-                    @click="openGene(g.genemaster_geneid)"
-                  >{{ g.genemaster_geneid }}</a>
-                  <span v-else class="ortholog-gene__plain">{{ g.ortho_gene }}</span>
-                  <span v-if="idx !== scope.row.genes.length - 1" class="ortholog-gene__sep">, </span>
-                </span>
-              </template>
-            </el-table-column>
-          </el-table>
+          <el-alert
+            v-if="selectedSpeciesFilter.length"
+            class="mb-3"
+            type="info"
+            :closable="false"
+            :title="t('og_filter_notice', { n: selectedSpeciesFilter.length })"
+          />
+
+          <el-collapse v-model="membersCollapse">
+            <el-collapse-item :title="t('og_members_collapsed_title', { n: filteredMembers.length })" name="members">
+              <el-table :data="filteredMembers" stripe border size="small">
+                <el-table-column :label="t('ortholog_species')" min-width="220">
+                  <template #default="scope">{{ speciesName(scope.row) }}</template>
+                </el-table-column>
+                <el-table-column :label="t('n_genes')" prop="n" width="100" align="center" />
+                <el-table-column :label="t('ortholog_genes')" min-width="420">
+                  <template #default="scope">
+                    <span v-for="(g, idx) in scope.row.genes" :key="g.ortho_gene" class="ortholog-gene">
+                      <a
+                        v-if="g.genemaster_geneid"
+                        class="ortholog-gene__link"
+                        @click="openGene(g.genemaster_geneid)"
+                      >{{ g.genemaster_geneid }}</a>
+                      <span v-else class="ortholog-gene__plain">{{ g.ortho_gene }}</span>
+                      <span v-if="idx !== scope.row.genes.length - 1" class="ortholog-gene__sep">, </span>
+                    </span>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </el-collapse-item>
+          </el-collapse>
         </template>
         <el-empty v-else :description="t('no_data')" />
       </div>

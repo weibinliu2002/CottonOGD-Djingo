@@ -574,6 +574,9 @@
     "og_tandem": "Tandem Duplications",
     "copy_og_code": "Copy OG code",
     "og_module_not_ready": "This module is not ready yet (backend interface pending)",
-    "og_tree_not_found": "No gene tree available for this orthogroup"
+    "og_tree_not_found": "No gene tree available for this orthogroup",
+    "og_filter_notice": "Showing only the {n} selected genome members",
+    "og_members_collapsed_title": "Member gene details ({n} genomes)",
+    "uncategorized": "Uncategorized"
   }
 }
