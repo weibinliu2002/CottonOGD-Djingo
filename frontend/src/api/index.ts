@@ -1174,7 +1174,10 @@ export async function getOrthogroupMsa(ogCode: string): Promise<string> {
     const res = await httpInstance.get(`/CottonOGD_api/orthofinder/msa/${ogCode}`, {
       responseType: 'text',
     }) as unknown as string
-    return typeof res === 'string' ? res : ''
+    // 仅接受以 '>' 开头的 FASTA 文本；若后端未实现 msa/ 路由，
+    // 请求会落到静态服务器 SPA 兜底页（text/html），不能当 MSA 渲染。
+    if (typeof res !== 'string' || !res.trimStart().startsWith('>')) return ''
+    return res
   } catch {
     return ''
   }
