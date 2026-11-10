@@ -629,3 +629,42 @@ class Category(models.Model):
     
     def __str__(self):
         return f"{self.category_id} - {self.name}"
+
+
+# ========== OrthoFinder 直系同源（Ortholog）表 ==========
+# 数据来自 OrthoFinder 结果目录下的 Orthogroups/Orthogroups.tsv。
+# 物种列已 100% 对齐 Species_info.name；基因 id 即 TranscriptMaster.transcriptid。
+# 一对一/一对多/多对多的判定在查询时由各物种成员数实时计算，不落表。
+
+class OrthofinderOrthogroup(models.Model):
+    og_code = models.CharField(max_length=20, primary_key=True)  # 如 OG0000000
+    gene_count = models.IntegerField(default=0)
+    species_count = models.IntegerField(default=0)
+    is_single_copy = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = 'orthofinder_orthogroup'
+        indexes = [models.Index(fields=['is_single_copy'])]
+
+    def __str__(self):
+        return self.og_code
+
+
+class OrthofinderOgGene(models.Model):
+    og_code = models.CharField(max_length=20, db_index=True)  # 组件 idx_og
+    species = models.ForeignKey(
+        Species_info, on_delete=models.CASCADE, to_field='name', db_column='species'
+    )  # 物种头，对齐 Species_info.name
+    geneid = models.CharField(max_length=200, db_index=True)  # OrthoFinder transcript id
+
+    class Meta:
+        db_table = 'orthofinder_og_gene'
+        # 保证 (og_code, species, geneid) 唯一，避免重复导入
+        constraints = [
+            models.UniqueConstraint(
+                fields=['og_code', 'species', 'geneid'], name='uk_og_species_gene'
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.og_code}|{self.species_id}|{self.geneid}"

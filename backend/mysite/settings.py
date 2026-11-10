@@ -20,6 +20,10 @@ TEMP_DIR = os.path.join(BASE_DIR, 'temp')
 SOFTWARE_DIR = os.path.join(BASE_DIR, 'soft')
 GO_OBO_FILE = os.path.join(BASE_DIR, 'data', 'go_ontology', 'go-basic.obo')
 
+# OrthoFinder 结果目录（backend/data/Orthofinder 是软链，指向当前完整结果目录）。
+# 换正式完整结果时只需改这个软链、重跑 build_orthofinder_index 即可。
+ORTHOFINDER_RESULTS_DIR = os.path.join(BASE_DIR, 'data', 'Orthofinder')
+
 # =============================================================================
 # 环境变量加载（django-environ）
 # 优先级：系统环境变量 > .env 文件
@@ -67,10 +71,26 @@ SECRET_KEY = env('DJANGO_SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env('DEBUG')
 
-ALLOWED_HOSTS = ['*']
+# 生产环境通过 Nginx 反代访问：域名/IP 从 .env 读取，避免硬编码
+ALLOWED_HOSTS = env.list(
+    'DJANGO_ALLOWED_HOSTS',
+    default=['iCotton.henau.edu.cn', 'iCotton.henau.edu', '172.28.226.114', 'localhost', '127.0.0.1'],
+)
 
-# CSRF配置 - 使用Django默认行为
-# Django 6.0+ 默认会自动处理CSRF，无需额外配置CSRF_TRUSTED_ORIGINS
+# Nginx 终止 TLS 后转发，Django 需要据此判断原始请求为 https
+# （否则 request.is_secure() 为 False，登录 cookie 的 Secure 标志不会生效）
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+
+# CSRF 可信来源（Django 4.0+ 格式：scheme://host[:port]）
+CSRF_TRUSTED_ORIGINS = env.list(
+    'DJANGO_CSRF_TRUSTED_ORIGINS',
+    default=[
+        'https://iCotton.henau.edu.cn', 'http://iCotton.henau.edu.cn',
+        'https://iCotton.henau.edu', 'http://iCotton.henau.edu',
+        'https://172.28.226.114', 'http://172.28.226.114',
+    ],
+)
 
 
 # Application definition

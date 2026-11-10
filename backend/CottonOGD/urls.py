@@ -21,6 +21,10 @@ from CottonOGD.views.Meilisearch import (
 from CottonOGD.views.genome_api import *
 from CottonOGD.views.protein3D import *
 from CottonOGD.views.ai_chat import ai_chat
+from CottonOGD.views.orthofinder import (
+    ortholog_gene, orthogroup_detail, orthogroups_by_species,
+    orthofinder_meta, orthofinder_sequence, orthofinder_tree,
+)
 
 
 urlpatterns = [
@@ -65,9 +69,13 @@ urlpatterns = [
     path('genome_synteny/', genome_synteny, name='genome_synteny'),
     #path('structural_variations/', structural_variations, name='structural_variations'),
     
-    # Protein 3D search endpoints
-    path('search_similar_structure/', search_similar_structure, name='search_similar_structure'),
-    path('get_search_methods/', get_search_methods, name='get_search_methods'),
+    # ========== OrthoFinder 直系同源（Ortholog） ==========
+    path('orthofinder/ortholog_gene/', ortholog_gene, name='ortholog_gene'),
+    path('orthofinder/orthogroup_detail/', orthogroup_detail, name='orthogroup_detail'),
+    path('orthofinder/orthogroups_by_species/', orthogroups_by_species, name='orthogroups_by_species'),
+    path('orthofinder/meta/', orthofinder_meta, name='orthofinder_meta'),
+    path('orthofinder/sequence/<str:og_code>', orthofinder_sequence, name='orthofinder_sequence'),
+    path('orthofinder/tree/<str:og_code>', orthofinder_tree, name='orthofinder_tree'),
 
     # ========== TF/TR 系统发生树静态文件转发（前端 Phylotree.js 直接 fetch，无 API 逻辑） ==========
     # 路径示例：
