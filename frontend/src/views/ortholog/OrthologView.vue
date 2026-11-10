@@ -99,12 +99,14 @@ function onTreeCheck(): void {
   selectedSpecies.value = (tree.getCheckedKeys(true) as string[]) ?? []
 }
 
-// ============ 浏览 Tab：筛选 + 列表 ============
+// ============ 浏览 Tab：筛选 + 列表（纯客户端分页） ============
+// 设计：每次改筛选条件（左侧基因组 / mode）向后端请求一次，结果整体缓存到 ogList；
+// 之后翻页 / 改每页条数 / 关键字筛选 / 单拷贝 / 排序全部在本地（ogList）上完成，不再请求后端。
 const ogIdFilter = ref('')
 const annotationFilter = ref('')
 const singleCopyOnly = ref(false)
-const ogLimit = ref(20)
-const ogOffset = ref(0)
+const ogPageSize = ref(20)
+const ogPage = ref(1)
 const ogList = ref<OrthologOrthogroup[]>([])
 const ogTotal = ref(0)
 const ogLoading = ref(false)
@@ -122,7 +124,7 @@ function resolveQueryMode(): 'all' | 'any' {
   return selectedSpecies.value.length ? speciesMode.value : 'any'
 }
 
-/** 客户端筛选 + 排序（应用于已加载的页面数据） */
+/** 客户端筛选 + 排序（应用于已缓存的 ogList；后端暂无 id / 注释过滤能力） */
 const filteredOgs = computed<OrthologOrthogroup[]>(() => {
   const idKw = ogIdFilter.value.trim().toLowerCase()
   const annKw = annotationFilter.value.trim().toLowerCase()
@@ -131,10 +133,7 @@ const filteredOgs = computed<OrthologOrthogroup[]>(() => {
   if (idKw) list = list.filter((o) => o.og_code.toLowerCase().includes(idKw))
   // 注释字段后端暂未提供，退化为对 og_code 匹配；补齐 annotation 后自动改为按注释匹配
   if (annKw) {
-    list = list.filter(
-      (o) =>
-        (o.annotation ?? o.og_code).toLowerCase().includes(annKw),
-    )
+    list = list.filter((o) => (o.annotation ?? o.og_code).toLowerCase().includes(annKw))
   }
   if (sortProp.value && sortOrder.value) {
     const dir = sortOrder.value === 'ascending' ? 1 : -1
@@ -149,33 +148,33 @@ const filteredOgs = computed<OrthologOrthogroup[]>(() => {
   return list
 })
 
-const ogHasMore = computed(() => ogList.value.length < ogTotal.value)
+/** 当前页切片：客户端分页只渲染 filteredOgs 中 [start, start+pageSize) 这一段 */
+const pagedOgs = computed<OrthologOrthogroup[]>(() => {
+  const start = (ogPage.value - 1) * ogPageSize.value
+  return filteredOgs.value.slice(start, start + ogPageSize.value)
+})
 
-/** 拉取 OG 列表：reset=true 时回到首页 */
-async function loadOgs(reset = true): Promise<void> {
-  ogLoading.value = true
-  ogError.value = ''
-  if (reset) {
-    ogOffset.value = 0
-    ogList.value = []
-  }
-  // 防护：未取到任何物种名（meta 解析失败）时不发空 species 请求，避免后端 400
-  const querySpecies = resolveQuerySpecies()
-  if (querySpecies.length === 0) {
-    ogLoading.value = false
+/** 改筛选条件（左侧基因组 / mode）后：请求一次后端、缓存结果、回到第 1 页 */
+async function reloadBrowsing(): Promise<void> {
+  const species = resolveQuerySpecies()
+  if (species.length === 0) {
     ogError.value = t('ortholog_not_found')
+    ogList.value = []
+    ogTotal.value = 0
     return
   }
+  ogLoading.value = true
+  ogError.value = ''
+  ogPage.value = 1
   try {
     const res = await getOrthogroupsBySpecies({
-      species: querySpecies,
+      species,
       mode: resolveQueryMode(),
-      limit: ogLimit.value,
-      offset: ogOffset.value,
+      limit: 500,
+      offset: 0,
     })
     ogTotal.value = res.total ?? 0
-    const items = res.orthogroups ?? []
-    ogList.value = reset ? items : [...ogList.value, ...items]
+    ogList.value = res.orthogroups ?? []
     if (!res.found && ogList.value.length === 0) {
       ogError.value = t('ortholog_not_found')
     }
@@ -186,21 +185,16 @@ async function loadOgs(reset = true): Promise<void> {
   }
 }
 
-function loadMore(): void {
-  if (!ogHasMore.value || ogLoading.value) return
-  ogOffset.value += ogLimit.value
-  loadOgs(false)
-}
-
 function handleSortChange(payload: { prop: string | null; order: 'ascending' | 'descending' | null }): void {
   sortProp.value = payload?.prop ?? ''
   sortOrder.value = payload?.order ?? null
 }
 
-watch(selectedSpecies, () => loadOgs(true), { deep: true })
+watch(selectedSpecies, () => reloadBrowsing(), { deep: true })
 watch(speciesMode, () => {
-  if (selectedSpecies.value.length) loadOgs(true)
+  if (selectedSpecies.value.length) reloadBrowsing()
 })
+// 关键字 / 单拷贝 / 排序：仅作用于已缓存的 ogList，无需重跑后端检索（computed 自动重算）
 
 // ============ 明细抽屉 ============
 const drawerVisible = ref(false)
@@ -401,7 +395,7 @@ const filteredMemberGenes = computed<GeneOgEntry[]>(() => {
 onMounted(async () => {
   const meta = await getOrthologMeta()
   metaList.value = meta
-  await loadOgs(true)
+  await reloadBrowsing()
   // 主页 Orthologs 检索深链：?og=OG0000001 直接跳到 OG 详情页
   const og = route.query.og as string | undefined
   if (og) {
@@ -477,12 +471,12 @@ onMounted(async () => {
               <el-alert v-if="ogError" type="warning" :title="ogError" show-icon class="mb-4" />
 
               <div class="ortholog-oglist__total">
-                {{ t('total') }} {{ ogTotal }} {{ t('records') }}
+                {{ t('total') }} {{ filteredOgs.length }} {{ t('records') }}
               </div>
 
               <el-table
                 v-loading="ogLoading"
-                :data="filteredOgs"
+                :data="pagedOgs"
                 stripe
                 border
                 size="small"
@@ -523,10 +517,15 @@ onMounted(async () => {
               </el-table>
 
               <div class="ortholog-oglist__more">
-                <el-button v-if="ogHasMore" :loading="ogLoading" @click="loadMore">
-                  {{ t('load_more') }}
-                </el-button>
-                <span v-else class="ortholog-oglist__end">{{ t('no_more') }}</span>
+                <el-pagination
+                  v-model:current-page="ogPage"
+                  v-model:page-size="ogPageSize"
+                  :total="filteredOgs.length"
+                  :page-sizes="[10, 20, 50, 100]"
+                  layout="total, sizes, prev, pager, next, jumper"
+                  background
+                  :disabled="ogLoading"
+                />
               </div>
             </el-card>
           </el-col>
