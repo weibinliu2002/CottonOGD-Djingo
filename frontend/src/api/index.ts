@@ -1157,3 +1157,49 @@ export async function getOrthogroupTree(ogCode: string): Promise<string> {
     return ''
   }
 }
+
+/**
+ * 拉取单个 orthogroup 的多序列比对（MSA）文本（FASTA / clustal 等）。
+ * GET /CottonOGD_api/orthofinder/msa/<og_code>
+ * ⚠️ 后端接口由用户后续补充；当前未就绪时返回空字符串，前端静默降级。
+ */
+export async function getOrthogroupMsa(ogCode: string): Promise<string> {
+  try {
+    const res = await httpInstance.get(`/CottonOGD_api/orthofinder/msa/${ogCode}`) as unknown as string
+    return typeof res === 'string' ? res : ''
+  } catch {
+    return ''
+  }
+}
+
+/**
+ * 拉取单个 orthogroup 的 WGS 数据（文本，按需）。
+ * GET /CottonOGD_api/orthofinder/wgs/<og_code>
+ * ⚠️ 后端接口由用户后续补充；未就绪时返回空字符串，前端静默降级。
+ */
+export async function getOrthogroupWgs(ogCode: string): Promise<string> {
+  try {
+    const res = await httpInstance.get(`/CottonOGD_api/orthofinder/wgs/${ogCode}`) as unknown as string
+    return typeof res === 'string' ? res : ''
+  } catch {
+    return ''
+  }
+}
+
+/**
+ * 拉取单个 orthogroup 的串联重复（tandem duplication）汇总信息。
+ * GET /CottonOGD_api/orthofinder/tandem/<og_code>
+ * ⚠️ 后端接口由用户后续补充；未就绪时返回 null，前端静默降级。
+ */
+export interface OrthogroupTandem {
+  /** 各物种的串联重复基因簇（key=物种名） */
+  [species: string]: { geneid: string; n: number }[]
+}
+export async function getOrthogroupTandem(ogCode: string): Promise<OrthogroupTandem | null> {
+  try {
+    const res = await httpInstance.get(`/CottonOGD_api/orthofinder/tandem/${ogCode}`) as unknown as OrthogroupTandem | null
+    return res && typeof res === 'object' ? res : null
+  } catch {
+    return null
+  }
+}

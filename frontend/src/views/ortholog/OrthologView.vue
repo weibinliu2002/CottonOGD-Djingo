@@ -204,6 +204,12 @@ function openGene(genemasterGeneid: string | null): void {
   router.push({ name: 'GenomeDetail', params: { key: genemasterGeneid } })
 }
 
+/** 点 OG id → 跳独立详情页（含 MSA / 树 / WGS / 串联重复） */
+function openOgDetail(ogCode: string): void {
+  if (!ogCode) return
+  router.push({ name: 'OrthogroupDetail', params: { og_code: ogCode } })
+}
+
 // ============ Tab「按基因查」（走 Meilisearch Orthologs 索引） ============
 // 设计：用户输入基因 id → 在 Orthologs 索引检索，命中按所属 og_code 聚合，
 // 得到该基因参与的若干 OG；点击某个 OG → 用 og_code 过滤 + 分页拉取成员基因
@@ -348,12 +354,10 @@ onMounted(async () => {
   const meta = await getOrthologMeta()
   metaList.value = meta
   await loadOgs(true)
-  // 主页 Orthologs 检索深链：?og=OG0000001 跳到「按基因查」并加载该簇成员
+  // 主页 Orthologs 检索深链：?og=OG0000001 直接跳到 OG 详情页
   const og = route.query.og as string | undefined
   if (og) {
-    activeTab.value = 'gene'
-    geneOgs.value = [{ og_code: og, species: '', geneid: '', genemaster_geneid: '' }]
-    selectOg(og)
+    openOgDetail(og)
   }
 })
 </script>
@@ -434,11 +438,11 @@ onMounted(async () => {
                 size="small"
                 :row-class-name="() => 'is-clickable'"
                 @sort-change="handleSortChange"
-                @row-click="(row: any) => openDetail(row.og_code)"
+                @row-click="(row: any) => openOgDetail(row.og_code)"
               >
                 <el-table-column :label="t('og_code')" prop="og_code" min-width="160">
                   <template #default="scope">
-                    <a class="og-link">{{ scope.row.og_code }}</a>
+                    <a class="og-link" @click="openOgDetail(scope.row.og_code)">{{ scope.row.og_code }}</a>
                   </template>
                 </el-table-column>
                 <el-table-column

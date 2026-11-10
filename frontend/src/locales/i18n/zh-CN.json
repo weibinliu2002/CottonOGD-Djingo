@@ -566,6 +566,14 @@
     "word_size_description": "词搜索算法的字长（默认：11）",
     "yes": "是",
     "youve_successfully_created": "您已成功创建了一个Vite + Vue 3项目。接下来做什么？",
-    "z_score": "Z分数"
+    "z_score": "Z分数",
+    "og_overview": "概览",
+    "og_msa": "多序列比对（MSA）",
+    "og_tree": "基因树",
+    "og_wgs": "WGS",
+    "og_tandem": "串联重复",
+    "copy_og_code": "复制 OG 编号",
+    "og_module_not_ready": "该模块暂未就绪（后端接口待补充）",
+    "og_tree_not_found": "该同源簇暂无基因树"
   }
 }

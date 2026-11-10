@@ -16,6 +16,7 @@ const IGVView = () => import('@/views/genome/IGVView.vue')
 const GenomeSyntenyView = () => import('@/views/genome/GenomeSyntenyView.vue')
 const GeneLocationView = () => import('@/views/genome/GeneLocationView.vue')
 const OrthologView = () => import('@/views/ortholog/OrthologView.vue')
+const OrthogroupDetailView = () => import('@/views/ortholog/OrthogroupDetailView.vue')
 
 // Annotation module
 const GoAnnotationView = () => import('@/views/annotation/GoAnnotationView.vue')
@@ -414,6 +415,11 @@ const routes = [
     path: '/tools/orthogroup',
     name: 'Orthogroup',
     component: OrthologView
+  },
+  {
+    path: '/tools/orthogroup/:og_code',
+    name: 'OrthogroupDetail',
+    component: OrthogroupDetailView
   },
   {
     path: '/tools/msa',
