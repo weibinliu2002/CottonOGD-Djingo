@@ -24,6 +24,7 @@ const edgeCount = computed(() => props.elements.length - nodeCount.value)
 
 let cy: Core | null = null
 let resizeObserver: ResizeObserver | null = null
+let activeLayout: { stop: () => void } | null = null
 
 function fitNetwork(): void {
   cy?.fit(undefined, 32)
@@ -31,9 +32,10 @@ function fitNetwork(): void {
 
 function renderNetwork(elements: ElementDefinition[]): void {
   if (!cy) return
+  activeLayout?.stop()
   cy.elements().remove()
   cy.add(elements)
-  cy.layout({
+  activeLayout = cy.layout({
     name: 'cose',
     animate: true,
     animationDuration: 400,
@@ -48,16 +50,8 @@ onMounted(() => {
   if (!containerRef.value) return
   cy = cytoscape({
     container: containerRef.value,
-    elements: props.elements,
-    layout: {
-      name: 'cose',
-      animate: true,
-      animationDuration: 400,
-      fit: true,
-      padding: 32,
-      nodeRepulsion: 4500,
-      idealEdgeLength: 90,
-    },
+    elements: [],
+    layout: { name: 'preset' },
     style: [
       {
         selector: 'node',
@@ -101,11 +95,11 @@ onMounted(() => {
     ],
     minZoom: 0.1,
     maxZoom: 4,
-    wheelSensitivity: 0.2,
   })
 
   resizeObserver = new ResizeObserver(() => cy?.resize())
   resizeObserver.observe(containerRef.value)
+  renderNetwork(props.elements)
 })
 
 watch(
@@ -116,6 +110,8 @@ watch(
 onBeforeUnmount(() => {
   resizeObserver?.disconnect()
   resizeObserver = null
+  activeLayout?.stop()
+  activeLayout = null
   cy?.destroy()
   cy = null
 })

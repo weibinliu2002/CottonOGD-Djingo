@@ -1191,7 +1191,16 @@ export async function getOrthogroupMsa(ogCode: string): Promise<string> {
 export async function getStringPpiNetwork(payload: {
   gene_ids: string[]
   genome_id: string
-}): Promise<PpiNetwork> {
-  const response = await httpInstance.post('/CottonOGD_api/ppi/string/', payload)
-  return parsePpiNetwork(response)
+}): Promise<{ network: PpiNetwork; message: string }> {
+  const response: unknown = await httpInstance.post('/CottonOGD_api/ppi/string/', payload, {
+    timeout: 120_000,
+  })
+  const message =
+    typeof response === 'object' &&
+    response !== null &&
+    'message' in response &&
+    typeof response.message === 'string'
+      ? response.message
+      : ''
+  return { network: parsePpiNetwork(response), message }
 }

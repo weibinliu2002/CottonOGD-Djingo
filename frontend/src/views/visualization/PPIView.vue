@@ -25,13 +25,22 @@
         :closable="true"
         @close="errorMessage = ''"
       />
+      <el-alert
+        v-if="infoMessage"
+        class="ppi-alert"
+        type="warning"
+        :title="infoMessage"
+        show-icon
+        :closable="true"
+        @close="infoMessage = ''"
+      />
 
       <div v-if="inputMode === 'genes'" class="ppi-form">
         <el-form label-position="top" @submit.prevent="submitGeneIds">
           <el-form-item :label="t('select_genome')">
             <el-cascader
               v-model="selectedGenome"
-              :options="genomeOptions"
+              :options="ppiGenomeOptions"
               :props="cascaderProps"
               :placeholder="t('select_genome')"
               :loading="genomeLoading"
@@ -61,23 +70,34 @@
           ref="fileInputRef"
           class="ppi-upload__input"
           type="file"
-          accept=".json,application/json"
+          accept=".json,.cyjs,.graphml,.xgmml,.xml,.sif,.txt,.csv,.tsv,.xls,.xlsx,application/json,text/*,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,*/*"
           @change="handleFileChange"
         />
-        <div class="ppi-upload__drop">
+        <div class="ppi-upload__drop" @dragover.prevent @drop.prevent="handleFileDrop">
           <el-icon class="ppi-upload__icon"><UploadFilled /></el-icon>
           <p>{{ selectedFileName || t('ppi_upload_prompt') }}</p>
-          <el-button @click="fileInputRef?.click()">{{ t('ppi_choose_json') }}</el-button>
+          <el-button @click="fileInputRef?.click()">{{ t('ppi_choose_file') }}</el-button>
         </div>
+        <el-form-item class="ppi-upload__format" :label="t('ppi_upload_format')">
+          <el-select v-model="uploadFormat" class="ppi-upload__format-select">
+            <el-option value="auto" :label="t('ppi_format_auto')" />
+            <el-option value="cytoscape" :label="t('ppi_format_cytoscape')" />
+            <el-option value="table" :label="t('ppi_format_table')" />
+          </el-select>
+          <div class="ppi-form__hint">{{ t('ppi_format_override_hint') }}</div>
+        </el-form-item>
         <div class="ppi-upload__hint">
           <p>{{ t('ppi_json_format_hint') }}</p>
-          <pre>{{ exampleJson }}</pre>
+          <p>{{ t('ppi_table_format_hint') }}</p>
+          <pre>{{ exampleTable }}</pre>
         </div>
       </div>
     </el-card>
 
     <el-card class="ppi-card ppi-results" shadow="never">
-      <template #header><span>{{ t('ppi_network_title') }}</span></template>
+      <template #header
+        ><span>{{ t('ppi_network_title') }}</span></template
+      >
       <PpiNetworkViewer v-if="network.elements.length" :elements="network.elements" />
       <el-empty v-else :description="t('ppi_network_empty')" />
     </el-card>
@@ -85,49 +105,60 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { UploadFilled } from '@element-plus/icons-vue'
 import PpiNetworkViewer from '@/components/data-display/PpiNetworkViewer.vue'
 import { useGenomeSelector } from '@/composables/features/useGenomeBrowser'
 import { getStringPpiNetwork } from '@/api'
-import { parsePpiNetwork, type PpiNetwork } from '@/utils/ppiNetwork'
+import { parsePpiUpload, type PpiNetwork, type PpiUploadFormat } from '@/utils/ppiNetwork'
 
 type InputMode = 'genes' | 'file'
 
 const { t } = useI18n()
-const {
-  selectedGenome,
-  genomeOptions,
-  genomeLoading,
-  cascaderProps,
-  ensureGenomesLoaded,
-  pickDefaultGenome,
-  setSelectedGenome,
-} = useGenomeSelector()
+const { genomeOptions, genomeLoading, cascaderProps, ensureGenomesLoaded, pickDefaultGenome } = useGenomeSelector()
 
 const inputMode = ref<InputMode>('genes')
+const selectedGenome = ref<string[]>([])
+const uploadFormat = ref<PpiUploadFormat>('auto')
 const geneIdsText = ref('')
 const fileInputRef = ref<HTMLInputElement | null>(null)
+const selectedFile = ref<File | null>(null)
 const selectedFileName = ref('')
 const loading = ref(false)
 const errorMessage = ref('')
+const infoMessage = ref('')
 const network = ref<PpiNetwork>({ elements: [] })
-const selectedGenomeName = computed(
-  () => selectedGenome.value[selectedGenome.value.length - 1] || '',
+const ppiGenomeOptions = computed(() =>
+  genomeOptions.value
+    .map((group) => ({
+      ...group,
+      children: (group.children || []).filter(
+        (genome) =>
+          genome.value.trim() !== '' &&
+          genome.value.toLowerCase() !== 'undefined' &&
+          genome.label.trim() !== '' &&
+          genome.label.toLowerCase() !== 'undefined',
+      ),
+    }))
+    .filter(
+      (group) =>
+        group.value.trim() !== '' &&
+        group.value.toLowerCase() !== 'undefined' &&
+        group.label.trim() !== '' &&
+        group.label.toLowerCase() !== 'undefined' &&
+        (group.children?.length || 0) > 0,
+    ),
 )
+const availableGenomes = computed(() =>
+  ppiGenomeOptions.value.flatMap((group) => group.children || []).map((genome) => genome.value),
+)
+const selectedGenomeName = computed(() => selectedGenome.value?.[selectedGenome.value.length - 1] || '')
 
-const exampleJson = `{
-  "elements": {
-    "nodes": [
-      { "data": { "id": "geneA", "label": "Gene A" } },
-      { "data": { "id": "geneB", "label": "Gene B" } }
-    ],
-    "edges": [
-      { "data": { "id": "geneA-geneB", "source": "geneA", "target": "geneB", "score": 850 } }
-    ]
-  }
-}`
+const exampleTable = `source,target,score
+geneA,geneB,850
+geneB,geneC,720`
+let uploadParseRequest = 0
 
 function getErrorMessage(error: unknown): string {
   if (typeof error === 'object' && error !== null && 'response' in error) {
@@ -146,7 +177,15 @@ function getErrorMessage(error: unknown): string {
 
 async function submitGeneIds(): Promise<void> {
   errorMessage.value = ''
-  const geneIds = [...new Set(geneIdsText.value.split(/[\s,;]+/).map((id) => id.trim()).filter(Boolean))]
+  infoMessage.value = ''
+  const geneIds = [
+    ...new Set(
+      geneIdsText.value
+        .split(/[\s,;]+/)
+        .map((id) => id.trim())
+        .filter(Boolean),
+    ),
+  ]
   if (!geneIds.length) {
     errorMessage.value = t('ppi_enter_gene_ids')
     return
@@ -158,10 +197,12 @@ async function submitGeneIds(): Promise<void> {
 
   loading.value = true
   try {
-    network.value = await getStringPpiNetwork({
+    const result = await getStringPpiNetwork({
       gene_ids: geneIds,
       genome_id: selectedGenomeName.value,
     })
+    network.value = result.network
+    infoMessage.value = result.message
   } catch (error) {
     errorMessage.value = getErrorMessage(error)
   } finally {
@@ -174,21 +215,44 @@ async function handleFileChange(event: Event): Promise<void> {
   const file = input.files?.[0]
   if (!file) return
 
+  await loadNetworkFile(file)
+  input.value = ''
+}
+
+async function handleFileDrop(event: DragEvent): Promise<void> {
+  const file = event.dataTransfer?.files[0]
+  if (file) await loadNetworkFile(file)
+}
+
+async function loadNetworkFile(file: File): Promise<void> {
+  selectedFile.value = file
   errorMessage.value = ''
+  infoMessage.value = ''
   selectedFileName.value = file.name
+  network.value = { elements: [] }
+  const requestId = ++uploadParseRequest
   try {
-    network.value = parsePpiNetwork(JSON.parse(await file.text()))
+    const parsedNetwork = await parsePpiUpload(file, uploadFormat.value)
+    if (requestId === uploadParseRequest) network.value = parsedNetwork
   } catch (error) {
-    errorMessage.value = getErrorMessage(error)
-  } finally {
-    input.value = ''
+    if (requestId === uploadParseRequest) errorMessage.value = getErrorMessage(error)
   }
 }
 
+watch(uploadFormat, () => {
+  if (selectedFile.value) void loadNetworkFile(selectedFile.value)
+})
+
 onMounted(async () => {
   await ensureGenomesLoaded()
-  if (genomeOptions.value.length) {
-    setSelectedGenome(pickDefaultGenome())
+  const fallbackGenome = availableGenomes.value[0]
+  if (fallbackGenome) {
+    const preferredGenome = pickDefaultGenome()
+    const genomeName = availableGenomes.value.includes(preferredGenome) ? preferredGenome : fallbackGenome
+    const group = ppiGenomeOptions.value.find((option) =>
+      option.children?.some((genome) => genome.value === genomeName),
+    )
+    if (group) selectedGenome.value = [group.value, genomeName]
   }
 })
 </script>
@@ -269,6 +333,14 @@ onMounted(async () => {
   margin-top: 1rem;
   color: #64748b;
   font-size: 0.85rem;
+}
+
+.ppi-upload__format {
+  margin: 1rem 0 0;
+}
+
+.ppi-upload__format-select {
+  width: min(100%, 360px);
 }
 
 .ppi-upload__hint p {
