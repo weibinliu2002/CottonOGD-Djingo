@@ -10,8 +10,8 @@
 
       <el-form @submit.prevent="handleSubmit" label-width="180px">
         <el-form-item :label="t('select_dataset')">
-          <el-select v-model="dataset" :placeholder="t('select_dataset')" style="width: 100%" :loading="setsLoading">
-            <el-option v-for="s in sets" :key="s.dataset" :label="s.dataset" :value="s.dataset" />
+          <el-select v-model="setId" :placeholder="t('select_dataset')" style="width: 100%" :loading="setsLoading">
+            <el-option v-for="s in sets" :key="s.id" :label="`${s.name} (${s.sample_count} samples)`" :value="s.id" />
           </el-select>
         </el-form-item>
 
@@ -28,10 +28,6 @@
           <div class="text-muted mt-1">{{ t('region_format_hint') }}</div>
         </el-form-item>
 
-        <el-form-item :label="t('single_point')">
-          <el-input v-model="singlePos" :placeholder="t('position')" style="width: 180px" />
-        </el-form-item>
-
         <el-form-item :label="t('input_samples')">
           <el-input v-model="samplesText" type="textarea" :rows="2" :placeholder="t('input_samples')" />
         </el-form-item>
@@ -42,7 +38,7 @@
 
         <el-form-item>
           <el-button type="info" size="small" @click="fillExample">{{ t('load_example') }}</el-button>
-          <el-button type="primary" native-type="submit" :loading="loading" class="ms-2">
+          <el-button type="primary" :loading="loading" class="ms-2" @click="handleSubmit">
             <el-icon><Search /></el-icon>{{ t('search') }}
           </el-button>
         </el-form-item>
@@ -60,11 +56,11 @@
       </template>
 
       <el-table :data="rows" style="width: 100%" max-height="600">
-        <el-table-column prop="chr" :label="t('chromosome')" width="130" fixed />
-        <el-table-column prop="pos" :label="t('position')" width="130" fixed />
-        <el-table-column prop="ref" :label="t('ref')" width="80" fixed />
-        <el-table-column prop="alt" :label="t('alt')" width="80" fixed />
-        <el-table-column v-for="col in sampleCols" :key="col" :prop="col" :label="col" width="110" />
+        <el-table-column prop="chrom" :label="t('chromosome')" width="100" fixed />
+        <el-table-column prop="pos" :label="t('position')" width="120" fixed />
+        <el-table-column prop="ref" :label="t('ref')" width="70" fixed />
+        <el-table-column prop="alt" :label="t('alt')" width="70" fixed />
+        <el-table-column v-for="col in sampleCols" :key="col" :prop="col" :label="col" width="100" />
       </el-table>
 
       <TableToolbar
@@ -84,10 +80,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Search } from '@element-plus/icons-vue'
-import { getVariantSets, getVariantGenotype, type VariantSet, type VariantGenotype } from '@/api/index'
+import {
+  getVariantSets,
+  getVariantGenotype,
+  type VariantSet,
+  type VariantGenotypeResult,
+} from '@/api/index'
 import TableToolbar from '@/components/data-display/TableToolbar.vue'
 import type { ExportColumn } from '@/utils/exportTable'
 
@@ -95,11 +96,10 @@ const { t } = useI18n()
 
 const sets = ref<VariantSet[]>([])
 const setsLoading = ref(false)
-const dataset = ref('')
+const setId = ref<number | undefined>(undefined)
 const chromosome = ref('')
 const start = ref<number | undefined>(undefined)
 const end = ref<number | undefined>(undefined)
-const singlePos = ref('')
 const samplesText = ref('')
 const format = ref('GT')
 const loading = ref(false)
@@ -115,7 +115,7 @@ onMounted(async () => {
   try {
     const res = await getVariantSets()
     sets.value = res.data ?? []
-    if (sets.value.length) dataset.value = sets.value[0].dataset
+    if (sets.value.length) setId.value = sets.value[0].id
   } catch (e) {
     error.value = String(e)
   } finally {
@@ -124,19 +124,19 @@ onMounted(async () => {
 })
 
 const fillExample = () => {
-  if (sets.value.length) dataset.value = sets.value[0].dataset
-  chromosome.value = 'Ghir_A01'
+  if (sets.value.length) setId.value = sets.value[0].id
+  chromosome.value = 'A01'
   start.value = 1
   end.value = 100000
 }
 
-const buildRows = (data: VariantGenotype[]) => {
-  const cols = new Set<string>()
-  data.forEach((d) => Object.keys(d.genotypes ?? {}).forEach((k) => cols.add(k)))
-  sampleCols.value = Array.from(cols)
-  rows.value = data.map((d) => ({
-    chr: d.chromosome,
-    pos: d.position,
+const buildRows = (data: VariantGenotypeResult) => {
+  // 后端返回 {samples:[...], records:[{chrom,pos,ref,alt,id?,genotypes:{sample:gt}}]}
+  // genotypes 按样本展开为列
+  sampleCols.value = data.samples ?? []
+  rows.value = data.records.map((d) => ({
+    chrom: d.chrom,
+    pos: d.pos,
     ref: d.ref,
     alt: d.alt,
     ...(d.genotypes ?? {}),
@@ -144,7 +144,7 @@ const buildRows = (data: VariantGenotype[]) => {
 }
 
 const exportColumns = computed<ExportColumn<Record<string, any>>[]>(() => [
-  { key: 'chr', label: 'Chr' },
+  { key: 'chrom', label: 'Chrom' },
   { key: 'pos', label: 'Pos' },
   { key: 'ref', label: 'Ref' },
   { key: 'alt', label: 'Alt' },
@@ -152,7 +152,7 @@ const exportColumns = computed<ExportColumn<Record<string, any>>[]>(() => [
 ])
 
 const handleSubmit = async () => {
-  if (!dataset.value) {
+  if (setId.value === undefined) {
     error.value = t('select_dataset')
     return
   }
@@ -160,8 +160,8 @@ const handleSubmit = async () => {
     error.value = t('chromosome')
     return
   }
-  if (!singlePos.value && (start.value === undefined || end.value === undefined)) {
-    error.value = t('region_too_large').includes('范围') ? t('region_placeholder') : t('region_format_hint')
+  if (start.value === undefined || end.value === undefined) {
+    error.value = t('region_format_hint')
     return
   }
   loading.value = true
@@ -169,19 +169,24 @@ const handleSubmit = async () => {
   error.value = ''
   try {
     const res = await getVariantGenotype({
-      dataset: dataset.value,
-      chromosome: chromosome.value,
-      start: singlePos.value ? Number(singlePos.value) : start.value!,
-      end: singlePos.value ? Number(singlePos.value) : end.value!,
+      set_id: setId.value,
+      chrom: chromosome.value,
+      start: start.value,
+      end: end.value,
       samples: samplesText.value ? samplesText.value.split(',').map((s) => s.trim()).filter(Boolean) : undefined,
       format: format.value || undefined,
     })
-    const data = res.data ?? []
+    const data = res.data
     // 区间上限提示（文档建议 ≤ 1Mb）
-    if (!singlePos.value && start.value !== undefined && end.value !== undefined && end.value - start.value > 1000000) {
+    if (end.value - start.value > 1000000) {
       error.value = t('region_too_large')
     }
-    buildRows(data)
+    if (data) {
+      buildRows(data)
+    } else {
+      sampleCols.value = []
+      rows.value = []
+    }
     searched.value = true
   } catch (e: any) {
     error.value = e?.message || String(e)

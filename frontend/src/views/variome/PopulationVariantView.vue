@@ -10,8 +10,8 @@
 
       <el-form @submit.prevent="handleSubmit" label-width="180px">
         <el-form-item :label="t('select_dataset')">
-          <el-select v-model="dataset" :placeholder="t('select_dataset')" style="width: 100%" :loading="setsLoading">
-            <el-option v-for="s in sets" :key="s.dataset" :label="s.dataset" :value="s.dataset" />
+          <el-select v-model="setId" :placeholder="t('select_dataset')" style="width: 100%" :loading="setsLoading">
+            <el-option v-for="s in sets" :key="s.id" :label="`${s.name} (${s.sample_count} samples, ${s.caller})`" :value="s.id" />
           </el-select>
         </el-form-item>
 
@@ -39,7 +39,7 @@
 
         <el-form-item>
           <el-button type="info" size="small" @click="fillExample">{{ t('load_example') }}</el-button>
-          <el-button type="primary" native-type="submit" :loading="loading" class="ms-2">
+          <el-button type="primary" :loading="loading" class="ms-2" @click="handleSubmit">
             <el-icon><Search /></el-icon>{{ t('search') }}
           </el-button>
           <el-button type="success" size="small" class="ms-2" @click="handleDensity">{{ t('variant_density') }}</el-button>
@@ -58,19 +58,14 @@
       </template>
 
       <el-table :data="table.pagedData" style="width: 100%" @sort-change="table.handleSortChange">
-        <el-table-column prop="id" :label="'ID'" width="200" sortable="custom">
-          <template #default="scope">
-            <a href="javascript:void(0)" @click="openDetail(scope.row)">{{ scope.row.id }}</a>
-          </template>
-        </el-table-column>
-        <el-table-column prop="chromosome" :label="t('chromosome')" width="140" sortable="custom" />
-        <el-table-column prop="position" :label="t('position')" width="140" sortable="custom" />
-        <el-table-column prop="ref" :label="t('ref')" width="90" />
-        <el-table-column prop="alt" :label="t('alt')" width="90" />
-        <el-table-column prop="type" :label="t('variation_type')" width="140" sortable="custom" />
-        <el-table-column prop="maf" :label="t('maf')" width="100" sortable="custom" />
-        <el-table-column prop="effect" :label="t('effect')" width="140" sortable="custom" />
-        <el-table-column prop="gene" :label="t('gene')" width="160" sortable="custom" />
+        <el-table-column prop="id" :label="'ID'" width="100" sortable="custom" />
+        <el-table-column prop="chrom" :label="t('chromosome')" width="120" sortable="custom" />
+        <el-table-column prop="pos" :label="t('position')" width="130" sortable="custom" />
+        <el-table-column prop="end_pos" :label="t('end_position')" width="130" sortable="custom" />
+        <el-table-column prop="svtype" :label="t('variation_type')" width="120" sortable="custom" />
+        <el-table-column prop="ref" :label="t('ref')" width="80" />
+        <el-table-column prop="alt" :label="t('alt')" width="80" />
+        <el-table-column prop="filter" :label="'Filter'" width="100" />
       </el-table>
 
       <TableToolbar
@@ -108,12 +103,13 @@
     <el-dialog v-model="detailVisible" :title="t('view')" width="40%">
       <el-descriptions v-if="detail" :column="1" border>
         <el-descriptions-item :label="'ID'">{{ detail.id }}</el-descriptions-item>
-        <el-descriptions-item :label="t('chromosome')">{{ detail.chromosome }}</el-descriptions-item>
-        <el-descriptions-item :label="t('position')">{{ detail.position }}</el-descriptions-item>
+        <el-descriptions-item :label="t('chromosome')">{{ detail.chrom }}</el-descriptions-item>
+        <el-descriptions-item :label="t('position')">{{ detail.pos }}</el-descriptions-item>
+        <el-descriptions-item :label="t('end_position')">{{ detail.end_pos }}</el-descriptions-item>
         <el-descriptions-item :label="t('ref')">{{ detail.ref }}</el-descriptions-item>
         <el-descriptions-item :label="t('alt')">{{ detail.alt }}</el-descriptions-item>
-        <el-descriptions-item :label="t('variation_type')">{{ detail.type }}</el-descriptions-item>
-        <el-descriptions-item :label="t('effect')">{{ detail.effect }}</el-descriptions-item>
+        <el-descriptions-item :label="t('variation_type')">{{ detail.svtype }}</el-descriptions-item>
+        <el-descriptions-item :label="'Filter'">{{ detail.filter }}</el-descriptions-item>
       </el-descriptions>
     </el-dialog>
 
@@ -133,7 +129,8 @@ import {
   getVariantDensity,
   type VariantSet,
   type VariantRecord,
-  type VariantDensity,
+  type VariantDensityBin,
+  type TypeStat,
 } from '@/api/index'
 import { useEnhancedTable } from '@/composables/core/useEnhancedTable'
 import type { ExportColumn } from '@/utils/exportTable'
@@ -142,7 +139,7 @@ const { t } = useI18n()
 
 const sets = ref<VariantSet[]>([])
 const setsLoading = ref(false)
-const dataset = ref('')
+const setId = ref<number | undefined>(undefined)
 const chromosome = ref('')
 const start = ref<number | undefined>(undefined)
 const end = ref<number | undefined>(undefined)
@@ -152,8 +149,8 @@ const availableTypes = ref<string[]>([])
 
 const records = ref<VariantRecord[]>([])
 const total = ref(0)
-const typeStat = ref<{ type: string; count: number }[]>([])
-const density = ref<VariantDensity[]>([])
+const typeStat = ref<TypeStat[]>([])
+const density = ref<VariantDensityBin[]>([])
 const loading = ref(false)
 const searched = ref(false)
 const error = ref('')
@@ -170,19 +167,18 @@ type Row = Record<string, any>
 const table = useEnhancedTable<Row>(() => records.value as Row[], {
   pageSize: 10,
   pageSizes: [10, 20, 50, 100],
-  searchFields: ['id', 'chromosome', 'type', 'gene', 'effect'],
+  searchFields: ['id', 'chrom', 'svtype'],
 })
 
 const exportColumns: ExportColumn<Row>[] = [
   { key: 'id', label: 'ID' },
-  { key: 'chromosome', label: 'Chromosome' },
-  { key: 'position', label: 'Position' },
+  { key: 'chrom', label: 'Chromosome' },
+  { key: 'pos', label: 'Position' },
+  { key: 'end_pos', label: 'End Pos' },
+  { key: 'svtype', label: 'Type' },
   { key: 'ref', label: 'Ref' },
   { key: 'alt', label: 'Alt' },
-  { key: 'type', label: 'Type' },
-  { key: 'maf', label: 'MAF' },
-  { key: 'effect', label: 'Effect' },
-  { key: 'gene', label: 'Gene' },
+  { key: 'filter', label: 'Filter' },
 ]
 
 onMounted(async () => {
@@ -190,7 +186,7 @@ onMounted(async () => {
   try {
     const res = await getVariantSets()
     sets.value = res.data ?? []
-    if (sets.value.length) dataset.value = sets.value[0].dataset
+    if (sets.value.length) setId.value = sets.value[0].id
   } catch (e) {
     error.value = String(e)
   } finally {
@@ -199,14 +195,14 @@ onMounted(async () => {
 })
 
 const fillExample = () => {
-  if (sets.value.length) dataset.value = sets.value[0].dataset
-  chromosome.value = 'Ghir_A01'
+  if (sets.value.length) setId.value = sets.value[0].id
+  chromosome.value = 'A01'
   start.value = 1
   end.value = 1000000
 }
 
 const handleSubmit = async () => {
-  if (!dataset.value) {
+  if (setId.value === undefined) {
     error.value = t('select_dataset')
     return
   }
@@ -215,17 +211,17 @@ const handleSubmit = async () => {
   error.value = ''
   try {
     const res = await getVariantRegion({
-      dataset: dataset.value,
-      chromosome: chromosome.value,
+      set_id: setId.value,
+      chrom: chromosome.value,
       start: start.value ?? 1,
       end: end.value ?? 1000000,
       svtype: svtype.value || undefined,
       limit: limit.value,
     })
-    records.value = res.data?.records ?? []
-    total.value = res.data?.total ?? records.value.length
+    records.value = res.data?.rows ?? []
+    total.value = res.data?.count ?? records.value.length
     typeStat.value = res.data?.type_stat ?? []
-    availableTypes.value = Array.from(new Set(records.value.map((r) => r.type ?? '').filter(Boolean)))
+    availableTypes.value = Array.from(new Set(typeStat.value.map((s) => s.svtype ?? s.son_type ?? '').filter(Boolean)))
     searched.value = true
     nextTick(renderPie)
   } catch (e: any) {
@@ -236,18 +232,18 @@ const handleSubmit = async () => {
 }
 
 const handleDensity = async () => {
-  if (!dataset.value || !chromosome.value) {
+  if (setId.value === undefined || !chromosome.value) {
     error.value = t('select_dataset') + ' / ' + t('chromosome')
     return
   }
   try {
     const res = await getVariantDensity({
-      dataset: dataset.value,
-      chromosome: chromosome.value,
+      set_id: setId.value,
+      chrom: chromosome.value,
       start: start.value,
       end: end.value,
     })
-    density.value = res.data ?? []
+    density.value = res.data?.histogram ?? []
     nextTick(renderBar)
   } catch (e: any) {
     error.value = e?.message || String(e)
@@ -276,7 +272,7 @@ function renderPie() {
         name: t('type_stat'),
         type: 'pie',
         radius: ['40%', '70%'],
-        data: typeStat.value.map((s) => ({ name: s.type, value: s.count })),
+        data: typeStat.value.map((s) => ({ name: s.svtype ?? s.son_type ?? '', value: s.count })),
       },
     ],
   })

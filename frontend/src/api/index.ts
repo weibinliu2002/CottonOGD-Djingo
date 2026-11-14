@@ -1207,53 +1207,59 @@ export async function getStringPpiNetwork(payload: {
 
 // ==================== 十七、变异与 GWAS（Variome） ====================
 //
-// ⚠️ 后端对接说明（实事求是）：
-//   前端交接文档「变异数据API前端对接文档 v2」声明后端 /syri/、/variant/、/gwas/
-//   路由已注册就绪。但本地仓库 backend/CottonOGD/urls.py 当前不含这些路由；
-//   CLAUDE.md 注明后端部署在远程服务器、本地不含运行时文件，故服务器上可能已就绪
-//   而本地仓库为旧版本。以下函数按文档 v2 的真实契约实现，本地 urls.py 差异仅记录于此。
-//   统一返回 ApiResult<T>，与既有 API 一致；不走 mock（用户要求直接对接真实接口）。
+// 已验证真实后端（iCotton.henau.edu.cn），以下接口/类型以后端实际响应为准。
+// 统一返回 ApiResult<T>，与既有 API 一致；不走 mock（用户要求直接对接真实接口）。
 
 // ---------- A 域：SyRI 结构变异 ----------
 
-/** SyRI pairwise 批次 */
+/** SyRI pairwise 批次 — 后端返回 {id, ref_genome_id, query_genome_id, status, syri_version, created_at} */
 export interface SyriPair {
-  key: string
-  ref: string
-  query: string
-  label?: string
+  id: number
+  ref_genome_id: number
+  query_genome_id: number
+  status: string
+  syri_version: string
+  created_at: string
 }
 
-/** SyRI 结构变异条目 */
+/** SyRI 结构变异条目 — 后端返回 {id, genome_pair_id, ref_genome_id, query_genome_id,
+ *  ref_genome_chr, ref_start, ref_end, query_genome_chr, query_start, query_end,
+ *  event_id, parent_event, son_type, copygain, sv_length} */
 export interface SyriStructural {
-  ref_chr: string
+  id: number
+  genome_pair_id: number
+  ref_genome_id: number
+  query_genome_id: number
+  ref_genome_chr: string
   ref_start: number
   ref_end: number
-  qry_chr: string
-  qry_start: number
-  qry_end: number
-  type: string
-  ref_seq?: string
-  qry_seq?: string
+  query_genome_chr: string
+  query_start: number
+  query_end: number
+  event_id: string
+  parent_event: string | null
+  son_type: string
+  copygain: number | null
+  sv_length: number
 }
 
-/** SyRI 序列级注释条目 */
+/** SyRI 序列级注释条目（复用后端 structural 的行格式） */
 export interface SyriSequence {
-  ref_chr: string
+  id: number
+  ref_genome_chr: string
   ref_start: number
   ref_end: number
-  qry_chr: string
-  qry_start: number
-  qry_end: number
-  type: string
-  size: number
-  ref_cov?: number
-  qry_cov?: number
+  query_genome_chr: string
+  query_start: number
+  query_end: number
+  son_type: string
+  sv_length: number
 }
 
-/** SyRI 统计 */
-export interface SyriTypeStat {
-  type: string
+/** SyRI / variant 类型统计 — 后端返回 {son_type/svtype, count} */
+export interface TypeStat {
+  son_type?: string
+  svtype?: string
   count: number
 }
 
@@ -1267,68 +1273,69 @@ export async function getSyriPairs(): Promise<ApiResult<SyriPair[]>> {
   }
 }
 
-/** 按区间 + 类型查询结构变异 */
+/** 按区间 + 类型查询结构变异 — 后端需 pair_id(int) */
 export async function getSyriStructural(payload: {
-  pair_key: string
+  pair_id: number
   ref_chr?: string
   start?: number
   end?: number
   types?: string[]
   limit?: number
-}): Promise<ApiResult<{ records: SyriStructural[]; total: number; type_stat: SyriTypeStat[] }>> {
+}): Promise<ApiResult<{ pair_id: number; count: number; type_stat: TypeStat[]; rows: SyriStructural[] }>> {
   try {
     const res = await httpInstance.post('/CottonOGD_api/syri/structural/', payload)
-    return ok(res as unknown as { records: SyriStructural[]; total: number; type_stat: SyriTypeStat[] })
+    return ok(res as unknown as { pair_id: number; count: number; type_stat: TypeStat[]; rows: SyriStructural[] })
   } catch (e) {
-    return fail<{ records: SyriStructural[]; total: number; type_stat: SyriTypeStat[] }>(
+    return fail<{ pair_id: number; count: number; type_stat: TypeStat[]; rows: SyriStructural[] }>(
       toMessage(e),
-      { records: [], total: 0, type_stat: [] },
+      { pair_id: 0, count: 0, type_stat: [], rows: [] },
     )
   }
 }
 
 /** 查询序列级结构变异注释 */
 export async function getSyriSequence(payload: {
-  pair_key: string
+  pair_id: number
   ref_chr?: string
   start?: number
   end?: number
   types?: string[]
   limit?: number
-}): Promise<ApiResult<{ records: SyriSequence[]; total: number }>> {
+}): Promise<ApiResult<{ pair_id: number; count: number; rows: SyriSequence[] }>> {
   try {
     const res = await httpInstance.post('/CottonOGD_api/syri/sequence/', payload)
-    return ok(res as unknown as { records: SyriSequence[]; total: number })
+    return ok(res as unknown as { pair_id: number; count: number; rows: SyriSequence[] })
   } catch (e) {
-    return fail<{ records: SyriSequence[]; total: number }>(toMessage(e), { records: [], total: 0 })
+    return fail<{ pair_id: number; count: number; rows: SyriSequence[] }>(toMessage(e), { pair_id: 0, count: 0, rows: [] })
   }
 }
 
 // ---------- B 域：群体变异位点 ----------
 
-/** 群体变异数据集 */
+/** 群体变异数据集 — 后端返回 {id, name, reference_genome, caller, sample_count} */
 export interface VariantSet {
-  dataset: string
+  id: number
+  name: string
+  reference_genome: number
+  caller: string
   sample_count: number
-  description?: string
 }
 
-/** 群体变异位点条目 */
+/** 群体变异位点条目 — 后端返回 {id, chrom, pos, end_pos, svtype, ref, alt, filter} */
 export interface VariantRecord {
-  id: string
-  chromosome: string
-  position: number
+  id: number
+  chrom: string
+  pos: number
+  end_pos: number
+  svtype: string
   ref: string
   alt: string
-  type?: string
-  maf?: number
-  effect?: string
-  gene?: string
+  filter: string
 }
 
-/** 变异密度区间条目 */
-export interface VariantDensity {
-  chromosome: string
+/** 变异密度直方图 bin — 后端返回 {bin, start, end, count} */
+export interface VariantDensityBin {
+  bin: number
   start: number
   end: number
   count: number
@@ -1344,105 +1351,128 @@ export async function getVariantSets(): Promise<ApiResult<VariantSet[]>> {
   }
 }
 
-/** 按区间查询变异位点 */
+/** 按区间查询变异位点 — 后端需 set_id(int) */
 export async function getVariantRegion(payload: {
-  dataset: string
-  chromosome: string
+  set_id: number
+  chrom: string
   start: number
   end: number
   svtype?: string
   limit?: number
-}): Promise<ApiResult<{ records: VariantRecord[]; total: number; type_stat: SyriTypeStat[] }>> {
+}): Promise<ApiResult<{ set_id: number; count: number; type_stat: TypeStat[]; rows: VariantRecord[] }>> {
   try {
     const res = await httpInstance.post('/CottonOGD_api/variant/region/', payload)
-    return ok(res as unknown as { records: VariantRecord[]; total: number; type_stat: SyriTypeStat[] })
+    return ok(res as unknown as { set_id: number; count: number; type_stat: TypeStat[]; rows: VariantRecord[] })
   } catch (e) {
-    return fail<{ records: VariantRecord[]; total: number; type_stat: SyriTypeStat[] }>(
+    return fail<{ set_id: number; count: number; type_stat: TypeStat[]; rows: VariantRecord[] }>(
       toMessage(e),
-      { records: [], total: 0, type_stat: [] },
+      { set_id: 0, count: 0, type_stat: [], rows: [] },
     )
   }
 }
 
 /** 查询单个变异位点详情 */
-export async function getVariantById(id: string): Promise<ApiResult<VariantRecord>> {
+export async function getVariantById(id: number | string): Promise<ApiResult<VariantRecord>> {
   try {
-    const res = await httpInstance.get(`/CottonOGD_api/variant/id/${encodeURIComponent(id)}/`)
+    const res = await httpInstance.get(`/CottonOGD_api/variant/id/${id}/`)
     return ok(res as unknown as VariantRecord)
   } catch (e) {
     return fail<VariantRecord>(toMessage(e), {} as VariantRecord)
   }
 }
 
-/** 查询变异密度 */
+/** 查询变异密度 — 后端需 set_id + chrom，返回 {set_id, chrom, start, end, bins, bin_size, total, histogram} */
 export async function getVariantDensity(payload: {
-  dataset: string
-  chromosome: string
+  set_id: number
+  chrom: string
   start?: number
   end?: number
   bins?: number
-}): Promise<ApiResult<VariantDensity[]>> {
+}): Promise<ApiResult<{ set_id: number; chrom: string; start: number; end: number; bins: number; bin_size: number; total: number; histogram: VariantDensityBin[] }>> {
   try {
     const res = await httpInstance.post('/CottonOGD_api/variant/density/', payload)
-    return ok(res as unknown as VariantDensity[])
+    return ok(res as unknown as { set_id: number; chrom: string; start: number; end: number; bins: number; bin_size: number; total: number; histogram: VariantDensityBin[] })
   } catch (e) {
-    return fail<VariantDensity[]>(toMessage(e), [])
+    return fail<{ set_id: number; chrom: string; start: number; end: number; bins: number; bin_size: number; total: number; histogram: VariantDensityBin[] }>(
+      toMessage(e),
+      { set_id: 0, chrom: '', start: 0, end: 0, bins: 0, bin_size: 0, total: 0, histogram: [] },
+    )
   }
 }
 
 // ---------- C 域：逐样本基因型 ----------
 
-/** 逐样本基因型结果 */
-export interface VariantGenotype {
-  chromosome: string
-  position: number
+/** 逐样本基因型条目 — 后端返回 {chrom, pos, ref, alt, id?, genotypes:{sample:gt}} */
+export interface VariantGenotypeRow {
+  chrom: string
+  pos: number
   ref: string
   alt: string
-  id?: string
+  id?: number
   genotypes: Record<string, string>
 }
 
-/** 查询逐样本基因型矩阵 */
+/** 基因型查询响应 — 后端返回 {set_id, chrom, start, end, samples:[], records:[]} */
+export interface VariantGenotypeResult {
+  set_id: number
+  chrom: string
+  start: number
+  end: number
+  samples: string[]
+  records: VariantGenotypeRow[]
+}
+
+/** 查询逐样本基因型矩阵 — 后端需 set_id(int) + chrom */
 export async function getVariantGenotype(payload: {
-  dataset: string
-  chromosome: string
+  set_id: number
+  chrom: string
   start: number
   end: number
   samples?: string[]
   format?: string
-}): Promise<ApiResult<VariantGenotype[]>> {
+}): Promise<ApiResult<VariantGenotypeResult>> {
   try {
     const res = await httpInstance.post('/CottonOGD_api/variant/genotype/', payload)
-    return ok(res as unknown as VariantGenotype[])
+    return ok(res as unknown as VariantGenotypeResult)
   } catch (e) {
-    return fail<VariantGenotype[]>(toMessage(e), [])
+    return fail<VariantGenotypeResult>(toMessage(e), { set_id: 0, chrom: '', start: 0, end: 0, samples: [], records: [] })
   }
 }
 
 // ---------- D 域：GWAS ----------
 
-/** GWAS 性状 */
+/** GWAS 性状 — 后端返回 {id, code, name, unit, description} */
 export interface GwasTrait {
-  trait: string
-  description?: string
+  id: number
+  code: string
+  name: string
+  unit: string
+  description: string | null
 }
 
-/** GWAS 材料（ accession ） */
+/** GWAS 材料 — 后端返回 {id, name, species, population} */
 export interface GwasAccession {
-  accession: string
-  population?: string
-  phenotype?: Record<string, number>
+  id: number
+  name: string
+  species: string
+  population: string | null
 }
 
-/** GWAS 关联结果条目 */
-export interface GwasAssociation {
-  chr: string
+/** GWAS 标记/关联条目 — 后端返回 {id, chrom, pos, svtype, ref, alt} */
+export interface GwasMarker {
+  id: number
+  chrom: string
   pos: number
-  snp: string
-  pvalue: number
+  svtype: string
+  ref: string
+  alt: string
+}
+
+/** GWAS 表型行 — 后端返回 {accession, trait, value} */
+export interface GwasPhenotypeRow {
+  accession: string
   trait: string
-  effect?: number
-  maf?: number
+  value: number
 }
 
 /** 获取 GWAS 全部性状 */
@@ -1455,63 +1485,60 @@ export async function getGwasTraits(): Promise<ApiResult<GwasTrait[]>> {
   }
 }
 
-/** 获取 GWAS 材料列表（可选按性状过滤） */
-export async function getGwasAccessions(payload?: {
-  trait?: string
-}): Promise<ApiResult<GwasAccession[]>> {
+/** 获取 GWAS 材料列表 */
+export async function getGwasAccessions(): Promise<ApiResult<GwasAccession[]>> {
   try {
-    const res = await httpInstance.post('/CottonOGD_api/gwas/accessions/', payload ?? {})
+    const res = await httpInstance.get('/CottonOGD_api/gwas/accessions/')
     return ok(res as unknown as GwasAccession[])
   } catch (e) {
     return fail<GwasAccession[]>(toMessage(e), [])
   }
 }
 
-/** 获取表型画像：单性状分布 或 单材料多性状 */
+/** 获取表型数据 — 后端需 code，返回 {count, rows:[{accession, trait, value}]} */
 export async function getGwasPhenotype(payload: {
-  trait?: string
-  accession?: string
-}): Promise<ApiResult<{ type: string; labels: string[]; values: number[] }>> {
+  code: string
+}): Promise<ApiResult<{ count: number; rows: GwasPhenotypeRow[] }>> {
   try {
     const res = await httpInstance.post('/CottonOGD_api/gwas/phenotype/', payload)
-    return ok(res as unknown as { type: string; labels: string[]; values: number[] })
+    return ok(res as unknown as { count: number; rows: GwasPhenotypeRow[] })
   } catch (e) {
-    return fail<{ type: string; labels: string[]; values: number[] }>(toMessage(e), {
-      type: '',
-      labels: [],
-      values: [],
-    })
+    return fail<{ count: number; rows: GwasPhenotypeRow[] }>(toMessage(e), { count: 0, rows: [] })
   }
 }
 
-/** 查询 GWAS 标记位点 */
+/** 查询 GWAS 标记位点 — 后端需 set_id + code */
 export async function getGwasMarkers(payload: {
-  trait: string
-  chromosome?: string
-  region?: string
+  set_id: number
+  code: string
+  chrom?: string
+  start?: number
+  end?: number
   limit?: number
-}): Promise<ApiResult<{ records: GwasAssociation[]; total: number }>> {
+}): Promise<ApiResult<{ set_id: number; count: number; rows: GwasMarker[] }>> {
   try {
     const res = await httpInstance.post('/CottonOGD_api/gwas/markers/', payload)
-    return ok(res as unknown as { records: GwasAssociation[]; total: number })
+    return ok(res as unknown as { set_id: number; count: number; rows: GwasMarker[] })
   } catch (e) {
-    return fail<{ records: GwasAssociation[]; total: number }>(toMessage(e), {
-      records: [],
-      total: 0,
+    return fail<{ set_id: number; count: number; rows: GwasMarker[] }>(toMessage(e), {
+      set_id: 0,
+      count: 0,
+      rows: [],
     })
   }
 }
 
-/** 查询 GWAS 关联结果（曼哈顿图数据） */
+/** 查询 GWAS 关联结果（曼哈顿图数据） — 后端需 code，返回 {count, rows} */
 export async function getGwasAssociations(payload: {
-  trait: string
-  chromosome?: string
-  region?: string
-}): Promise<ApiResult<GwasAssociation[]>> {
+  code: string
+  chrom?: string
+  start?: number
+  end?: number
+}): Promise<ApiResult<{ count: number; rows: GwasMarker[] }>> {
   try {
     const res = await httpInstance.post('/CottonOGD_api/gwas/associations/', payload)
-    return ok(res as unknown as GwasAssociation[])
+    return ok(res as unknown as { count: number; rows: GwasMarker[] })
   } catch (e) {
-    return fail<GwasAssociation[]>(toMessage(e), [])
+    return fail<{ count: number; rows: GwasMarker[] }>(toMessage(e), { count: 0, rows: [] })
   }
 }

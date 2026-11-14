@@ -7,12 +7,19 @@
       <template #header><div class="card-header">{{ t('trait') }}</div></template>
       <el-form @submit.prevent="handleLoad" label-width="180px">
         <el-form-item :label="t('trait')">
-          <el-select v-model="trait" :placeholder="t('trait')" style="width: 100%" :loading="traitsLoading" filterable>
-            <el-option v-for="tr in traits" :key="tr.trait" :label="tr.trait" :value="tr.trait" />
+          <el-select v-model="traitCode" :placeholder="t('trait')" style="width: 100%" :loading="traitsLoading" filterable>
+            <el-option v-for="tr in traits" :key="tr.code" :label="`${tr.code} · ${tr.name} (${tr.unit})`" :value="tr.code" />
           </el-select>
         </el-form-item>
+
+        <el-form-item :label="t('select_dataset')">
+          <el-select v-model="setId" :placeholder="t('select_dataset')" style="width: 100%" :loading="setsLoading" clearable>
+            <el-option v-for="s in sets" :key="s.id" :label="`${s.name}`" :value="s.id" />
+          </el-select>
+        </el-form-item>
+
         <el-form-item>
-          <el-button type="primary" native-type="submit" :loading="loading" class="ms-2">
+          <el-button type="primary" :loading="loading" class="ms-2" @click="handleLoad">
             <el-icon><Search /></el-icon>{{ t('view_markers') }}
           </el-button>
           <el-button type="success" size="small" class="ms-2" @click="handlePhenotype">{{ t('view_phenotype') }}</el-button>
@@ -35,12 +42,12 @@
       </template>
 
       <el-table :data="markerTable.pagedData" style="width: 100%" @sort-change="markerTable.handleSortChange">
-        <el-table-column prop="snp" :label="t('snp')" width="200" sortable="custom" />
-        <el-table-column prop="chr" :label="t('chromosome')" width="140" sortable="custom" />
+        <el-table-column prop="id" :label="'ID'" width="100" sortable="custom" />
+        <el-table-column prop="chrom" :label="t('chromosome')" width="140" sortable="custom" />
         <el-table-column prop="pos" :label="t('position')" width="140" sortable="custom" />
-        <el-table-column prop="pvalue" :label="t('pvalue')" width="140" sortable="custom" />
-        <el-table-column prop="effect" :label="t('effect')" width="120" sortable="custom" />
-        <el-table-column prop="maf" :label="t('maf')" width="100" sortable="custom" />
+        <el-table-column prop="svtype" :label="t('variation_type')" width="140" sortable="custom" />
+        <el-table-column prop="ref" :label="t('ref')" width="90" />
+        <el-table-column prop="alt" :label="t('alt')" width="90" />
       </el-table>
 
       <TableToolbar
@@ -91,8 +98,11 @@ import {
   getGwasMarkers,
   getGwasAssociations,
   getGwasPhenotype,
+  getVariantSets,
   type GwasTrait,
-  type GwasAssociation,
+  type VariantSet,
+  type GwasMarker,
+  type GwasPhenotypeRow,
 } from '@/api/index'
 import { useEnhancedTable } from '@/composables/core/useEnhancedTable'
 import type { ExportColumn } from '@/utils/exportTable'
@@ -101,15 +111,18 @@ const { t } = useI18n()
 
 const traits = ref<GwasTrait[]>([])
 const traitsLoading = ref(false)
-const trait = ref('')
+const traitCode = ref('')
+const sets = ref<VariantSet[]>([])
+const setsLoading = ref(false)
+const setId = ref<number | undefined>(undefined)
 const loading = ref(false)
 const error = ref('')
 
-const markers = ref<GwasAssociation[]>([])
+const markers = ref<GwasMarker[]>([])
 const markersTotal = ref(0)
 const markersSearched = ref(false)
 const assocSearched = ref(false)
-const associations = ref<GwasAssociation[]>([])
+const associations = ref<GwasMarker[]>([])
 const showPhenotype = ref(false)
 
 const phenoRef = ref<HTMLElement | null>(null)
@@ -121,16 +134,16 @@ type MarkerRow = Record<string, any>
 const markerTable = useEnhancedTable<MarkerRow>(() => markers.value as MarkerRow[], {
   pageSize: 10,
   pageSizes: [10, 20, 50, 100],
-  searchFields: ['snp', 'chr'],
+  searchFields: ['chrom', 'svtype'],
 })
 
 const markerColumns: ExportColumn<MarkerRow>[] = [
-  { key: 'snp', label: 'SNP' },
-  { key: 'chr', label: 'Chr' },
+  { key: 'id', label: 'ID' },
+  { key: 'chrom', label: 'Chrom' },
   { key: 'pos', label: 'Pos' },
-  { key: 'pvalue', label: 'P-value' },
-  { key: 'effect', label: 'Effect' },
-  { key: 'maf', label: 'MAF' },
+  { key: 'svtype', label: 'Type' },
+  { key: 'ref', label: 'Ref' },
+  { key: 'alt', label: 'Alt' },
 ]
 
 onMounted(async () => {
@@ -138,29 +151,39 @@ onMounted(async () => {
   try {
     const res = await getGwasTraits()
     traits.value = res.data ?? []
-    if (traits.value.length) trait.value = traits.value[0].trait
+    if (traits.value.length) traitCode.value = traits.value[0].code
   } catch (e) {
     error.value = String(e)
   } finally {
     traitsLoading.value = false
   }
+  setsLoading.value = true
+  try {
+    const res = await getVariantSets()
+    sets.value = res.data ?? []
+    if (sets.value.length) setId.value = sets.value[0].id
+  } catch (e) {
+    error.value = String(e)
+  } finally {
+    setsLoading.value = false
+  }
 })
 
 const handleLoad = async () => {
-  if (!trait.value) {
+  if (!traitCode.value) {
     error.value = t('trait')
     return
   }
   loading.value = true
   error.value = ''
   try {
-    const m = await getGwasMarkers({ trait: trait.value })
-    markers.value = m.data?.records ?? []
-    markersTotal.value = m.data?.total ?? markers.value.length
+    const m = await getGwasMarkers({ set_id: setId.value ?? 0, code: traitCode.value })
+    markers.value = m.data?.rows ?? []
+    markersTotal.value = m.data?.count ?? markers.value.length
     markersSearched.value = true
 
-    const a = await getGwasAssociations({ trait: trait.value })
-    associations.value = a.data ?? []
+    const a = await getGwasAssociations({ code: traitCode.value })
+    associations.value = a.data?.rows ?? []
     assocSearched.value = true
     nextTick(renderManhattan)
   } catch (e: any) {
@@ -171,28 +194,32 @@ const handleLoad = async () => {
 }
 
 const handlePhenotype = async () => {
-  if (!trait.value) {
+  if (!traitCode.value) {
     error.value = t('trait')
     return
   }
   try {
-    const res = await getGwasPhenotype({ trait: trait.value })
+    const res = await getGwasPhenotype({ code: traitCode.value })
     const data = res.data
-    if (data && data.labels?.length) {
+    if (data && data.rows?.length) {
       showPhenotype.value = true
+      const labels = data.rows.map((r: GwasPhenotypeRow) => r.accession)
+      const values = data.rows.map((r: GwasPhenotypeRow) => r.value)
       nextTick(() => {
         if (!phenoRef.value) return
         phenoChart = echarts.init(phenoRef.value)
         phenoChart.setOption({
           tooltip: { trigger: 'axis' },
           grid: { left: '3%', right: '5%', containLabel: true },
-          xAxis: { type: 'category', data: data.labels, axisLabel: { rotate: 45 } },
+          xAxis: { type: 'category', data: labels, axisLabel: { rotate: 45 } },
           yAxis: { type: 'value', name: t('phenotype') },
           series: [
-            { name: t('phenotype'), type: 'bar', data: data.values, itemStyle: { color: '#3a6ea5', borderRadius: [4, 4, 0, 0] } },
+            { name: t('phenotype'), type: 'bar', data: values, itemStyle: { color: '#3a6ea5', borderRadius: [4, 4, 0, 0] } },
           ],
         })
       })
+    } else {
+      error.value = t('no_data')
     }
   } catch (e: any) {
     error.value = e?.message || String(e)
@@ -201,26 +228,25 @@ const handlePhenotype = async () => {
 
 function renderManhattan() {
   if (!manhattanRef.value || !associations.value.length) return
-  // 染色体分组 x 坐标
   const chrOrder: string[] = []
   associations.value.forEach((d) => {
-    if (!chrOrder.includes(d.chr)) chrOrder.push(d.chr)
+    if (!chrOrder.includes(d.chrom)) chrOrder.push(d.chrom)
   })
-  const xData = associations.value.map((d) => `${d.chr}:${d.pos}`)
+  const xData = associations.value.map((d) => `${d.chrom}:${d.pos}`)
   const dataPts = associations.value.map((d) => ({
-    value: [-Math.log10(Math.max(d.pvalue, 1e-300)), d.chr, d.pos, d.snp, d.pvalue],
-    itemStyle: { color: chrOrder.indexOf(d.chr) % 2 === 0 ? '#3a6ea5' : '#E6A23C' },
+    value: [chrOrder.indexOf(d.chrom), d.pos, d.chrom, d.pos],
+    itemStyle: { color: chrOrder.indexOf(d.chrom) % 2 === 0 ? '#3a6ea5' : '#E6A23C' },
   }))
   manhattanChart = echarts.init(manhattanRef.value)
   manhattanChart.setOption({
     tooltip: {
       trigger: 'item',
       formatter: (p: { value: any[] }) =>
-        `${p.value[3]}<br/>${t('chromosome')}: ${p.value[1]}<br/>${t('position')}: ${p.value[2]}<br/>${t('pvalue')}: ${p.value[4]}`,
+        `${t('chromosome')}: ${p.value[2]}<br/>${t('position')}: ${p.value[3]}`,
     },
     grid: { left: '3%', right: '5%', bottom: '15%', containLabel: true },
     xAxis: { type: 'category', data: xData, axisLabel: { rotate: 45, fontSize: 10 } },
-    yAxis: { type: 'value', name: '-log10(p)' },
+    yAxis: { type: 'value', name: t('position') },
     series: [{ type: 'scatter', data: dataPts, symbolSize: 6 }],
   })
 }
