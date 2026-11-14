@@ -108,7 +108,6 @@ backend/Lib/**
 
 backend/soft/plotsr-master/software/annovar/
 SoybeanGDB
-docs/
 backend/soft/plotsr-master/software/openjdk-11/
 
 # 忽略 Node.js 依赖
