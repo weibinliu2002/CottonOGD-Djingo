@@ -50,51 +50,20 @@
             </li>
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                {{ t('browse') }}
-              </a>
-              <ul class="dropdown-menu">
-                <li><router-link class="dropdown-item" to="/browse/tf">{{ t('transcription_factors_') }}</router-link></li>
-                <li><router-link class="dropdown-item" to="/browse/tr">{{ t('transposons') }}</router-link></li>
-                <!--<li><router-link class="dropdown-item" to="/genome/browse">{{ t('genome_browser') }}</router-link></li>-->
-              </ul>
-            </li>
-            
-            <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                {{ t('Genome_Browser') }}
+                {{ t('genome') }}
               </a>
               <ul class="dropdown-menu">
                 <li><router-link class="dropdown-item" to="/genome/jbrowse">{{ t('jbrowse_view') }}</router-link></li>
                 <li><router-link class="dropdown-item" to="/genome/igv">{{ t('igv_view') }}</router-link></li>
               </ul>
             </li>
-            
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                {{ t('tools') }}
+                {{ t('module_tf_tr') }}
               </a>
               <ul class="dropdown-menu">
-                <li><router-link class="dropdown-item" to="/sequence/search">{{ t('id_search') }}</router-link></li>
-                <li><router-link class="dropdown-item" to="/sequence/blast">BLASTP</router-link></li>
-                <li><router-link class="dropdown-item" to="/annotation/go">{{ t('go_annotation') }}</router-link></li>
-                <li><router-link class="dropdown-item" to="/annotation/kegg">{{ t('kegg_annotation') }}</router-link></li>
-                <li><router-link class="dropdown-item" to="/enrichment/go">{{ t('go_enrichment') }}</router-link></li>
-                <li><router-link class="dropdown-item" to="/enrichment/kegg">{{ t('kegg_enrichment') }}</router-link></li>
-                <li><router-link class="dropdown-item" to="/tools/primer-design">{{ t('primer_design') }}</router-link></li>
-                <li><router-link class="dropdown-item" to="/tools/orthogroup">{{ t('orthogroup') }}</router-link></li>
-                <li><router-link class="dropdown-item" to="/sequence/server">{{ t('sequence_server') }}</router-link></li>
-              </ul>
-            </li>
-            <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                {{ t('Graphical_Tools') }}
-              </a>
-              <ul class="dropdown-menu">
-                <li><router-link class="dropdown-item" to="/visualization/heatmap">{{ t('clustergramme_heatmap') }}</router-link></li>
-                <li><router-link class="dropdown-item" to="/visualization/canvaspress">{{ t('canvaspress') }}</router-link></li>
-                <li><router-link class="dropdown-item" to="/visualization/ppi">{{ t('ppi') }}</router-link></li>
-                <li><router-link class="dropdown-item" to="/visualization/phylotree">{{ t('phylotree') }}</router-link></li>
-                <li><router-link class="dropdown-item" to="/visualization/circos">{{ t('circos') }}</router-link></li>            
+                <li><router-link class="dropdown-item" to="/browse/tf">{{ t('transcription_factors_') }}</router-link></li>
+                <li><router-link class="dropdown-item" to="/browse/tr">{{ t('transposons') }}</router-link></li>
               </ul>
             </li>
             <li class="nav-item dropdown">
@@ -108,6 +77,27 @@
             </li>
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                {{ t('module_function') }}
+              </a>
+              <ul class="dropdown-menu">
+                <li><router-link class="dropdown-item" to="/annotation/go">{{ t('go_annotation') }}</router-link></li>
+                <li><router-link class="dropdown-item" to="/annotation/kegg">{{ t('kegg_annotation') }}</router-link></li>
+                <li><router-link class="dropdown-item" to="/enrichment/go">{{ t('go_enrichment') }}</router-link></li>
+                <li><router-link class="dropdown-item" to="/enrichment/kegg">{{ t('kegg_enrichment') }}</router-link></li>
+                <li><router-link class="dropdown-item" to="/visualization/ppi">{{ t('ppi') }}</router-link></li>
+              </ul>
+            </li>
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                {{ t('module_homology') }}
+              </a>
+              <ul class="dropdown-menu">
+                <li><router-link class="dropdown-item" to="/tools/orthogroup">{{ t('orthogroup') }}</router-link></li>
+                <li><router-link class="dropdown-item" to="/genome/synteny">{{ t('genome_synteny') || 'Genome Synteny' }}</router-link></li>
+              </ul>
+            </li>
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                 {{ t('module_variome') }}
               </a>
               <ul class="dropdown-menu">
@@ -117,11 +107,22 @@
                 <li><router-link class="dropdown-item" to="/variome/gwas">{{ t('variome_gwas') }}</router-link></li>
               </ul>
             </li>
-            <li class="nav-item">
-              <router-link class="nav-link" to="/genome/synteny">{{ t('genome_synteny') || 'Genome Synteny' }}</router-link>
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                {{ t('tools') }}
+              </a>
+              <ul class="dropdown-menu">
+                <li><router-link class="dropdown-item" to="/sequence/search">{{ t('id_search') }}</router-link></li>
+                <li><router-link class="dropdown-item" to="/sequence/blast">BLASTP</router-link></li>
+                <li><router-link class="dropdown-item" to="/tools/primer-design">{{ t('primer_design') }}</router-link></li>
+                <li><router-link class="dropdown-item" to="/sequence/server">{{ t('sequence_server') }}</router-link></li>
+                <li class="dropdown-divider"></li>
+                <li><router-link class="dropdown-item" to="/visualization/heatmap">{{ t('clustergramme_heatmap') }}</router-link></li>
+                <li><router-link class="dropdown-item" to="/visualization/canvaspress">{{ t('canvaspress') }}</router-link></li>
+                <li><router-link class="dropdown-item" to="/visualization/phylotree">{{ t('phylotree') }}</router-link></li>
+                <li><router-link class="dropdown-item" to="/visualization/circos">{{ t('circos') }}</router-link></li>
+              </ul>
             </li>
-            
-            
             <li class="nav-item">
               <router-link class="nav-link" to="/download">{{ t('download') }}</router-link>
             </li>
