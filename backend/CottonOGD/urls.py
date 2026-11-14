@@ -24,7 +24,13 @@ from CottonOGD.views.ai_chat import ai_chat
 from CottonOGD.views.orthofinder import (
     ortholog_gene, orthogroup_detail, orthogroups_by_species,
     orthofinder_meta, orthofinder_sequence, orthofinder_tree,
-    orthofinder_msa, orthofinder_wgs, orthofinder_tandem, orthofinder_wgd,
+    orthofinder_msa, orthofinder_tandem,
+)
+from CottonOGD.views.ppi_string import ppi_string_network
+from CottonOGD.views.variant_api import (
+    syri_pairs, syri_structural, syri_sequence,
+    variant_sets, variant_region, variant_by_id, variant_density, variant_genotype,
+    gwas_traits, gwas_accessions, gwas_phenotype, gwas_markers, gwas_associations,
 )
 
 
@@ -69,6 +75,24 @@ urlpatterns = [
     #path('transcription_factors/', transcription_factors, name='transcription_factors'),
     path('genome_synteny/', genome_synteny, name='genome_synteny'),
     #path('structural_variations/', structural_variations, name='structural_variations'),
+
+    # ========== 变异数据 API（SyRI / 群体 SNP·InDel / GWAS） ==========
+    # A 域：SyRI 成对结构变异
+    path('syri/pairs/', syri_pairs, name='syri_pairs'),
+    path('syri/structural/', syri_structural, name='syri_structural'),
+    path('syri/sequence/', syri_sequence, name='syri_sequence'),
+    # B 域：群体 SNP/InDel 位点
+    path('variant/sets/', variant_sets, name='variant_sets'),
+    path('variant/region/', variant_region, name='variant_region'),
+    path('variant/id/', variant_by_id, name='variant_by_id'),
+    path('variant/density/', variant_density, name='variant_density'),
+    path('variant/genotype/', variant_genotype, name='variant_genotype'),
+    # C 域：GWAS
+    path('gwas/traits/', gwas_traits, name='gwas_traits'),
+    path('gwas/accessions/', gwas_accessions, name='gwas_accessions'),
+    path('gwas/phenotype/', gwas_phenotype, name='gwas_phenotype'),
+    path('gwas/markers/', gwas_markers, name='gwas_markers'),
+    path('gwas/associations/', gwas_associations, name='gwas_associations'),
     
     # ========== OrthoFinder 直系同源（Ortholog） ==========
     path('orthofinder/ortholog_gene/', ortholog_gene, name='ortholog_gene'),
@@ -78,9 +102,10 @@ urlpatterns = [
     path('orthofinder/sequence/<str:og_code>', orthofinder_sequence, name='orthofinder_sequence'),
     path('orthofinder/tree/<str:og_code>', orthofinder_tree, name='orthofinder_tree'),
     path('orthofinder/msa/<str:og_code>', orthofinder_msa, name='orthofinder_msa'),
-    path('orthofinder/wgs/<str:og_code>', orthofinder_wgs, name='orthofinder_wgs'),
     path('orthofinder/tandem/<str:og_code>', orthofinder_tandem, name='orthofinder_tandem'),
-    path('orthofinder/wgd/<str:og_code>', orthofinder_wgd, name='orthofinder_wgd'),
+
+    # ========== PPI STRING 蛋白质互作网络 ==========
+    path('ppi/string/', ppi_string_network, name='ppi_string_network'),
 
     # ========== TF/TR 系统发生树静态文件转发（前端 Phylotree.js 直接 fetch，无 API 逻辑） ==========
     # 路径示例：

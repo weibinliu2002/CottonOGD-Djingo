@@ -56,10 +56,39 @@ env = environ.Env(
     AI_CHAT_MAX_TOOL_ROUNDS=(int, 5),
     # LLM 请求超时（秒）
     AI_CHAT_TIMEOUT=(int, 60),
+    # ---- STRING PPI（REST API，v12，公开无需 key；caller_identity 仅用于限流标识）----
+    STRING_API_URL=(str, 'https://version-12-0.string-db.org/api'),
+    STRING_CALLER_ID=(str, 'cottonogd'),
+    STRING_SCORE_THRESHOLD=(int, 400),
+    STRING_REQUEST_TIMEOUT=(int, 30),
+    STRING_MAX_RETRIES=(int, 3),
 )
 
 # 读取 .env（若存在）
 environ.Env.read_env(BASE_DIR / '.env')
+
+# STRING PPI：基因组（Species_info.name）→ NCBI taxon ID 映射。
+# STRING 仅收录 3 个棉属物种，多基因组共享同一 taxon。
+# resolve_taxon() 还会用 Species_info.Cotton_Species 与 BLAST 表名做模糊兜底。
+STRING_GENOME_TAXON_MAP = {
+    # G. hirsutum (AD1) → 3635
+    'G.hirsutumAD1_TM-1_HAU_v1.1': '3635',
+    'G.hirsutumAD1_Jin668_HAU_v1T2T': '3635',
+    'G.hirsutumAD1_T2T-Jin668_HZAU_v1.0': '3635',
+    'G.hirsutumAD1_CRI_TM1-v1.0': '3635',
+    'G.hirsutumAD1_ZJU-AD1_v2.1': '3635',
+    # G. raimondii (D5) → 29730
+    'G.raimondii_D5_HAU_v1.0': '29730',
+    'G.raimondii_CGP-BGI_v1.0': '29730',
+    'G.raimondii_HAU_v1.0': '29730',
+    # G. herbaceum (A1) → 157791
+    'G.herbaceum_A1_HAU_wild_v1.0': '157791',
+    'G.herbaceum_A1_USDA_Wagad_v1.0': '157791',
+    'G.herbaceum_WHU_v1': '157791',
+    # G. arboreum (A2) → 29730（STRING 用 raimondii 近缘，按就近原则）
+    'G.arboreum_HAU_v1.0': '29730',
+    'G.arboreum_A2_HAU_v2.0': '29730',
+}
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/

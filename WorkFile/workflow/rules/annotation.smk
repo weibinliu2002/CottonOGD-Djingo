@@ -10,11 +10,65 @@ _FA = config.get("modules", {}).get("functional_annotation", {})
 _FA_ENABLED = bool(_FA.get("enabled", True))
 
 
+# UniProt BLASTP has also been run for part of the collection outside this
+# workflow. Those results are flat `<species>_{blast,diamond}_uniprot_annotation.txt`
+# files (12-column m8, no header) in one directory. `blast` is preferred because
+# a number of the `diamond` files are empty. Configure under `reuse.uniprot`.
+_UNIPROT_LEGACY_PATTERNS = [
+    "{species}_blast_uniprot_annotation.txt",
+    "{species}_diamond_uniprot_annotation.txt",
+]
+
+
+# iTAK has been run for most species outside this workflow. Its results live in
+# `<species>.pro` directories holding the same three filenames this rule emits,
+# so they can be adopted directly. Configure under `reuse.itak`.
+_ITAK_DIRS = ["{species}.pro", "{species}"]
+_ITAK_FILES = {
+    "tf": "tf_classification.txt",
+    "shiu": "shiu_classification.txt",
+    "combined": "tf_tr_kinase_with_uniprot.txt",
+}
+
+
+def itak_result(wildcards, key):
+    """Resolved iTAK output for `key`: legacy file when reusable, else own output."""
+    legacy = legacy_file("itak", wildcards.species, _ITAK_FILES[key], _ITAK_DIRS)
+    if legacy:
+        return legacy
+    return os.path.join(RESULTS_DIR, wildcards.species, "annotation", "itak",
+                        _ITAK_FILES[key])
+
+
+def uniprot_hits(wildcards):
+    """Resolved best_hits.m8: legacy file when reusable, else this run's output."""
+    legacy = legacy_flat_file("uniprot", wildcards.species, _UNIPROT_LEGACY_PATTERNS)
+    if legacy:
+        return legacy
+    return os.path.join(RESULTS_DIR, wildcards.species, "annotation", "uniprot",
+                        "best_hits.m8")
+
+
 def annotation_proteins(wildcards):
     """Protein FASTA used as query for all annotation tools."""
     if _FA.get("use_longest_proteins", False):
         return os.path.join(RESULTS_DIR, wildcards.species, "longest", "pro_longest.fasta")
     return os.path.join(RESULTS_DIR, wildcards.species, "sequences", "pro.fa")
+
+
+# eggNOG-mapper has already been run for most species outside this workflow
+# (legacy dir, one directory per species holding `<species>.emapper.annotations`).
+# Those runs are adopted instead of recomputed: `run_eggnog` is then skipped and
+# `parse_eggnog` reads the legacy file directly. Configure under `reuse.eggnog`
+# in config.yaml; `reuse.exclude` forces a recompute for listed species.
+def eggnog_annotations(wildcards):
+    """Resolved *.emapper.annotations: legacy result when reusable, else own output."""
+    legacy = legacy_file("eggnog", wildcards.species,
+                         f"{wildcards.species}.emapper.annotations")
+    if legacy:
+        return legacy
+    return os.path.join(RESULTS_DIR, wildcards.species, "annotation", "eggnog",
+                        f"{wildcards.species}.emapper.annotations")
 
 
 if _FA_ENABLED:
@@ -48,7 +102,8 @@ if _FA_ENABLED:
 
         rule parse_eggnog:
             input:
-                annotations=os.path.join(RESULTS_DIR, "{species}", "annotation", "eggnog", "{species}.emapper.annotations"),
+                # Either the legacy result (run_eggnog skipped) or this run's output.
+                annotations=eggnog_annotations,
             output:
                 go=os.path.join(RESULTS_DIR, "{species}", "annotation", "eggnog", "GOannotation.tsv"),
                 ko=os.path.join(RESULTS_DIR, "{species}", "annotation", "eggnog", "KOannotation.tsv"),
@@ -76,6 +131,16 @@ if _FA_ENABLED:
                 """
 
     if _FA.get("itak", True):
+        # `run_itak` emits three files, but only tf/shiu feed `parse_itak`; the
+        # combined table is kept for reference. Snakemake still has to produce
+        # it, so reuse must cover all three or the rule is not skipped at all.
+        def itak_reusable(wildcards):
+            """True when all three legacy iTAK outputs exist for this species."""
+            return all(
+                legacy_file("itak", wildcards.species, _ITAK_FILES[k], _ITAK_DIRS)
+                for k in ("tf", "shiu", "combined")
+            )
+
         rule run_itak:
             input:
                 proteins=annotation_proteins,
@@ -90,12 +155,25 @@ if _FA_ENABLED:
                 python=TOOLS.get("itak_python", PYTHON),
                 itak=TOOLS.get("itak", "iTAK.py"),
                 script=os.path.join(BASE_DIR, "workflow", "scripts", "annotation", "run_itak.sh"),
+                # Adopt finished legacy results instead of recomputing; the
+                # legacy dirs are read-only, so copy and never move/delete.
+                legacy_tf=lambda w: legacy_file("itak", w.species, _ITAK_FILES["tf"], _ITAK_DIRS),
+                legacy_shiu=lambda w: legacy_file("itak", w.species, _ITAK_FILES["shiu"], _ITAK_DIRS),
+                legacy_combined=lambda w: legacy_file("itak", w.species, _ITAK_FILES["combined"], _ITAK_DIRS),
             threads: _FA.get("itak_threads", 8)
             resources:
                 mem_mb=resource("itak", "mem_mb") or 8000
             shell:
                 """
                 set -euo pipefail
+                mkdir -p {params.outdir}
+                if [ -n "{params.legacy_tf}" ] && [ -n "{params.legacy_shiu}" ] && [ -n "{params.legacy_combined}" ]; then
+                    echo "[INFO] adopting legacy iTAK results for {params.prefix}"
+                    cp -n "{params.legacy_tf}" {output.tf}
+                    cp -n "{params.legacy_shiu}" {output.shiu}
+                    cp -n "{params.legacy_combined}" {output.combined}
+                    exit 0
+                fi
                 bash {params.script} {input.proteins} {params.outdir} {params.prefix} \
                     {threads} {params.python} {params.itak}
                 """
@@ -145,7 +223,8 @@ if _FA_ENABLED:
 
         rule parse_uniprot:
             input:
-                m8=os.path.join(RESULTS_DIR, "{species}", "annotation", "uniprot", "best_hits.m8"),
+                # Either the legacy hit table (run_uniprot skipped) or this run's output.
+                m8=uniprot_hits,
             output:
                 tsv=os.path.join(RESULTS_DIR, "{species}", "annotation", "uniprot", "Final_Annotation.tsv"),
             params:

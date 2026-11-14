@@ -176,11 +176,13 @@ snakemake --use-conda --cores 16 --configfile config.yaml \
 snakemake --use-conda --cores 8 --configfile config.yaml \
   --forcerun validate_input --config species_filter=species_A
 
-# 只重跑 QC
-snakemake --use-conda --cores 8 results/species_A/qc/qc_report.yaml
+# 只重跑 QC（qc_report 及其上游 calc_* 规则，不触发 jbrowse/blast/upload 等下游）
+snakemake --use-conda --cores 8 --configfile config.yaml \
+  --config species_filter=species_A --until qc_report
 
-# 只跑某个规则及其上游
-snakemake --use-conda --cores 8 results/species_A/jbrowse/tracks.done
+# 只跑某个规则及其上游（如 jbrowse）
+snakemake --use-conda --cores 8 --configfile config.yaml \
+  --config species_filter=species_A --until jbrowse/tracks.done
 ```
 
 Snakemake 默认按文件时间戳增量执行；已存在的产物会跳过。
@@ -194,8 +196,10 @@ Snakemake 默认按文件时间戳增量执行；已存在的产物会跳过。
 ## 6. 只跑 QC / dry-run
 
 ```bash
-# 只生成 QC 报告
-snakemake --use-conda --cores 8 results/species_A/qc/qc_report.yaml
+# 只生成 QC 报告（注意：本仓库 Snakemake 9.x 下不能直接以 qc_report.yaml
+# 作为单文件 target，需走 rule all + species_filter + --until qc_report）
+snakemake --use-conda --cores 8 --configfile config.yaml \
+  --config species_filter=species_A --until qc_report
 
 # 全流程 DAG 预演（不执行）
 snakemake -n --cores 1 --configfile config.yaml
@@ -259,7 +263,9 @@ results/{species}/
 ├── sequences/genes.fixed.gff[.gz|.tbi]
 ├── sequences/{mrna,cdna,cds,pro,gene_genome,upstream20000,downstream20000}.fa
 ├── longest/{pro,cds,mrna}_longest.fasta
-├── qc/{genome_size,lai,busco,te}.json + qc_report.yaml/json
+├── qc/{genome_size,assembly_stats,lai,busco,te}.json + qc_report.yaml/json
+#   assembly_stats.json 由 calc_assembly_stats 规则始终生成（无 MySQL 等价项，
+#   不随 qc_completed 跳过），记录 N50/N90/最长序列等组装连续性指标。
 ├── annotation/{eggnog,itak,uniprot,interproscan}/
 ├── publish/manifest.json
 ├── jbrowse/{jbrowse.done,tracks.json,tracks.done}
@@ -316,8 +322,13 @@ backend/data/blast_db/CottonOGD/{species}/protein/{species}
 
 - eggNOG → `parse_eggnog.py` → GO/KEGG + `eggnog.tsv`
 - iTAK → TF/kinase → `itak.tsv`
-- UniProt → BLASTP → `Final_Annotation.tsv`
-- InterProScan → `interproscan.tsv`
+- UniProt → BLASTP → `Final_Annotation.tsv`（**当前关闭**，见下）
+- InterProScan → `interproscan.tsv`（**当前关闭**，见下）
+
+> **UniProt / InterProScan 当前默认关闭**（`uniprot: false`、`interproscan: false`）。
+> 这两个注释在流程外基于跨物种去重蛋白集重新运行（`/data/wbliu/data/CottonOGD/Function2`），
+> 流程内不再逐物种计算；`db_upload.py` 对缺失的注释文件自动跳过，
+> 关闭期间 `upload_to_db` 也不要求这两个产物。
 
 eggNOG/GO 解析复用 vendored 的 `parse_eggNOG.py` 和 `parse_go_obofile.py`；
 KEGG REST 响应缓存在 `workflow/cache/kegg/`。`link/pathway/ko` 首次下载约
