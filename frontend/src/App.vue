@@ -106,6 +106,17 @@
                 <li><router-link class="dropdown-item" to="/expression/efp">{{ t('gene_expression_in_efp') }}</router-link></li>
               </ul>
             </li>
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                {{ t('module_variome') }}
+              </a>
+              <ul class="dropdown-menu">
+                <li><router-link class="dropdown-item" to="/variome/sv">{{ t('variome_sv') }}</router-link></li>
+                <li><router-link class="dropdown-item" to="/variome/variant">{{ t('variome_variant') }}</router-link></li>
+                <li><router-link class="dropdown-item" to="/variome/genotype">{{ t('variome_genotype') }}</router-link></li>
+                <li><router-link class="dropdown-item" to="/variome/gwas">{{ t('variome_gwas') }}</router-link></li>
+              </ul>
+            </li>
             <li class="nav-item">
               <router-link class="nav-link" to="/genome/synteny">{{ t('genome_synteny') || 'Genome Synteny' }}</router-link>
             </li>

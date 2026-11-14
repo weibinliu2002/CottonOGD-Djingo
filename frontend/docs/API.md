@@ -505,6 +505,89 @@ const MOCK_FLAGS = {
 
 对应函数：`getSingleCopyGenes(params)`
 
+### 3.4 变异与 GWAS（Variome）
+
+> ⚠️ **对接状态（实事求是）**：以下接口**前端已写好请求函数并直接对接真实接口（不走 mock）**，
+> 对应 `src/api/index.ts` 的「十七、变异与 GWAS（Variome）」段。
+> 前端交接文档「变异数据API前端对接文档 v2」声明后端 `/syri/`、`/variant/`、`/gwas/` 路由已就绪；
+> 但**本地仓库 `backend/CottonOGD/urls.py` 当前不含这些路由**
+> （CLAUDE.md 注明后端部署在远程服务器、本地不含运行时文件，故服务器上可能已就绪而本地仓库为旧版本）。
+> 因此本段接口**未设 MOCK_FLAGS**：接口就绪（远程已部署）即可直接出数；若远程实际未部署，前端调用会如实返回 401/404/500。
+> 新增 4 个前端页面：`/variome/sv`、`/variome/variant`、`/variome/genotype`、`/variome/gwas`，导航新增「变异组」下拉。
+
+#### 3.4.1 SyRI 结构变异（A 域）
+
+| 项 | 值 |
+| --- | --- |
+| URL | `/CottonOGD_api/syri/pairs/`、`/CottonOGD_api/syri/structural/`、`/CottonOGD_api/syri/sequence/` |
+| 方法 | GET / POST / POST |
+| 说明 | pairs 取所有 pairwise 比对批次；structural 按区间+类型查结构变异；sequence 查序列级结构变异注释 |
+
+**`/syri/pairs/` 响应 data**：`SyriPair[]`（`key` / `ref` / `query` / `label?`）
+
+**`/syri/structural/` 请求体**：`{ pair_key, ref_chr?, start?, end?, types?, limit? }`
+
+**`/syri/structural/` 响应 data**：
+```json
+{ "records": [{ "ref_chr": "Ghir_A01", "ref_start": 1, "ref_end": 1000, "qry_chr": "Ghir_A01", "qry_start": 1, "qry_end": 980, "type": "INV", "size": 20 }], "total": 1, "type_stat": [{ "type": "INV", "count": 1 }] }
+```
+
+对应函数：`getSyriPairs()` / `getSyriStructural(payload)` / `getSyriSequence(payload)`
+
+#### 3.4.2 群体变异位点（B 域）
+
+| 项 | 值 |
+| --- | --- |
+| URL | `/CottonOGD_api/variant/sets/`、`/CottonOGD_api/variant/region/`、`/CottonOGD_api/variant/id/<id>/`、`/CottonOGD_api/variant/density/` |
+| 方法 | GET / POST / GET / POST |
+
+**`/variant/sets/` 响应 data**：`VariantSet[]`（`dataset` / `sample_count` / `description?`）
+
+**`/variant/region/` 请求体**：`{ dataset, chromosome, start, end, svtype?, limit? }`
+
+**`/variant/region/` 响应 data**：`{ records: VariantRecord[], total, type_stat }`
+（`VariantRecord`：`id` / `chromosome` / `position` / `ref` / `alt` / `type?` / `maf?` / `effect?` / `gene?`）
+
+**`/variant/density/` 请求体**：`{ dataset, chromosome, start?, end?, bins? }`
+响应 data：`VariantDensity[]`（`chromosome` / `start` / `end` / `count`）
+
+对应函数：`getVariantSets()` / `getVariantRegion(payload)` / `getVariantById(id)` / `getVariantDensity(payload)`
+
+#### 3.4.3 逐样本基因型（C 域）
+
+| 项 | 值 |
+| --- | --- |
+| URL | `/CottonOGD_api/variant/genotype/` |
+| 方法 | POST |
+| 请求体 | `{ dataset, chromosome, start, end, samples?, format? }` |
+| 响应 data | `VariantGenotype[]`（`chromosome` / `position` / `ref` / `alt` / `id?` / `genotypes: Record<string, string>`） |
+
+`genotypes` 为「样本名 → 基因型」字典，前端展开为位点×样本的矩阵表格。
+区间上限建议 ≤ 1 Mb。
+
+对应函数：`getVariantGenotype(payload)`
+
+#### 3.4.4 GWAS（D 域）
+
+| 项 | 值 |
+| --- | --- |
+| URL | `/CottonOGD_api/gwas/traits/`、`/CottonOGD_api/gwas/accessions/`、`/CottonOGD_api/gwas/phenotype/`、`/CottonOGD_api/gwas/markers/`、`/CottonOGD_api/gwas/associations/` |
+| 方法 | GET / POST / POST / POST / POST |
+
+**`/gwas/traits/` 响应 data**：`GwasTrait[]`（`trait` / `description?`）
+
+**`/gwas/markers/` 请求体**：`{ trait, chromosome?, region?, limit? }`
+响应 data：`{ records: GwasAssociation[], total }`
+（`GwasAssociation`：`chr` / `pos` / `snp` / `pvalue` / `trait` / `effect?` / `maf?`）
+
+**`/gwas/associations/` 请求体**：`{ trait, chromosome?, region? }`
+响应 data：`GwasAssociation[]`（曼哈顿图数据源；**文档注明当前可能为空**，前端已做空态不报错）
+
+**`/gwas/phenotype/` 请求体**：`{ trait?, accession? }`
+响应 data：`{ type: 'distribution'|'accession', labels: string[], values: number[] }`
+
+对应函数：`getGwasTraits()` / `getGwasAccessions(payload?)` / `getGwasPhenotype(payload)` / `getGwasMarkers(payload)` / `getGwasAssociations(payload)`
+
 ---
 
 ## 四、后端不可用但已有路由的接口（数据陷阱）

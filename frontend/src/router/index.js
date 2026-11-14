@@ -51,6 +51,12 @@ const PPIView = () => import('@/views/visualization/PPIView.vue')
 const Clustergramme_heatmapView = () => import('@/views/visualization/Clustergramme_heatmap.vue')
 const CanvaspressView = () => import('@/views/visualization/CanvaspressView.vue')
 
+// Variome module
+const StructuralVariationView = () => import('@/views/variome/StructuralVariationView.vue')
+const PopulationVariantView = () => import('@/views/variome/PopulationVariantView.vue')
+const GenotypeView = () => import('@/views/variome/GenotypeView.vue')
+const GwasView = () => import('@/views/variome/GwasView.vue')
+
 // Tools module
 const TFView = () => import('@/views/tools/TFView.vue')
 const TRView = () => import('@/views/tools/TRView.vue')
@@ -342,6 +348,28 @@ const routes = [
   {
     path: '/tools/gene-expression-efp',
     redirect: '/expression/efp'
+  },
+
+  // Variome routes
+  {
+    path: '/variome/sv',
+    name: 'VariomeStructural',
+    component: StructuralVariationView
+  },
+  {
+    path: '/variome/variant',
+    name: 'VariomeVariant',
+    component: PopulationVariantView
+  },
+  {
+    path: '/variome/genotype',
+    name: 'VariomeGenotype',
+    component: GenotypeView
+  },
+  {
+    path: '/variome/gwas',
+    name: 'VariomeGwas',
+    component: GwasView
   },
 
   // Visualization routes

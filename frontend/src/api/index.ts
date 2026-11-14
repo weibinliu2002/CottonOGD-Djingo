@@ -1204,3 +1204,314 @@ export async function getStringPpiNetwork(payload: {
       : ''
   return { network: parsePpiNetwork(response), message }
 }
+
+// ==================== 十七、变异与 GWAS（Variome） ====================
+//
+// ⚠️ 后端对接说明（实事求是）：
+//   前端交接文档「变异数据API前端对接文档 v2」声明后端 /syri/、/variant/、/gwas/
+//   路由已注册就绪。但本地仓库 backend/CottonOGD/urls.py 当前不含这些路由；
+//   CLAUDE.md 注明后端部署在远程服务器、本地不含运行时文件，故服务器上可能已就绪
+//   而本地仓库为旧版本。以下函数按文档 v2 的真实契约实现，本地 urls.py 差异仅记录于此。
+//   统一返回 ApiResult<T>，与既有 API 一致；不走 mock（用户要求直接对接真实接口）。
+
+// ---------- A 域：SyRI 结构变异 ----------
+
+/** SyRI pairwise 批次 */
+export interface SyriPair {
+  key: string
+  ref: string
+  query: string
+  label?: string
+}
+
+/** SyRI 结构变异条目 */
+export interface SyriStructural {
+  ref_chr: string
+  ref_start: number
+  ref_end: number
+  qry_chr: string
+  qry_start: number
+  qry_end: number
+  type: string
+  ref_seq?: string
+  qry_seq?: string
+}
+
+/** SyRI 序列级注释条目 */
+export interface SyriSequence {
+  ref_chr: string
+  ref_start: number
+  ref_end: number
+  qry_chr: string
+  qry_start: number
+  qry_end: number
+  type: string
+  size: number
+  ref_cov?: number
+  qry_cov?: number
+}
+
+/** SyRI 统计 */
+export interface SyriTypeStat {
+  type: string
+  count: number
+}
+
+/** 获取所有 SyRI pairwise 比对批次 */
+export async function getSyriPairs(): Promise<ApiResult<SyriPair[]>> {
+  try {
+    const res = await httpInstance.get('/CottonOGD_api/syri/pairs/')
+    return ok(res as unknown as SyriPair[])
+  } catch (e) {
+    return fail<SyriPair[]>(toMessage(e), [])
+  }
+}
+
+/** 按区间 + 类型查询结构变异 */
+export async function getSyriStructural(payload: {
+  pair_key: string
+  ref_chr?: string
+  start?: number
+  end?: number
+  types?: string[]
+  limit?: number
+}): Promise<ApiResult<{ records: SyriStructural[]; total: number; type_stat: SyriTypeStat[] }>> {
+  try {
+    const res = await httpInstance.post('/CottonOGD_api/syri/structural/', payload)
+    return ok(res as unknown as { records: SyriStructural[]; total: number; type_stat: SyriTypeStat[] })
+  } catch (e) {
+    return fail<{ records: SyriStructural[]; total: number; type_stat: SyriTypeStat[] }>(
+      toMessage(e),
+      { records: [], total: 0, type_stat: [] },
+    )
+  }
+}
+
+/** 查询序列级结构变异注释 */
+export async function getSyriSequence(payload: {
+  pair_key: string
+  ref_chr?: string
+  start?: number
+  end?: number
+  types?: string[]
+  limit?: number
+}): Promise<ApiResult<{ records: SyriSequence[]; total: number }>> {
+  try {
+    const res = await httpInstance.post('/CottonOGD_api/syri/sequence/', payload)
+    return ok(res as unknown as { records: SyriSequence[]; total: number })
+  } catch (e) {
+    return fail<{ records: SyriSequence[]; total: number }>(toMessage(e), { records: [], total: 0 })
+  }
+}
+
+// ---------- B 域：群体变异位点 ----------
+
+/** 群体变异数据集 */
+export interface VariantSet {
+  dataset: string
+  sample_count: number
+  description?: string
+}
+
+/** 群体变异位点条目 */
+export interface VariantRecord {
+  id: string
+  chromosome: string
+  position: number
+  ref: string
+  alt: string
+  type?: string
+  maf?: number
+  effect?: string
+  gene?: string
+}
+
+/** 变异密度区间条目 */
+export interface VariantDensity {
+  chromosome: string
+  start: number
+  end: number
+  count: number
+}
+
+/** 获取所有群体变异数据集 */
+export async function getVariantSets(): Promise<ApiResult<VariantSet[]>> {
+  try {
+    const res = await httpInstance.get('/CottonOGD_api/variant/sets/')
+    return ok(res as unknown as VariantSet[])
+  } catch (e) {
+    return fail<VariantSet[]>(toMessage(e), [])
+  }
+}
+
+/** 按区间查询变异位点 */
+export async function getVariantRegion(payload: {
+  dataset: string
+  chromosome: string
+  start: number
+  end: number
+  svtype?: string
+  limit?: number
+}): Promise<ApiResult<{ records: VariantRecord[]; total: number; type_stat: SyriTypeStat[] }>> {
+  try {
+    const res = await httpInstance.post('/CottonOGD_api/variant/region/', payload)
+    return ok(res as unknown as { records: VariantRecord[]; total: number; type_stat: SyriTypeStat[] })
+  } catch (e) {
+    return fail<{ records: VariantRecord[]; total: number; type_stat: SyriTypeStat[] }>(
+      toMessage(e),
+      { records: [], total: 0, type_stat: [] },
+    )
+  }
+}
+
+/** 查询单个变异位点详情 */
+export async function getVariantById(id: string): Promise<ApiResult<VariantRecord>> {
+  try {
+    const res = await httpInstance.get(`/CottonOGD_api/variant/id/${encodeURIComponent(id)}/`)
+    return ok(res as unknown as VariantRecord)
+  } catch (e) {
+    return fail<VariantRecord>(toMessage(e), {} as VariantRecord)
+  }
+}
+
+/** 查询变异密度 */
+export async function getVariantDensity(payload: {
+  dataset: string
+  chromosome: string
+  start?: number
+  end?: number
+  bins?: number
+}): Promise<ApiResult<VariantDensity[]>> {
+  try {
+    const res = await httpInstance.post('/CottonOGD_api/variant/density/', payload)
+    return ok(res as unknown as VariantDensity[])
+  } catch (e) {
+    return fail<VariantDensity[]>(toMessage(e), [])
+  }
+}
+
+// ---------- C 域：逐样本基因型 ----------
+
+/** 逐样本基因型结果 */
+export interface VariantGenotype {
+  chromosome: string
+  position: number
+  ref: string
+  alt: string
+  id?: string
+  genotypes: Record<string, string>
+}
+
+/** 查询逐样本基因型矩阵 */
+export async function getVariantGenotype(payload: {
+  dataset: string
+  chromosome: string
+  start: number
+  end: number
+  samples?: string[]
+  format?: string
+}): Promise<ApiResult<VariantGenotype[]>> {
+  try {
+    const res = await httpInstance.post('/CottonOGD_api/variant/genotype/', payload)
+    return ok(res as unknown as VariantGenotype[])
+  } catch (e) {
+    return fail<VariantGenotype[]>(toMessage(e), [])
+  }
+}
+
+// ---------- D 域：GWAS ----------
+
+/** GWAS 性状 */
+export interface GwasTrait {
+  trait: string
+  description?: string
+}
+
+/** GWAS 材料（ accession ） */
+export interface GwasAccession {
+  accession: string
+  population?: string
+  phenotype?: Record<string, number>
+}
+
+/** GWAS 关联结果条目 */
+export interface GwasAssociation {
+  chr: string
+  pos: number
+  snp: string
+  pvalue: number
+  trait: string
+  effect?: number
+  maf?: number
+}
+
+/** 获取 GWAS 全部性状 */
+export async function getGwasTraits(): Promise<ApiResult<GwasTrait[]>> {
+  try {
+    const res = await httpInstance.get('/CottonOGD_api/gwas/traits/')
+    return ok(res as unknown as GwasTrait[])
+  } catch (e) {
+    return fail<GwasTrait[]>(toMessage(e), [])
+  }
+}
+
+/** 获取 GWAS 材料列表（可选按性状过滤） */
+export async function getGwasAccessions(payload?: {
+  trait?: string
+}): Promise<ApiResult<GwasAccession[]>> {
+  try {
+    const res = await httpInstance.post('/CottonOGD_api/gwas/accessions/', payload ?? {})
+    return ok(res as unknown as GwasAccession[])
+  } catch (e) {
+    return fail<GwasAccession[]>(toMessage(e), [])
+  }
+}
+
+/** 获取表型画像：单性状分布 或 单材料多性状 */
+export async function getGwasPhenotype(payload: {
+  trait?: string
+  accession?: string
+}): Promise<ApiResult<{ type: string; labels: string[]; values: number[] }>> {
+  try {
+    const res = await httpInstance.post('/CottonOGD_api/gwas/phenotype/', payload)
+    return ok(res as unknown as { type: string; labels: string[]; values: number[] })
+  } catch (e) {
+    return fail<{ type: string; labels: string[]; values: number[] }>(toMessage(e), {
+      type: '',
+      labels: [],
+      values: [],
+    })
+  }
+}
+
+/** 查询 GWAS 标记位点 */
+export async function getGwasMarkers(payload: {
+  trait: string
+  chromosome?: string
+  region?: string
+  limit?: number
+}): Promise<ApiResult<{ records: GwasAssociation[]; total: number }>> {
+  try {
+    const res = await httpInstance.post('/CottonOGD_api/gwas/markers/', payload)
+    return ok(res as unknown as { records: GwasAssociation[]; total: number })
+  } catch (e) {
+    return fail<{ records: GwasAssociation[]; total: number }>(toMessage(e), {
+      records: [],
+      total: 0,
+    })
+  }
+}
+
+/** 查询 GWAS 关联结果（曼哈顿图数据） */
+export async function getGwasAssociations(payload: {
+  trait: string
+  chromosome?: string
+  region?: string
+}): Promise<ApiResult<GwasAssociation[]>> {
+  try {
+    const res = await httpInstance.post('/CottonOGD_api/gwas/associations/', payload)
+    return ok(res as unknown as GwasAssociation[])
+  } catch (e) {
+    return fail<GwasAssociation[]>(toMessage(e), [])
+  }
+}
