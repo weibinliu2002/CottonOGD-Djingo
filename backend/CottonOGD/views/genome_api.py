@@ -2,7 +2,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from CottonOGD.views.base import UuidManager
-from CottonOGD.models import Species_info, Family, GeneMaster, gene_info,Genome_Synteny, gene_seq, gene_annotation, gene_go, gene_kegg, gene_expression
+from CottonOGD.models import Species_info, Family, GeneMaster, gene_info, gene_seq, gene_annotation, gene_go, gene_kegg, gene_expression
 from CottonOGD.views.location_ID import clean_gene_id
 import logging
 import json
@@ -155,61 +155,3 @@ def gene_genomic_distribution(request):
     except Exception as e:
         logger.error(f"Error in gene_genomic_distribution: {e}")
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-# ==================== 5. 基因组共线性 ====================
-@api_view(['POST'])
-def genome_synteny(request):
-    """
-    获取基因组共线性信息
-    对应Shiny应用中的"Genome synteny"功能
-    
-    请求参数:
-    - reference_genome: 参考基因组（如 "Zhonghuang 13" 或 "Williams 82"）
-    - query_genome: 查询基因组
-    - chromosome: 染色体名称（如 "chr1"）
-    
-    返回:
-    - synteny_blocks: 共线性区块信息
-    - reference_genes: 参考基因组基因
-    - query_genes: 查询基因组基因
-    """
-    '''
-    uuid = request.headers.get('uuid')
-    if not uuid or uuid not in UuidManager.uuid_storage:
-        return Response({'error': 'uuid is required'}, status=status.HTTP_400_BAD_REQUEST)
-    '''
-    ref_genome = request.data.get('reference_genome', '')
-    query_genome = request.data.get('query_genome', '')
-    chromosome = request.data.get('chromosome', '')
-    Variation_type = request.data.get('Variation_type', '')
-    
-    if not ref_genome or not query_genome or not chromosome or not Variation_type:
-        return Response({'error': 'reference_genome, query_genome, chromosome, and Variation_type are required'}, status=status.HTTP_400_BAD_REQUEST)
-    ref_genome_id = Species_info.objects.get(name=ref_genome).id
-    query_genome_id = Species_info.objects.get(name=query_genome).id
-    logger.info(f"genome_synteny: ref_genome_id: {ref_genome_id}, query_genome_id: {query_genome_id}, chromosome: {chromosome}, Variation_type: {Variation_type}")
-    try:
-        # 获取参考基因组的基因信息
-        ref_genes = Genome_Synteny.objects.filter(
-            Ref_genome=ref_genome_id,
-            Query_genome=query_genome_id,
-            Ref_genome_chr=chromosome,
-            son_type=Variation_type,
-        ).values()
-        logger.info(f"genome_synteny: ref_genes count: {ref_genes.count()}")
-        ref_genes_list = list(ref_genes)
-        results = {
-            'reference_genome': ref_genome,
-            'query_genome': query_genome,
-            'chromosome': chromosome,
-            'reference_genes': ref_genes_list,
-            'ref_gene_count': len(ref_genes_list),
-        }
-        
-        return Response(results, status=status.HTTP_200_OK)
-    
-    except Exception as e:
-        logger.error(f"Error in genome_synteny: {e}")
-        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-

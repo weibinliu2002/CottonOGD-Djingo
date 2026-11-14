@@ -209,3 +209,19 @@ redis:
   port: 6379
   db: 1
   # password intentionally read from environment / backend/.env
+# ---------------------------------------------------------------------------
+# Genome synteny (gene-level MCscan via jcvi)
+# Computes collinearity blocks for id_map genome pairs and persists a single
+# JSON (Sankey + blocks + base64 figure + gene index) that the Django
+# genome_synteny API reads. All compute is offline (jcvi in backend venv).
+synteny:
+  enabled: true
+  results_dir: results/synteny          # under base_dir
+  # which pairs to compute: 'test' | 'all' | explicit list of (source,target)
+  pairs: test
+  test_pairs:
+  - [G.hirsutumAD1_TM-1_HAU_v1.1, G.hirsutumAD1_TM-1_ZJU_v1.1T2T]
+  python: /data/web/CottonOGD/OGD/backend/venv/bin/python
+  jcvi_python: /data/web/CottonOGD/OGD/backend/venv/bin/python
+  cpus: 8
+  mem_mb: 16000
