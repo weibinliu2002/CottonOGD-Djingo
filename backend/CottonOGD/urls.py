@@ -19,6 +19,9 @@ from CottonOGD.views.Meilisearch import (
     search_genes_meilisearch, search_genes, proxy_search, get_search_indexes,
 )
 from CottonOGD.views.genome_api import *
+# Genome synteny: take over `genome_synteny` (jcvi precomputed path added) and add
+# microsynteny + synteny_pairs endpoints backed by the Snakemake-jcvi pipeline.
+from CottonOGD.views.synteny_api import genome_synteny, microsynteny, synteny_block, synteny_pairs
 from CottonOGD.views.protein3D import *
 from CottonOGD.views.ai_chat import ai_chat
 from CottonOGD.views.orthofinder import (
@@ -74,6 +77,10 @@ urlpatterns = [
     path('gene_genomic_distribution/', gene_genomic_distribution, name='gene_genomic_distribution'),
     #path('transcription_factors/', transcription_factors, name='transcription_factors'),
     path('genome_synteny/', genome_synteny, name='genome_synteny'),
+    # ========== 共线性（jcvi 预计算；微共线性 + 可用基因组对） ==========
+    path('microsynteny/', microsynteny, name='microsynteny'),
+    path('synteny_block/', synteny_block, name='synteny_block'),
+    path('synteny_pairs/', synteny_pairs, name='synteny_pairs'),
     #path('structural_variations/', structural_variations, name='structural_variations'),
 
     # ========== 变异数据 API（SyRI / 群体 SNP·InDel / GWAS） ==========

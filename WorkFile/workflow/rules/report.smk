@@ -21,11 +21,14 @@ rule aggregate_report:
     input:
         report_files=_report_inputs,
     output:
-        tsv=os.path.join(RESULTS_DIR, "summary.tsv"),
-        html=os.path.join(RESULTS_DIR, "summary.html"),
+        # summary 报表是跨基因组的聚合产物，留在 results/ 根目录（RESULTS_ROOT）。
+        tsv=os.path.join(RESULTS_ROOT, "summary.tsv"),
+        html=os.path.join(RESULTS_ROOT, "summary.html"),
     params:
         python=PYTHON,
         script=os.path.join(BASE_DIR, "workflow", "scripts", "aggregate_report.py"),
+        # 传给聚合脚本的根目录是基因组结果根（results/genome/），
+        # 脚本会在其下逐个查找带 qc/qc_report.yaml 的物种目录。
         results_dir=RESULTS_DIR,
     threads: 1
     resources:

@@ -16,7 +16,8 @@ Future incremental strategy (see README):
 
 rule prepare_orthofinder_inputs:
     output:
-        directory(os.path.join(RESULTS_DIR, "orthofinder", "input")),
+        # OrthoFinder 聚合目录是跨基因组的产物，留在 results/ 根（RESULTS_ROOT）。
+        directory(os.path.join(RESULTS_ROOT, "orthofinder", "input")),
     params:
         longest=lambda w: [
             os.path.join(RESULTS_DIR, s["id"], "longest", "pro_longest.fasta")
@@ -37,11 +38,11 @@ rule prepare_orthofinder_inputs:
 
 rule orthofinder:
     input:
-        proteins=os.path.join(RESULTS_DIR, "orthofinder", "input"),
+        proteins=os.path.join(RESULTS_ROOT, "orthofinder", "input"),
     output:
-        done=os.path.join(RESULTS_DIR, "orthofinder", "orthofinder.done"),
+        done=os.path.join(RESULTS_ROOT, "orthofinder", "orthofinder.done"),
     params:
-        outdir=os.path.join(RESULTS_DIR, "orthofinder", "results"),
+        outdir=os.path.join(RESULTS_ROOT, "orthofinder", "results"),
         orthofinder=TOOLS.get("orthofinder", "orthofinder"),
         threads=module_opt("orthofinder", "threads", 32),
         search=module_opt("orthofinder", "search", "diamond"),

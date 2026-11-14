@@ -7,8 +7,18 @@ import os
 import re
 import yaml
 
-BASE_DIR = os.path.abspath(config.get("base_dir", os.getcwd()))
-RESULTS_DIR = os.path.join(BASE_DIR, config.get("results_dir", "results"))
+BASE_DIR = os.path.abspath(config.get("base_dir", os.getcwd"))
+# 结果根目录（即 ``results/``）。Summary 报表、OrthoFinder 聚合目录等
+# 跨基因组产物仍放这里；各基因组的产物统一放在 RESULTS_DIR（results/genome/）下。
+RESULTS_ROOT = os.path.join(BASE_DIR, config.get("results_dir", "results"))
+# 单个基因组的结果目录：所有按物种拆分的产物（qc/longest/sequences/annotation/
+# publish/jbrowse/blast/upload 等）都落在这个子目录下，按功能与基因组两级归类。
+RESULTS_DIR = os.path.join(RESULTS_ROOT, "genome")
+
+
+def genome_dir(species):
+    """返回单个基因组结果目录（RESULTS_DIR/{species}）。"""
+    return os.path.join(RESULTS_DIR, species)
 TOOLS = config.get("tools", {})
 PATHS = config.get("paths", {})
 PYTHON = TOOLS.get("python", "python3")
