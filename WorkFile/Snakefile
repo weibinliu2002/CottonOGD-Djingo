@@ -64,3 +64,6 @@ include: "workflow/rules/report.smk"
 
 if module_enabled("orthofinder"):
     include: "workflow/rules/orthofinder.smk"
+
+if config.get("id_map", {}).get("enabled", False):
+    include: "workflow/rules/id_map.smk"

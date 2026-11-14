@@ -629,3 +629,488 @@ class Category(models.Model):
     
     def __str__(self):
         return f"{self.category_id} - {self.name}"
+
+
+# ========== OrthoFinder 直系同源（Ortholog）表 ==========
+# 数据来自 OrthoFinder 结果目录下的 Orthogroups/Orthogroups.tsv。
+# 物种列已 100% 对齐 Species_info.name；基因 id 即 TranscriptMaster.transcriptid。
+# 一对一/一对多/多对多的判定在查询时由各物种成员数实时计算，不落表。
+
+class OrthofinderOrthogroup(models.Model):
+    og_code = models.CharField(max_length=20, primary_key=True)  # 如 OG0000000
+    gene_count = models.IntegerField(default=0)
+    species_count = models.IntegerField(default=0)
+    is_single_copy = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = 'orthofinder_orthogroup'
+        indexes = [models.Index(fields=['is_single_copy'])]
+
+    def __str__(self):
+        return self.og_code
+
+
+class OrthofinderOgGene(models.Model):
+    og_code = models.CharField(max_length=20, db_index=True)  # 组件 idx_og
+    species = models.ForeignKey(
+        Species_info, on_delete=models.CASCADE, to_field='name', db_column='species'
+    )  # 物种头，对齐 Species_info.name
+    geneid = models.CharField(max_length=200, db_index=True)  # OrthoFinder transcript id
+
+    class Meta:
+        db_table = 'orthofinder_og_gene'
+        # 保证 (og_code, species, geneid) 唯一，避免重复导入
+        constraints = [
+            models.UniqueConstraint(
+                fields=['og_code', 'species', 'geneid'], name='uk_og_species_gene'
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.og_code}|{self.species_id}|{self.geneid}"
+
+
+class OrthofinderDuplication(models.Model):
+    """OrthoFinder 基因复制事件（来自 Gene_Duplication_Events/Duplications.tsv）。
+
+    每行一个复制事件：某 OG、某物种树节点（分支）上、某基因树节点处的复制，
+    把该分支的基因分成两组（Genes 1 / Genes 2）。
+    Type ∈ {Terminal, Non-Terminal, Non-Terminal: STRIDE}。
+    用于 tandem / wgd 端点，按 og_code 建索引实现 O(log n) 查询。
+    """
+    og_code = models.CharField(max_length=20, db_index=True)  # 组件 idx_og
+    species_node = models.CharField(max_length=255)  # 复制发生的物种/分支，如 G.anomalumB1_HAU_v1
+    gene_tree_node = models.CharField(max_length=64, blank=True, null=True)
+    support = models.FloatField(blank=True, null=True)
+    dup_type = models.CharField(max_length=32)  # Terminal / Non-Terminal / Non-Terminal: STRIDE
+    genes1 = models.TextField(blank=True, default='')  # 逗号分隔的干净基因 id
+    genes2 = models.TextField(blank=True, default='')  # 逗号分隔的干净基因 id
+
+    class Meta:
+        db_table = 'orthofinder_duplication'
+        indexes = [models.Index(fields=['og_code', 'species_node'])]
+
+    def __str__(self):
+        return f"{self.og_code}|{self.species_node}|{self.dup_type}"
+
+
+# ======================================================================
+# 基因组结构变异（Genome SV）数据模型
+#
+# 设计依据：docs/Genome_SV_数据库设计说明.md
+# SyRI 成对比较被纵向拆分：
+#   - 结构重排（SR：SYN/INV/TRANS/INVTR/DUP/INVDP）→ SyriSR
+#   - 序列级注释（SEQ：INS/DEL/CPG/CPL/HDR/TDM）   → SyriSeq
+# 对齐注释（SYNAL/NOTAL 等）不落库。
+# 群体 multi-sample VCF 单独成 B 域（Variant + 稀疏三表）。
+# 短变异（SNP/短 Indel）明细不进库，仅登记文件台账 + 统计汇总。
+#
+# 惯例对齐：genome 引用沿用项目既有整数引用（Genome_Synteny.Ref_genome），
+# 不建硬 FK；基因组维表为 species（name 唯一）。
+# ======================================================================
+
+
+class GenomePair(models.Model):
+    """一次 SyRI 成对比较的批次锚点（幂等重跑靠它）。
+
+    每个 (ref_genome_id, query_genome_id) 唯一。旧 genome_synteny 数据可保持
+    genome_pair_id 为 NULL 向后兼容。
+    """
+    id = models.BigAutoField(primary_key=True)
+    ref_genome_id = models.IntegerField(default=0)     # → species.id（整数引用，非硬 FK）
+    query_genome_id = models.IntegerField(default=0)   # → species.id
+    minimap2_params = models.CharField(max_length=255, blank=True, null=True)  # 如 asm5 --eqx
+    syri_version = models.CharField(max_length=50, blank=True, null=True)
+    status = models.CharField(max_length=20, blank=True, null=True,
+                              default='running')  # running/imported/verified/retired
+    summary_json = models.JSONField(blank=True, null=True)  # syri.summary 结构化
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'genome_pair'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['ref_genome_id', 'query_genome_id'],
+                name='uk_genome_pair_ref_query')
+        ]
+        indexes = [
+            models.Index(fields=['status']),
+        ]
+
+    def __str__(self):
+        return f"pair({self.ref_genome_id}x{self.query_genome_id})"
+
+
+class SyriSR(models.Model):
+    """SyRI 结构重排（SR）：共线性块/倒位/易位/重复等。
+
+    字段对齐 syri.out 12 列 + 设计稿 §1.1。ref/query 双向区间。
+    """
+    id = models.BigAutoField(primary_key=True)
+    genome_pair_id = models.IntegerField(blank=True, null=True)  # → genome_pair.id（新数据带，旧 NULL）
+    ref_genome_id = models.IntegerField(default=0)
+    query_genome_id = models.IntegerField(default=0)
+    ref_genome_chr = models.CharField(max_length=100, blank=True, null=True)
+    ref_start = models.IntegerField()
+    ref_end = models.IntegerField()
+    ref_seq = models.TextField(blank=True, null=True)    # 结构变异通常为 '-'，可空
+    alt_seq = models.TextField(blank=True, null=True)    # 插入序列（长序列截断存前 1kb + 全长标记）
+    query_genome_chr = models.CharField(max_length=100, blank=True, null=True)
+    query_start = models.IntegerField()
+    query_end = models.IntegerField()
+    event_id = models.CharField(max_length=100, blank=True, null=True)   # 第 9 列事件 ID，如 DUP100
+    parent_event = models.CharField(max_length=100, blank=True, null=True)  # 第 10 列父事件 ID
+    son_type = models.CharField(max_length=100, blank=True, null=True)  # 类型代码：SYN/INV/TRANS/DUP/...
+    copygain = models.CharField(max_length=100, blank=True, null=True)  # 仅 DUP 类：copygain/copyloss
+    sv_length = models.IntegerField(blank=True, null=True)  # 导入时算 ref_end-ref_start+1
+
+    class Meta:
+        db_table = 'syri_sr'
+        indexes = [
+            models.Index(fields=['genome_pair_id']),
+            models.Index(fields=['ref_genome_id', 'query_genome_id', 'ref_genome_chr', 'son_type']),
+            models.Index(fields=['query_genome_chr']),
+            models.Index(fields=['son_type']),
+        ]
+
+    def __str__(self):
+        return f"{self.ref_genome_chr}:{self.ref_start}-{self.ref_end}|{self.son_type}"
+
+
+class SyriSeq(models.Model):
+    """SyRI 序列级注释（SEQ）：插入/缺失/拷贝变化/高分化区/串联重复。
+
+    与 SyriSR 同形但数据类别不同（HDR/TDM 等长序列需截断防表膨胀）。
+    """
+    id = models.BigAutoField(primary_key=True)
+    genome_pair_id = models.IntegerField(blank=True, null=True)
+    ref_genome_id = models.IntegerField(default=0)
+    query_genome_id = models.IntegerField(default=0)
+    ref_genome_chr = models.CharField(max_length=100, blank=True, null=True)
+    ref_start = models.IntegerField()
+    ref_end = models.IntegerField()
+    ref_seq = models.TextField(blank=True, null=True)
+    alt_seq = models.TextField(blank=True, null=True)    # 插入序列可很长，导入时截断
+    query_genome_chr = models.CharField(max_length=100, blank=True, null=True)
+    query_start = models.IntegerField()
+    query_end = models.IntegerField()
+    event_id = models.CharField(max_length=100, blank=True, null=True)
+    parent_event = models.CharField(max_length=100, blank=True, null=True)
+    son_type = models.CharField(max_length=100, blank=True, null=True)  # INS/DEL/CPG/CPL/HDR/TDM
+    copygain = models.CharField(max_length=100, blank=True, null=True)
+    sv_length = models.IntegerField(blank=True, null=True)
+
+    class Meta:
+        db_table = 'syri_seq'
+        indexes = [
+            models.Index(fields=['genome_pair_id']),
+            models.Index(fields=['ref_genome_id', 'query_genome_id', 'ref_genome_chr', 'son_type']),
+            models.Index(fields=['query_genome_chr']),
+            models.Index(fields=['son_type']),
+        ]
+
+    def __str__(self):
+        return f"{self.ref_genome_chr}:{self.ref_start}-{self.ref_end}|{self.son_type}"
+
+
+class PopulationsInfo(models.Model):
+    """群体维表（对齐 maizevarmap.populations_info）。"""
+    population_id = models.PositiveIntegerField(primary_key=True)
+    population = models.CharField(max_length=30)
+    population_count = models.CharField(max_length=30)
+    # 可选亚组（野生/地方种/栽培种），与 sample.population_group 对应
+    population_group = models.CharField(max_length=30, blank=True, null=True)
+
+    class Meta:
+        db_table = 'populations_info'
+
+    def __str__(self):
+        return self.population
+
+
+class VariationSet(models.Model):
+    """一次群体 calling 的数据集（对应 maize 隐含的单参考 B73，此处显式化）。"""
+    id = models.BigAutoField(primary_key=True)
+    name = models.CharField(max_length=100, unique=True)  # 如 cotton_pan_sv_v1
+    reference_genome = models.IntegerField(default=0)     # → species.id
+    caller = models.CharField(max_length=100, blank=True, null=True)  # 工具+版本
+    sample_count = models.IntegerField(blank=True, null=True)
+    version = models.CharField(max_length=50, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'variation_set'
+
+    def __str__(self):
+        return self.name
+
+
+class Sample(models.Model):
+    """样本维表（矩阵的"列"，对齐 maizevarmap.samples）。"""
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=100, unique=True)     # VCF 表头样本名
+    population = models.CharField(max_length=30, blank=True, null=True)
+    population_group_id = models.ForeignKey(
+        PopulationsInfo, on_delete=models.SET_NULL, null=True,
+        blank=True, db_column='population_group_id')
+    species_id = models.IntegerField(blank=True, null=True)  # 若该材料同时有组装则互链 species.id
+    source = models.CharField(max_length=100, blank=True, null=True)
+    country = models.CharField(max_length=30, blank=True, null=True)
+    latitude = models.DecimalField(max_digits=6, decimal_places=2, blank=True, null=True)
+    longitude = models.DecimalField(max_digits=6, decimal_places=2, blank=True, null=True)
+    accession_id = models.CharField(max_length=255, blank=True, null=True)
+
+    class Meta:
+        db_table = 'sample'
+        indexes = [models.Index(fields=['population'])]
+
+    def __str__(self):
+        return self.name
+
+
+class Variant(models.Model):
+    """群体变异位点主表（矩阵的"行"，对齐 maizevarmap *_variants，推广为通用）。
+
+    chrom 冗余到子表做分片键；ref/alt 短变异 VARCHAR(1/4)，
+    符号等位 <DEL> 与长插入序列用 TEXT（对齐设计稿 §2.5.2 第 3 点）。
+    """
+    id = models.BigAutoField(primary_key=True)
+    set_id = models.BigIntegerField()                         # → variation_set.id
+    chrom = models.CharField(max_length=50)                   # 冗余分片键
+    pos = models.IntegerField()
+    end_pos = models.IntegerField(blank=True, null=True)
+    show_id = models.CharField(max_length=20, blank=True, null=True)  # 展示稳定 ID
+    svtype = models.CharField(max_length=20, blank=True, null=True)   # DEL/INS/DUP/INV/BND/CNV
+    svlen = models.IntegerField(blank=True, null=True)
+    ref = models.CharField(max_length=4, blank=True, null=True)
+    alt = models.TextField(blank=True, null=True)
+    qual = models.FloatField(blank=True, null=True)
+    filter = models.CharField(max_length=20, blank=True, null=True)
+    info_json = models.JSONField(blank=True, null=True)
+
+    class Meta:
+        db_table = 'variant'
+        indexes = [
+            models.Index(fields=['set_id', 'chrom', 'pos']),
+            models.Index(fields=['set_id', 'svtype']),
+        ]
+        constraints = [
+            # 注：alt 为 TEXT（长插入序列/<DEL> 符号），MySQL 不支持在复合唯一键里
+            # 直接索引 TEXT 列。去重靠导入时按 set_id 整集 DELETE+重载（设计稿 §5.2），
+            # 故唯一约束收敛到 (set_id, chrom, pos, svtype)。
+            models.UniqueConstraint(
+                fields=['set_id', 'chrom', 'pos', 'svtype'],
+                name='uk_variant_set_chrom_pos_type')
+        ]
+
+    def __str__(self):
+        return f"{self.chrom}:{self.pos}|{self.svtype}"
+
+
+class VariantGenotype(models.Model):
+    """稀疏基因型表：只存非 0/0 的格子（对齐 maizevarmap *_genotypes）。"""
+    id = models.BigAutoField(primary_key=True)
+    chrom = models.CharField(max_length=50)        # 冗余分片键
+    variant_id = models.BigIntegerField()          # → variant.id
+    sample_id = models.IntegerField()              # → sample.id
+    gt = models.PositiveSmallIntegerField()        # 1=杂合 2=纯合变异（0/0 不落库）
+    copy_number = models.FloatField(blank=True, null=True)  # CNV 类可选
+
+    class Meta:
+        db_table = 'variant_genotype'
+        indexes = [
+            models.Index(fields=['chrom', 'sample_id']),
+            models.Index(fields=['chrom', 'variant_id']),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['chrom', 'variant_id', 'sample_id'],
+                name='uk_variant_gt_chrom_var_sample')
+        ]
+
+    def __str__(self):
+        return f"{self.chrom}|v{self.variant_id}|s{self.sample_id}"
+
+
+class VariantPopulation(models.Model):
+    """群体级 AC 预聚合表（对齐 maizevarmap *_populations，设计稿 §2.5.2 第 1 点）。
+
+    频率/携带数查询免扫基因型大表；ac 存 JSON {ref:N, alt:M}。
+    """
+    id = models.BigAutoField(primary_key=True)
+    chrom = models.CharField(max_length=50)        # 冗余分片键
+    variant_id = models.BigIntegerField()          # → variant.id
+    population_id = models.IntegerField()          # → populations_info.population_id
+    ac = models.CharField(max_length=40, blank=True, null=True)  # {ref:N, alt:M} JSON
+
+    class Meta:
+        db_table = 'variant_population'
+        indexes = [
+            models.Index(fields=['chrom', 'variant_id']),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['chrom', 'variant_id', 'population_id'],
+                name='uk_variant_pop_chrom_var_pop')
+        ]
+
+    def __str__(self):
+        return f"{self.chrom}|v{self.variant_id}|pop{self.population_id}"
+
+
+class VariationFile(models.Model):
+    """变异类文件台账：全库变异文件的唯一登记处（C 域数据管理抓手）。"""
+    id = models.BigAutoField(primary_key=True)
+    path = models.CharField(max_length=500, unique=True)  # 相对 backend/data/ 的路径
+    category = models.CharField(max_length=30, blank=True, null=True)  # syri.out/syri.vcf.gz/snps.vcf.gz/pop_vcf
+    ref_genome = models.IntegerField(blank=True, null=True)     # 成对文件填
+    query_genome = models.IntegerField(blank=True, null=True)   # 成对文件填
+    set_id = models.BigIntegerField(blank=True, null=True)      # 群体文件填
+    tabix_ready = models.BooleanField(default=False)            # 是否已 bgzip+tabix
+    md5 = models.CharField(max_length=64, blank=True, null=True)
+    size = models.BigIntegerField(blank=True, null=True)
+    status = models.CharField(max_length=20, blank=True, null=True,
+                              default='pending')   # pending/indexed/imported/failed
+    imported_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        db_table = 'variation_file'
+        indexes = [models.Index(fields=['category'])]
+
+    def __str__(self):
+        return self.path
+
+
+class SnpStat(models.Model):
+    """统计汇总表（页面展示用，永远 <10 万行）。
+
+    按 genome_pair 或 variation_set 汇总 SNP/Ins/Del/SV 计数 + 分 bin 密度。
+    """
+    id = models.BigAutoField(primary_key=True)
+    subject_type = models.CharField(max_length=20, blank=True, null=True)  # genome_pair / variation_set
+    subject_id = models.BigIntegerField(blank=True, null=True)
+    population_id = models.IntegerField(blank=True, null=True)  # 可选按群体分层
+    chrom = models.CharField(max_length=50, blank=True, null=True)  # 染色体或 'all'
+    snp_count = models.IntegerField(blank=True, null=True)
+    ins_count = models.IntegerField(blank=True, null=True)
+    del_count = models.IntegerField(blank=True, null=True)
+    sv_count = models.IntegerField(blank=True, null=True)
+    density_json = models.JSONField(blank=True, null=True)  # 分 bin 密度（JBrowse histogram 直读）
+
+    class Meta:
+        db_table = 'snp_stat'
+        indexes = [
+            models.Index(fields=['subject_type', 'subject_id']),
+            models.Index(fields=['chrom']),
+        ]
+
+    def __str__(self):
+        return f"{self.subject_type}:{self.subject_id}|{self.chrom}"
+
+
+# ======================================================================
+# GWAS 数据模型
+#
+# 数据来源：cotton_Pan-genmone/snp2
+#   - 890.hmp.biallele.vcf  (890 份 G. hirsutum 的 SNP 基因型)
+#   - 419.CNV.MAF0.05.vcf   (419 份 G. hirsutum 的 CNV 基因型)
+#   - 890Gh_Fiber_traits.txt (890 份材料的 5 个纤维性状 BLUP 值：FE/FL/FM/FS/FU)
+#
+# 设计：GWAS 的"基因型标记"复用 B 域 variant 表（各自 variation_set）；
+# 表型 BLUP 值单独成 gwas_phenotype（trait × accession 稀疏）；
+# gwas_association 预留给未来计算的关联结果（pvalue/effect/...），当前为空。
+# ======================================================================
+
+
+class GwasTrait(models.Model):
+    """GWAS 性状元数据（FE/FL/FM/FS/FU 等纤维性状）。"""
+    id = models.AutoField(primary_key=True)
+    code = models.CharField(max_length=20, unique=True)   # FE / FL / FM / FS / FU
+    name = models.CharField(max_length=100, blank=True, null=True)  # 展示名
+    unit = models.CharField(max_length=50, blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+
+    class Meta:
+        db_table = 'gwas_trait'
+
+    def __str__(self):
+        return f"{self.code}:{self.name}"
+
+
+class GwasAccession(models.Model):
+    """GWAS 群体中的材料（GWAS 基因型/表型的"列"）。
+
+    与 B 域 sample 解耦：GWAS 材料命名（HBAU1...）与泛基因组样本
+    （H84021...）不直接同名，单独建维表，便于 join 表型与基因型。
+    """
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=100, unique=True)       # HBAU1 ...
+    species = models.CharField(max_length=50, blank=True, null=True)  # G. hirsutum
+    population = models.CharField(max_length=50, blank=True, null=True)
+    note = models.CharField(max_length=255, blank=True, null=True)
+
+    class Meta:
+        db_table = 'gwas_accession'
+        indexes = [models.Index(fields=['species'])]
+
+    def __str__(self):
+        return self.name
+
+
+class GwasPhenotype(models.Model):
+    """性状 BLUP 值（accession × trait 稀疏矩阵，对齐 maize 思路）。"""
+    id = models.BigAutoField(primary_key=True)
+    accession_id = models.IntegerField()   # → gwas_accession.id
+    trait_id = models.IntegerField()       # → gwas_trait.id
+    value = models.FloatField(blank=True, null=True)
+
+    class Meta:
+        db_table = 'gwas_phenotype'
+        indexes = [
+            models.Index(fields=['trait_id', 'accession_id']),
+            models.Index(fields=['accession_id']),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['accession_id', 'trait_id'],
+                name='uk_gwas_pheno_acc_trait')
+        ]
+
+    def __str__(self):
+        return f"acc{self.accession_id}|trait{self.trait_id}={self.value}"
+
+
+class GwasAssociation(models.Model):
+    """GWAS 关联结果（预留：未来由 VCF+表型计算后写入，当前为空）。
+
+    每 (chrom, pos, trait) 一个峰值：pvalue / effect / r2 / maf 等。
+    """
+    id = models.BigAutoField(primary_key=True)
+    set_id = models.BigIntegerField(blank=True, null=True)     # → variation_set.id（标记集）
+    trait_id = models.IntegerField()                           # → gwas_trait.id
+    chrom = models.CharField(max_length=50)
+    pos = models.IntegerField()
+    variant_id = models.BigIntegerField(blank=True, null=True)  # 可回链到 variant
+    ref = models.CharField(max_length=4, blank=True, null=True)
+    alt = models.CharField(max_length=4, blank=True, null=True)
+    pvalue = models.FloatField(blank=True, null=True)
+    effect = models.FloatField(blank=True, null=True)
+    r2 = models.FloatField(blank=True, null=True)
+    maf = models.FloatField(blank=True, null=True)
+    information_json = models.JSONField(blank=True, null=True)
+
+    class Meta:
+        db_table = 'gwas_association'
+        indexes = [
+            models.Index(fields=['trait_id', 'chrom', 'pos']),
+            models.Index(fields=['trait_id', 'pvalue']),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['chrom', 'pos', 'trait_id'],
+                name='uk_gwas_assoc_chrom_pos_trait')
+        ]
+
+    def __str__(self):
+        return f"{self.chrom}:{self.pos}|trait{self.trait_id}|p={self.pvalue}"

@@ -20,6 +20,10 @@ TEMP_DIR = os.path.join(BASE_DIR, 'temp')
 SOFTWARE_DIR = os.path.join(BASE_DIR, 'soft')
 GO_OBO_FILE = os.path.join(BASE_DIR, 'data', 'go_ontology', 'go-basic.obo')
 
+# OrthoFinder 结果目录（backend/data/Orthofinder 是软链，指向当前完整结果目录）。
+# 换正式完整结果时只需改这个软链、重跑 build_orthofinder_index 即可。
+ORTHOFINDER_RESULTS_DIR = os.path.join(BASE_DIR, 'data', 'Orthofinder')
+
 # =============================================================================
 # 环境变量加载（django-environ）
 # 优先级：系统环境变量 > .env 文件
@@ -52,10 +56,39 @@ env = environ.Env(
     AI_CHAT_MAX_TOOL_ROUNDS=(int, 5),
     # LLM 请求超时（秒）
     AI_CHAT_TIMEOUT=(int, 60),
+    # ---- STRING PPI（REST API，v12，公开无需 key；caller_identity 仅用于限流标识）----
+    STRING_API_URL=(str, 'https://version-12-0.string-db.org/api'),
+    STRING_CALLER_ID=(str, 'cottonogd'),
+    STRING_SCORE_THRESHOLD=(int, 400),
+    STRING_REQUEST_TIMEOUT=(int, 30),
+    STRING_MAX_RETRIES=(int, 3),
 )
 
 # 读取 .env（若存在）
 environ.Env.read_env(BASE_DIR / '.env')
+
+# STRING PPI：基因组（Species_info.name）→ NCBI taxon ID 映射。
+# STRING 仅收录 3 个棉属物种，多基因组共享同一 taxon。
+# resolve_taxon() 还会用 Species_info.Cotton_Species 与 BLAST 表名做模糊兜底。
+STRING_GENOME_TAXON_MAP = {
+    # G. hirsutum (AD1) → 3635
+    'G.hirsutumAD1_TM-1_HAU_v1.1': '3635',
+    'G.hirsutumAD1_Jin668_HAU_v1T2T': '3635',
+    'G.hirsutumAD1_T2T-Jin668_HZAU_v1.0': '3635',
+    'G.hirsutumAD1_CRI_TM1-v1.0': '3635',
+    'G.hirsutumAD1_ZJU-AD1_v2.1': '3635',
+    # G. raimondii (D5) → 29730
+    'G.raimondii_D5_HAU_v1.0': '29730',
+    'G.raimondii_CGP-BGI_v1.0': '29730',
+    'G.raimondii_HAU_v1.0': '29730',
+    # G. herbaceum (A1) → 157791
+    'G.herbaceum_A1_HAU_wild_v1.0': '157791',
+    'G.herbaceum_A1_USDA_Wagad_v1.0': '157791',
+    'G.herbaceum_WHU_v1': '157791',
+    # G. arboreum (A2) → 29730（STRING 用 raimondii 近缘，按就近原则）
+    'G.arboreum_HAU_v1.0': '29730',
+    'G.arboreum_A2_HAU_v2.0': '29730',
+}
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -67,10 +100,26 @@ SECRET_KEY = env('DJANGO_SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env('DEBUG')
 
-ALLOWED_HOSTS = ['*']
+# 生产环境通过 Nginx 反代访问：域名/IP 从 .env 读取，避免硬编码
+ALLOWED_HOSTS = env.list(
+    'DJANGO_ALLOWED_HOSTS',
+    default=['iCotton.henau.edu.cn', 'iCotton.henau.edu', '172.28.226.114', 'localhost', '127.0.0.1'],
+)
 
-# CSRF配置 - 使用Django默认行为
-# Django 6.0+ 默认会自动处理CSRF，无需额外配置CSRF_TRUSTED_ORIGINS
+# Nginx 终止 TLS 后转发，Django 需要据此判断原始请求为 https
+# （否则 request.is_secure() 为 False，登录 cookie 的 Secure 标志不会生效）
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+
+# CSRF 可信来源（Django 4.0+ 格式：scheme://host[:port]）
+CSRF_TRUSTED_ORIGINS = env.list(
+    'DJANGO_CSRF_TRUSTED_ORIGINS',
+    default=[
+        'https://iCotton.henau.edu.cn', 'http://iCotton.henau.edu.cn',
+        'https://iCotton.henau.edu', 'http://iCotton.henau.edu',
+        'https://172.28.226.114', 'http://172.28.226.114',
+    ],
+)
 
 
 # Application definition

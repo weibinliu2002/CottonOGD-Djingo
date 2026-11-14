@@ -75,6 +75,7 @@ def qc_mode(args):
     qc_sources = meta.get("qc_sources") or {}
     validation = read_json(args.validation) or {}
     genome_size = read_json(args.genome_size)
+    assembly_stats = read_json(args.assembly_stats)
     lai = read_json(args.lai)
     busco = read_json(args.busco)
     te = read_json(args.te)
@@ -138,6 +139,7 @@ def qc_mode(args):
         "transcript_count": (validation.get("gff") or {}).get("transcript_count"),
         "genome_size": computed["genome_size"],
         "sequence_count": (genome_size or {}).get("sequence_count"),
+        "assembly_stats": assembly_stats,
         "lai": lai,
         "busco": busco,
         "te": te,
@@ -231,6 +233,7 @@ def main():
     ap.add_argument("--metadata", default="")
     ap.add_argument("--validation", default="")
     ap.add_argument("--genome-size", default="")
+    ap.add_argument("--assembly-stats", default="")
     ap.add_argument("--lai", default="")
     ap.add_argument("--busco", default="")
     ap.add_argument("--te", default="")

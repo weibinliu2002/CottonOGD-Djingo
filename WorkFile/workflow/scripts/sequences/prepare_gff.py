@@ -13,6 +13,7 @@ Equivalent to the legacy decompress_gff + fix_gff.sh pair:
 import argparse
 import gzip
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -78,6 +79,61 @@ def parse_attrs(text):
             key, value = parts
         attrs[key.strip()] = value.strip().strip('"')
     return attrs
+
+
+# Some annotations (e.g. G.arboreumA2_DC001_HAU_v1) carry no `Parent` at all:
+# every feature only has `ID=`, with the hierarchy encoded in the id spelling
+#   gene  Chr01000010
+#   mRNA  Chr01000010.1
+#   CDS   Chr01000010.1_cds_14
+# gffread cannot attribute such CDS/mRNA rows, so it falls back to naming
+# extracted sequences after the CDS id (`Chr01000010.1_cds_14`). Those ids then
+# match nothing in the GFF and longest_protein_by_gene.py maps 0% of records.
+# Rebuild the Parent links from the id spelling before writing the GFF.
+_MRNA_SUFFIX = re.compile(r"\.\d+$")
+_CDS_SUFFIX = re.compile(r"^(?P<tx>.+?)_cds_\d+$", re.IGNORECASE)
+
+
+def add_missing_parent_links(records):
+    """Rebuild `Parent=` for features whose hierarchy is only implied by ids.
+
+    Only touches rows that have no Parent at all, so annotations that already
+    carry proper GFF3 links are left byte-identical.
+    """
+    gene_ids, tx_ids = set(), set()
+    for _seqid, _start, _end, fields in records:
+        attrs = parse_attrs(fields[8])
+        ftype = fields[2].lower()
+        if ftype in ("gene", "pseudogene"):
+            if attrs.get("ID"):
+                gene_ids.add(attrs["ID"])
+        elif ftype in ("mrna", "transcript"):
+            if attrs.get("ID"):
+                tx_ids.add(attrs["ID"])
+
+    patched = 0
+    for _seqid, _start, _end, fields in records:
+        attrs = parse_attrs(fields[8])
+        if attrs.get("Parent"):
+            continue
+        fid, ftype = attrs.get("ID", ""), fields[2].lower()
+        parent = ""
+        if ftype in ("mrna", "transcript"):
+            # Chr01000010.1 -> Chr01000010
+            base = _MRNA_SUFFIX.sub("", fid)
+            if base != fid and base in gene_ids:
+                parent = base
+        elif ftype == "cds":
+            # Chr01000010.1_cds_14 -> Chr01000010.1
+            m = _CDS_SUFFIX.match(fid)
+            if m and m.group("tx") in tx_ids:
+                parent = m.group("tx")
+            elif fid in tx_ids:
+                parent = fid
+        if parent:
+            fields[8] = "Parent=%s;%s" % (parent, fields[8])
+            patched += 1
+    return patched
 
 
 def add_missing_gene_records(records):
@@ -233,7 +289,10 @@ def main():
                     fields[6] = "."
                 records.append((seqid, start, end, fields))
 
+        patched_parents = add_missing_parent_links(records)
         added_genes = add_missing_gene_records(records)
+        if patched_parents:
+            print(f"[INFO] rebuilt Parent for {patched_parents} feature(s) with implied hierarchy")
 
         # Gene rows must precede their transcripts when they share a start
         # coordinate, which keeps GFF3 consumers that rely on file order happy.

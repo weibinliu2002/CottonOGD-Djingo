@@ -19,11 +19,21 @@ def _qc_inputs(wildcards):
         items.append(os.path.join(RESULTS_DIR, wildcards.species, "qc", "busco.json"))
     if module_enabled("te"):
         items.append(os.path.join(RESULTS_DIR, wildcards.species, "qc", "te.json"))
+    # assembly_stats has no MySQL-backed equivalent, so it always runs and is
+    # always a dependency of the QC report (never skipped via qc_completed).
+    items.append(os.path.join(RESULTS_DIR, wildcards.species, "qc", "assembly_stats.json"))
     return items
 
 rule calc_genome_size:
+    """Genome size = assembly_stats.total_length (reused, no 2nd FASTA scan).
+
+    Reads the values from the precomputed assembly_stats.json instead of scanning
+    the genome FASTA a second time. Runs after calc_assembly_stats so the stats
+    file is always present. Falls back to a FASTA scan only if it is missing.
+    """
     input:
         genome=lambda w: spath(w, "genome"),
+        stats=os.path.join(RESULTS_DIR, "{species}", "qc", "assembly_stats.json"),
     output:
         json=os.path.join(RESULTS_DIR, "{species}", "qc", "genome_size.json"),
     params:
@@ -36,7 +46,35 @@ rule calc_genome_size:
         """
         set -euo pipefail
         mkdir -p "$(dirname {output.json})"
-        {params.python} {params.script} --genome {input.genome} --out {output.json}
+        {params.python} {params.script} --genome {input.genome} \
+            --stats {input.stats} --out {output.json}
+        """
+
+
+rule calc_assembly_stats:
+    """Run assembly-stats for per-assembly contiguity metrics (N50, etc.).
+
+    Always runs (no MySQL-backed equivalent) so the values are present in the
+    QC report for every genome. Skipping is controlled by samples.yaml
+    ``qc_completed`` like the other metrics.
+    """
+    input:
+        genome=lambda w: spath(w, "genome"),
+    output:
+        json=os.path.join(RESULTS_DIR, "{species}", "qc", "assembly_stats.json"),
+    params:
+        python=PYTHON,
+        script=os.path.join(BASE_DIR, "workflow", "scripts", "qc", "calc_assembly_stats.py"),
+        assembly_stats=TOOLS.get("assembly_stats", "assembly-stats"),
+    threads: 1
+    resources:
+        mem_mb=resource("qc", "mem_mb") or 8000
+    shell:
+        """
+        set -euo pipefail
+        mkdir -p "$(dirname {output.json})"
+        {params.python} {params.script} --genome {input.genome} \
+            --assembly-stats {params.assembly_stats} --out {output.json}
         """
 
 
@@ -188,6 +226,7 @@ rule qc_report:
         script=os.path.join(BASE_DIR, "workflow", "scripts", "aggregate_report.py"),
         validation=os.path.join(RESULTS_DIR, "{species}", "validated", "validation.json"),
         genome_size=os.path.join(RESULTS_DIR, "{species}", "qc", "genome_size.json"),
+        assembly_stats=os.path.join(RESULTS_DIR, "{species}", "qc", "assembly_stats.json"),
         lai=os.path.join(RESULTS_DIR, "{species}", "qc", "lai.json"),
         busco=os.path.join(RESULTS_DIR, "{species}", "qc", "busco.json"),
         te=os.path.join(RESULTS_DIR, "{species}", "qc", "te.json"),
@@ -199,7 +238,7 @@ rule qc_report:
         set -euo pipefail
         {params.python} {params.script} --mode qc --species {wildcards.species} \
             --metadata {input.metadata} --validation {params.validation} \
-            --genome-size {params.genome_size} --lai {params.lai} \
-            --busco {params.busco} --te {params.te} \
+            --genome-size {params.genome_size} --assembly-stats {params.assembly_stats} \
+            --lai {params.lai} --busco {params.busco} --te {params.te} \
             --out-yaml {output.yaml} --out-json {output.json}
         """

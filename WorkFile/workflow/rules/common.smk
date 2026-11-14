@@ -156,6 +156,69 @@ def resource(name, key):
     return config.get("resources", {}).get(name, {}).get(key)
 
 
+# ---------------------------------------------------------------------------
+# Legacy result reuse
+# ---------------------------------------------------------------------------
+# Heavy steps (eggNOG-mapper, iTAK, ...) have already been run for most species
+# outside this workflow. Those results are kept in legacy directories and can be
+# adopted instead of recomputed. A legacy hit must satisfy both conditions:
+#   1. the file exists in the legacy directory
+#   2. the species is NOT listed in `reuse.exclude` (config.yaml)
+# When a legacy result is adopted, the corresponding run_* rule is not added to
+# the DAG at all, exactly like `qc_completed` skips expensive QC rules.
+
+_REUSE = config.get("reuse", {}) or {}
+_REUSE_EXCLUDE = {str(x) for x in (_REUSE.get("exclude") or [])}
+
+
+def legacy_dir(name):
+    """Legacy root directory for a step, or "" when reuse is not configured."""
+    return str(_REUSE.get(name, {}).get("dir", "") or "")
+
+
+def legacy_file(name, species, filename, dirnames=None):
+    """Absolute path of a legacy result file, or "" when it cannot be reused.
+
+    `dirnames` supplies candidate species directory names (tried in order), for
+    legacy layouts that suffix the species name, e.g. iTAK's `<species>.pro`.
+    """
+    root = legacy_dir(name)
+    if not root or species in _REUSE_EXCLUDE:
+        return ""
+    root = os.path.expanduser(root)
+    for dirname in (dirnames or [str(species)]):
+        path = os.path.join(root, dirname.format(species=species), filename)
+        if os.path.exists(path) and os.path.getsize(path) > 0:
+            return path
+    return ""
+
+
+def has_legacy(name, species, filename):
+    """True when the legacy result for this species exists and may be reused."""
+    return bool(legacy_file(name, species, filename))
+
+
+def legacy_flat_file(name, species, filenames):
+    """Path of a legacy result stored as flat files, not one dir per species.
+
+    `filenames` is tried in order (most trusted first), so a step that was
+    re-run with different tools can prefer one variant over another. Returns ""
+    when nothing usable is found, which disables reuse for that species.
+    """
+    root = legacy_dir(name)
+    if not root or species in _REUSE_EXCLUDE:
+        return ""
+    root = os.path.expanduser(root)
+    for name_ in filenames:
+        candidate = name_.format(species=species)
+        path = os.path.join(root, candidate)
+        # A zero-byte hit file means the legacy run produced nothing; treat it
+        # as absent so the rule runs instead of parsing an empty result.
+        if os.path.exists(path) and os.path.getsize(path) > 0:
+            return path
+    return ""
+
+
 # All species ids must be usable as path components and Snakemake wildcards.
 wildcard_constraints:
     species=r"[A-Za-z0-9_.-]+"

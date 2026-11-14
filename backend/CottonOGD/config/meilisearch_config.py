@@ -56,6 +56,16 @@ class MeilisearchConfig:
                 'TF_class', 'class_name', 'TF_name',
             ],
         },
+        'Orthologs': {
+            'label': '直系同源组',
+            'description': '基因 -> 直系同源组(OG) 成员索引（orthofinder_og_gene）',
+            'searchable_attributes': ['geneid', 'genemaster_geneid', 'og_code'],
+            'filterable_attributes': ['species', 'og_code'],
+            'default_attributes_to_retrieve': [
+                'id', 'geneid', 'genemaster_geneid', 'species', 'og_code',
+            ],
+            'default_attributes_to_highlight': ['geneid', 'genemaster_geneid', 'og_code'],
+        },
     }
 
     @classmethod
