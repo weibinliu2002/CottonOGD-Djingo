@@ -575,26 +575,138 @@ export async function getGeneGenomicDistribution(payload: {
   }
 }
 
-/** 共线性/变异查询。注意 Variation_type 首字母大写 */
-export async function getGenomeSynteny(payload: {
-  reference_genome: string
-  query_genome: string
+/** 共线性桑葚图节点：name 为展示名，genome 标记来源（source/target），chr 为原始染色体 id（如 A01，非 1/2/3） */
+export interface SyntenySankeyNode {
+  name: string
+  genome: string
+  chr: string
+}
+
+/** 共线性区块（region/gene 检索命中后填充；默认仅染色体级节点时为 []) */
+export interface SyntenyBlock {
+  [key: string]: unknown
+}
+
+/** 共线性响应（后端 jcvi 预计算管线）：
+ * - 默认（不指定 region/gene_id）：sankey 仅含染色体级节点（genome=target），不绘制 scaffold/contig，blocks 为空
+ * - 指定 region 或 gene_id：sankey.links 与 blocks 填充检索到的共线性区块 */
+export interface GenomeSyntenyResult {
+  source_id: string
+  target_id: string
   chromosome: string
-  Variation_type: string
-}): Promise<ApiResult<Record<string, unknown>>> {
+  block_count: number
+  gene_count: number
+  sankey: {
+    nodes: SyntenySankeyNode[]
+    links: { source: string; target: string; value: number }[]
+  }
+  figures: {
+    dotplot: string
+    depth: string
+    karyotype: string
+  }
+  blocks: SyntenyBlock[]
+}
+
+/** 共线性查询参数（后端 genome_synteny 接口）
+ * - source/target：基因组名称（来自 synteny_pairs 返回的可用组合）
+ * - chromosome（可选）：源基因组染色体名，如 Ghir_A01；**省略该参数时后端返回全基因组染色体级桑葚图**
+ *   （实测：只传 source/target → 53 节点 / 472 连线；传 chromosome=Ghir_A01 → 该染色体 18 节点 / 17 连线）
+ * - region（可选）：区间检索，格式如 Ghir_A01:1-1000000（后端当前仅按染色体过滤，亚区间暂不下钻）
+ * - gene_id（可选）：基因检索（注意：genome_synteny 会忽略该参数，基因级检索请走 getMicrosynteny） */
+export async function getGenomeSynteny(payload: {
+  source: string
+  target: string
+  chromosome?: string
+  region?: string
+  gene_id?: string
+}): Promise<ApiResult<GenomeSyntenyResult>> {
   try {
     const formData = new FormData()
-    formData.append('reference_genome', payload.reference_genome)
-    formData.append('query_genome', payload.query_genome)
-    formData.append('chromosome', payload.chromosome)
-    formData.append('Variation_type', payload.Variation_type)
+    formData.append('source', payload.source)
+    formData.append('target', payload.target)
+    const chr = payload.chromosome?.trim()
+    if (chr) formData.append('chromosome', chr)
+    if (payload.region?.trim()) formData.append('region', payload.region.trim())
+    if (payload.gene_id?.trim()) formData.append('gene_id', payload.gene_id.trim())
 
     const res = await httpInstance.post('/CottonOGD_api/genome_synteny/', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
-    return ok((res ?? {}) as unknown as unknown as Record<string, unknown>)
+    return ok((res ?? {}) as unknown as GenomeSyntenyResult)
   } catch (e) {
-    return fail<Record<string, unknown>>(toMessage(e), {})
+    return fail<GenomeSyntenyResult>(toMessage(e), {} as GenomeSyntenyResult)
+  }
+}
+
+/** 微共线性轨道上的单个基因（source/target 两条轨道各一组） */
+export interface SyntenyTrackGene {
+  id: string
+  chr: string
+  start: number
+  end: number
+  strand: string
+  block_id: string
+  order: number
+  query: boolean
+}
+
+/** 微共线性响应（后端 microsynteny 接口，基因级）：
+ * - query_genes：命中的查询基因
+ * - graph.nodes/links：查询基因所在的共线性图（节点可能只含查询基因，部分连线端点需从 tracks 补齐）
+ * - tracks.source/target：源/目标基因组上该共线性区块的完整基因列表，按 (block_id, order) 一一对应 */
+export interface MicrosyntenyResult {
+  source_id: string
+  target_id: string
+  query_genes: string[]
+  graph: {
+    nodes: {
+      id: string
+      genome: string
+      chr: string
+      start?: number
+      end?: number
+      strand?: string
+      block_id?: string
+      order?: number
+    }[]
+    links: { source: string; target: string; block_id?: string }[]
+  }
+  tracks: {
+    source: SyntenyTrackGene[]
+    target: SyntenyTrackGene[]
+  }
+}
+
+/** 基因级微共线性检索（后端 microsynteny 接口）
+ * - source/target：基因组名称
+ * - gene_ids：基因 ID，多个用逗号分隔（如 Ghir_A01G000100） */
+export async function getMicrosynteny(payload: {
+  source: string
+  target: string
+  gene_ids: string
+}): Promise<ApiResult<MicrosyntenyResult>> {
+  try {
+    const formData = new FormData()
+    formData.append('source', payload.source)
+    formData.append('target', payload.target)
+    formData.append('gene_ids', payload.gene_ids)
+    const res = await httpInstance.post('/CottonOGD_api/microsynteny/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    return ok((res ?? {}) as unknown as MicrosyntenyResult)
+  } catch (e) {
+    return fail<MicrosyntenyResult>(toMessage(e), {} as MicrosyntenyResult)
+  }
+}
+
+/** 可用共线性基因组对（后端 synteny_pairs 接口，无需鉴权） */
+export async function getSyntenyPairs(): Promise<ApiResult<{ pairs: { source: string; target: string }[] }>> {
+  try {
+    const res = await httpInstance.get('/CottonOGD_api/synteny_pairs/')
+    return ok((res ?? { pairs: [] }) as unknown as { pairs: { source: string; target: string }[] })
+  } catch (e) {
+    return fail<{ pairs: { source: string; target: string }[] }>(toMessage(e), { pairs: [] })
   }
 }
 
