@@ -734,7 +734,7 @@ footer {
 /* 响应式容器 */
 .container {
   width: 100%;
-  max-width: 1400px;
+  max-width: 100vw;
   padding-right: 15px;
   padding-left: 15px;
   margin-right: auto;

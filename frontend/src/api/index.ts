@@ -556,11 +556,29 @@ export async function searchByGenomeLocation(payload: {
   }
 }
 
+/** 基因位置行（后端 gene_genomic_distribution 返回）。
+ * 注意：后端当前 gene_id 字段为空字符串，只有 chr/start/end/strand 可用（见 docs/API.md）。 */
+export interface GeneLocationRow {
+  gene_id: string
+  chr: string
+  start: number
+  end: number
+  strand: string
+}
+
+/** 基因染色体分布查询结果。注意后端读的参数名是 genome（不是 genome_id） */
+export interface GeneGenomicDistributionResult {
+  genome: string
+  chr_distribution: Record<string, number>
+  gene_locations: GeneLocationRow[]
+  total_genes: number
+}
+
 /** 基因染色体分布查询。注意后端读的参数名是 genome（不是 genome_id） */
 export async function getGeneGenomicDistribution(payload: {
   genome: string
   gene_ids?: string
-}): Promise<ApiResult<Record<string, unknown>>> {
+}): Promise<ApiResult<GeneGenomicDistributionResult>> {
   try {
     const formData = new FormData()
     formData.append('genome', payload.genome)
@@ -569,9 +587,14 @@ export async function getGeneGenomicDistribution(payload: {
     const res = await httpInstance.post('/CottonOGD_api/gene_genomic_distribution/', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
-    return ok((res ?? {}) as unknown as unknown as Record<string, unknown>)
+    return ok((res ?? {}) as unknown as GeneGenomicDistributionResult)
   } catch (e) {
-    return fail<Record<string, unknown>>(toMessage(e), {})
+    return fail<GeneGenomicDistributionResult>(toMessage(e), {
+      genome: payload.genome,
+      chr_distribution: {},
+      gene_locations: [],
+      total_genes: 0,
+    })
   }
 }
 
@@ -582,9 +605,12 @@ export interface SyntenySankeyNode {
   chr: string
 }
 
-/** 共线性区块（region/gene 检索命中后填充；默认仅染色体级节点时为 []) */
+/** 共线性区块（include_blocks=true 时返回） */
 export interface SyntenyBlock {
-  [key: string]: unknown
+  block_id: string
+  score: number | null
+  source_genes: string[]
+  target_genes: string[]
 }
 
 /** 共线性响应（后端 jcvi 预计算管线）：
@@ -620,6 +646,8 @@ export async function getGenomeSynteny(payload: {
   chromosome?: string
   region?: string
   gene_id?: string
+  /** true 时返回完整 blocks（约 4.3 MiB），仅在需要区块级基因/区间时开启 */
+  includeBlocks?: boolean
 }): Promise<ApiResult<GenomeSyntenyResult>> {
   try {
     const formData = new FormData()
@@ -629,6 +657,7 @@ export async function getGenomeSynteny(payload: {
     if (chr) formData.append('chromosome', chr)
     if (payload.region?.trim()) formData.append('region', payload.region.trim())
     if (payload.gene_id?.trim()) formData.append('gene_id', payload.gene_id.trim())
+    if (payload.includeBlocks) formData.append('include_blocks', 'true')
 
     const res = await httpInstance.post('/CottonOGD_api/genome_synteny/', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
@@ -697,6 +726,41 @@ export async function getMicrosynteny(payload: {
     return ok((res ?? {}) as unknown as MicrosyntenyResult)
   } catch (e) {
     return fail<MicrosyntenyResult>(toMessage(e), {} as MicrosyntenyResult)
+  }
+}
+
+/** 染色体实际长度（bp）：key 为 FASTA 序列 id（如 Ghir_A01 / A01），来自 JBrowse ReferenceSequenceTrack 的 .fai 索引 */
+export type ChromosomeLengths = Record<string, number>
+
+/** 读取基因组的 JBrowse FASTA 索引（.fai），得到每条染色体/序列的实际长度（bp）。
+ * .fai 每行格式：name\tlength\toffset\tlineBases\tlineWidth；路径由 JBrowse config 的 faiLocation 给出。
+ * 供共线性桑葚图按染色体真实长度设置节点高度（而非仅按共线 block 数）。
+ * 失败时返回空对象，调用方降级为后端 block 数（不阻断图表）。 */
+export async function getChromosomeLengths(genome: string): Promise<ChromosomeLengths> {
+  if (!genome) return {}
+  try {
+    // 先读 JBrowse config 里的 faiLocation（以服务器实际配置为准），失败再按约定路径回退
+    let uri = `/jbrowse/large/${encodeURIComponent(genome)}/${encodeURIComponent(genome)}.genome.fa.gz.fai`
+    try {
+      const cfg = await httpInstance.get(`/assets/jbrowse/data/${encodeURIComponent(genome)}/config.json`)
+      const adapter = cfg?.assemblies?.[0]?.sequence?.adapter
+      const fai = adapter?.faiLocation
+      const faiUri = fai?.uri ?? fai
+      if (typeof faiUri === 'string' && faiUri) uri = faiUri
+    } catch {
+      /* 配置读取失败：沿用约定路径 */
+    }
+    const res = await httpInstance.get(uri, { responseType: 'text' })
+    const text = typeof res === 'string' ? res : String((res as { data?: unknown })?.data ?? '')
+    const lengths: ChromosomeLengths = {}
+    text.split(/\r?\n/).forEach((line) => {
+      const [name, len] = line.split('\t')
+      const bp = Number(len)
+      if (name && Number.isFinite(bp) && bp > 0) lengths[name] = bp
+    })
+    return lengths
+  } catch {
+    return {}
   }
 }
 
