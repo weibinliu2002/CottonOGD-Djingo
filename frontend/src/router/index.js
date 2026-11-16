@@ -1,5 +1,6 @@
 import { path } from 'd3'
 import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '@/stores/modules/auth'
 
 // Common views
 const HomeView = () => import('@/views/common/HomeView.vue')
@@ -14,7 +15,6 @@ const GenomeDetailView = () => import('@/views/genome/GenomeDetailView.vue')
 const JbrowseView = () => import('@/views/genome/JbrowseView.vue')
 const IGVView = () => import('@/views/genome/IGVView.vue')
 const GenomeSyntenyView = () => import('@/views/genome/GenomeSyntenyView.vue')
-const GenomeSyntenyResultView = () => import('@/views/genome/GenomeSyntenyResultView.vue')
 const GeneLocationView = () => import('@/views/genome/GeneLocationView.vue')
 const OrthologView = () => import('@/views/ortholog/OrthologView.vue')
 const OrthogroupDetailView = () => import('@/views/ortholog/OrthogroupDetailView.vue')
@@ -84,6 +84,43 @@ const routes = [
     component: HomeView
   },
   {
+    path: '/login',
+    name: 'login',
+    component: () => import('@/views/account/LoginView.vue')
+  },
+  {
+    path: '/register',
+    name: 'register',
+    component: () => import('@/views/account/RegisterView.vue')
+  },
+  {
+    path: '/forgot-password',
+    name: 'forgotPassword',
+    component: () => import('@/views/account/ForgotPasswordView.vue')
+  },
+  {
+    path: '/reset-password',
+    name: 'resetPassword',
+    component: () => import('@/views/account/ResetPasswordView.vue')
+  },
+  {
+    path: '/reset-password/:uidb36-:key',
+    name: 'resetPasswordWithKey',
+    component: () => import('@/views/account/ResetPasswordView.vue')
+  },
+  {
+    path: '/account',
+    name: 'account',
+    component: () => import('@/views/account/UserDashboardView.vue'),
+    meta: { requiresAuth: true, accountRole: 'user' }
+  },
+  {
+    path: '/account/admin',
+    name: 'adminAccount',
+    component: () => import('@/views/account/AdminDashboardView.vue'),
+    meta: { requiresAuth: true, accountRole: 'admin' }
+  },
+  {
     path: '/about',
     name: 'about',
     component: AboutView
@@ -141,11 +178,6 @@ const routes = [
     path: '/genome/synteny',
     name: 'GenomeSynteny',
     component: GenomeSyntenyView
-  },
-  {
-    path: '/genome/synteny/results',
-    name: 'GenomeSyntenyResults',
-    component: GenomeSyntenyResultView
   },
   {
     path: '/genome/gene-location',
@@ -481,6 +513,28 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL || '/'),
   routes
+})
+
+router.beforeEach(async (to) => {
+  if (!to.meta.requiresAuth) return true
+
+  const authStore = useAuthStore()
+  if (!authStore.isAuthenticated) {
+    return { name: 'login', query: { redirect: to.fullPath } }
+  }
+
+  if (!authStore.user) {
+    try {
+      await authStore.loadCurrentUser()
+    } catch {
+      return { name: 'login', query: { session: 'check-failed' } }
+    }
+  }
+
+  const isAdminRoute = to.meta.accountRole === 'admin'
+  if (isAdminRoute && !authStore.isAdmin) return { name: 'account' }
+  if (!isAdminRoute && authStore.isAdmin) return { name: 'adminAccount' }
+  return true
 })
 
 export default router

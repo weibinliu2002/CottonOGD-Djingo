@@ -110,10 +110,25 @@
         <span class="legend-hint">{{ t('synteny_chromosome_level_hint') }}</span>
       </div>
 
-      <div ref="chrSankeyRef" class="sankey-container chromosome-sankey"></div>
-
+      <div v-if="ribbonLoading" class="ribbon-loading">
+        <el-skeleton :rows="4" animated />
+      </div>
+      <SyntenyRibbonChart
+        v-else-if="ribbonLayout"
+        :layout="ribbonLayout"
+        :selected-block="selectedBlock"
+        @block-click="onRibbonBlockClick"
+      />
       <el-alert
-        v-if="chromosomeView.links.length === 0"
+        v-else-if="ribbonError"
+        :title="ribbonError"
+        type="warning"
+        :closable="false"
+        show-icon
+        class="mt-3"
+      />
+      <el-alert
+        v-else
         :title="t('synteny_no_blocks')"
         type="info"
         :closable="false"
@@ -290,16 +305,33 @@
         />
       </template>
 
-      <div v-else ref="sankeyRef" class="sankey-container"></div>
-
-      <el-alert
-        v-if="mode !== 'gene' && view.links.length === 0"
-        :title="t('synteny_no_blocks')"
-        type="info"
-        :closable="false"
-        show-icon
-        class="mt-3"
-      />
+      <template v-else>
+        <div v-if="ribbonLoading" class="ribbon-loading">
+          <el-skeleton :rows="4" animated />
+        </div>
+        <SyntenyRibbonChart
+          v-else-if="ribbonLayout"
+          :layout="ribbonLayout"
+          :selected-block="selectedBlock"
+          @block-click="onRibbonBlockClick"
+        />
+        <el-alert
+          v-else-if="ribbonError"
+          :title="ribbonError"
+          type="warning"
+          :closable="false"
+          show-icon
+          class="mt-3"
+        />
+        <el-alert
+          v-else
+          :title="t('synteny_no_blocks')"
+          type="info"
+          :closable="false"
+          show-icon
+          class="mt-3"
+        />
+      </template>
     </el-card>
 
     <!-- JBrowse：单窗口展示这对基因组的 pairwise 共线性（复用站点现有 JBrowse2 静态页，
@@ -334,6 +366,8 @@
         size="small"
         max-height="440"
         style="width: 100%"
+        highlight-current-row
+        @row-click="onBlockRowClick"
       >
         <el-table-column type="expand">
           <template #default="{ row }">
@@ -412,11 +446,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, shallowRef, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { Search } from '@element-plus/icons-vue'
-import echarts from '@/utils/echarts'
 import httpInstance from '@/utils/http.js'
 import { useNavigationStore } from '@/stores/modules/navigation'
 import {
@@ -433,9 +466,20 @@ import {
   type SyntenyTrackGene,
 } from '@/api'
 import { createDefaultLocus, useGenomeSelector } from '@/composables/features/useGenomeBrowser'
+import SyntenyRibbonChart from '@/components/genome/SyntenyRibbonChart.vue'
+import {
+  loadSyntenyPairData,
+  toRibbonBlocks,
+  buildRibbonLayout,
+  compareChr,
+  SYNTENY_FILE_UNAVAILABLE,
+  type RibbonBlock,
+  type RibbonLayout,
+} from '@/components/genome/syntenyRibbon'
 
 const { t } = useI18n()
 const router = useRouter()
+const route = useRoute()
 const navigationStore = useNavigationStore()
 const { genomeOptions, genomeLoading, ensureGenomesLoaded, pickDefaultGenome } =
   useGenomeSelector()
@@ -459,7 +503,6 @@ interface SankeyLink {
   sourceRegion?: string
   targetRegion?: string
   blockId?: string
-  /** 由 buildSeries 写入，供 ECharts 事件回查原始连线 */
   linkIndex?: number
 }
 
@@ -477,15 +520,6 @@ interface SankeyView {
   chromosome?: string
   /** 基因模式下额外高亮的染色体对（来自查询基因所在共线性块） */
   highlightPair?: { source?: string; target?: string }
-}
-
-/** 连线对应的区间详情（悬停 tooltip / 点击跳转共用） */
-interface LinkIntervalDetail {
-  sourceRegion: string
-  targetRegion: string
-  sourceGenes: { gene_id: string; block_id: string }[]
-  targetGenes: { gene_id: string; block_id: string }[]
-  blockCount: number
 }
 
 /** 基因级微共线性图：两条基因组轨道上的基因盒 + 共线基因连线 */
@@ -543,9 +577,6 @@ interface SyntenyBlockRow {
   targetGenes: string[]
 }
 
-/** 区间结果页跨页面数据（写入 sessionStorage，避免把上千个基因 id 塞进 URL） */
-const INTERVAL_STORAGE_KEY = 'cottonogd_synteny_interval_result'
-
 const sourceGenome = ref('')
 const targetGenome = ref('')
 const mode = ref<SearchMode>('all')
@@ -572,35 +603,11 @@ const regionJbrowseTarget = ref('')
 const PREFERRED_SOURCE = 'G.hirsutumAD1_TM-1_HAU_v1.1'
 const PREFERRED_TARGET = 'G.hirsutumAD1_TM-1_ZJU_v1.1T2T'
 
-const sankeyRef = shallowRef<HTMLElement | null>(null)
-const chrSankeyRef = shallowRef<HTMLElement | null>(null)
-let chart: ReturnType<typeof echarts.init> | null = null
-let chrChart: ReturnType<typeof echarts.init> | null = null
-
 const hasFigures = computed(
   () =>
     !!view.value?.figures &&
     (!!view.value.figures.dotplot || !!view.value.figures.depth || !!view.value.figures.karyotype),
 )
-
-// source 用项目主色；target 改用经 dataviz 校验的对比色（#3a6ea5/#7297bd 明度差过近、不达正常视觉区分阈值）
-const COLORS = { source: '#3a6ea5', target: '#eb6834' }
-
-/** 染色体自然顺序键：A01…A13、D01…D13 等按“前缀+数字”排序，保证按基因组位置从左到右绘制 */
-function chrSortKey(name: string): [string, number, string] {
-  const m = name.match(/([A-Za-z]+)[_-]?0*(\d+)$/)
-  return m ? [m[1].toUpperCase(), Number(m[2]), name] : ['ZZZ', 0, name]
-}
-
-/** 按基因组来源 + 染色体位置排序节点，使 sankey 的水平排布等于基因组顺序 */
-function sortNodes(nodes: SankeyNode[]): SankeyNode[] {
-  return [...nodes].sort((a, b) => {
-    if (a.genome !== b.genome) return a.genome === 'source' ? -1 : 1
-    const ka = chrSortKey(a.name)
-    const kb = chrSortKey(b.name)
-    return ka[0].localeCompare(kb[0]) || ka[1] - kb[1] || ka[2].localeCompare(kb[2])
-  })
-}
 
 /** .fai 索引按基因组缓存，避免重复检索 */
 const chrLengthCache = new Map<string, ChromosomeLengths>()
@@ -610,12 +617,6 @@ async function lengthsFor(genome: string): Promise<ChromosomeLengths> {
   const fetched = await getChromosomeLengths(genome)
   if (Object.keys(fetched).length) chrLengthCache.set(genome, fetched)
   return fetched
-}
-
-/** 把 bp 格式化为友好的 Mb / kb 文案 */
-function formatLength(bp?: number): string {
-  if (!bp || bp <= 0) return ''
-  return bp >= 1e6 ? `${(bp / 1e6).toFixed(1)} Mb` : `${(bp / 1e3).toFixed(1)} kb`
 }
 
 /** 微共线性坐标轴刻度：1 位小数足够读数，不堆叠过多标签 */
@@ -924,68 +925,139 @@ const jbrowsePairwiseUrl = computed(
     ),
 )
 
-/** 构建桑葚图数据。
- * ECharts 的节点高度 = max(入边和, 出边和, 节点 value)，且全图共用一个缩放系数。
- * 有了染色体实际长度（bp）后，把节点 value 设为真实长度；但 sankey 要求流量守恒，
- * 若把连线也换算成完整 bp，则目标染色体的入边之和不一定等于其自身真实长度，
- * 节点条高会被入边撑大，反而偏离真实长度。因此把连线总量压缩到源染色体长度的
- * LINK_BAND_RATIO 倍：节点 value（真实长度）始终大于入边/出边和，节点高度严格
- * 正比于染色体实际长度；连线仍按共线基因数分配带宽，等比缩小后依然可见。
- * 没有长度数据时退回原行为（节点高度由共线基因数决定），不阻断绘图。 */
-const LINK_BAND_RATIO = 0.4
+/** ---------- 染色体级 ribbon 图（真实 bp 坐标带状图） ----------
+ * 替代原 ECharts sankey：sankey 的连线由流量布局决定，全部从染色体条一端堆叠，
+ * 不反映共线块在染色体上的真实位置。ribbon 左右两列竖直染色体条（高度 ∝ 真实 bp），
+ * 每条色带两端取该块在两侧染色体上的真实坐标（数据来自 anchors.simple + .bed）。 */
+const ribbonLayout = ref<RibbonLayout | null>(null)
+const ribbonLoading = ref(false)
+const ribbonError = ref('')
+/** 当前 ribbon 展示的块列表（供色带点击与统计使用） */
+const ribbonBlocks = ref<RibbonBlock[]>([])
+/** 表格选中行对应的色带；设置后图中只突出该块（区域/基因检索时使用） */
+const selectedBlock = ref<RibbonBlock | null>(null)
+/** 从桑葚图点进来的块端点（s1,s2,t1,t2）：
+ * 一个基因可能落在多个嵌套块里（microsynteny 返回的是包含该基因的最大块），
+ * 只有记住用户实际点击的块，跳转后才能只高亮那一个块。 */
+const ribbonBlockHint = ref<string[] | null>(null)
 
-function buildSeries(view: SankeyView) {
-  // 只有所有节点都有真实长度才启用 bp 量纲，避免个别节点缺长度时与其他节点量纲混乱
-  const hasLengths = view.nodes.length > 0 && view.nodes.every((n) => !!n.lengthBp && n.lengthBp > 0)
-  const outGenes = new Map<string, number>()
-  if (hasLengths) {
-    view.links.forEach((l) => outGenes.set(l.source, (outGenes.get(l.source) ?? 0) + l.value))
-  }
-  const lengthOf = new Map(view.nodes.map((n) => [n.name, n.lengthBp]))
-
-  // 竖向布局下：source 条在上、target 条在下，标签分别朝上/朝下放置；过小的 scaffold 不显示标签。
-  // 标签横排默认只写染色体 id（长度、基因数只在 tooltip 中显示）；相邻染色体间隔小于文字宽度，
-  // 用两级距离交错排布，避免横向文字互相重叠。
-  const showLabels = view.nodes.length <= 60
-  const nodes = view.nodes.map((n, index) => ({
-    name: n.name,
-    value: hasLengths ? (n.lengthBp ?? 1) : undefined,
-    itemStyle: { color: n.genome === 'target' ? COLORS.target : COLORS.source },
-    lengthBp: n.lengthBp,
-    geneCount: outGenes.get(n.name),
-    label: {
-      show: showLabels && (n.lengthBp ?? 0) >= 5e6,
-      position: n.genome === 'target' ? 'bottom' : 'top',
-      distance: index % 2 === 0 ? 5 : 18,
-      fontSize: 10,
-    },
-  }))
-  const links = view.links.map((l, index) => {
-    const length = lengthOf.get(l.source)
-    const genes = outGenes.get(l.source) ?? 0
-    // 关键：源染色体所有连线的带宽之和 = LINK_BAND_RATIO × 真实长度 < 节点 value，
-    // 保证节点高度只由真实长度决定；每条线内部仍按共线基因数占比分配。
-    const bpValue = length && genes ? (l.value / genes) * length * LINK_BAND_RATIO : l.value
-    const highlighted =
-      !!view.highlightPair &&
-      l.source === view.highlightPair.source &&
-      l.target === view.highlightPair.target
-    return {
-      source: l.source,
-      target: l.target,
-      value: hasLengths ? bpValue : l.value,
-      geneCount: l.value,
-      sourceRegion: l.sourceRegion,
-      targetRegion: l.targetRegion,
-      blockId: l.blockId,
-      linkIndex: index,
-      // 基因模式的染色体图中，与查询基因所在区块对应的染色体对加粗、其余淡化
-      lineStyle: view.highlightPair
-        ? { opacity: highlighted ? 0.9 : 0.18, width: highlighted ? 2.5 : 1 }
-        : undefined,
+/** 按当前视图构建 ribbon 布局。opts.sourceChrs 给定时只绘制这些源染色体（基因/区间模式），
+ * 目标染色体取命中块实际涉及的目标染色体；
+ * isHighlight 命中的色带加粗高亮；pickHighlights 可在拿到完整块列表后按块内容挑出高亮块
+ * （microsynteny 的块首尾基因与 anchors 块端点对不上时，单块谓词无法判断，必须看全集）。 */
+async function buildRibbonFor(
+  opts: {
+    sourceChrs?: string[]
+    isHighlight?: (b: RibbonBlock) => boolean
+    pickHighlights?: (blocks: RibbonBlock[]) => RibbonBlock[]
+  } = {},
+): Promise<void> {
+  ribbonLayout.value = null
+  ribbonError.value = ''
+  const source = view.value?.sourceId || sourceGenome.value
+  const target = view.value?.targetId || targetGenome.value
+  if (!source || !target) return
+  ribbonLoading.value = true
+  try {
+    const [pairData, srcLengths, tgtLengths] = await Promise.all([
+      loadSyntenyPairData(source, target),
+      lengthsFor(source),
+      lengthsFor(target),
+    ])
+    let blocks = toRibbonBlocks(pairData.anchors, pairData.sourceBed, pairData.targetBed)
+    if (opts.sourceChrs?.length) {
+      const want = new Set(opts.sourceChrs)
+      blocks = blocks.filter((b) => want.has(b.sourceChr))
     }
+    ribbonBlocks.value = blocks
+    // 某些检索（基因级）需要看完整块列表才能确定命中块，这里先算出高亮集合，
+    // 再用对象同一性判断；集合为空时退回 isHighlight 谓词。
+    const picked = opts.pickHighlights ? new Set(opts.pickHighlights(blocks)) : null
+    const single = (opts.sourceChrs?.length ?? 0) === 1
+    const usedSourceChrs = opts.sourceChrs?.length
+      ? opts.sourceChrs
+      : [...new Set(blocks.map((b) => b.sourceChr))].sort(compareChr)
+    const usedTargetChrs = [...new Set(blocks.map((b) => b.targetChr))].sort(compareChr)
+    if (!usedSourceChrs.length || !usedTargetChrs.length) {
+      ribbonLayout.value = null
+      return
+    }
+    ribbonLayout.value = buildRibbonLayout({
+      blocks,
+      sourceChrs: usedSourceChrs,
+      targetChrs: usedTargetChrs,
+      sourceLengths: srcLengths,
+      targetLengths: tgtLengths,
+      width: 1200,
+      height: single ? 340 : 400,
+      showTicks: single,
+      clickHint: t('synteny_click_interval_hint'),
+      isHighlight: picked ? (b) => picked.has(b) : opts.isHighlight,
+    })
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    ribbonError.value = msg.includes(SYNTENY_FILE_UNAVAILABLE)
+      ? t('synteny_ribbon_source_unavailable')
+      : msg
+    ribbonLayout.value = null
+  } finally {
+    ribbonLoading.value = false
+  }
+}
+
+/** 表格行与 ribbon 块匹配：优先用块首尾基因，找不到时退回双侧区间重叠最大者 */
+function findRibbonBlockForRow(row: SyntenyBlockRow): RibbonBlock | null {
+  const blocks = ribbonBlocks.value
+  if (!blocks.length) return null
+  const sGenes = new Set(row.sourceGenes)
+  const tGenes = new Set(row.targetGenes)
+  const byGene = blocks.find(
+    (b) =>
+      (sGenes.has(b.s1) || sGenes.has(b.s2)) &&
+      (tGenes.has(b.t1) || tGenes.has(b.t2)),
+  )
+  if (byGene) return byGene
+  const s = parseRegionRange(row.sourceRegion)
+  const t = parseRegionRange(row.targetRegion)
+  if (!s || !t) return null
+  let best: RibbonBlock | null = null
+  let bestScore = 0
+  for (const b of blocks) {
+    const so = Math.min(b.sourceEnd, s.end) - Math.max(b.sourceStart, s.start)
+    const to = Math.min(b.targetEnd, t.end) - Math.max(b.targetStart, t.start)
+    if (so <= 0 || to <= 0) continue
+    const score = Math.min(
+      so / Math.max(1, b.sourceEnd - b.sourceStart),
+      to / Math.max(1, b.targetEnd - b.targetStart),
+    )
+    if (score > bestScore) {
+      bestScore = score
+      best = b
+    }
+  }
+  return best
+}
+
+/** 表格行点击：选中对应色带并压暗其余块；再次点击同一行取消选中 */
+function onBlockRowClick(row: SyntenyBlockRow): void {
+  const hit = findRibbonBlockForRow(row)
+  if (!hit) {
+    selectedBlock.value = null
+    return
+  }
+  selectedBlock.value = selectedBlock.value === hit ? null : hit
+}
+
+/** ribbon 色带点击：直接取该块两侧的首基因，跳回本页按基因级模式检索该共线性块 */
+async function onRibbonBlockClick(block: RibbonBlock): Promise<void> {
+  await navigateToSyntenyResult({
+    sourceId: view.value?.sourceId || sourceGenome.value,
+    targetId: view.value?.targetId || targetGenome.value,
+    sourceGenes: [{ gene_id: block.s1 }],
+    targetGenes: [{ gene_id: block.t1 }],
+    // 记录被点击块的四端点，跳转后据此只高亮这个块（基因查询本身可能命中更大的嵌套块）
+    ribbonBlock: block,
   })
-  return { nodes, links, hasLengths }
 }
 
 /** 从基因 id 解析所属染色体：
@@ -998,40 +1070,6 @@ function chromosomeOfGene(id: string, isSource: boolean): string {
   }
   const m = id.match(/([A-Za-z]\d+)G\d+/)
   return m ? m[1] : ''
-}
-
-/** blocks 按“源染色体→目标染色体”分组，供线条 hover / click 查区间与基因 */
-const blockGroupCache = new Map<string, Promise<Map<string, SyntenyBlock[]>>>()
-
-function groupBlocksByChromosome(blocks: SyntenyBlock[]): Map<string, SyntenyBlock[]> {
-  const groups = new Map<string, SyntenyBlock[]>()
-  for (const block of blocks) {
-    const sourceChr = chromosomeOfGene(block.source_genes?.[0] ?? '', true)
-    const targetChr = chromosomeOfGene(block.target_genes?.[0] ?? '', false)
-    if (!sourceChr || !targetChr) continue
-    const key = `${sourceChr}\u0000${targetChr}`
-    const list = groups.get(key)
-    if (list) list.push(block)
-    else groups.set(key, [block])
-  }
-  return groups
-}
-
-/** 懒加载完整 blocks：默认不请求 4.3 MiB 的 blocks，只在首次悬停/点击线条时拉取并缓存 */
-async function blockGroupsFor(source: string, target: string): Promise<Map<string, SyntenyBlock[]>> {
-  const cacheKey = `${source}\u0000${target}`
-  const cached = blockGroupCache.get(cacheKey)
-  if (cached) return cached
-  const task = (async () => {
-    try {
-      const res = await getGenomeSynteny({ source, target, includeBlocks: true })
-      return res.code === 0 ? groupBlocksByChromosome(res.data.blocks ?? []) : new Map<string, SyntenyBlock[]>()
-    } catch {
-      return new Map<string, SyntenyBlock[]>()
-    }
-  })()
-  blockGroupCache.set(cacheKey, task)
-  return task
 }
 
 /** 批量读取基因坐标；单次最多 5000 个（实测后端 5000 个约 2.4s） */
@@ -1057,11 +1095,6 @@ function spanFor(chr: string, locations: GeneLocationRow[]): string {
   const ends = hits.map((loc) => Number(loc.end)).filter(Number.isFinite)
   if (!starts.length || !ends.length) return ''
   return `${chr}:${Math.min(...starts)}-${Math.max(...ends)}`
-}
-
-function fallbackSpan(view: SankeyView, name: string): string {
-  const node = view.nodes.find((n) => n.name === name)
-  return node?.lengthBp ? `${name}:1-${node.lengthBp}` : name
 }
 
 /** 解析 "chr:start-end"（允许千分位逗号） */
@@ -1116,80 +1149,6 @@ async function mapWithLimit<T, R>(
   return results
 }
 
-/** 从染色体级响应中找到与目标染色体匹配的节点名（后端节点名可能是 GhChrA01，而基因 id 只含 A01） */
-function sankeyNodeName(d: GenomeSyntenyResult, genome: 'source' | 'target', chr: string): string {
-  const hit = (d.sankey?.nodes ?? []).find(
-    (n) =>
-      n.genome === genome &&
-      (n.name === chr || n.chr === chr || n.name.endsWith(chr)),
-  )
-  return hit?.name || chr
-}
-
-/** 把区间命中的区块聚合成平台视图：只保留命中的 source/target 染色体与对应连线 */
-function buildRegionView(
-  d: GenomeSyntenyResult,
-  rows: SyntenyBlockRow[],
-  source: string,
-  target: string,
-  sourceChr: string,
-  scope: string,
-  srcLengths: ChromosomeLengths,
-  tgtLengths: ChromosomeLengths,
-): SankeyView {
-  const sourceName = sankeyNodeName(d, 'source', sourceChr)
-  const targetNames = new Map<string, string>()
-  const linkMap = new Map<string, SankeyLink>()
-  rows.forEach((row) => {
-    const targetName = sankeyNodeName(d, 'target', row.targetChr)
-    targetNames.set(row.targetChr, targetName)
-    const existing = linkMap.get(targetName)
-    const weight = Math.max(1, Math.min(row.sourceGenes.length, row.targetGenes.length))
-    if (existing) {
-      existing.value += weight
-      existing.geneCount = (existing.geneCount ?? 0) + weight
-    } else {
-      linkMap.set(targetName, {
-        source: sourceName,
-        target: targetName,
-        value: weight,
-        geneCount: weight,
-      })
-    }
-  })
-  const nodes: SankeyNode[] = []
-  const sourceNode = (d.sankey?.nodes ?? []).find((n) => n.name === sourceName)
-  nodes.push({
-    name: sourceName,
-    genome: 'source',
-    lengthBp: srcLengths[sourceNode?.chr || sourceChr],
-  })
-  linkMap.forEach((_link, targetName) => {
-    const targetNode = (d.sankey?.nodes ?? []).find((n) => n.name === targetName)
-    nodes.push({
-      name: targetName,
-      genome: 'target',
-      lengthBp: tgtLengths[targetNode?.chr || targetName],
-    })
-  })
-  const links = [...linkMap.values()]
-  return {
-    sourceId: d.source_id || source,
-    targetId: d.target_id || target,
-    scope,
-    blockCount: rows.length,
-    geneCount: rows.reduce(
-      (sum, row) => sum + Math.min(row.sourceGenes.length, row.targetGenes.length),
-      0,
-    ),
-    nodes,
-    links,
-    figures: d.figures,
-    chromosome: sourceChr,
-    highlightPair: links.length === 1 ? { source: sourceName, target: links[0].target } : undefined,
-  }
-}
-
 /** 区间检索时按区块首尾基因坐标过滤：只保留与输入区间相交的共线性块 */
 async function filterBlocksByRegion(
   blocks: SyntenyBlock[],
@@ -1231,170 +1190,29 @@ async function filterBlocksByRegion(
   return rows
 }
 
-/** 单条连线的区间详情缓存：hover 与 click 共用，避免重复请求 */
-const linkDetailCache = new Map<string, LinkIntervalDetail>()
-const linkDetailPending = new Map<string, Promise<LinkIntervalDetail>>()
-
-function linkDetailKey(view: SankeyView, link: SankeyLink): string {
-  return `${view.sourceId}\u0000${view.targetId}\u0000${link.source}\u0000${link.target}`
-}
-
-async function ensureLinkDetail(view: SankeyView, link: SankeyLink): Promise<LinkIntervalDetail> {
-  // 基因级连线在 buildGeneSankey 里已带坐标，直接组装
-  if (link.sourceRegion && link.targetRegion) {
-    return {
-      sourceRegion: link.sourceRegion,
-      targetRegion: link.targetRegion,
-      sourceGenes: [{ gene_id: link.source, block_id: link.blockId ?? '' }],
-      targetGenes: [{ gene_id: link.target, block_id: link.blockId ?? '' }],
-      blockCount: link.blockId ? 1 : 0,
-    }
-  }
-
-  const key = linkDetailKey(view, link)
-  const cached = linkDetailCache.get(key)
-  if (cached) return cached
-  const pending = linkDetailPending.get(key)
-  if (pending) return pending
-
-  const task = (async () => {
-    try {
-      const groups = await blockGroupsFor(view.sourceId, view.targetId)
-      const blocks = groups.get(`${link.source}\u0000${link.target}`) ?? []
-      const sourceGenes = [...new Set(blocks.flatMap((b) => b.source_genes ?? []))]
-      const targetGenes = [...new Set(blocks.flatMap((b) => b.target_genes ?? []))]
-      const [sourceLocations, targetLocations] = await Promise.all([
-        loadGeneLocations(view.sourceId, sourceGenes),
-        loadGeneLocations(view.targetId, targetGenes),
-      ])
-      const sourceBlockOf = new Map<string, string>()
-      const targetBlockOf = new Map<string, string>()
-      blocks.forEach((b) => {
-        b.source_genes?.forEach((g) => sourceBlockOf.set(g, b.block_id))
-        b.target_genes?.forEach((g) => targetBlockOf.set(g, b.block_id))
-      })
-      const detail: LinkIntervalDetail = {
-        sourceRegion: spanFor(link.source, sourceLocations) || fallbackSpan(view, link.source),
-        targetRegion: spanFor(link.target, targetLocations) || fallbackSpan(view, link.target),
-        sourceGenes: sourceGenes.map((g) => ({ gene_id: g, block_id: sourceBlockOf.get(g) ?? '' })),
-        targetGenes: targetGenes.map((g) => ({ gene_id: g, block_id: targetBlockOf.get(g) ?? '' })),
-        blockCount: blocks.length,
-      }
-      linkDetailCache.set(key, detail)
-      return detail
-    } catch {
-      const detail: LinkIntervalDetail = {
-        sourceRegion: fallbackSpan(view, link.source),
-        targetRegion: fallbackSpan(view, link.target),
-        sourceGenes: [],
-        targetGenes: [],
-        blockCount: 0,
-      }
-      linkDetailCache.set(key, detail)
-      return detail
-    } finally {
-      linkDetailPending.delete(key)
-    }
-  })()
-  linkDetailPending.set(key, task)
-  return task
-}
-
-function edgeTooltip(view: SankeyView, p: { dataType?: string; data?: unknown; name?: string }): string {
-  const d = (p.data ?? {}) as SankeyLink & Record<string, unknown>
-  if (p.dataType === 'edge') {
-    const detail = linkDetailCache.get(linkDetailKey(view, d))
-    const sourceRegion = detail?.sourceRegion || d.sourceRegion || fallbackSpan(view, d.source)
-    const targetRegion = detail?.targetRegion || d.targetRegion || fallbackSpan(view, d.target)
-    return [
-      `${d.source} → ${d.target}`,
-      `${t('gene_count')}: ${d.geneCount ?? d.value}`,
-      `${t('synteny_reference_interval')}: ${sourceRegion}`,
-      `${t('synteny_query_interval')}: ${targetRegion}`,
-      `<span style="color:#909399">${t('synteny_click_interval_hint')}</span>`,
-    ].join('<br/>')
-  }
-  const lines = [`<b>${p.name ?? d.name}</b>`]
-  const length = formatLength(d.lengthBp as number | undefined)
-  if (length) lines.push(`${t('synteny_chr_length')}: ${length}`)
-  if (d.geneCount) lines.push(`${t('gene_count')}: ${d.geneCount}`)
-  return lines.join('<br/>')
-}
-
-/** 悬停线条：后端的染色体级 link 不含区间，先异步取该染色体对的 blocks + 基因坐标并缓存 */
-function prefetchLinkDetail(view: SankeyView, p: { dataType?: string; data?: unknown }): void {
-  if (p.dataType !== 'edge') return
-  const link = (p.data ?? {}) as SankeyLink
-  if (link.sourceRegion || linkDetailCache.has(linkDetailKey(view, link))) return
-  void ensureLinkDetail(view, link)
-}
-
-/** 点击共线性线条：把该连线两侧的区间与基因写入 sessionStorage，
- * 并直接跳到共线性结果页自动加载（不再进结构变异页、不要求用户手动搜索）。 */
+/** 点击桑葚图连线：跳回共线性页面，以基因级模式初始化，展示该条连线的共线性块与块内基因级微共线性，
+ * 满足"点击跳转展示一条共线性详细情况"的需求；基因块点击已单独跳基因详情页。 */
 async function navigateToSyntenyResult(args: {
   sourceId: string
   targetId: string
-  sourceRegion: string
-  targetRegion: string
-  sourceGenes: { gene_id: string; block_id: string }[]
-  targetGenes: { gene_id: string; block_id: string }[]
-  sourceChr: string
-  targetChr: string
-}): Promise<void> {
-  const payload = {
-    sourceId: args.sourceId,
-    targetId: args.targetId,
-    intervals: [
-      {
-        role: 'source',
-        genome: args.sourceId,
-        chr: args.sourceChr,
-        region: args.sourceRegion,
-        genes: args.sourceGenes,
-      },
-      {
-        role: 'target',
-        genome: args.targetId,
-        chr: args.targetChr,
-        region: args.targetRegion,
-        genes: args.targetGenes,
-      },
-    ],
+  sourceGenes?: { gene_id: string }[]
+  targetGenes?: { gene_id: string }[]
+  /** 被点击的共线块；带上四端点，跳转后精确高亮该块 */
+  ribbonBlock?: RibbonBlock
+}): Promise<string | undefined> {
+  const queryGene = args.sourceGenes?.[0]?.gene_id ?? args.targetGenes?.[0]?.gene_id
+  const query: Record<string, string> = {
+    from_synteny: '1',
+    mode: 'gene',
+    gene_id: queryGene ?? '',
+    source: args.sourceId,
+    target: args.targetId,
   }
-  try {
-    sessionStorage.setItem(INTERVAL_STORAGE_KEY, JSON.stringify(payload))
-  } catch {
-    /* 隐私模式等场景写入失败时仍继续跳转，结果页会按 query 参数展示区间 */
+  if (args.ribbonBlock) {
+    const b = args.ribbonBlock
+    query.ribbon_block = [b.s1, b.s2, b.t1, b.t2].join(',')
   }
-  await router.push({
-    path: '/genome/synteny/results',
-    query: {
-      from_synteny: '1',
-      source: args.sourceId,
-      target: args.targetId,
-      source_region: args.sourceRegion,
-      target_region: args.targetRegion,
-      source_chr: args.sourceChr,
-      target_chr: args.targetChr,
-    },
-  })
-}
-
-/** 点击染色体级桑基图线条：跳转到共线性结果页 */
-async function openIntervalResult(view: SankeyView, p: { dataType?: string; data?: unknown }): Promise<void> {
-  if (p.dataType !== 'edge') return
-  const link = (p.data ?? {}) as SankeyLink
-  const detail = await ensureLinkDetail(view, link)
-  await navigateToSyntenyResult({
-    sourceId: view.sourceId,
-    targetId: view.targetId,
-    sourceRegion: detail.sourceRegion,
-    targetRegion: detail.targetRegion,
-    sourceGenes: detail.sourceGenes,
-    targetGenes: detail.targetGenes,
-    sourceChr: link.source,
-    targetChr: link.target,
-  })
+  await router.push({ path: '/genome/synteny', query })
 }
 
 /** 点击基因块：复用 geneid_summary + 全局基因检索结果页打开基因详情 */
@@ -1439,93 +1257,11 @@ async function openGeneDetail(box: MicroGeneBox): Promise<void> {
   }
 }
 
-/** 统一的桑葚图绘制入口：主图与基因模式下的染色体图共用同一套样式与交互 */
-function paintSankey(
-  container: HTMLElement | null,
-  instance: ReturnType<typeof echarts.init> | null,
-  model: SankeyView | null,
-): ReturnType<typeof echarts.init> | null {
-  if (!container) {
-    instance?.dispose()
-    return null
-  }
-  // 基因/全基因组模式切换会重建 DOM；旧实例绑定在已移除的节点上，必须重新初始化
-  let chartInstance = instance
-  if (chartInstance && (chartInstance.isDisposed() || chartInstance.getDom() !== container)) {
-    chartInstance.dispose()
-    chartInstance = null
-  }
-  if (!chartInstance) {
-    chartInstance = echarts.getInstanceByDom(container) ?? echarts.init(container)
-  }
-  if (!model || model.nodes.length === 0) {
-    chartInstance.clear()
-    return chartInstance
-  }
-  // 染色体级视图按基因组位置排序（source 在前、target 在后），使水平排布即基因组顺序；
-  // 基因级视图保持轨道原顺序（基因 id 尾部数字无染色体位置含义）
-  const orderedNodes = model.nodes.every((n) => !!n.lengthBp) ? sortNodes(model.nodes) : model.nodes
-  const { nodes, links } = buildSeries({ ...model, nodes: orderedNodes })
-  const showLabel = nodes.length <= 300
-
-  chartInstance.setOption(
-    {
-      tooltip: {
-        trigger: 'item',
-        triggerOn: 'mousemove',
-        formatter: (p: { dataType?: string; data?: unknown; name?: string }) => edgeTooltip(model, p),
-      },
-      series: [
-        {
-          type: 'sankey',
-          // 旋转 90°：source/target 变为上下两行水平条，条块沿 x 方向排布
-          orient: 'vertical',
-          nodeAlign: 'left',
-          nodeWidth: 16, // 固定条块厚度
-          nodeGap: 2,
-          layoutIterations: 0, // 保持按基因组位置排序，不让布局算法重排
-          top: 96,
-          bottom: 96,
-          left: 12,
-          right: 12,
-          emphasis: { focus: 'adjacency' },
-          data: nodes,
-          links,
-          // 标签横排，只显示染色体 / 基因原始 id；长度与基因数只在 tooltip 中显示
-          label: {
-            show: showLabel,
-            fontSize: 10,
-          },
-          lineStyle: { color: 'gradient', opacity: 0.5, curveness: 0.5 },
-        },
-      ],
-    },
-    true,
-  )
-
-  chartInstance.off('mouseover')
-  chartInstance.off('click')
-  chartInstance.on('mouseover', (p: { dataType?: string; data?: unknown }) => prefetchLinkDetail(model, p))
-  chartInstance.on('click', (p: { dataType?: string; data?: unknown }) => {
-    void openIntervalResult(model, p)
-  })
-  chartInstance.resize()
-  return chartInstance
-}
-
-function renderSankey() {
-  chart = paintSankey(sankeyRef.value, chart, view.value)
-}
-
-function renderChromosomeSankey() {
-  chrChart = paintSankey(chrSankeyRef.value, chrChart, chromosomeView.value)
-}
-
-watch(view, () => nextTick(renderSankey))
-watch(chromosomeView, () => nextTick(renderChromosomeSankey))
 watch(
   () => [mode.value, region.value, geneId.value],
   async () => {
+    // 路由 query 同步会同时改动这些字段，此时由 handleSubmit 统一请求，避免重复拉取
+    if (routeQuerySyncing) return
     if (mode.value === 'all') {
       regionBlockRows.value = []
       return
@@ -1572,122 +1308,88 @@ watch(
   },
 )
 
-function onResize() {
-  chart?.resize()
-  chrChart?.resize()
+/** 从路由 query 恢复检索条件：ribbon 色带点击跳回本页时会带 mode/gene_id/source/target，
+ * ribbon_block 记录被点击块的四个端点（s1,s2,t1,t2），用于精确高亮该块 */
+function applyRouteQuery(q: Record<string, unknown>): boolean {
+  const qMode = q.mode === 'all' || q.mode === 'region' || q.mode === 'gene' ? q.mode : null
+  const qGene = typeof q.gene_id === 'string' ? q.gene_id.trim() : ''
+  const qRegion = typeof q.region === 'string' ? q.region.trim() : ''
+  const qSource = typeof q.source === 'string' ? q.source.trim() : ''
+  const qTarget = typeof q.target === 'string' ? q.target.trim() : ''
+  const qBlock = typeof q.ribbon_block === 'string' ? q.ribbon_block.trim() : ''
+  const hasQuery = !!(qMode || qGene || qRegion || qSource || qTarget || qBlock)
+  if (!hasQuery) return false
+  if (qSource) sourceGenome.value = qSource
+  if (qTarget) targetGenome.value = qTarget
+  if (qMode) mode.value = qMode
+  if (qGene) geneId.value = qGene
+  if (qRegion) region.value = qRegion
+  const ends = qBlock ? qBlock.split(',').map((s) => s.trim()) : []
+  ribbonBlockHint.value = ends.length === 4 && ends.every(Boolean) ? ends : null
+  return true
 }
 
+let initialized = false
+/** 路由 query 同步期间抑制“模式/区域输入”watch 的重复请求 */
+let routeQuerySyncing = false
+
 onMounted(async () => {
-  window.addEventListener('resize', onResize)
   await ensureGenomesLoaded()
 
-  // 默认优先使用 TM-1 HAU v1.1 ↔ TM-1 ZJU v1.1T2T；若后端未提供该组合再退回第一个可用组合。
-  // 初始化完成后立即请求全基因组桑葚图，进入页面即展示。
-  try {
-    const pairs = await getSyntenyPairs()
-    const allPairs = pairs.data?.pairs ?? []
-    const preferred = allPairs.find(
-      (p) => p.source === PREFERRED_SOURCE && p.target === PREFERRED_TARGET,
-    )
-    const p = preferred ?? allPairs[0]
-    if (p) {
-      sourceGenome.value = p.source
-      targetGenome.value = p.target
+  const hasRouteQuery = applyRouteQuery(route.query as Record<string, unknown>)
+  if (!sourceGenome.value || !targetGenome.value) {
+    // 默认优先使用 TM-1 HAU v1.1 ↔ TM-1 ZJU v1.1T2T；若后端未提供该组合再退回第一个可用组合。
+    try {
+      const pairs = await getSyntenyPairs()
+      const allPairs = pairs.data?.pairs ?? []
+      const preferred = allPairs.find(
+        (p) => p.source === PREFERRED_SOURCE && p.target === PREFERRED_TARGET,
+      )
+      const p = preferred ?? allPairs[0]
+      if (p) {
+        if (!sourceGenome.value) sourceGenome.value = p.source
+        if (!targetGenome.value) targetGenome.value = p.target
+      }
+    } catch {
+      /* 接口失败时使用前端默认值 */
     }
-  } catch {
-    /* 接口失败时使用前端默认值 */
+    if (!sourceGenome.value) {
+      const def = pickDefaultGenome()
+      if (def) sourceGenome.value = def
+    }
+    if (!targetGenome.value) targetGenome.value = PREFERRED_TARGET
   }
-  if (!sourceGenome.value) {
-    const def = pickDefaultGenome()
-    if (def) sourceGenome.value = def
+  if (sourceGenome.value && targetGenome.value && (hasRouteQuery || !view.value)) {
+    routeQuerySyncing = true
+    try {
+      await handleSubmit()
+    } finally {
+      routeQuerySyncing = false
+    }
   }
-  if (!targetGenome.value) targetGenome.value = PREFERRED_TARGET
-  if (sourceGenome.value && targetGenome.value && !view.value) {
-    await handleSubmit()
-  }
+  initialized = true
 })
 
-onBeforeUnmount(() => {
-  window.removeEventListener('resize', onResize)
-  chart?.dispose()
-  chrChart?.dispose()
-  chart = null
-  chrChart = null
-})
+/** 从其他页面（如区块表格）跳回 /genome/synteny 时组件会复用，需要监听 query 变化重新检索 */
+watch(
+  () => route.query,
+  async (q) => {
+    if (!initialized || route.path !== '/genome/synteny') return
+    routeQuerySyncing = true
+    try {
+      if (!applyRouteQuery(q as Record<string, unknown>)) return
+      if (sourceGenome.value && targetGenome.value) await handleSubmit()
+    } finally {
+      routeQuerySyncing = false
+    }
+  },
+)
 
 const fillExample = () => {
   sourceGenome.value = 'G.hirsutumAD1_TM-1_HAU_v1.1'
   targetGenome.value = 'G.hirsutumAD1_TM-1_ZJU_v1.1T2T'
   region.value = 'Ghir_A01:1-1000000'
   geneId.value = 'Ghir_A01G000100'
-}
-
-/** 由 microsynteny 的 tracks 构建基因级桑葚图：
- * 源/目标两条轨道按 (block_id, order) 一一配对，形成跨基因组连线；节点为原始基因 id。
- * 每条连线保留两端基因的坐标与区块 id，便于 hover 显示位置和点击后展示区间基因。
- * tracks 为空时回退到 graph，并补齐所有连线端点，避免 ECharts 因缺失节点报错。 */
-function buildGeneSankey(data: MicrosyntenyResult): { nodes: SankeyNode[]; links: SankeyLink[] } {
-  const nodes: SankeyNode[] = []
-  const seen = new Set<string>()
-  const add = (id: string, genome: string) => {
-    if (!id || seen.has(id)) return
-    seen.add(id)
-    nodes.push({ name: id, genome })
-  }
-
-  const src: SyntenyTrackGene[] = data.tracks?.source ?? []
-  const tgt: SyntenyTrackGene[] = data.tracks?.target ?? []
-  src.forEach((g) => add(g.id, 'source'))
-  tgt.forEach((g) => add(g.id, 'target'))
-
-  const regionOf = (g: SyntenyTrackGene) => `${g.chr}:${g.start}-${g.end}`
-  const links: SankeyLink[] = []
-  if (src.length && tgt.length) {
-    const keyOf = (g: SyntenyTrackGene) => `${g.block_id}#${g.order}`
-    const tMap = new Map<string, SyntenyTrackGene>()
-    tgt.forEach((g) => {
-      if (!tMap.has(keyOf(g))) tMap.set(keyOf(g), g)
-    })
-    src.forEach((s) => {
-      const hit = tMap.get(keyOf(s))
-      if (hit) {
-        links.push({
-          source: s.id,
-          target: hit.id,
-          value: 1,
-          sourceRegion: regionOf(s),
-          targetRegion: regionOf(hit),
-          blockId: s.block_id,
-        })
-      }
-    })
-  }
-
-  if (nodes.length === 0) {
-    const genomeOf = (id: string) =>
-      tgt.some((g) => g.id === id) ? 'target' : src.some((g) => g.id === id) ? 'source' : id.startsWith('Ghir_') ? 'source' : 'target'
-    ;(data.graph?.nodes ?? []).forEach((n) => add(n.id, n.genome))
-    ;(data.graph?.links ?? []).forEach((l) => {
-      add(l.source, genomeOf(l.source))
-      add(l.target, genomeOf(l.target))
-      const sourceNode = (data.graph?.nodes ?? []).find((n) => n.id === l.source)
-      const targetNode = (data.graph?.nodes ?? []).find((n) => n.id === l.target)
-      links.push({
-        source: l.source,
-        target: l.target,
-        value: 1,
-        sourceRegion: sourceNode?.chr
-          ? `${sourceNode.chr}:${sourceNode.start ?? 0}-${sourceNode.end ?? 0}`
-          : undefined,
-        targetRegion: targetNode?.chr
-          ? `${targetNode.chr}:${targetNode.start ?? 0}-${targetNode.end ?? 0}`
-          : undefined,
-        blockId: l.block_id,
-      })
-    })
-  }
-
-  return { nodes, links }
 }
 
 /** 由某个基因的轨道记录确定其所在共线性区块对应的染色体对。
@@ -1711,6 +1413,94 @@ function chromosomePairOfQuery(data: MicrosyntenyResult): { source: string; targ
     target: isSource ? pair.chr : query.chr,
     blockId: query.block_id,
   }
+}
+
+/** microsynteny 按 block_id 归并后的块端点信息：
+ * 两侧各取 order 最小/最大的基因作为首尾基因，并记录两侧坐标跨度。
+ * 同一 JCVI 块在 anchors.simple 中正是以这四个首尾基因表示的，可用端点做精确匹配。 */
+interface MicroRibbonSpec {
+  sourceChr: string
+  targetChr: string
+  srcFirst: string
+  srcLast: string
+  tgtFirst: string
+  tgtLast: string
+  srcMin: number
+  srcMax: number
+  tgtMin: number
+  tgtMax: number
+}
+
+function microRibbonSpecs(data: MicrosyntenyResult): MicroRibbonSpec[] {
+  const src = data.tracks?.source ?? []
+  const tgt = data.tracks?.target ?? []
+  const blockIds = new Set<string>()
+  for (const g of [...src, ...tgt]) if (g.block_id) blockIds.add(g.block_id)
+  const specs: MicroRibbonSpec[] = []
+  for (const id of blockIds) {
+    const s = src.filter((g) => g.block_id === id).sort((a, b) => a.order - b.order)
+    const t = tgt.filter((g) => g.block_id === id).sort((a, b) => a.order - b.order)
+    if (!s.length || !t.length) continue
+    const sFirst = s[0]
+    const sLast = s[s.length - 1]
+    const tFirst = t[0]
+    const tLast = t[t.length - 1]
+    if (!sFirst.chr || !tFirst.chr) continue
+    specs.push({
+      sourceChr: sFirst.chr,
+      targetChr: tFirst.chr,
+      srcFirst: sFirst.id,
+      srcLast: sLast.id,
+      tgtFirst: tFirst.id,
+      tgtLast: tLast.id,
+      srcMin: Math.min(...s.map((g) => g.start)),
+      srcMax: Math.max(...s.map((g) => g.end)),
+      tgtMin: Math.min(...t.map((g) => g.start)),
+      tgtMax: Math.max(...t.map((g) => g.end)),
+    })
+  }
+  return specs
+}
+
+/** 从 anchors 块中挑出 microsynteny 命中的块。
+ * 不能用“端点基因是否出现在轨道里”判断：轨道包含整块的 1000+ 个基因，
+ * 同一染色体上大量嵌套/相邻块的端点都在里面，会把几乎全部块误判为命中。
+ * 这里按“首尾基因四端点与 anchors 块完全一致（方向不限）”精确匹配；
+ * 轨道被截断导致端点对不上时，退回四端点坐标距离最小的块（距离 0 即精确块）。 */
+function pickMicroRibbonBlocks(blocks: RibbonBlock[], specs: MicroRibbonSpec[]): RibbonBlock[] {
+  const picked = new Set<RibbonBlock>()
+  for (const spec of specs) {
+    const candidates = blocks.filter(
+      (b) => b.sourceChr === spec.sourceChr && b.targetChr === spec.targetChr,
+    )
+    if (!candidates.length) continue
+    const sameSet = (a: string, b: string, x: string, y: string) =>
+      (a === x && b === y) || (a === y && b === x)
+    const exact = candidates.filter(
+      (b) =>
+        sameSet(b.s1, b.s2, spec.srcFirst, spec.srcLast) &&
+        sameSet(b.t1, b.t2, spec.tgtFirst, spec.tgtLast),
+    )
+    if (exact.length) {
+      for (const b of exact) picked.add(b)
+      continue
+    }
+    let best: RibbonBlock | null = null
+    let bestDist = Number.POSITIVE_INFINITY
+    for (const b of candidates) {
+      const dist =
+        Math.abs(b.sourceStart - spec.srcMin) +
+        Math.abs(b.sourceEnd - spec.srcMax) +
+        Math.abs(b.targetStart - spec.tgtMin) +
+        Math.abs(b.targetEnd - spec.tgtMax)
+      if (dist < bestDist) {
+        bestDist = dist
+        best = b
+      }
+    }
+    if (best) picked.add(best)
+  }
+  return [...picked]
 }
 
 /** 读取查询基因所在染色体对的染色体级共线性图：长度来自 .fai，目标染色体对高亮 */
@@ -1745,14 +1535,12 @@ async function loadChromosomeView(
   }
 }
 
-/** 把染色体级响应归一化为视图（全基因组 / 按区域共用） */
+/** 把染色体级响应归一化为视图统计信息（全基因组 / 按区域共用，图形由 ribbon 负责） */
 function buildChromosomeView(
   d: GenomeSyntenyResult,
   source: string,
   target: string,
   scope: string,
-  srcLengths: ChromosomeLengths,
-  tgtLengths: ChromosomeLengths,
 ): SankeyView {
   return {
     sourceId: d.source_id || source,
@@ -1760,19 +1548,8 @@ function buildChromosomeView(
     scope,
     blockCount: d.block_count,
     geneCount: d.gene_count,
-    nodes: (d.sankey?.nodes ?? []).map((n) => {
-      const lengths = n.genome === 'target' ? tgtLengths : srcLengths
-      return {
-        name: n.name,
-        genome: n.genome,
-        lengthBp: lengths[n.chr || n.name],
-      }
-    }),
-    links: (d.sankey?.links ?? []).map((l) => ({
-      source: l.source,
-      target: l.target,
-      value: l.value ?? 1,
-    })),
+    nodes: [],
+    links: [],
     figures: d.figures,
   }
 }
@@ -1801,6 +1578,12 @@ const handleSubmit = async () => {
   view.value = null
   chromosomeView.value = null
   microData.value = null
+  ribbonLayout.value = null
+  ribbonError.value = ''
+  ribbonBlocks.value = []
+  selectedBlock.value = null
+  // 用户在本页手动检索时，之前从桑葚图带进来的块提示已失效；路由同步的检索要保留
+  if (!routeQuerySyncing) ribbonBlockHint.value = null
   try {
     if (mode.value === 'gene') {
       const res = await getMicrosynteny({
@@ -1830,7 +1613,7 @@ const handleSubmit = async () => {
         links: [],
       }
 
-      // 同时绘制染色体级视图：只取查询基因所在共线性块涉及的染色体对
+      // 同时绘制染色体级 ribbon：只画查询基因所在共线性块涉及的那对染色体并高亮
       const pair = chromosomePairOfQuery(d)
       if (pair) {
         try {
@@ -1845,6 +1628,28 @@ const handleSubmit = async () => {
           chromosomeError.value =
             e instanceof Error ? e.message : t('synteny_chromosome_level_unavailable')
         }
+        // 只高亮本次检索命中的块：基因级结果通常是一个块（少数情况含相邻块），
+        // 用 microsynteny 块的四个首尾基因去精确匹配 anchors 块端点，不能按“基因是否在轨道里”判断，
+        // 因为轨道含整块 1000+ 个基因，会把同染色体上大量相邻/嵌套块一起点亮（用户实测全部高亮）。
+        await buildRibbonFor({
+          sourceChrs: [pair.source],
+          pickHighlights: (blocks) => {
+            // 优先使用“从桑葚图点进来的那个块”：同一基因可能同时属于嵌套的小块和覆盖整段的大块，
+            // 按基因查询只能得到大块，会和用户点的块不一致
+            const hint = ribbonBlockHint.value
+            if (hint) {
+              const sameSet = (a: string, b: string, x: string, y: string) =>
+                (a === x && b === y) || (a === y && b === x)
+              const clicked = blocks.filter(
+                (b) =>
+                  sameSet(b.s1, b.s2, hint[0], hint[1]) &&
+                  sameSet(b.t1, b.t2, hint[2], hint[3]),
+              )
+              if (clicked.length) return clicked
+            }
+            return pickMicroRibbonBlocks(blocks, microRibbonSpecs(d))
+          },
+        })
       } else {
         chromosomeError.value = t('synteny_chromosome_level_unavailable')
       }
@@ -1853,6 +1658,7 @@ const handleSubmit = async () => {
       // 既用于桑葚图（染色体级 sankey），又用于块/基因表格，避免表格单独再拉一次 4.3 MiB 全量 blocks 导致明显延迟。
       // 全基因组时后端返回全部染色体级桑葚图；按区域时从 “染色体:起-止” 中解析染色体名后过滤（后端当前按染色体聚合）
       const chromosome = mode.value === 'region' ? region.value.trim().split(':')[0].trim() : undefined
+      const range = mode.value === 'region' ? parseRegionRange(region.value) : null
       const res = await getGenomeSynteny({
         source: sourceGenome.value,
         target: targetGenome.value,
@@ -1864,25 +1670,16 @@ const handleSubmit = async () => {
         return
       }
       const d = res.data
-      // 先构建桑葚图（只依赖 sankey，不含 blocks），让图立即呈现；
-      // 再并行做块/基因表格筛选（复用同一响应里的 blocks，避免二次拉取大体积数据），避免表格比图晚出现很久。
-      const [srcLengths, tgtLengths] = await Promise.all([
-        lengthsFor(sourceGenome.value),
-        lengthsFor(targetGenome.value),
-      ])
       view.value = buildChromosomeView(
         d,
         sourceGenome.value,
         targetGenome.value,
         mode.value === 'all' ? t('synteny_scope_all') : d.chromosome,
-        srcLengths,
-        tgtLengths,
       )
       // 按区域筛选块/基因表格：复用同一响应里的 blocks，避免二次拉取大体积数据
       if (mode.value === 'region') {
         regionBlockLoading.value = true
         try {
-          const range = parseRegionRange(region.value)
           regionBlockRows.value =
             range && d.blocks
               ? await filterBlocksByRegion(d.blocks, sourceGenome.value, targetGenome.value, range)
@@ -1891,10 +1688,16 @@ const handleSubmit = async () => {
           regionBlockLoading.value = false
         }
       }
+      // ribbon：全基因组画全部染色体；按区域只画该源染色体并高亮落在区间内的块
+      await buildRibbonFor({
+        sourceChrs: chromosome ? [chromosome] : undefined,
+        isHighlight: range
+          ? (b) =>
+              b.sourceChr === range.chr &&
+              rangesOverlap({ chr: b.sourceChr, start: b.sourceStart, end: b.sourceEnd }, range)
+          : undefined,
+      })
     }
-    await nextTick()
-    renderSankey()
-    renderChromosomeSankey()
   } finally {
     loading.value = false
   }
@@ -1949,9 +1752,8 @@ const handleSubmit = async () => {
 .legend-dot.source { background: #3a6ea5; }
 .legend-dot.target { background: #eb6834; }
 
-.sankey-container {
-  width: 100%;
-  height: 560px;
+.ribbon-loading {
+  padding: 8px 0;
 }
 
 .figure-img {
