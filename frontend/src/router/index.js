@@ -14,6 +14,7 @@ const GenomeDetailView = () => import('@/views/genome/GenomeDetailView.vue')
 const JbrowseView = () => import('@/views/genome/JbrowseView.vue')
 const IGVView = () => import('@/views/genome/IGVView.vue')
 const GenomeSyntenyView = () => import('@/views/genome/GenomeSyntenyView.vue')
+const GenomeSyntenyResultView = () => import('@/views/genome/GenomeSyntenyResultView.vue')
 const GeneLocationView = () => import('@/views/genome/GeneLocationView.vue')
 const OrthologView = () => import('@/views/ortholog/OrthologView.vue')
 const OrthogroupDetailView = () => import('@/views/ortholog/OrthogroupDetailView.vue')
@@ -140,6 +141,11 @@ const routes = [
     path: '/genome/synteny',
     name: 'GenomeSynteny',
     component: GenomeSyntenyView
+  },
+  {
+    path: '/genome/synteny/results',
+    name: 'GenomeSyntenyResults',
+    component: GenomeSyntenyResultView
   },
   {
     path: '/genome/gene-location',

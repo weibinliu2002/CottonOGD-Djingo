@@ -553,6 +553,7 @@
     "success": "Success",
     "support_txt_or_csv_file": "support .txt or .csv file",
     "synteny_results": "Synteny Results",
+    "synteny_results_no_data": "No synteny interval data was saved by clicking a line",
     "table_export_empty": "No data to export",
     "table_export_success": "Export started",
     "table_keyword_placeholder": "Keyword filter",

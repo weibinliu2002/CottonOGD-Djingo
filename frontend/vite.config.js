@@ -81,6 +81,12 @@ export default defineConfig(({ mode }) => {
         secure: false,
         cookieDomainRewrite: 'localhost'
       },
+      '^/synteny': {
+        target: DJANGO_TARGET,
+        changeOrigin: true,
+        secure: false,
+        cookieDomainRewrite: 'localhost'
+      },
       '^/assets/jbrowse': {
         target: DJANGO_TARGET,
         changeOrigin: true,

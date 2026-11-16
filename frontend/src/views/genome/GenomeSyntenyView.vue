@@ -231,15 +231,7 @@
                 :stroke="box.query ? '#1f2d3d' : 'none'"
                 :stroke-width="box.query ? 2 : 0"
               />
-              <text
-                :x="box.x + box.width / 2"
-                :y="box.y - 8"
-                class="gene-label"
-                :class="{ query: box.query }"
-                text-anchor="middle"
-              >
-                {{ box.gene.id }}
-              </text>
+              <!-- 基因 ID 只在鼠标悬停（SVG title tooltip）显示，不直接展示在基因块上 -->
             </g>
 
             <!-- target 轨道基因盒：悬停显示基因 ID，点击进入基因详情 -->
@@ -266,15 +258,7 @@
                 :stroke="box.query ? '#1f2d3d' : 'none'"
                 :stroke-width="box.query ? 2 : 0"
               />
-              <text
-                :x="box.x + box.width / 2"
-                :y="box.y + 34"
-                class="gene-label"
-                :class="{ query: box.query }"
-                text-anchor="middle"
-              >
-                {{ box.gene.id }}
-              </text>
+              <!-- 基因 ID 只在鼠标悬停（SVG title tooltip）显示，不直接展示在基因块上 -->
             </g>
           </svg>
           <div class="micro-legend">
@@ -318,42 +302,26 @@
       />
     </el-card>
 
-    <!-- JBrowse：复用站点现有 JBrowse2 静态页；区间/基因检索时 loc 同步定位 -->
-    <el-card v-if="view && (jbrowseSourceUrl || jbrowseTargetUrl)" class="mb-4">
+    <!-- JBrowse：单窗口展示这对基因组的 pairwise 共线性（复用站点现有 JBrowse2 静态页，
+         通过 ?config= 加载后端提供的 pairwise config；区间/基因检索时 loc 同步定位共线性视图） -->
+    <el-card v-if="view && jbrowsePairwiseUrl" class="mb-4">
       <template #header>
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
           <span>{{ t('synteny_jbrowse_title') }}</span>
           <span class="jbrowse-hint">{{ t('synteny_jbrowse_hint') }}</span>
         </div>
       </template>
-      <el-row :gutter="16">
-        <el-col :xs="24" :md="12" class="jbrowse-col">
-          <h6>{{ t('ref') }} · {{ view.sourceId }}</h6>
-          <iframe
-            v-if="jbrowseSourceUrl"
-            :key="'jbrowse-source-' + jbrowseSourceUrl"
-            :src="jbrowseSourceUrl"
-            :title="t('synteny_jbrowse_title') + ' · ' + view.sourceId"
-            class="synteny-jbrowse-frame"
-            frameborder="0"
-          />
-        </el-col>
-        <el-col :xs="24" :md="12" class="jbrowse-col">
-          <h6>{{ t('query') }} · {{ view.targetId }}</h6>
-          <iframe
-            v-if="jbrowseTargetUrl"
-            :key="'jbrowse-target-' + jbrowseTargetUrl"
-            :src="jbrowseTargetUrl"
-            :title="t('synteny_jbrowse_title') + ' · ' + view.targetId"
-            class="synteny-jbrowse-frame"
-            frameborder="0"
-          />
-        </el-col>
-      </el-row>
+      <iframe
+        :key="jbrowsePairwiseUrl"
+        :src="jbrowsePairwiseUrl"
+        :title="t('synteny_jbrowse_title')"
+        class="synteny-jbrowse-frame"
+        frameborder="0"
+      />
     </el-card>
 
-    <!-- 区间/基因检索：共线性块与共线性基因表格 -->
-    <el-card v-if="mode !== 'all' && (blockTableRows.length || regionBlockLoading)" class="mb-4">
+    <!-- 区间/基因检索：共线性块与共线性基因表格（放在图上方，先展示表格；region/gene 模式下立即渲染，避免图先出现、表格滞后） -->
+    <el-card v-if="mode !== 'all'" class="mb-4">
       <template #header>
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
           <span>{{ t('synteny_block_gene_table') }}</span>
@@ -467,7 +435,6 @@ import {
 import { createDefaultLocus, useGenomeSelector } from '@/composables/features/useGenomeBrowser'
 
 const { t } = useI18n()
-const route = useRoute()
 const router = useRouter()
 const navigationStore = useNavigationStore()
 const { genomeOptions, genomeLoading, ensureGenomesLoaded, pickDefaultGenome } =
@@ -887,8 +854,75 @@ const jbrowseTargetLoc = computed(() => {
   if (mode.value === 'gene') return geneModeSpans.value.target
   return defaultLocs[targetGenome.value] || ''
 })
-const jbrowseSourceUrl = computed(() => jbrowseUrl(sourceGenome.value, jbrowseSourceLoc.value))
-const jbrowseTargetUrl = computed(() => jbrowseUrl(targetGenome.value, jbrowseTargetLoc.value))
+
+/** 基因组序列 adapter 字段（与站点已部署 config.json 保持一致，供 pairwise session 用） */
+function genomeSequenceAdapter(genome: string) {
+  const base = `/jbrowse/large/${encodeURIComponent(genome)}/${encodeURIComponent(genome)}`
+  return {
+    type: 'ReferenceSequenceTrack' as const,
+    trackId: `${genome}-ReferenceSequenceTrack`,
+    adapter: {
+      type: 'BgzipFastaAdapter',
+      fastaLocation: { uri: `${base}.genome.fa.gz`, locationType: 'UriLocation' },
+      faiLocation: { uri: `${base}.genome.fa.gz.fai`, locationType: 'UriLocation' },
+      gziLocation: { uri: `${base}.genome.fa.gz.gzi`, locationType: 'UriLocation' },
+    },
+  }
+}
+
+/** 构建 pairwise 共线性 JBrowse session（自包含，config=none + 内联 session + loc） */
+function buildSyntenySession(
+  source: string,
+  target: string,
+  loc: string,
+): string {
+  const sourceAd = genomeSequenceAdapter(source)
+  const targetAd = genomeSequenceAdapter(target)
+  const session = {
+    sessionAssemblies: [sourceAd, targetAd],
+    tracks: [
+      {
+        type: 'SyntenyTrack',
+        trackId: 'synteny',
+        name: 'JCVI Synteny Anchors',
+        assemblyNames: [source, target],
+        adapter: {
+          type: 'MCScanSimpleAnchorsAdapter',
+          // 后端 synteny 文件路由：/synteny/<source_id_to_target_id>/work/<filename>
+          // 文件名要求源/目标 id 中的点替换为下划线，如 G_hirsutumAD1_TM-1_ZJU_v1_1T2T.G_hirsutumAD1_N206_CRI_v1.anchors.simple
+          uri: `/synteny/${source}_to_${target}/work/${source.replace(/\./g, '_')}.${target.replace(/\./g, '_')}.anchors.simple`,
+        },
+      },
+    ],
+    views: [
+      {
+        id: 'linearSyntenyView',
+        type: 'LinearSyntenyView',
+        assembly: [source, target],
+        tracks: ['synteny'],
+        autoDiagonalize: true,
+        encoding: { color: 'query' },
+      },
+    ],
+  }
+  const query = `?config=none&session=spec-${encodeURIComponent(JSON.stringify(session))}`
+  return `/assets/jbrowse/index.html${query}${loc ? `&loc=${encodeURIComponent(loc)}` : ''}`
+}
+
+/** 共线性页 JBrowse 单窗口 pairwise 共线性入口，带当前检索的 loc 定位 */
+const jbrowsePairwiseLoc = computed(() => {
+  if (mode.value === 'region') return region.value.trim()
+  if (mode.value === 'gene') return geneModeSpans.value.source || defaultLocs[sourceGenome.value] || ''
+  return jbrowseSourceLoc.value
+})
+const jbrowsePairwiseUrl = computed(
+  () =>
+    buildSyntenySession(
+      sourceGenome.value,
+      targetGenome.value,
+      jbrowsePairwiseLoc.value,
+    ),
+)
 
 /** 构建桑葚图数据。
  * ECharts 的节点高度 = max(入边和, 出边和, 节点 value)，且全图共用一个缩放系数。
@@ -1815,20 +1849,23 @@ const handleSubmit = async () => {
         chromosomeError.value = t('synteny_chromosome_level_unavailable')
       }
     } else {
-      // 全基因组：不传 chromosome → 后端返回全部染色体级桑葚图
-      // 按区域：从 “染色体:起-止” 中解析染色体名后过滤（后端当前按染色体聚合）
+      // 全基因组 / 按区域：统一用 include_blocks=true 拉一次数据，
+      // 既用于桑葚图（染色体级 sankey），又用于块/基因表格，避免表格单独再拉一次 4.3 MiB 全量 blocks 导致明显延迟。
+      // 全基因组时后端返回全部染色体级桑葚图；按区域时从 “染色体:起-止” 中解析染色体名后过滤（后端当前按染色体聚合）
       const chromosome = mode.value === 'region' ? region.value.trim().split(':')[0].trim() : undefined
       const res = await getGenomeSynteny({
         source: sourceGenome.value,
         target: targetGenome.value,
         chromosome,
+        includeBlocks: true,
       })
       if (res.code !== 0) {
         error.value = res.message
         return
       }
       const d = res.data
-      // 读取两基因组的 .fai 索引，按染色体实际长度（bp）设置节点高度；失败则降级为共线基因数
+      // 先构建桑葚图（只依赖 sankey，不含 blocks），让图立即呈现；
+      // 再并行做块/基因表格筛选（复用同一响应里的 blocks，避免二次拉取大体积数据），避免表格比图晚出现很久。
       const [srcLengths, tgtLengths] = await Promise.all([
         lengthsFor(sourceGenome.value),
         lengthsFor(targetGenome.value),
@@ -1841,6 +1878,19 @@ const handleSubmit = async () => {
         srcLengths,
         tgtLengths,
       )
+      // 按区域筛选块/基因表格：复用同一响应里的 blocks，避免二次拉取大体积数据
+      if (mode.value === 'region') {
+        regionBlockLoading.value = true
+        try {
+          const range = parseRegionRange(region.value)
+          regionBlockRows.value =
+            range && d.blocks
+              ? await filterBlocksByRegion(d.blocks, sourceGenome.value, targetGenome.value, range)
+              : []
+        } finally {
+          regionBlockLoading.value = false
+        }
+      }
     }
     await nextTick()
     renderSankey()

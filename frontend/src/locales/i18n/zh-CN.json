@@ -541,6 +541,7 @@
     "success": "成功",
     "support_txt_or_csv_file": "支持.txt或.csv文件",
     "synteny_results": "共线性结果",
+    "synteny_results_no_data": "点击连线时未保存共线性区间数据",
     "table_export_empty": "暂无可导出的数据",
     "table_export_success": "已开始导出",
     "table_keyword_placeholder": "关键词筛选",
