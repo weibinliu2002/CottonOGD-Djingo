@@ -80,7 +80,76 @@
         />
       </el-form>
     </el-card>
-
+    <!-- 区间/基因检索：共线性块与共线性基因表格（放在图上方，先展示表格；region/gene 模式下立即渲染，避免图先出现、表格滞后） -->
+    <el-card v-if="mode !== 'all'" class="mb-4">
+      <template #header>
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+          <span>{{ t('synteny_block_gene_table') }}</span>
+          <span class="jbrowse-hint">{{ t('synteny_block_gene_hint') }}</span>
+        </div>
+      </template>
+      <el-table
+        v-loading="regionBlockLoading"
+        :data="blockTableRows"
+        size="small"
+        max-height="440"
+        style="width: 100%"
+        highlight-current-row
+        @row-click="onBlockRowClick"
+      >
+        <el-table-column type="expand">
+          <template #default="{ row }">
+            <div class="block-gene-cell">
+              <div class="block-gene-label">{{ t('ref') }} · {{ t('gene_id') }}</div>
+              <div class="block-gene-tags">
+                <el-tag
+                  v-for="gene in row.sourceGenes.slice(0, 80)"
+                  :key="'sg-' + row.key + '-' + gene"
+                  size="small"
+                  class="gene-tag"
+                >
+                  {{ gene }}
+                </el-tag>
+                <span v-if="row.sourceGenes.length > 80" class="gene-more">
+                  +{{ row.sourceGenes.length - 80 }}
+                </span>
+              </div>
+              <div class="block-gene-label mt-2">{{ t('query') }} · {{ t('gene_id') }}</div>
+              <div class="block-gene-tags">
+                <el-tag
+                  v-for="gene in row.targetGenes.slice(0, 80)"
+                  :key="'tg-' + row.key + '-' + gene"
+                  size="small"
+                  type="warning"
+                  class="gene-tag"
+                >
+                  {{ gene }}
+                </el-tag>
+                <span v-if="row.targetGenes.length > 80" class="gene-more">
+                  +{{ row.targetGenes.length - 80 }}
+                </span>
+              </div>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column prop="blockId" :label="t('synteny_block_id')" min-width="160" />
+        <el-table-column prop="sourceRegion" :label="t('synteny_reference_interval')" min-width="190" />
+        <el-table-column prop="targetRegion" :label="t('synteny_query_interval')" min-width="190" />
+        <el-table-column :label="t('synteny_gene_pair_count')" width="150">
+          <template #default="{ row }">
+            {{ row.sourceGenes.length }} / {{ row.targetGenes.length }}
+          </template>
+        </el-table-column>
+      </el-table>
+      <el-alert
+        v-if="!regionBlockLoading && blockTableRows.length === 0"
+        :title="t('synteny_no_blocks')"
+        type="info"
+        :closable="false"
+        show-icon
+        class="mt-3"
+      />
+    </el-card>
     <!-- 基因检索时额外展示染色体级视图：查询基因所在共线性块对应的染色体对 -->
     <el-card v-if="chromosomeView" class="mb-4">
       <template #header>
@@ -336,6 +405,8 @@
 
     <!-- JBrowse：单窗口展示这对基因组的 pairwise 共线性（复用站点现有 JBrowse2 静态页，
          通过 ?config= 加载后端提供的 pairwise config；区间/基因检索时 loc 同步定位共线性视图） -->
+    <!-- 暂不使用 JBrowse：先注释掉该入口，改用自绘 ribbon 图 + 块/基因表格展示共线性；
+         恢复时去掉下面这段 HTML 注释即可（相关 URL 计算逻辑仍保留在 script 中）。
     <el-card v-if="view && jbrowsePairwiseUrl" class="mb-4">
       <template #header>
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
@@ -351,77 +422,9 @@
         frameborder="0"
       />
     </el-card>
+    -->
 
-    <!-- 区间/基因检索：共线性块与共线性基因表格（放在图上方，先展示表格；region/gene 模式下立即渲染，避免图先出现、表格滞后） -->
-    <el-card v-if="mode !== 'all'" class="mb-4">
-      <template #header>
-        <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
-          <span>{{ t('synteny_block_gene_table') }}</span>
-          <span class="jbrowse-hint">{{ t('synteny_block_gene_hint') }}</span>
-        </div>
-      </template>
-      <el-table
-        v-loading="regionBlockLoading"
-        :data="blockTableRows"
-        size="small"
-        max-height="440"
-        style="width: 100%"
-        highlight-current-row
-        @row-click="onBlockRowClick"
-      >
-        <el-table-column type="expand">
-          <template #default="{ row }">
-            <div class="block-gene-cell">
-              <div class="block-gene-label">{{ t('ref') }} · {{ t('gene_id') }}</div>
-              <div class="block-gene-tags">
-                <el-tag
-                  v-for="gene in row.sourceGenes.slice(0, 80)"
-                  :key="'sg-' + row.key + '-' + gene"
-                  size="small"
-                  class="gene-tag"
-                >
-                  {{ gene }}
-                </el-tag>
-                <span v-if="row.sourceGenes.length > 80" class="gene-more">
-                  +{{ row.sourceGenes.length - 80 }}
-                </span>
-              </div>
-              <div class="block-gene-label mt-2">{{ t('query') }} · {{ t('gene_id') }}</div>
-              <div class="block-gene-tags">
-                <el-tag
-                  v-for="gene in row.targetGenes.slice(0, 80)"
-                  :key="'tg-' + row.key + '-' + gene"
-                  size="small"
-                  type="warning"
-                  class="gene-tag"
-                >
-                  {{ gene }}
-                </el-tag>
-                <span v-if="row.targetGenes.length > 80" class="gene-more">
-                  +{{ row.targetGenes.length - 80 }}
-                </span>
-              </div>
-            </div>
-          </template>
-        </el-table-column>
-        <el-table-column prop="blockId" :label="t('synteny_block_id')" min-width="160" />
-        <el-table-column prop="sourceRegion" :label="t('synteny_reference_interval')" min-width="190" />
-        <el-table-column prop="targetRegion" :label="t('synteny_query_interval')" min-width="190" />
-        <el-table-column :label="t('synteny_gene_pair_count')" width="150">
-          <template #default="{ row }">
-            {{ row.sourceGenes.length }} / {{ row.targetGenes.length }}
-          </template>
-        </el-table-column>
-      </el-table>
-      <el-alert
-        v-if="!regionBlockLoading && blockTableRows.length === 0"
-        :title="t('synteny_no_blocks')"
-        type="info"
-        :closable="false"
-        show-icon
-        class="mt-3"
-      />
-    </el-card>
+
 
     <el-card v-if="view && hasFigures" class="mb-4">
       <template #header>
@@ -473,6 +476,7 @@ import {
   buildRibbonLayout,
   compareChr,
   SYNTENY_FILE_UNAVAILABLE,
+  type BedGene,
   type RibbonBlock,
   type RibbonLayout,
 } from '@/components/genome/syntenyRibbon'
@@ -1122,31 +1126,30 @@ function spanOfGenes(genes: SyntenyTrackGene[], chr: string): string {
   return `${chr}:${Math.min(...starts)}-${Math.max(...ends)}`
 }
 
-/** 只取区块首尾两个基因查询坐标，避免对整块数百个基因发请求 */
-async function blockGeneSpan(genome: string, chr: string, genes: string[]): Promise<RegionRange | null> {
-  if (!genes.length) return null
-  const sample = genes.length > 2 ? [genes[0], genes[genes.length - 1]] : genes.slice(0, 2)
-  const locations = await loadGeneLocations(genome, sample)
-  return parseRegionRange(spanFor(chr, locations))
+/** 区块首尾基因（表格只展示区间，取两端足够） */
+function sampleBlockGenes(genes: string[]): string[] {
+  if (!genes.length) return []
+  return genes.length > 2 ? [genes[0], genes[genes.length - 1]] : genes.slice(0, 2)
 }
 
-/** 并发受限的 map，避免一次向坐标接口发几十个请求 */
-async function mapWithLimit<T, R>(
-  items: T[],
-  limit: number,
-  worker: (item: T, index: number) => Promise<R>,
-): Promise<R[]> {
-  const results = new Array<R>(items.length)
-  let cursor = 0
-  const runners = Array.from({ length: Math.min(limit, items.length) }, async () => {
-    while (true) {
-      const index = cursor++
-      if (index >= items.length) return
-      results[index] = await worker(items[index], index)
-    }
-  })
-  await Promise.all(runners)
-  return results
+/** 从已加载的 .bed 坐标表本地计算区块区间：不产生任何网络请求。
+ * ribbon 图本来就要读这三个文件（带缓存），表格复用同一份数据即可。 */
+function spanFromBed(bed: Map<string, BedGene>, chr: string, genes: string[]): RegionRange | null {
+  const hits = sampleBlockGenes(genes)
+    .map((id) => bed.get(id))
+    .filter((g): g is BedGene => !!g)
+    .filter((g) => !chr || g.chr === chr)
+  if (!hits.length) return null
+  return {
+    chr: hits[0].chr,
+    start: Math.min(...hits.map((g) => g.start)),
+    end: Math.max(...hits.map((g) => g.end)),
+  }
+}
+
+/** 坐标接口返回结果 → 区块区间（.bed 不可用时的退路） */
+function spanFromLocations(chr: string, locations: GeneLocationRow[]): RegionRange | null {
+  return parseRegionRange(spanFor(chr, locations))
 }
 
 /** 区间检索时按区块首尾基因坐标过滤：只保留与输入区间相交的共线性块 */
@@ -1156,8 +1159,44 @@ async function filterBlocksByRegion(
   target: string,
   regionRange: RegionRange,
 ): Promise<SyntenyBlockRow[]> {
-  const sourceSpans = await mapWithLimit(blocks, 6, (block) =>
-    blockGeneSpan(source, regionRange.chr, block.source_genes ?? []),
+  // 坐标优先取 ribbon 已缓存的 .bed（同一份文件，命中缓存时 0 次网络请求）；
+  // 文件路由不可用时才退回坐标接口，且按“每次请求 5000 个基因”批量查，而不是每个块发一次。
+  let srcBed: Map<string, BedGene> | null = null
+  let tgtBed: Map<string, BedGene> | null = null
+  try {
+    const pairData = await loadSyntenyPairData(source, target)
+    srcBed = pairData.sourceBed
+    tgtBed = pairData.targetBed
+  } catch {
+    /* 文件不可用：走下面的批量坐标接口 */
+  }
+
+  const batchSpans = async (
+    genome: string,
+    bed: Map<string, BedGene> | null,
+    list: SyntenyBlock[],
+    chrOf: (block: SyntenyBlock) => string,
+    genesOf: (block: SyntenyBlock) => string[],
+  ): Promise<(RegionRange | null)[]> => {
+    if (bed) return list.map((block) => spanFromBed(bed!, chrOf(block), genesOf(block)))
+    const ids = list.flatMap((block) => sampleBlockGenes(genesOf(block)))
+    const byId = new Map((await loadGeneLocations(genome, ids)).map((l) => [l.gene_id, l]))
+    return list.map((block) =>
+      spanFromLocations(
+        chrOf(block),
+        sampleBlockGenes(genesOf(block))
+          .map((id) => byId.get(id))
+          .filter((l): l is GeneLocationRow => !!l),
+      ),
+    )
+  }
+
+  const sourceSpans = await batchSpans(
+    source,
+    srcBed,
+    blocks,
+    () => regionRange.chr,
+    (block) => block.source_genes ?? [],
   )
   const candidates = blocks
     .map((block, index) => ({ block, span: sourceSpans[index] }))
@@ -1167,12 +1206,18 @@ async function filterBlocksByRegion(
       return chromosomeOfGene(block.source_genes?.[0] ?? '', true) === regionRange.chr
     })
 
-  const rows = await mapWithLimit(candidates, 4, async ({ block, span }) => {
+  const targetSpans = await batchSpans(
+    target,
+    tgtBed,
+    candidates.map((c) => c.block),
+    (block) => chromosomeOfGene(block.target_genes?.[0] ?? '', false),
+    (block) => block.target_genes ?? [],
+  )
+
+  return candidates.map(({ block, span }, index) => {
     const sourceChr = chromosomeOfGene(block.source_genes?.[0] ?? '', true) || regionRange.chr
     const targetChr = chromosomeOfGene(block.target_genes?.[0] ?? '', false)
-    const targetSpan = targetChr
-      ? await blockGeneSpan(target, targetChr, block.target_genes ?? [])
-      : null
+    const targetSpan = targetChr ? targetSpans[index] : null
     return {
       key: `${block.block_id}-${sourceChr}-${targetChr}`,
       blockId: block.block_id,
@@ -1187,7 +1232,6 @@ async function filterBlocksByRegion(
       targetGenes: block.target_genes ?? [],
     } satisfies SyntenyBlockRow
   })
-  return rows
 }
 
 /** 点击桑葚图连线：跳回共线性页面，以基因级模式初始化，展示该条连线的共线性块与块内基因级微共线性，
@@ -1259,52 +1303,13 @@ async function openGeneDetail(box: MicroGeneBox): Promise<void> {
 
 watch(
   () => [mode.value, region.value, geneId.value],
-  async () => {
-    // 路由 query 同步会同时改动这些字段，此时由 handleSubmit 统一请求，避免重复拉取
+  () => {
+    // 输入变化只让旧表格结果立即失效，真正取数统一交给 handleSubmit（点“检索”按钮）。
+    // 原实现在这里又调了一次 getGenomeSynteny(include_blocks)，与提交时的请求重复，
+    // 且边输入边发近 1 MB 的请求，是表格明显滞后于图的原因之一。
     if (routeQuerySyncing) return
-    if (mode.value === 'all') {
-      regionBlockRows.value = []
-      return
-    }
-    regionBlockLoading.value = true
-    try {
-      if (mode.value === 'gene') {
-        if (geneModeBlockRows.value.length === 0) return
-        regionBlockRows.value = []
-      }
-      if (mode.value === 'region' && region.value.trim()) {
-        const range = parseRegionRange(region.value)
-        if (!range) {
-          regionBlockRows.value = []
-          return
-        }
-        regionBlockLoading.value = true
-        try {
-          const res = await getGenomeSynteny({
-            source: sourceGenome.value,
-            target: targetGenome.value,
-            includeBlocks: true,
-          })
-          if (res.code !== 0) {
-            regionBlockRows.value = []
-            return
-          }
-          regionBlockRows.value = await filterBlocksByRegion(
-            res.data.blocks ?? [],
-            sourceGenome.value,
-            targetGenome.value,
-            range,
-          )
-        } finally {
-          regionBlockLoading.value = false
-        }
-      }
-    } finally {
-      regionBlockRows.value = blockTableRows.value.filter((r) => mode.value !== 'all' && r)
-      if (mode.value === 'region' && region.value.trim()) {
-        regionJbrowseTarget.value = parseRegionRange(region.value)?.chr || defaultLocs[targetGenome.value] || ''
-      }
-    }
+    regionBlockRows.value = []
+    regionBlockLoading.value = false
   },
 )
 
@@ -1677,6 +1682,16 @@ const handleSubmit = async () => {
         mode.value === 'all' ? t('synteny_scope_all') : d.chromosome,
       )
       // 按区域筛选块/基因表格：复用同一响应里的 blocks，避免二次拉取大体积数据
+      // ribbon 与表格并行：两者都依赖刚拿到的 blocks，但互不依赖。
+      // 表格区间改从 ribbon 的 .bed 缓存本地计算（0 次坐标请求），不再串行等待几十个坐标接口。
+      const ribbonTask = buildRibbonFor({
+        sourceChrs: chromosome ? [chromosome] : undefined,
+        isHighlight: range
+          ? (b) =>
+              b.sourceChr === range.chr &&
+              rangesOverlap({ chr: b.sourceChr, start: b.sourceStart, end: b.sourceEnd }, range)
+          : undefined,
+      })
       if (mode.value === 'region') {
         regionBlockLoading.value = true
         try {
@@ -1688,15 +1703,7 @@ const handleSubmit = async () => {
           regionBlockLoading.value = false
         }
       }
-      // ribbon：全基因组画全部染色体；按区域只画该源染色体并高亮落在区间内的块
-      await buildRibbonFor({
-        sourceChrs: chromosome ? [chromosome] : undefined,
-        isHighlight: range
-          ? (b) =>
-              b.sourceChr === range.chr &&
-              rangesOverlap({ chr: b.sourceChr, start: b.sourceStart, end: b.sourceEnd }, range)
-          : undefined,
-      })
+      await ribbonTask
     }
   } finally {
     loading.value = false
