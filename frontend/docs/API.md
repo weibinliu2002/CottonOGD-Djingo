@@ -198,6 +198,43 @@ const MOCK_FLAGS = {
 
 对应函数：`postAiChat(payload)`
 
+### 1.10 坐标 / 基因ID转换
+
+后端契约详见 `docs/坐标与基因ID转换_前端对接文档.md`（v1，2026-11-18）。
+2026-11-18 已用 `curl --noproxy '*'` 实测三个接口均返回真实数据。
+
+| 项 | 值 |
+| --- | --- |
+| URL | `/CottonOGD_api/conversion/pairs/` |
+| 方法 | GET |
+| 响应 data | `{ pairs: [{source, target, chain}], count, tools: {liftover, crossmap}, default_tool }` |
+
+| 项 | 值 |
+| --- | --- |
+| URL | `/CottonOGD_api/conversion/coordinate/` |
+| 方法 | GET / POST |
+| 请求体 | `{ source_genome, target_genome, tool?, min_match?, min_map_ratio?, chrom?, start?, end?, regions? }` |
+| 响应 data | 单条 `CoordinateConversionResult`；传 `regions` 时为 `{ tool, count, results[] }` |
+| 超时 | 120s（CrossMap 冷启动需建索引） |
+
+| 项 | 值 |
+| --- | --- |
+| URL | `/CottonOGD_api/conversion/geneid/` |
+| 方法 | GET / POST |
+| 请求体 | `{ source_genome, target_genome, tool?, min_match?, min_map_ratio?, gene_ids }` |
+| 响应 data | `{ source_genome, target_genome, tool, count, mapped, results[] }` |
+| 超时 | 120s |
+
+约定：
+
+- 坐标统一 **1-based inclusive**，前端不做 0-based 转换。
+- `source_genome` / `target_genome` 必须与 `pairs` 返回值完全一致；chain 是单向的，只能使用 `pairs` 列出的方向。
+- 单次批量上限 5000 条；批量 `results` 与输入顺序一一对应，单条非法会返回带 `error` 的条目而不使整个请求失败。
+- `tool=liftover` 时 `map_ratio` 恒为 `null`；`partial` 状态仅 CrossMap 可能返回。
+- 前端页面：`src/views/tools/ConversionView.vue`，路由 `/tools/conversion`，导航「工具」下拉。
+
+对应函数：`getConversionPairs()` / `convertCoordinate(payload)` / `convertGeneIds(payload)`
+
 ---
 
 ## 二、已有但格式需微调（b 类）

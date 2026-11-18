@@ -115,6 +115,7 @@
                 <li><router-link class="dropdown-item" to="/sequence/search">{{ t('id_search') }}</router-link></li>
                 <li><router-link class="dropdown-item" to="/sequence/blast">BLASTP</router-link></li>
                 <li><router-link class="dropdown-item" to="/tools/primer-design">{{ t('primer_design') }}</router-link></li>
+                <li><router-link class="dropdown-item" to="/tools/conversion">{{ t('conversion') }}</router-link></li>
                 <li><router-link class="dropdown-item" to="/sequence/server">{{ t('sequence_server') }}</router-link></li>
                 <li class="dropdown-divider"></li>
                 <li><router-link class="dropdown-item" to="/visualization/heatmap">{{ t('clustergramme_heatmap') }}</router-link></li>

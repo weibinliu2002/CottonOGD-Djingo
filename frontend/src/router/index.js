@@ -62,6 +62,7 @@ const GwasView = () => import('@/views/variome/GwasView.vue')
 const TFView = () => import('@/views/tools/TFView.vue')
 const TRView = () => import('@/views/tools/TRView.vue')
 const PrimerView = () => import('@/views/tools/PrimerView.vue')
+const ConversionView = () => import('@/views/tools/ConversionView.vue')
 
 const TreeView = () => import('@/views/test/tree.vue')
 
@@ -468,6 +469,11 @@ const routes = [
     path: '/tools/primer-design',
     name: 'PrimerDesign',
     component: PrimerView
+  },
+  {
+    path: '/tools/conversion',
+    name: 'CoordinateConversion',
+    component: ConversionView
   },
 
   // Placeholder routes for future features

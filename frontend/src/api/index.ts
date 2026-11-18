@@ -1718,3 +1718,178 @@ export async function getGwasAssociations(payload: {
     return fail<{ count: number; rows: GwasMarker[] }>(toMessage(e), { count: 0, rows: [] })
   }
 }
+
+// ==================== 十八、基因组坐标 / 基因ID转换 ====================
+// 后端契约见 docs/坐标与基因ID转换_前端对接文档.md（v1，2026-11-18）
+// 已用 curl 实测：/conversion/pairs/、/conversion/coordinate/、/conversion/geneid/ 均可返回真实数据。
+
+/** 一个可用的转换方向（chain 是单向的，只支持 source -> target） */
+export interface ConversionPair {
+  source: string
+  target: string
+  /** 后端内部 chain 路径，仅供调试，不展示给用户 */
+  chain: string
+}
+
+/** 转换工具可用性：值为 null 表示该工具当前不可用 */
+export interface ConversionTools {
+  liftover: string | null
+  crossmap: string | null
+}
+
+export interface ConversionPairsResult {
+  pairs: ConversionPair[]
+  count: number
+  tools: ConversionTools
+  default_tool: 'crossmap' | 'liftover'
+}
+
+/** 批量区间输入（1-based inclusive） */
+export interface ConversionRegion {
+  chr: string
+  start: number
+  end: number
+  strand?: '+' | '-'
+}
+
+export interface ConversionInterval {
+  chr: string
+  start: number
+  end: number
+}
+
+/** 坐标转换状态：mapped 完整映射 / partial 部分映射 / split 多区间 / unmapped 未映射 */
+export type CoordinateStatus = 'mapped' | 'partial' | 'split' | 'unmapped'
+
+/** 单条区间转换结果（批量结果里的元素同构，另可能带 error/input） */
+export interface CoordinateConversionResult {
+  query?: { genome?: string; chr: string; start: number; end: number; strand?: string }
+  target_genome?: string
+  tool?: string
+  status: CoordinateStatus
+  found: boolean
+  /** 仅 crossmap 提供；liftover 恒为 null */
+  map_ratio: number | null
+  target_interval: ConversionInterval | null
+  target_intervals: ConversionInterval[]
+  segments?: Array<{ target_chr: string; target_start: number; target_end: number }>
+  chain?: string
+  /** 单条参数非法时返回，其余行不受影响 */
+  error?: string
+  input?: Record<string, unknown>
+}
+
+/** 批量区间转换响应 */
+export interface BatchCoordinateConversionResult {
+  chain?: string
+  tool: string
+  count: number
+  results: CoordinateConversionResult[]
+}
+
+/** 基因 ID 转换状态 */
+export type GeneIdStatus = 'mapped' | 'no_target_gene' | 'unmapped' | 'not_found'
+
+export interface TargetGene {
+  gene_id: string
+  chr: string
+  start: number
+  end: number
+  strand: string
+}
+
+export interface GeneIdConversionRow {
+  gene_id: string
+  status: GeneIdStatus
+  source: { chr: string; start: number; end: number; strand: string } | null
+  target_genes: TargetGene[]
+  target_intervals: ConversionInterval[]
+}
+
+export interface GeneIdConversionResult {
+  source_genome: string
+  target_genome: string
+  chain?: string
+  tool: string
+  count: number
+  /** 成功条数，可直接用于「成功 N / 共 M」的汇总展示 */
+  mapped: number
+  results: GeneIdConversionRow[]
+}
+
+/** 转换接口公共参数 */
+interface ConversionCommonPayload {
+  source_genome: string
+  target_genome: string
+  tool?: 'crossmap' | 'liftover'
+  /** liftOver -minMatch，默认 0.95 */
+  min_match?: number
+  /** CrossMap -r，默认 0 */
+  min_map_ratio?: number
+}
+
+/** 坐标转换请求：单个区间（chrom/start/end）或批量（regions，最多 5000 条） */
+export type CoordinateConversionPayload = ConversionCommonPayload &
+  (
+    | { chrom: string; start: number; end: number; strand?: '+' | '-' }
+    | { regions: ConversionRegion[] }
+  )
+
+/** 基因 ID 转换请求 */
+export interface GeneIdConversionPayload extends ConversionCommonPayload {
+  /** 数组或逗号/空格/换行分隔的字符串，最多 5000 个 */
+  gene_ids: string[] | string
+}
+
+/** 转换接口可能耗时较长（crossmap 冷启动约 20s），放宽超时到 120s */
+const CONVERSION_TIMEOUT = 120000
+
+/** 获取可用的转换方向与工具 */
+export async function getConversionPairs(): Promise<ApiResult<ConversionPairsResult>> {
+  try {
+    const res = await httpInstance.get('/CottonOGD_api/conversion/pairs/')
+    return ok(res as unknown as ConversionPairsResult)
+  } catch (e) {
+    return fail<ConversionPairsResult>(toMessage(e), {
+      pairs: [],
+      count: 0,
+      tools: { liftover: null, crossmap: null },
+      default_tool: 'liftover',
+    })
+  }
+}
+
+/** 区间转换：传 chrom/start/end 时返回单条结果，传 regions 时返回批量结果 */
+export async function convertCoordinate(
+  payload: CoordinateConversionPayload,
+): Promise<ApiResult<CoordinateConversionResult | BatchCoordinateConversionResult>> {
+  try {
+    const res = await httpInstance.post('/CottonOGD_api/conversion/coordinate/', payload, {
+      timeout: CONVERSION_TIMEOUT,
+    })
+    return ok(res as unknown as CoordinateConversionResult | BatchCoordinateConversionResult)
+  } catch (e) {
+    return fail<CoordinateConversionResult | BatchCoordinateConversionResult>(toMessage(e))
+  }
+}
+
+/** 基因 ID 转换（单个或批量） */
+export async function convertGeneIds(
+  payload: GeneIdConversionPayload,
+): Promise<ApiResult<GeneIdConversionResult>> {
+  try {
+    const res = await httpInstance.post('/CottonOGD_api/conversion/geneid/', payload, {
+      timeout: CONVERSION_TIMEOUT,
+    })
+    return ok(res as unknown as GeneIdConversionResult)
+  } catch (e) {
+    return fail<GeneIdConversionResult>(toMessage(e), {
+      source_genome: payload.source_genome,
+      target_genome: payload.target_genome,
+      tool: payload.tool || 'liftover',
+      count: 0,
+      mapped: 0,
+      results: [],
+    })
+  }
+}

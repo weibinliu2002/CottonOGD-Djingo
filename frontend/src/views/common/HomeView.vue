@@ -999,6 +999,9 @@ const moduleEntries: ModuleEntry[] = [
                 <router-link to="/tools/go-enrichment">
                   <el-button type="primary" plain size="medium" class="ml-2">{{ t('go_enrichment') }}</el-button>
                 </router-link>
+                <router-link to="/tools/conversion">
+                  <el-button type="primary" plain class="ml-2">{{ t('conversion_home_button') }}</el-button>
+                </router-link>
               </div>
             </el-card>
           </el-col>
