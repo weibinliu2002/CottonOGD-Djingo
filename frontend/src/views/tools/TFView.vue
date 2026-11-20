@@ -138,7 +138,7 @@
           <!-- 上方：系统发生树 -->
         <div class="main-content tree-panel">
           <h2>{{ t('phylotree') }}</h2>
-          <PhyloTreeViewer
+          <PhylocanvasViewer
             v-if="selectedGenomeName && selectedFamilyName"
             :key="treeKey"
             :genome="selectedGenomeName"
@@ -160,7 +160,7 @@
 <script>
 import { ref, onMounted, computed, watch, nextTick } from 'vue'
 import { QuestionFilled, VideoPlay, Search, View } from '@element-plus/icons-vue'
-import PhyloTreeViewer from '@/components/data-display/PhyloTreeViewer.vue'
+import PhylocanvasViewer from '@/components/data-display/PhylocanvasViewer.vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import router from '@/router'
@@ -176,7 +176,7 @@ export default {
     VideoPlay,
     Search,
     View,
-    PhyloTreeViewer
+    PhylocanvasViewer
   },
   setup() {
     const { t } = useI18n()

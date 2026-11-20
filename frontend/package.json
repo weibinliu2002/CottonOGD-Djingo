@@ -21,6 +21,7 @@
     "@e965/xlsx": "^0.20.3",
     "@element-plus/icons-vue": "^2.3.2",
     "@fortawesome/fontawesome-free": "^7.1.0",
+    "@phylocanvas/phylocanvas.gl": "^1.64.1",
     "axios": "^1.13.4",
     "chart.js": "^4.5.1",
     "clustergrammer": "^1.19.5",

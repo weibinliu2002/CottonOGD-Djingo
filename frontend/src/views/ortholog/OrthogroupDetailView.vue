@@ -9,7 +9,7 @@
  *  1. OG 元信息（species_count / gene_count / 是否单拷贝）
  *  2. 成员基因表（可跳基因详情；来自 orthogroup_detail）
  *  3. MSA（多序列比对可视化；加载失败时回退为 FASTA 文本）
- *  4. Tree（基因树 newick 纯文本，复用 OrthogroupTreeViewer；404 静默隐藏）
+ *  4. Tree（基因树 newick 纯文本，复用 PhylocanvasViewer 的 newick 直传模式；404 静默隐藏）
  *  5. Sequence（OG 合并序列，纯文本 FASTA；404 静默隐藏）
  *
  * ⚠️ 按后端约定，WGS / WGD / 串联重复（tandem）三个模块 OrthoFinder 不含对应数据，
@@ -21,7 +21,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Download } from '@element-plus/icons-vue'
-import OrthogroupTreeViewer from '@/components/data-display/OrthogroupTreeViewer.vue'
+import PhylocanvasViewer from '@/components/data-display/PhylocanvasViewer.vue'
 import MsaViewer from '@/components/data-display/MsaViewer.vue'
 import {
   getOrthogroupDetailV2,
@@ -286,7 +286,7 @@ watch(ogCode, async () => {
     <el-card class="og-card" shadow="never">
       <template #header><span>{{ t('og_tree') }}</span></template>
       <el-alert v-if="treeError" type="info" :title="treeError" show-icon :closable="false" />
-      <OrthogroupTreeViewer v-else :newick="treeText" />
+      <PhylocanvasViewer v-else :newick="treeText" />
     </el-card>
 
     <!-- Sequence（OG 合并序列，纯文本 FASTA；404 静默隐藏） -->
