@@ -10,9 +10,9 @@
  *  - Tab「按基因查」：保留原基因→OG 跨物种检索（Meilisearch Orthologs 索引）。
  *  - 原 OG 详情路由 /tools/orthogroup/:og_code 保留，深链直达。
  *
- * 数据源与语义严格遵循 docs/COMPARATIVE_ANALYSIS_API_HANDOFF.md：
+ * 数据源与语义严格遵循 v1 契约（docs/COMPARATIVE_ANALYSIS_API_HANDOFF.md，2026-11-21 重写）：
  *  - mode=all 为交集、any 为并集，默认 all（与旧行为一致）；
- *  - “共享 OG”不是 Ortholog，直系同源只在详情页的 gene_orthologs 结果中展示。
+ *  - “共享 OG”不是 Ortholog，直系同源只在详情页的 genes/orthologs 结果中展示。
  */
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'

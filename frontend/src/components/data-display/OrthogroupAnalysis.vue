@@ -430,14 +430,17 @@
  *  - OrthologView 的 OG 抽屉（compact=true，在当前页面内查看详情）
  *  - OrthogroupDetailView 详情页（compact=false）
  *
- * 数据口径严格遵循 docs/COMPARATIVE_ANALYSIS_API_HANDOFF.md：
- *  - “同一 OG 的成员”不是 Ortholog；只有 gene_orthologs 结果标注为直系同源。
- *  - 大 OG 成员用 og_members 分页；MSA / 基因树 / 序列按需加载。
+ * 数据口径严格遵循后端 v1 契约（服务器 backend/docs/api/endpoints.md「orthofinder」段，
+ * 前端整理版见 docs/COMPARATIVE_ANALYSIS_API_HANDOFF.md）：
+ *  - “同一 OG 的成员”不是 Ortholog；只有 genes/orthologs 结果标注为直系同源。
+ *  - 大 OG 成员用 orthogroups/members 分页；MSA / 基因树 / 序列按需加载。
+ *  - 基因级接口（orthologs / hogs）只认 OrthoFinder 基因 ID（带转录本后缀，如 xxx.1），
+ *    不带后缀的 Gene ID 先经 resolveOrthoGeneId 归一后再查。
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import * as echarts from '@/utils/echarts'
+import echarts from '@/utils/echarts'
 import MsaViewer from '@/components/data-display/MsaViewer.vue'
 import PhylocanvasViewer from '@/components/data-display/PhylocanvasViewer.vue'
 import {
@@ -450,6 +453,7 @@ import {
   getOrthogroupMsa,
   getOrthogroupSequence,
   getOrthogroupTree,
+  resolveOrthoGeneId,
   type GeneHogHit,
   type GeneOrthologSpeciesResult,
   type GeneOrthologsResponse,
@@ -640,7 +644,8 @@ async function runOrthologs(): Promise<void> {
   orthologQueried.value = true
   orthologResult.value = null
   try {
-    const res = await getGeneOrthologs({ geneid })
+    // OrthoFinder 基因级接口只认带转录本后缀的 ID，先归一再查
+    const res = await getGeneOrthologs({ geneid: await resolveOrthoGeneId(geneid) })
     if (res.error) {
       orthologError.value = res.error
       return
@@ -652,7 +657,8 @@ async function runOrthologs(): Promise<void> {
 }
 
 function queryOrthologs(row: OgMemberRow): void {
-  orthologGene.value = row.genemaster_geneid || row.ortho_gene
+  // ortho_gene 是 OrthoFinder 蛋白 ID（带后缀），是后端基因级接口认的键
+  orthologGene.value = row.ortho_gene || row.genemaster_geneid
   activeTab.value = 'orthologs'
   void runOrthologs()
 }
@@ -677,7 +683,7 @@ async function runHog(): Promise<void> {
   hogResult.value = null
   hogDetail.value = null
   try {
-    const res = await getGeneHog({ geneid })
+    const res = await getGeneHog({ geneid: await resolveOrthoGeneId(geneid) })
     if (res.error) {
       hogError.value = res.error
       return
@@ -689,7 +695,7 @@ async function runHog(): Promise<void> {
 }
 
 function queryHog(row: OgMemberRow): void {
-  hogGene.value = row.genemaster_geneid || row.ortho_gene
+  hogGene.value = row.ortho_gene || row.genemaster_geneid
   activeTab.value = 'hog'
   void runHog()
 }

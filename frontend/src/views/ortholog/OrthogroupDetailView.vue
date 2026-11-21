@@ -9,12 +9,13 @@
  * 面板包含：概览与基因组分布、成员分页、真实直系同源、HOG、复制事件、
  *           MSA、基因树、OG 序列；各模块按需加载、独立失败互不阻塞。
  *
- * 数据口径遵循 docs/COMPARATIVE_ANALYSIS_API_HANDOFF.md。
+ * 数据口径遵循 v1 契约：服务器 backend/docs/api/endpoints.md 与前端
+ * docs/COMPARATIVE_ANALYSIS_API_HANDOFF.md（2026-11-21 按 v1 重写）。
  */
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { Download } from '@element-plus/icons-vue'
+import { CopyDocument } from '@element-plus/icons-vue'
 import OrthogroupAnalysis from '@/components/data-display/OrthogroupAnalysis.vue'
 
 const { t } = useI18n()
@@ -55,7 +56,7 @@ function copyOgCode(): void {
       <el-button
         v-if="ogCode"
         size="small"
-        :icon="Download"
+        :icon="CopyDocument"
         @click="copyOgCode"
       >{{ t('copy_og_code') }}</el-button>
     </div>

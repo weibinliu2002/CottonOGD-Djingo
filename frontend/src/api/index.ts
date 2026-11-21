@@ -1261,6 +1261,21 @@ export async function getOrthologByGene(geneid: string): Promise<OrthologGeneRes
 }
 
 /**
+ * OrthoFinder 3.2 的基因级接口（genes/orthogroups / genes/orthologs / genes/hogs）
+ * 只认 OrthoFinder 蛋白 ID，即带转录本后缀的形式（如 Gano_01G016940.1）。
+ * 2026-11-21 实测：不带后缀的 Gene ID → found:false，带 .1 → found:true。
+ * 用户从基因页粘贴的通常是不带后缀的 ID，这里在未命中时补 `.1` 再试一次，
+ * 返回后端能识别的那个 ID；两种都查不到时原样返回，由调用方给出「未命中」提示。
+ */
+export async function resolveOrthoGeneId(geneid: string): Promise<string> {
+  const id = geneid.trim()
+  if (!id || id.includes('.')) return id
+  if ((await getOrthologByGene(id)).found) return id
+  const withSuffix = `${id}.1`
+  return (await getOrthologByGene(withSuffix)).found ? withSuffix : id
+}
+
+/**
  * 查询单个 orthogroup 的全部成员。
  * POST /CottonOGD_api/api/v1/orthofinder/orthogroups/detail/，body { og_code }。
  * 后端返回**扁平结构**：{ found, og_code, species_count, ..., species_members }。
@@ -1437,7 +1452,8 @@ export async function getOrthogroupMsa(ogCode: string): Promise<string> {
 }
 
 // ==================== 十七、比较基因组学扩展接口（v1.1 交接文档 C.9–C.15） ====================
-// 全部按 docs/COMPARATIVE_ANALYSIS_API_HANDOFF.md 实现；响应为裸 JSON。
+// 按 docs/COMPARATIVE_ANALYSIS_API_HANDOFF.md（v1，2026-11-21）实现；
+// 响应经 http.js 拦截器解包后为裸业务 JSON（外层信封 {code,message,data} 已剥除）。
 
 /** 从 axios 错误中提取后端文案（v1 信封字段为 message） */
 function readBackendError(err: unknown): string {

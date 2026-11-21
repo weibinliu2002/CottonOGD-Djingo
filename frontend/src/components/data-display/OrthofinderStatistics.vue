@@ -113,6 +113,14 @@
         </div>
 
         <el-alert v-if="dupError" type="warning" :title="dupError" show-icon :closable="false" class="ofs-alert" />
+        <el-alert
+          v-if="dupRows.length && dupTotal > dupRows.length"
+          type="info"
+          :title="t('stats_dup_truncated', { shown: dupRows.length, total: dupTotal })"
+          show-icon
+          :closable="false"
+          class="ofs-alert"
+        />
         <el-descriptions v-if="dupValue" :column="2" border size="small">
           <el-descriptions-item :label="t('stats_scope')">{{ dupScope }}</el-descriptions-item>
           <el-descriptions-item :label="t('stats_pair_value')">{{ dupValue }}</el-descriptions-item>
@@ -209,13 +217,13 @@
 /**
  * OrthoFinder 统计面板（直接读取 Comparative_Genomics_Statistics，不在前端重算）。
  *
- * 对接 docs/COMPARATIVE_ANALYSIS_API_HANDOFF.md C.15 / C.11：
+ * 对接 v1 契约（docs/COMPARATIVE_ANALYSIS_API_HANDOFF.md 2026-11-21 重写版）：
  *  - statistics?type=overall / per_species / orthologs / duplications / species_overlaps
  *  - genome_pair：两个 Genome 的“共享 OG”，不是 Ortholog 对。
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import * as echarts from '@/utils/echarts'
+import echarts from '@/utils/echarts'
 import {
   getGenomePair,
   getOrthofinderStatistics,
@@ -452,6 +460,9 @@ const dupLoaded = ref(false)
 const dupError = ref('')
 const dupValue = ref('')
 const dupRows = ref<Array<Record<string, string>>>([])
+/** scope=orthogroup 且未填 OG 时后端返回全部 8 万余个 OG 的字典，前端只展开前 N 个 */
+const DUP_ALL_LIMIT = 200
+const dupTotal = ref(0)
 
 const dupColumns = computed(() => {
   const first = dupRows.value[0]
@@ -464,6 +475,7 @@ async function loadDuplications(): Promise<void> {
   dupError.value = ''
   dupValue.value = ''
   dupRows.value = []
+  dupTotal.value = 0
   try {
     const res = await getOrthofinderStatistics({
       type: 'duplications',
@@ -474,17 +486,43 @@ async function loadDuplications(): Promise<void> {
       dupError.value = res.error
       return
     }
+    // 指定单个 OG：后端返回 value = { all, support_50 }（不是字符串）
+    if (res.value != null && typeof res.value === 'object') {
+      const v = res.value as Record<string, unknown>
+      dupValue.value = `${t('stats_dup_all')} ${v.all ?? '-'} · ${t('stats_dup_support50')} ${v.support_50 ?? '-'}`
+      return
+    }
     if (res.value != null) dupValue.value = String(res.value)
+    // species_node：rows 是 [{node, all, support_50}] 数组
     if (Array.isArray(res.rows)) {
-      dupRows.value = (res.rows as Array<Record<string, unknown>>).map((row) => {
-        const out: Record<string, string> = {}
-        for (const [k, v] of Object.entries(row)) out[k] = v == null ? '' : String(v)
-        return out
-      })
+      dupRows.value = (res.rows as Array<Record<string, unknown>>).map(toDisplayRow)
+      dupTotal.value = dupRows.value.length
+      return
+    }
+    // orthogroup 未填 OG：rows 是 { og_code: { all, support_50 } } 字典，展开并截断
+    if (res.rows && typeof res.rows === 'object') {
+      const entries = Object.entries(res.rows as Record<string, Record<string, unknown>>)
+      dupTotal.value = entries.length
+      dupRows.value = entries.slice(0, DUP_ALL_LIMIT).map(([ogCode, v]) => ({
+        og_code: ogCode,
+        ...toDisplayRow(v ?? {}),
+      }))
+      return
+    }
+    // 指定了 OG 但后端无该 OG 的统计（value 与 rows 均为 null）
+    if (dupScope.value === 'orthogroup' && dupOgCode.value.trim()) {
+      dupError.value = t('stats_dup_unknown_og')
     }
   } finally {
     dupLoading.value = false
   }
+}
+
+/** 把后端数值字典统一转成表格可渲染的字符串行 */
+function toDisplayRow(row: Record<string, unknown>): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const [k, v] of Object.entries(row)) out[k] = v == null ? '' : String(v)
+  return out
 }
 
 // ==================== 物种重叠 ====================
