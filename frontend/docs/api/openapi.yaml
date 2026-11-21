@@ -1,0 +1,1487 @@
+openapi: 3.0.3
+info:
+  title: CottonOGD API v1
+  version: 1.0.0
+  description: CottonOGD 统一 API。所有响应使用 {code,message,data} 信封；错误码见 docs/api/errors.md。
+paths:
+  /CottonOGD_api/api/v1/ai/chat/:
+    post:
+      operationId: CottonOGD_api_api_v1_ai_chat_create
+      description: |-
+        POST /v1/ai/chat/
+
+        请求体：{"message": str(必填), "clear_history": bool(可选)}
+        响应 data：{"answer", "tool_calls", "history_turns"}
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/ai/tools/:
+    get:
+      operationId: CottonOGD_api_api_v1_ai_tools_retrieve
+      description: GET /v1/ai/tools/ — LLM 工具 schema 列表。
+      tags:
+      - CottonOGD_api
+      security:
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/annotations/go/annotation/:
+    get:
+      operationId: CottonOGD_api_api_v1_annotations_go_annotation_retrieve
+      description: GET|POST /v1/annotations/go/annotation/ — GO 注释。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: CottonOGD_api_api_v1_annotations_go_annotation_create
+      description: GET|POST /v1/annotations/go/annotation/ — GO 注释。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/annotations/go/enrichment/:
+    get:
+      operationId: CottonOGD_api_api_v1_annotations_go_enrichment_retrieve
+      description: GET|POST /v1/annotations/go/enrichment/ — GO 富集。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: CottonOGD_api_api_v1_annotations_go_enrichment_create
+      description: GET|POST /v1/annotations/go/enrichment/ — GO 富集。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/annotations/kegg/annotation/:
+    get:
+      operationId: CottonOGD_api_api_v1_annotations_kegg_annotation_retrieve
+      description: GET|POST /v1/annotations/kegg/annotation/ — KEGG 注释。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: CottonOGD_api_api_v1_annotations_kegg_annotation_create
+      description: GET|POST /v1/annotations/kegg/annotation/ — KEGG 注释。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/annotations/kegg/enrichment/:
+    get:
+      operationId: CottonOGD_api_api_v1_annotations_kegg_enrichment_retrieve
+      description: GET|POST /v1/annotations/kegg/enrichment/ — KEGG 富集。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: CottonOGD_api_api_v1_annotations_kegg_enrichment_create
+      description: GET|POST /v1/annotations/kegg/enrichment/ — KEGG 富集。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/auth/bind-third-party/:
+    post:
+      operationId: CottonOGD_api_api_v1_auth_bind_third_party_create
+      description: POST /v1/auth/bind-third-party/
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/auth/forgot-password/:
+    post:
+      operationId: CottonOGD_api_api_v1_auth_forgot_password_create
+      description: POST /v1/auth/forgot-password/
+      tags:
+      - CottonOGD_api
+      security:
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/auth/login/:
+    post:
+      operationId: CottonOGD_api_api_v1_auth_login_create
+      description: POST /v1/auth/login/ — 邮箱或用户名 + 密码 -> JWT。
+      tags:
+      - CottonOGD_api
+      security:
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/auth/me/:
+    get:
+      operationId: CottonOGD_api_api_v1_auth_me_retrieve
+      description: GET /v1/auth/me/ 当前用户；DELETE 注销账号。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: CottonOGD_api_api_v1_auth_me_destroy
+      description: GET /v1/auth/me/ 当前用户；DELETE 注销账号。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /CottonOGD_api/api/v1/auth/methods/:
+    get:
+      operationId: CottonOGD_api_api_v1_auth_methods_retrieve
+      description: GET /v1/auth/methods/
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/auth/password/change/:
+    post:
+      operationId: CottonOGD_api_api_v1_auth_password_change_create
+      description: POST /v1/auth/password/change/
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/auth/refresh/:
+    post:
+      operationId: CottonOGD_api_api_v1_auth_refresh_create
+      description: POST /v1/auth/refresh/
+      tags:
+      - CottonOGD_api
+      security:
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/auth/register/:
+    post:
+      operationId: CottonOGD_api_api_v1_auth_register_create
+      description: POST /v1/auth/register/
+      tags:
+      - CottonOGD_api
+      security:
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/auth/resend-verification/:
+    post:
+      operationId: CottonOGD_api_api_v1_auth_resend_verification_create
+      description: POST /v1/auth/resend-verification/
+      tags:
+      - CottonOGD_api
+      security:
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/auth/reset-password/:
+    post:
+      operationId: CottonOGD_api_api_v1_auth_reset_password_create
+      description: POST /v1/auth/reset-password/
+      tags:
+      - CottonOGD_api
+      security:
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/auth/session/:
+    post:
+      operationId: CottonOGD_api_api_v1_auth_session_create
+      description: POST /v1/auth/session/ 创建匿名会话；DELETE 注销并清 cookie。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: CottonOGD_api_api_v1_auth_session_destroy
+      description: POST /v1/auth/session/ 创建匿名会话；DELETE 注销并清 cookie。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /CottonOGD_api/api/v1/auth/set-password/:
+    post:
+      operationId: CottonOGD_api_api_v1_auth_set_password_create
+      description: POST /v1/auth/set-password/
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/auth/token/:
+    post:
+      operationId: CottonOGD_api_api_v1_auth_token_create
+      description: POST /v1/auth/token/ — SimpleJWT 兼容签发端点。
+      tags:
+      - CottonOGD_api
+      security:
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/auth/token/refresh/:
+    post:
+      operationId: CottonOGD_api_api_v1_auth_token_refresh_create
+      description: POST /v1/auth/token/refresh/
+      tags:
+      - CottonOGD_api
+      security:
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/auth/unbind-third-party/:
+    post:
+      operationId: CottonOGD_api_api_v1_auth_unbind_third_party_create
+      description: POST /v1/auth/unbind-third-party/
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/auth/verify-email/:
+    post:
+      operationId: CottonOGD_api_api_v1_auth_verify_email_create
+      description: POST /v1/auth/verify-email/
+      tags:
+      - CottonOGD_api
+      security:
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/blast/search/:
+    post:
+      operationId: CottonOGD_api_api_v1_blast_search_create
+      description: |-
+        POST /v1/blast/search/ — 对单个基因组 BLAST 库执行序列比对。
+
+        body: sequence, blast_type（兼容 type）, selected_genomes（首个生效）,
+              data_type=genome|cds|mrna|protein, evalue, max_hits（兼容
+              max_target_seqs）
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/conversion/coordinate/:
+    get:
+      operationId: CottonOGD_api_api_v1_conversion_coordinate_retrieve
+      description: GET|POST /v1/conversion/coordinate/ — 区间坐标转换（支持批量）。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: CottonOGD_api_api_v1_conversion_coordinate_create
+      description: GET|POST /v1/conversion/coordinate/ — 区间坐标转换（支持批量）。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/conversion/gene-ids/:
+    get:
+      operationId: CottonOGD_api_api_v1_conversion_gene_ids_retrieve
+      description: GET|POST /v1/conversion/gene-ids/ — 基因 ID 转换。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: CottonOGD_api_api_v1_conversion_gene_ids_create
+      description: GET|POST /v1/conversion/gene-ids/ — 基因 ID 转换。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/conversion/gene-ids/evidence/:
+    get:
+      operationId: CottonOGD_api_api_v1_conversion_gene_ids_evidence_retrieve
+      description: GET|POST /v1/conversion/gene-ids/evidence/ — 三源证据合并 + 置信度。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: CottonOGD_api_api_v1_conversion_gene_ids_evidence_create
+      description: GET|POST /v1/conversion/gene-ids/evidence/ — 三源证据合并 + 置信度。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/conversion/pairs/:
+    get:
+      operationId: CottonOGD_api_api_v1_conversion_pairs_retrieve
+      description: GET /v1/conversion/pairs/ — 可用的单链转换对与工具。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/expression/efp/:
+    post:
+      operationId: CottonOGD_api_api_v1_expression_efp_create
+      description: POST /v1/expression/efp/ — EFP 电子荧光伪彩图。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/expression/genomes/:
+    get:
+      operationId: CottonOGD_api_api_v1_expression_genomes_retrieve
+      description: GET /v1/expression/genomes/ — 有表达数据的基因组列表。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/expression/heatmap/:
+    post:
+      operationId: CottonOGD_api_api_v1_expression_heatmap_create
+      description: |-
+        POST /v1/expression/heatmap/ — 表达热图（数据 + 图片）。
+
+        body: db_id（可逗号分隔/列表）| (gene_id, genome_id)；可选 tissue。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/expression/heatmap/regenerate/:
+    post:
+      operationId: CottonOGD_api_api_v1_expression_heatmap_regenerate_create
+      description: POST /v1/expression/heatmap/regenerate/ — 按前端配置重绘热图。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/expression/tissues/:
+    get:
+      operationId: CottonOGD_api_api_v1_expression_tissues_retrieve
+      description: GET /v1/expression/tissues/?genome_id=... — 组织类型列表。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/files/genome/{genome_id}/{file_type}/:
+    get:
+      operationId: CottonOGD_api_api_v1_files_genome_retrieve
+      description: GET /v1/files/genome/<genome_id>/<file_type>/ — 基因组数据文件。
+      parameters:
+      - in: path
+        name: file_type
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: genome_id
+        schema:
+          type: string
+        required: true
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/files/my/{file_id}/:
+    delete:
+      operationId: CottonOGD_api_api_v1_files_my_destroy
+      description: DELETE /v1/files/my/<id>/
+      parameters:
+      - in: path
+        name: file_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /CottonOGD_api/api/v1/files/my/{file_id}/move/:
+    post:
+      operationId: CottonOGD_api_api_v1_files_my_move_create
+      description: POST /v1/files/my/<id>/move/ — {new_path, new_name}。
+      parameters:
+      - in: path
+        name: file_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/files/my/tree/:
+    get:
+      operationId: CottonOGD_api_api_v1_files_my_tree_retrieve
+      description: GET /v1/files/my/tree/?path= — 个人文件目录树（owner 隔离）。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/files/my/upload/:
+    post:
+      operationId: CottonOGD_api_api_v1_files_my_upload_create
+      description: POST /v1/files/my/upload/ — multipart：file + path + replace。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/files/public/{file_id}/download/:
+    get:
+      operationId: CottonOGD_api_api_v1_files_public_download_retrieve
+      description: GET /v1/files/public/<id>/download/ — 公开文件下载。
+      parameters:
+      - in: path
+        name: file_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/files/public/tree/:
+    get:
+      operationId: CottonOGD_api_api_v1_files_public_tree_retrieve
+      description: GET /v1/files/public/tree/?path= — 公开文件目录树。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/genes/lookup/:
+    post:
+      operationId: CottonOGD_api_api_v1_genes_lookup_create
+      description: |-
+        POST /v1/genes/lookup/ — 统一 ID 检索入口。
+
+        body:
+          - ids: 单个 ID / 分隔字符串 / 列表（db_id、geneid、带版本号、alias、
+            转录本 ID 均可）
+          - genome_id: 可选，用于消歧（支持逗号分隔多个）
+          - mode: ids | summary（默认）| detail
+
+        返回解析结果（含逐条 matches、search_map、未命中列表）；mode=summary
+        附带 geneid_result/gene_info_result/gene_go_result/gene_kegg_result；
+        mode=detail 附带 detail（要求恰好解析出一个基因）。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/genome/distribution/:
+    post:
+      operationId: CottonOGD_api_api_v1_genome_distribution_create
+      description: |-
+        POST /v1/genome/distribution/ — 基因在染色体上的分布。
+
+        body: genome（必需）, gene_ids（可空 = 全基因组）
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/genome/location/:
+    post:
+      operationId: CottonOGD_api_api_v1_genome_location_create
+      description: |-
+        POST /v1/genome/location/ — 按 chr:start-end 检索区域内的基因。
+
+        body: genome, region（兼容 chromosome/seqid + start/end）
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/gwas/accessions/:
+    get:
+      operationId: CottonOGD_api_api_v1_gwas_accessions_retrieve
+      description: GET|POST /v1/gwas/accessions/ — 材料列表（可选 species 过滤）。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: CottonOGD_api_api_v1_gwas_accessions_create
+      description: GET|POST /v1/gwas/accessions/ — 材料列表（可选 species 过滤）。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/gwas/associations/:
+    get:
+      operationId: CottonOGD_api_api_v1_gwas_associations_retrieve
+      description: GET|POST /v1/gwas/associations/ — 关联结果（按 pvalue 排序）。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: CottonOGD_api_api_v1_gwas_associations_create
+      description: GET|POST /v1/gwas/associations/ — 关联结果（按 pvalue 排序）。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/gwas/markers/:
+    get:
+      operationId: CottonOGD_api_api_v1_gwas_markers_retrieve
+      description: GET|POST /v1/gwas/markers/ — GWAS 标记位点。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: CottonOGD_api_api_v1_gwas_markers_create
+      description: GET|POST /v1/gwas/markers/ — GWAS 标记位点。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/gwas/phenotype/:
+    get:
+      operationId: CottonOGD_api_api_v1_gwas_phenotype_retrieve
+      description: GET|POST /v1/gwas/phenotype/ — 表型 BLUP 值。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: CottonOGD_api_api_v1_gwas_phenotype_create
+      description: GET|POST /v1/gwas/phenotype/ — 表型 BLUP 值。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/gwas/traits/:
+    get:
+      operationId: CottonOGD_api_api_v1_gwas_traits_retrieve
+      description: GET|POST /v1/gwas/traits/ — GWAS 性状列表。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: CottonOGD_api_api_v1_gwas_traits_create
+      description: GET|POST /v1/gwas/traits/ — GWAS 性状列表。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/health/:
+    get:
+      operationId: CottonOGD_api_api_v1_health_retrieve
+      description: GET /v1/health/ — 发布探活。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/meta/families/:
+    get:
+      operationId: CottonOGD_api_api_v1_meta_families_retrieve
+      description: |-
+        GET|POST /v1/meta/families/ — 家族信息与按 TF_name 计数。
+
+        参数：selectedGenome（兼容 selected_genome）、Class（兼容 tf_class）。
+        两个过滤条件同时给出才生效。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: CottonOGD_api_api_v1_meta_families_create
+      description: |-
+        GET|POST /v1/meta/families/ — 家族信息与按 TF_name 计数。
+
+        参数：selectedGenome（兼容 selected_genome）、Class（兼容 tf_class）。
+        两个过滤条件同时给出才生效。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/meta/orthofinder/statistics/:
+    get:
+      operationId: CottonOGD_api_api_v1_meta_orthofinder_statistics_retrieve
+      description: |-
+        GET /v1/meta/orthofinder/statistics/ — OrthoFinder 统计汇总。
+
+        参数：sections（逗号分隔，默认 overall,per_species,duplications）、
+        kind（orthologs 分区类型，默认 totals）。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/meta/species/:
+    get:
+      operationId: CottonOGD_api_api_v1_meta_species_retrieve
+      description: GET /v1/meta/species/ — 全部物种信息。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/orthofinder/genes/hogs/:
+    post:
+      operationId: CottonOGD_api_api_v1_orthofinder_genes_hogs_create
+      description: POST /v1/orthofinder/genes/hogs/ — 基因 -> 最深 HOG。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/orthofinder/genes/orthogroups/:
+    post:
+      operationId: CottonOGD_api_api_v1_orthofinder_genes_orthogroups_create
+      description: POST /v1/orthofinder/genes/orthogroups/ — 基因 -> 所属 OG 及跨物种成员。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/orthofinder/genes/orthologs/:
+    post:
+      operationId: CottonOGD_api_api_v1_orthofinder_genes_orthologs_create
+      description: POST /v1/orthofinder/genes/orthologs/ — 基因 -> 真实直系同源。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/orthofinder/genome-pairs/:
+    post:
+      operationId: CottonOGD_api_api_v1_orthofinder_genome_pairs_create
+      description: POST /v1/orthofinder/genome-pairs/ — 两个基因组的共享 OG 成员。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/orthofinder/hogs/detail/:
+    post:
+      operationId: CottonOGD_api_api_v1_orthofinder_hogs_detail_create
+      description: POST /v1/orthofinder/hogs/detail/ — HOG 成员基因。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/orthofinder/meta/:
+    get:
+      operationId: CottonOGD_api_api_v1_orthofinder_meta_retrieve
+      description: GET /v1/orthofinder/meta/ — 已导入索引的物种列表。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/orthofinder/og/{og_code}/msa/:
+    get:
+      operationId: CottonOGD_api_api_v1_orthofinder_og_msa_retrieve
+      description: GET /v1/orthofinder/og/<og>/msa/ — OG 多序列比对 FASTA。
+      parameters:
+      - in: path
+        name: og_code
+        schema:
+          type: string
+        required: true
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/orthofinder/og/{og_code}/sequences/:
+    get:
+      operationId: CottonOGD_api_api_v1_orthofinder_og_sequences_retrieve
+      description: GET /v1/orthofinder/og/<og>/sequences/ — OG 序列 FASTA。
+      parameters:
+      - in: path
+        name: og_code
+        schema:
+          type: string
+        required: true
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/orthofinder/og/{og_code}/tandem/:
+    get:
+      operationId: CottonOGD_api_api_v1_orthofinder_og_tandem_retrieve
+      description: GET /v1/orthofinder/og/<og>/tandem/ — 串联重复 / 基因复制事件。
+      parameters:
+      - in: path
+        name: og_code
+        schema:
+          type: string
+        required: true
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/orthofinder/og/{og_code}/tree/:
+    get:
+      operationId: CottonOGD_api_api_v1_orthofinder_og_tree_retrieve
+      description: GET /v1/orthofinder/og/<og>/tree/ — 解析基因树（newick）。
+      parameters:
+      - in: path
+        name: og_code
+        schema:
+          type: string
+        required: true
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/orthofinder/orthogroups/detail/:
+    post:
+      operationId: CottonOGD_api_api_v1_orthofinder_orthogroups_detail_create
+      description: POST /v1/orthofinder/orthogroups/detail/ — OG 跨物种成员。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/orthofinder/orthogroups/members/:
+    post:
+      operationId: CottonOGD_api_api_v1_orthofinder_orthogroups_members_create
+      description: POST /v1/orthofinder/orthogroups/members/ — OG 成员平铺分页。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/orthofinder/orthogroups/search/:
+    post:
+      operationId: CottonOGD_api_api_v1_orthofinder_orthogroups_search_create
+      description: POST /v1/orthofinder/orthogroups/search/ — 按物种/元数据筛选 OG。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/orthofinder/species/tree/:
+    get:
+      operationId: CottonOGD_api_api_v1_orthofinder_species_tree_retrieve
+      description: GET /v1/orthofinder/species/tree/ — 物种树（fmt=newick 返回纯文本）。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/orthofinder/statistics/:
+    get:
+      operationId: CottonOGD_api_api_v1_orthofinder_statistics_retrieve
+      description: GET /v1/orthofinder/statistics/ — Comparative_Genomics_Statistics。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/ppi/string/:
+    post:
+      operationId: CottonOGD_api_api_v1_ppi_string_create
+      description: POST /v1/ppi/string/ — 基因列表 -> STRING 互作网络（Cytoscape elements）。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/primer/design/:
+    post:
+      operationId: CottonOGD_api_api_v1_primer_design_create
+      description: |-
+        POST /v1/primer/design/ — 由序列或基因坐标设计引物。
+
+        body: sequence | (db_id | gene_id + genome_id), sequence_id,
+              parameters={productSizeMin,...}
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/search/genes/:
+    get:
+      operationId: CottonOGD_api_api_v1_search_genes_retrieve
+      description: |-
+        GET|POST /v1/search/genes/ — 基因检索（关键词或基因组区间）。
+
+        关键词模式：q（与 genome_id 至少一个）、limit（≤100）、offset、genome_id。
+        区间模式：region=chr:start-end，或 chrom/chr/chromosome + start + end；
+                  可配合 genome_id 限定物种，返回 match_type='region' 的命中。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: CottonOGD_api_api_v1_search_genes_create
+      description: |-
+        GET|POST /v1/search/genes/ — 基因检索（关键词或基因组区间）。
+
+        关键词模式：q（与 genome_id 至少一个）、limit（≤100）、offset、genome_id。
+        区间模式：region=chr:start-end，或 chrom/chr/chromosome + start + end；
+                  可配合 genome_id 限定物种，返回 match_type='region' 的命中。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/search/indexes/:
+    get:
+      operationId: CottonOGD_api_api_v1_search_indexes_retrieve
+      description: GET /v1/search/indexes/ — 已登记索引清单与可用性。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/search/indexes/{index}/search/:
+    post:
+      operationId: CottonOGD_api_api_v1_search_indexes_search_create
+      description: POST /v1/search/indexes/<index>/search/ — 统一检索代理（原始响应透传）。
+      parameters:
+      - in: path
+        name: index
+        schema:
+          type: string
+        required: true
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/sequences/genes/:
+    post:
+      operationId: CottonOGD_api_api_v1_sequences_genes_create
+      description: POST /v1/sequences/genes/ — 按 db_id 或 (gene_id, genome_id) 取序列。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/sequences/region/:
+    post:
+      operationId: CottonOGD_api_api_v1_sequences_region_create
+      description: POST /v1/sequences/region/ — 按基因组坐标提取序列。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/structure/methods/:
+    get:
+      operationId: CottonOGD_api_api_v1_structure_methods_retrieve
+      description: GET /v1/structure/methods/ — 可选搜索方法。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/structure/search/:
+    post:
+      operationId: CottonOGD_api_api_v1_structure_search_create
+      description: |-
+        POST /v1/structure/search/ — 按蛋白序列搜索相似 PDB 结构。
+
+        body: sequence, method=rcsb_api|hmmer|mmseqs2|blast, top_n, evalue,
+              identity_cutoff, use_cache
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/synteny/block/:
+    get:
+      operationId: CottonOGD_api_api_v1_synteny_block_retrieve
+      description: GET|POST /v1/synteny/block/ — 定位包含提交基因的共线性块。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: CottonOGD_api_api_v1_synteny_block_create
+      description: GET|POST /v1/synteny/block/ — 定位包含提交基因的共线性块。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/synteny/genome/:
+    get:
+      operationId: CottonOGD_api_api_v1_synteny_genome_retrieve
+      description: GET|POST /v1/synteny/genome/ — 成对基因组共线性（预计算 jcvi 结果）。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: CottonOGD_api_api_v1_synteny_genome_create
+      description: GET|POST /v1/synteny/genome/ — 成对基因组共线性（预计算 jcvi 结果）。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/synteny/micro/:
+    get:
+      operationId: CottonOGD_api_api_v1_synteny_micro_retrieve
+      description: GET|POST /v1/synteny/micro/ — 提交基因的微共线性图与轨道。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: CottonOGD_api_api_v1_synteny_micro_create
+      description: GET|POST /v1/synteny/micro/ — 提交基因的微共线性图与轨道。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/synteny/pairs/:
+    get:
+      operationId: CottonOGD_api_api_v1_synteny_pairs_retrieve
+      description: GET /v1/synteny/pairs/ — 已有预计算共线性的基因组对。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/variants/density/:
+    get:
+      operationId: CottonOGD_api_api_v1_variants_density_retrieve
+      description: GET|POST /v1/variants/density/ — 区间等宽 bin 位点密度。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: CottonOGD_api_api_v1_variants_density_create
+      description: GET|POST /v1/variants/density/ — 区间等宽 bin 位点密度。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/variants/detail/:
+    get:
+      operationId: CottonOGD_api_api_v1_variants_detail_retrieve
+      description: GET|POST /v1/variants/detail/ — 单一位点详情。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: CottonOGD_api_api_v1_variants_detail_create
+      description: GET|POST /v1/variants/detail/ — 单一位点详情。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/variants/genotype/:
+    get:
+      operationId: CottonOGD_api_api_v1_variants_genotype_retrieve
+      description: GET|POST /v1/variants/genotype/ — tabix 取回逐样本基因型。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: CottonOGD_api_api_v1_variants_genotype_create
+      description: GET|POST /v1/variants/genotype/ — tabix 取回逐样本基因型。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/variants/region/:
+    get:
+      operationId: CottonOGD_api_api_v1_variants_region_retrieve
+      description: GET|POST /v1/variants/region/ — 按区间/类型查询位点。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: CottonOGD_api_api_v1_variants_region_create
+      description: GET|POST /v1/variants/region/ — 按区间/类型查询位点。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/variants/sets/:
+    get:
+      operationId: CottonOGD_api_api_v1_variants_sets_retrieve
+      description: GET|POST /v1/variants/sets/ — 群体数据集列表。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: CottonOGD_api_api_v1_variants_sets_create
+      description: GET|POST /v1/variants/sets/ — 群体数据集列表。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/variants/syri/pairs/:
+    get:
+      operationId: CottonOGD_api_api_v1_variants_syri_pairs_retrieve
+      description: GET|POST /v1/variants/syri/pairs/ — 成对比较批次。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: CottonOGD_api_api_v1_variants_syri_pairs_create
+      description: GET|POST /v1/variants/syri/pairs/ — 成对比较批次。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/variants/syri/sequence/:
+    get:
+      operationId: CottonOGD_api_api_v1_variants_syri_sequence_retrieve
+      description: GET|POST /v1/variants/syri/sequence/ — SyRI 序列级注释。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: CottonOGD_api_api_v1_variants_syri_sequence_create
+      description: GET|POST /v1/variants/syri/sequence/ — SyRI 序列级注释。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /CottonOGD_api/api/v1/variants/syri/structural/:
+    get:
+      operationId: CottonOGD_api_api_v1_variants_syri_structural_retrieve
+      description: GET|POST /v1/variants/syri/structural/ — SyRI 结构重排事件。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: CottonOGD_api_api_v1_variants_syri_structural_create
+      description: GET|POST /v1/variants/syri/structural/ — SyRI 结构重排事件。
+      tags:
+      - CottonOGD_api
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /download_genome/{genome_id}/{file_type}:
+    get:
+      operationId: download_genome_retrieve
+      description: GET /v1/files/genome/<genome_id>/<file_type>/ — 基因组数据文件。
+      parameters:
+      - in: path
+        name: file_type
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: genome_id
+        schema:
+          type: string
+        required: true
+      tags:
+      - download_genome
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
