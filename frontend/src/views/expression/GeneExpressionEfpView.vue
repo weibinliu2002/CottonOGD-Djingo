@@ -264,9 +264,14 @@ const generateImage = () => {
     }
     return response.json()
   })
-  .then(data => {
-    console.log('Response data:', data)
-    console.log('typeof data:', typeof data)
+  .then(payload => {
+    console.log('Response data:', payload)
+    // v1 统一信封 { code, message, data }：这里用原生 fetch，需自行解包
+    const data = payload && payload.data ? payload.data : payload
+    if (payload && typeof payload.code === 'number' && payload.code !== 0) {
+      showMessage('Error: ' + (payload.message || 'Invalid response format'), 'error')
+      return
+    }
     // Try to get image field directly, not dependent on success field
     if (data.image) {
       console.log('Found image in response:', data.image)
