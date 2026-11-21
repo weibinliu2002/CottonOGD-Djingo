@@ -102,6 +102,7 @@ export function useAsyncTask(startEndpoint: string, resultEndpoint: string, opti
       // 处理响应数据 - 检查是否已经通过拦截器处理
       const responseData = response as unknown as ApiResponse
 
+      // v1 部分分析接口改为同步返回，无 task_id 时直接当作最终结果
       if (responseData.status === 'success' && responseData.task_id) {
         return responseData.task_id
       } else {

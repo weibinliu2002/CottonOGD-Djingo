@@ -1270,9 +1270,11 @@ async function openGeneDetail(box: MicroGeneBox): Promise<void> {
   if (!genomeId) return
   const requestId = `synteny_micro_${Date.now()}`
   try {
-    const response = (await httpInstance.post('/CottonOGD_api/geneid_summary/', {
+    const response = (await httpInstance.post('/CottonOGD_api/api/v1/genes/lookup/', {
       gene_id: box.gene.id,
       genome_id: genomeId,
+      // v1 统一入口：mode=summary 才返回 geneid_result 等旧字段
+      mode: 'summary',
       request_id: requestId,
     })) as any
     if (!response?.geneid_result) return

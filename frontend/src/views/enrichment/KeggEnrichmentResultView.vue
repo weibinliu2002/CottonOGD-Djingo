@@ -225,14 +225,15 @@ const fetchResults = async () => {
     formData.append('q_value_threshold', String(qValueThreshold))
     
     // 使用配置好的axios实例调用后端API获取结果
-    const data = await axios.post('/CottonOGD_api/kegg_enrichment/', formData, {
+    const data = await axios.post('/CottonOGD_api/api/v1/annotations/kegg/enrichment/', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     }) as unknown as any
     console.log('KEGG富集API响应:', data)
     
     // 确保data是一个对象并且有status属性
     if (typeof data === 'object' && data !== null) {
-      if (data.status === 'success') {
+      // v1：拦截器已解包，业务字段直接在 data 上（旧版为 {status, data}）
+      if (data.status === 'success' || Array.isArray(data.results)) {
         const resultData = data.data
         // 解析description字段（如果是字符串）
         allResults.value = (resultData.results || []).map((item: any) => {

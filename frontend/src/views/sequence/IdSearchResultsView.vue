@@ -643,7 +643,7 @@ const searchPdbStructures = async (proteinSeq: string) => {
     formData.append('method', 'rcsb_api')
     console.log('Sending PDB search request...')
 
-    const response = await httpInstance.post('/CottonOGD_api/search_similar_structure/', formData)
+    const response = await httpInstance.post('/CottonOGD_api/api/v1/structure/search/', formData)
     const data = response.data !== undefined ? response.data : response
     console.log('PDB search response:', data)
 
@@ -1196,7 +1196,15 @@ const fetchGeneData = async (db_id: string) => {
       console.log('db_id:', db_id)
       
       try {
-        const response = await httpInstance.post('/CottonOGD_api/geneid_result/', { db_id: db_id })
+        const response = await httpInstance.post('/CottonOGD_api/api/v1/genes/lookup/', {
+          db_id: db_id,
+          // v1 统一入口：mode=detail 返回基因详情
+          mode: 'detail',
+        }) as any
+        // v1 把详情放在 data.detail，旧代码读 results 字段，这里对齐字段名
+        if (response && response.detail && response.results === undefined) {
+          response.results = response.detail
+        }
         console.log('response 对象:', response)
         console.log('response 类型:', typeof response)
         

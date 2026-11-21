@@ -27,7 +27,7 @@ interface ChatMessage {
   tools?: ToolCall[]
 }
 
-const CHAT_API = '/CottonOGD_api/ai/chat/'
+const CHAT_API = '/CottonOGD_api/api/v1/ai/chat/'
 const AI_TIMEOUT_MS = 120000 // LLM + 工具调用可能较慢，覆盖全局 30s 超时
 
 // Markdown 渲染：AI 回答可能包含基因 ID 列表、相对链接、表格等

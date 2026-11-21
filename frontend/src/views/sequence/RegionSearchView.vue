@@ -208,10 +208,12 @@ const navigateToGeneDetail = async (gene: any) => {
     const params = {
       gene_id: geneId,
       genome_id: genomeId,
+      // v1 统一入口：mode=summary 才返回 geneid_result 等旧字段
+      mode: 'summary',
       request_id: requestId
     }
 
-    const response = await httpInstance.post('/CottonOGD_api/geneid_summary/', params) as any
+    const response = await httpInstance.post('/CottonOGD_api/api/v1/genes/lookup/', params) as any
 
     if (response && response.geneid_result) {
       const searchResults = {

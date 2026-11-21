@@ -191,9 +191,11 @@ function goNext(): void {
 async function openGeneDetail(geneid: string, genomeId?: unknown): Promise<void> {
   const requestId = `gs_${Date.now()}`
   try {
-    const response = (await httpInstance.post('/CottonOGD_api/geneid_summary/', {
+    const response = (await httpInstance.post('/CottonOGD_api/api/v1/genes/lookup/', {
       gene_id: geneid,
       genome_id: genomeId,
+      // v1 统一入口：mode=summary 才返回 geneid_result 等旧字段
+      mode: 'summary',
       request_id: requestId,
     })) as unknown as Record<string, any>
 

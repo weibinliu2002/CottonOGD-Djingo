@@ -82,7 +82,7 @@ export function useSequenceCache(): UseSequenceCacheReturn {
       if (!seq) {
         isFromContent = false
         const res = await httpInstance.post(
-          '/CottonOGD_api/extract_seq/',
+          '/CottonOGD_api/api/v1/sequences/genes/',
           {
             db_id: geneId,
             type: type

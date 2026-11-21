@@ -406,7 +406,7 @@
             <el-button size="small" :loading="seqLoading" @click="loadSequence">
               {{ seqText ? t('refresh') : t('og_sequence_load') }}
             </el-button>
-            <a class="oga-download" :href="fileUrl('sequence')" target="_blank" rel="noopener">
+            <a class="oga-download" :href="fileUrl('sequences')" target="_blank" rel="noopener">
               {{ t('og_sequence_download') }}
             </a>
           </div>
@@ -817,8 +817,8 @@ async function loadSequence(): Promise<void> {
 }
 
 /** 文件接口直链（复用后端 FileResponse 下载能力，避免把大文件读进内存） */
-function fileUrl(kind: 'msa' | 'sequence'): string {
-  return `/CottonOGD_api/orthofinder/${kind}/${encodeURIComponent(props.ogCode)}`
+function fileUrl(kind: 'msa' | 'sequences'): string {
+  return `/CottonOGD_api/api/v1/orthofinder/og/${encodeURIComponent(props.ogCode)}/${kind}/`
 }
 
 function downloadTree(): void {

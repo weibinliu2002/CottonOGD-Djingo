@@ -211,7 +211,7 @@ const loadResults = async () => {
     
     // 调用后端API获取数据（只调用一次）
     console.log('准备调用API')
-    const responseData = await httpInstance.get('/CottonOGD_api/go_annotation/', {
+    const responseData = await httpInstance.get('/CottonOGD_api/api/v1/annotations/go/annotation/', {
       params: {
         gene_id: geneListParam,
         genome_id: genomeId
@@ -222,7 +222,8 @@ const loadResults = async () => {
     console.log('API响应数据:', responseData)
     
     // 由于axios拦截器直接返回response.data，所以responseData就是后端返回的data对象
-    if (responseData && responseData.status === 'success') {
+    // v1：拦截器已解包，业务字段直接在 responseData 上（旧版为 {status, data}）
+    if (responseData && (responseData.status === 'success' || Array.isArray(responseData.results))) {
       console.log('API响应成功')
       const data = responseData.data
       console.log('数据对象:', data)

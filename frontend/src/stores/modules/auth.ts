@@ -59,7 +59,7 @@ function isAdmin(user: AuthUser | null) {
   )
 }
 
-const AUTH_API_BASE = '/CottonOGD_api/api/auth'
+const AUTH_API_BASE = '/CottonOGD_api/api/v1/auth'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({

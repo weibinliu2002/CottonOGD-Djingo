@@ -101,7 +101,7 @@ ATGGGCGAAGCGATAAAGAAACAAGAAGGAGTGTCTACCGTCAAGGAAGACAACAAGTTGATCGACTCCAAGAAGAAGAA
     }
 
     const blastType = selectedBlastType.value;
-    const endpoint = `/CottonOGD_api/blast_cmd/`;
+    const endpoint = `/CottonOGD_api/api/v1/blast/search/`;
 
     console.log('selecthenome', selectedGenomes);
     // 处理基因组ID格式，确保与数据库目录名称匹配
@@ -183,8 +183,8 @@ ATGGGCGAAGCGATAAAGAAACAAGAAGGAGTGTCTACCGTCAAGGAAGACAACAAGTTGATCGACTCCAAGAAGAAGAA
    * @param blastType - BLAST类型
    */
   const pollBlastResults = async (taskId: string, blastType: BlastType) => {
-    const startEndpoint = `/CottonOGD_api/blast_cmd/`;
-    const resultEndpoint = `/CottonOGD_api/blast_cmd/`;
+    const startEndpoint = `/CottonOGD_api/api/v1/blast/search/`;
+    const resultEndpoint = `/CottonOGD_api/api/v1/blast/search/`;
 
     const task = useAsyncTask(startEndpoint, resultEndpoint);
     activeTask.value = task;

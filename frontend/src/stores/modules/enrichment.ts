@@ -131,11 +131,11 @@ Gh_D01G0005`;
     }
 
     const startEndpoint = type === 'go'
-      ? '/CottonOGD_api/go_enrichment/'
-      : '/CottonOGD_api/kegg_enrichment/';
+      ? '/CottonOGD_api/api/v1/annotations/go/enrichment/'
+      : '/CottonOGD_api/api/v1/annotations/kegg/enrichment/';
     const resultEndpoint = type === 'go'
-      ? '/CottonOGD_api/go_enrichment_results/:taskId/'
-      : '/CottonOGD_api/kegg_enrichment_results/:taskId/';
+      ? '/CottonOGD_api/api/v1/annotations/go/enrichment/'
+      : '/CottonOGD_api/api/v1/annotations/kegg/enrichment/';
 
     const task = useAsyncTask(startEndpoint, resultEndpoint, { useFormData: false });
     activeTask.value = task;
@@ -162,8 +162,8 @@ Gh_D01G0005`;
 
   const pollEnrichmentResults = async (taskId: string, type: 'go' | 'kegg', params?: any) => {
     const resultEndpoint = type === 'go'
-      ? '/CottonOGD_api/go_enrichment_results/:taskId/'
-      : '/CottonOGD_api/kegg_enrichment_results/:taskId/';
+      ? '/CottonOGD_api/api/v1/annotations/go/enrichment/'
+      : '/CottonOGD_api/api/v1/annotations/kegg/enrichment/';
 
     const task = useAsyncTask('', resultEndpoint, { useFormData: false });
     activeTask.value = task;
@@ -194,7 +194,7 @@ Gh_D01G0005`;
       formData.append('genome', genome);
       formData.append('region', region);
 
-      const response = await httpInstance.post('/CottonOGD_api/search_by_genome_location/', formData, {
+      const response = await httpInstance.post('/CottonOGD_api/api/v1/genome/location/', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       }) as any;
 
@@ -238,7 +238,7 @@ Gh_D01G0005`;
       formData.append('chromosome', chromosome);
       formData.append('Variation_type', variationType);
 
-      const response = await httpInstance.post('/CottonOGD_api/genome_synteny/', formData, {
+      const response = await httpInstance.post('/CottonOGD_api/api/v1/synteny/genome/', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       }) as any;
 
@@ -275,7 +275,7 @@ Gh_D01G0005`;
       formData.append('genome', genome);
       formData.append('gene_ids', geneIds);
 
-      const response = await httpInstance.post('/CottonOGD_api/gene_genomic_distribution/', formData, {
+      const response = await httpInstance.post('/CottonOGD_api/api/v1/genome/distribution/', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       }) as any;
 

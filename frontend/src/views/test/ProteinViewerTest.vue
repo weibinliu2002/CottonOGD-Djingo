@@ -62,7 +62,7 @@ const testBackend = async () => {
   formData.append('method', 'rcsb_api')
 
   try {
-    const response = await httpInstance.post('/CottonOGD_api/search_similar_structure/', formData)
+    const response = await httpInstance.post('/CottonOGD_api/api/v1/structure/search/', formData)
     const data = response.data !== undefined ? response.data : response
     apiResponse.value = data
 

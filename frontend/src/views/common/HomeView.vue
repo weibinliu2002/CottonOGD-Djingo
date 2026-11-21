@@ -593,9 +593,11 @@ async function goToGeneDetail(hit: Record<string, any>): Promise<void> {
   if (!hit.geneid) return // 非基因类索引命中暂不支持跳转
   const requestId = `meili_home_${Date.now()}`
   try {
-    const response = await httpInstance.post('/CottonOGD_api/geneid_summary/', {
+    const response = await httpInstance.post('/CottonOGD_api/api/v1/genes/lookup/', {
       gene_id: hit.geneid,
       genome_id: hit.genome_id,
+      // v1 统一入口：mode=summary 才返回 geneid_result 等旧字段
+      mode: 'summary',
       request_id: requestId,
     }) as any
 

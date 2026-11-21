@@ -1,19 +1,24 @@
 /**
  * 强类型 HTTP 封装：新代码请优先使用本模块，而非直接 import http.js。
  * 内部复用 http.js 实例（token 登录、401 重放、CSRF 头均由其拦截器统一处理）。
- * 响应拦截器返回 response.data，故这里直接以业务数据类型作为泛型返回。
+ * v1 后端统一返回信封 { code, message, data }，http.js 响应拦截器已解包，
+ * 故这里直接以业务数据类型作为泛型返回；错误由 axios reject 携带 code/message。
  */
 import httpInstance from '@/utils/http.js'
 
-/** 后端返回的统一业务包裹（success/error 约定，见各视图函数） */
+/** v1 后端统一响应信封（拦截器解包前形态） */
 export interface ApiEnvelope<T = unknown> {
-  success?: boolean
-  answer?: string
-  tool_calls?: Array<{ name: string; arguments?: string; elapsed_ms?: number }>
-  history_turns?: number
-  error?: string
-  data?: T
+  code: number
+  message: string
+  data: T | null
   [key: string]: unknown
+}
+
+/** v1 业务错误码（见 backend/docs/api/errors.md；HTTP 状态 = code // 100） */
+export interface V1ErrorBody {
+  code: number
+  message: string
+  data?: unknown
 }
 
 export function apiGet<T = unknown>(url: string, params?: Record<string, unknown>): Promise<T> {

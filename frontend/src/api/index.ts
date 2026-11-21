@@ -97,7 +97,7 @@ function toMessage(err: unknown): string {
 /** 登录：由 http.js 拦截器自动调用，页面一般无需直接调用 */
 export async function apiLogin(): Promise<ApiResult<{ token: string; uuid: string }>> {
   try {
-    const data = await httpInstance.post('/CottonOGD_api/login/')
+    const data = await httpInstance.post('/CottonOGD_api/api/v1/auth/session/')
     return ok(data as unknown as { token: string; uuid: string })
   } catch (e) {
     return fail(toMessage(e))
@@ -135,7 +135,7 @@ export interface SpeciesInfo {
  */
 export async function getSpeciesInfo(): Promise<ApiResult<SpeciesInfo[]>> {
   try {
-    const res = await httpInstance.get('/CottonOGD_api/get_species_info/')
+    const res = await httpInstance.get('/CottonOGD_api/api/v1/meta/species/')
     const raw = (res as { species_info?: unknown })?.species_info
     const list = parseMaybeJson<SpeciesInfo[]>(raw, [])
     return ok(Array.isArray(list) ? list : [])
@@ -176,7 +176,7 @@ export async function getFamilyInfo(params?: {
   Class?: 'TF' | 'TR' | 'kinase' | string
 }): Promise<ApiResult<FamilyInfoResult>> {
   try {
-    const res = await httpInstance.post('/CottonOGD_api/get_family_info/', {
+    const res = await httpInstance.post('/CottonOGD_api/api/v1/meta/families/', {
       selectedGenome: params?.selectedGenome ?? '',
       Class: params?.Class ?? '',
     })
@@ -215,7 +215,12 @@ export async function getGeneidSummary(payload: {
   request_id?: string
 }): Promise<ApiResult<GeneidSummary>> {
   try {
-    const res = await httpInstance.post('/CottonOGD_api/geneid_summary/', payload)
+    // v1 统一入口：POST /genes/lookup/，mode=summary 保留旧 geneid_* 字段
+    const res = await httpInstance.post('/CottonOGD_api/api/v1/genes/lookup/', {
+      ids: payload.db_id ?? payload.gene_id,
+      genome_id: payload.genome_id,
+      mode: 'summary',
+    })
     return ok(res as unknown as GeneidSummary)
   } catch (e) {
     return fail<GeneidSummary>(toMessage(e))
@@ -233,8 +238,14 @@ export async function getGeneidResult(payload: {
   request_id?: string
 }): Promise<ApiResult<Record<string, unknown>>> {
   try {
-    const res = await httpInstance.post('/CottonOGD_api/geneid_result/', payload)
-    return ok((res ?? {}) as unknown as unknown as Record<string, unknown>)
+    // v1 统一入口：POST /genes/lookup/，mode=detail
+    const res = await httpInstance.post('/CottonOGD_api/api/v1/genes/lookup/', {
+      ids: payload.db_id ?? payload.gene_id,
+      genome_id: payload.genome_id,
+      mode: 'detail',
+    }) as unknown as { detail?: Record<string, unknown> }
+    // v1 把详情放在 data.detail，旧调用方读取 results 字段，这里保持旧字段名
+    return ok((res?.detail ?? {}) as unknown as Record<string, unknown>)
   } catch (e) {
     return fail<Record<string, unknown>>(toMessage(e), {})
   }
@@ -245,7 +256,7 @@ export async function getGeneidResult(payload: {
 /** 获取组织列表；不传 genome_id 返回全部去重组织 */
 export async function getTissues(genomeId?: string): Promise<ApiResult<string[]>> {
   try {
-    const res = await httpInstance.get('/CottonOGD_api/extract_expression/tissues/', {
+    const res = await httpInstance.get('/CottonOGD_api/api/v1/expression/tissues/', {
       params: genomeId ? { genome_id: genomeId } : undefined,
     })
     const list = Array.isArray(res) ? (res as unknown as string[]) : ((res as { tissues?: string[] })?.tissues ?? [])
@@ -258,7 +269,7 @@ export async function getTissues(genomeId?: string): Promise<ApiResult<string[]>
 /** 获取含有表达数据的物种列表 */
 export async function getGenomesWithTissue(): Promise<ApiResult<string[]>> {
   try {
-    const res = await httpInstance.get('/CottonOGD_api/extract_expression/genomes/')
+    const res = await httpInstance.get('/CottonOGD_api/api/v1/expression/genomes/')
     const list = Array.isArray(res) ? (res as unknown as string[]) : ((res as { genomes?: string[] })?.genomes ?? [])
     return ok(list)
   } catch (e) {
@@ -274,7 +285,7 @@ export async function extractExpression(payload: {
   tissue?: string
 }): Promise<ApiResult<Record<string, unknown>>> {
   try {
-    const res = await httpInstance.post('/CottonOGD_api/extract_expression/', payload)
+    const res = await httpInstance.post('/CottonOGD_api/api/v1/expression/heatmap/', payload)
     return ok((res ?? {}) as unknown as unknown as Record<string, unknown>)
   } catch (e) {
     return fail<Record<string, unknown>>(toMessage(e), {})
@@ -288,7 +299,7 @@ export async function regenerateHeatmap(payload: {
   config?: Record<string, unknown>
 }): Promise<ApiResult<{ success: boolean; image: string }>> {
   try {
-    const res = await httpInstance.post('/CottonOGD_api/regenerate_heatmap/', payload)
+    const res = await httpInstance.post('/CottonOGD_api/api/v1/expression/heatmap/regenerate/', payload)
     return ok(res as unknown as { success: boolean; image: string })
   } catch (e) {
     return fail<{ success: boolean; image: string }>(toMessage(e), { success: false, image: '' })
@@ -324,7 +335,7 @@ export async function extractSeq(payload: {
   genome_id?: string
 }): Promise<ApiResult<Record<string, unknown>>> {
   try {
-    const res = await httpInstance.post('/CottonOGD_api/extract_seq/', payload)
+    const res = await httpInstance.post('/CottonOGD_api/api/v1/sequences/genes/', payload)
     return ok((res ?? {}) as unknown as unknown as Record<string, unknown>)
   } catch (e) {
     return fail<Record<string, unknown>>(toMessage(e), {})
@@ -340,7 +351,7 @@ export async function extractSeqGff(payload: {
   strand?: string
 }): Promise<ApiResult<{ sequence: string }>> {
   try {
-    const res = await httpInstance.post('/CottonOGD_api/extract_seq_gff/', payload)
+    const res = await httpInstance.post('/CottonOGD_api/api/v1/sequences/region/', payload)
     return ok(res as unknown as { sequence: string })
   } catch (e) {
     return fail<{ sequence: string }>(toMessage(e), { sequence: '' })
@@ -383,7 +394,7 @@ function escapeFilterValue(value: string): string {
   return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
 }
 
-/** 统一检索（POST /CottonOGD_api/search/）。关键词与过滤条件独立传参。 */
+/** 统一检索（POST /CottonOGD_api/api/v1/search/indexes/<index>/search/）。关键词与过滤条件独立传参。 */
 export async function searchGenes(params: SearchParams): Promise<ApiResult<SearchResult>> {
   const {
     q,
@@ -400,7 +411,6 @@ export async function searchGenes(params: SearchParams): Promise<ApiResult<Searc
   } = params
 
   const body: Record<string, unknown> = {
-    index,
     q,
     offset,
     limit,
@@ -417,7 +427,12 @@ export async function searchGenes(params: SearchParams): Promise<ApiResult<Searc
   if (withFacets) body.facets = facets
 
   try {
-    const data = await httpInstance.post('/CottonOGD_api/search/', body, { signal }) as unknown as unknown as Record<string, any>
+    // v1：索引名移入 URL，body 不再携带 index
+    const data = await httpInstance.post(
+      `/CottonOGD_api/api/v1/search/indexes/${encodeURIComponent(index)}/search/`,
+      body,
+      { signal },
+    ) as unknown as Record<string, any>
     return ok({
       hits: data.hits ?? [],
       estimatedTotalHits: data.estimatedTotalHits ?? 0,
@@ -447,7 +462,7 @@ export interface SearchIndexInfo {
 /** 拉取可用检索索引列表 */
 export async function getSearchIndexes(): Promise<ApiResult<SearchIndexInfo[]>> {
   try {
-    const data = await httpInstance.get('/CottonOGD_api/get_search_indexes/') as unknown as unknown as Record<string, any>
+    const data = await httpInstance.get('/CottonOGD_api/api/v1/search/indexes/') as unknown as unknown as Record<string, any>
     const list = Array.isArray(data?.indexes) ? (data.indexes as unknown as SearchIndexInfo[]) : []
     return ok(list)
   } catch (e) {
@@ -466,7 +481,7 @@ export async function getGoAnnotation(params: {
   genome_id?: string
 }): Promise<ApiResult<Record<string, unknown>>> {
   try {
-    const res = await httpInstance.get('/CottonOGD_api/go_annotation/', { params })
+    const res = await httpInstance.get('/CottonOGD_api/api/v1/annotations/go/annotation/', { params })
     return ok((res ?? {}) as unknown as unknown as Record<string, unknown>)
   } catch (e) {
     return fail<Record<string, unknown>>(toMessage(e), {})
@@ -479,7 +494,7 @@ export async function getKeggAnnotation(params: {
   genome_id?: string
 }): Promise<ApiResult<Record<string, unknown>>> {
   try {
-    const res = await httpInstance.get('/CottonOGD_api/kegg_annotation/', { params })
+    const res = await httpInstance.get('/CottonOGD_api/api/v1/annotations/kegg/annotation/', { params })
     return ok((res ?? {}) as unknown as unknown as Record<string, unknown>)
   } catch (e) {
     return fail<Record<string, unknown>>(toMessage(e), {})
@@ -501,7 +516,7 @@ export async function runGoEnrichment(payload: {
     formData.append('genome_id', payload.genome_id ?? '')
     formData.append('p_value_threshold', String(payload.p_value_threshold ?? 0.05))
 
-    const res = await httpInstance.post('/CottonOGD_api/go_enrichment/', formData, {
+    const res = await httpInstance.post('/CottonOGD_api/api/v1/annotations/go/enrichment/', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
     return ok((res ?? {}) as unknown as unknown as Record<string, unknown>)
@@ -522,7 +537,7 @@ export async function runKeggEnrichment(payload: {
     formData.append('genome_id', payload.genome_id ?? '')
     formData.append('p_value_threshold', String(payload.p_value_threshold ?? 0.05))
 
-    const res = await httpInstance.post('/CottonOGD_api/kegg_enrichment/', formData, {
+    const res = await httpInstance.post('/CottonOGD_api/api/v1/annotations/kegg/enrichment/', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
     return ok((res ?? {}) as unknown as unknown as Record<string, unknown>)
@@ -547,7 +562,7 @@ export async function searchByGenomeLocation(payload: {
     formData.append('genome', payload.genome)
     formData.append('region', payload.region)
 
-    const res = await httpInstance.post('/CottonOGD_api/search_by_genome_location/', formData, {
+    const res = await httpInstance.post('/CottonOGD_api/api/v1/genome/location/', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
     return ok((res ?? {}) as unknown as unknown as Record<string, unknown>)
@@ -584,7 +599,7 @@ export async function getGeneGenomicDistribution(payload: {
     formData.append('genome', payload.genome)
     formData.append('gene_ids', payload.gene_ids ?? '')
 
-    const res = await httpInstance.post('/CottonOGD_api/gene_genomic_distribution/', formData, {
+    const res = await httpInstance.post('/CottonOGD_api/api/v1/genome/distribution/', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
     return ok((res ?? {}) as unknown as GeneGenomicDistributionResult)
@@ -659,7 +674,7 @@ export async function getGenomeSynteny(payload: {
     if (payload.gene_id?.trim()) formData.append('gene_id', payload.gene_id.trim())
     if (payload.includeBlocks) formData.append('include_blocks', 'true')
 
-    const res = await httpInstance.post('/CottonOGD_api/genome_synteny/', formData, {
+    const res = await httpInstance.post('/CottonOGD_api/api/v1/synteny/genome/', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
     return ok((res ?? {}) as unknown as GenomeSyntenyResult)
@@ -720,7 +735,7 @@ export async function getMicrosynteny(payload: {
     formData.append('source', payload.source)
     formData.append('target', payload.target)
     formData.append('gene_ids', payload.gene_ids)
-    const res = await httpInstance.post('/CottonOGD_api/microsynteny/', formData, {
+    const res = await httpInstance.post('/CottonOGD_api/api/v1/synteny/micro/', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
     return ok((res ?? {}) as unknown as MicrosyntenyResult)
@@ -767,7 +782,7 @@ export async function getChromosomeLengths(genome: string): Promise<ChromosomeLe
 /** 可用共线性基因组对（后端 synteny_pairs 接口，无需鉴权） */
 export async function getSyntenyPairs(): Promise<ApiResult<{ pairs: { source: string; target: string }[] }>> {
   try {
-    const res = await httpInstance.get('/CottonOGD_api/synteny_pairs/')
+    const res = await httpInstance.get('/CottonOGD_api/api/v1/synteny/pairs/')
     return ok((res ?? { pairs: [] }) as unknown as { pairs: { source: string; target: string }[] })
   } catch (e) {
     return fail<{ pairs: { source: string; target: string }[] }>(toMessage(e), { pairs: [] })
@@ -835,7 +850,7 @@ export async function submitBlast(payload: {
   max_hits?: number | string
 }): Promise<ApiResult<BlastResult>> {
   try {
-    const res = await httpInstance.post('/CottonOGD_api/blast_cmd/', payload) as unknown as unknown as Record<string, any>
+    const res = await httpInstance.post('/CottonOGD_api/api/v1/blast/search/', payload) as unknown as unknown as Record<string, any>
     const rawMap = (res?.results ?? {}) as unknown as unknown as Record<string, unknown>
     const results: Record<string, BlastQueryResult> = {}
     const rawResults: Record<string, string> = {}
@@ -883,7 +898,7 @@ export async function designPrimers(payload: {
   parameters?: Record<string, unknown>
 }): Promise<ApiResult<{ status: string; results: PrimerPair[] }>> {
   try {
-    const res = await httpInstance.post('/CottonOGD_api/primer_design/', payload)
+    const res = await httpInstance.post('/CottonOGD_api/api/v1/primer/design/', payload)
     return ok(res as unknown as { status: string; results: PrimerPair[] })
   } catch (e) {
     return fail<{ status: string; results: PrimerPair[] }>(toMessage(e), { status: 'error', results: [] })
@@ -913,7 +928,7 @@ export async function searchSimilarStructure(payload: {
   use_cache?: boolean
 }): Promise<ApiResult<StructureSearchResult>> {
   try {
-    const res = await httpInstance.post('/CottonOGD_api/search_similar_structure/', payload)
+    const res = await httpInstance.post('/CottonOGD_api/api/v1/structure/search/', payload)
     return ok((res ?? {}) as unknown as unknown as StructureSearchResult)
   } catch (e) {
     return fail<StructureSearchResult>(toMessage(e), {})
@@ -923,7 +938,7 @@ export async function searchSimilarStructure(payload: {
 /** 获取可用的结构搜索方法列表（后端为硬编码返回） */
 export async function getSearchMethods(): Promise<ApiResult<Record<string, unknown>[]>> {
   try {
-    const res = await httpInstance.get('/CottonOGD_api/get_search_methods/') as unknown as unknown as Record<string, any>
+    const res = await httpInstance.get('/CottonOGD_api/api/v1/structure/methods/') as unknown as unknown as Record<string, any>
     return ok(Array.isArray(res?.methods) ? (res.methods as unknown as Record<string, unknown>[]) : [])
   } catch (e) {
     return fail<Record<string, unknown>[]>(toMessage(e), [])
@@ -969,7 +984,7 @@ export async function getExpressionEfpImage(payload: {
   high_color?: string
 }): Promise<ApiResult<EfpImageResult>> {
   try {
-    const res = await httpInstance.post('/CottonOGD_api/expression_EFP_image/', payload)
+    const res = await httpInstance.post('/CottonOGD_api/api/v1/expression/efp/', payload)
     return ok((res ?? {}) as unknown as unknown as EfpImageResult)
   } catch (e) {
     return fail<EfpImageResult>(toMessage(e), { success: false, image: '' })
@@ -994,7 +1009,7 @@ export async function postAiChat(payload: {
   clear_history?: boolean
 }): Promise<ApiResult<AiChatResult>> {
   try {
-    const res = await httpInstance.post('/CottonOGD_api/ai/chat/', payload, { timeout: 120_000 })
+    const res = await httpInstance.post('/CottonOGD_api/api/v1/ai/chat/', payload, { timeout: 120_000 })
     return ok((res ?? {}) as unknown as unknown as AiChatResult)
   } catch (e) {
     return fail<AiChatResult>(toMessage(e), { success: false })
@@ -1231,12 +1246,12 @@ export interface OrthogroupsBySpeciesResponse {
 
 /**
  * 按基因查询直系同源。
- * POST /CottonOGD_api/orthofinder/ortholog_gene/，body { geneid }。
+ * POST /CottonOGD_api/api/v1/orthofinder/genes/orthogroups/，body { geneid }。
  * 未命中时后端返回 found:false、orthogroups:[]。
  */
 export async function getOrthologByGene(geneid: string): Promise<OrthologGeneResponse> {
   try {
-    const res = await httpInstance.post('/CottonOGD_api/orthofinder/ortholog_gene/', {
+    const res = await httpInstance.post('/CottonOGD_api/api/v1/orthofinder/genes/orthogroups/', {
       geneid,
     }) as unknown as OrthologGeneResponse
     return res ?? { query_gene: geneid, found: false, orthogroups: [] }
@@ -1247,7 +1262,7 @@ export async function getOrthologByGene(geneid: string): Promise<OrthologGeneRes
 
 /**
  * 查询单个 orthogroup 的全部成员。
- * POST /CottonOGD_api/orthofinder/orthogroup_detail/，body { og_code }。
+ * POST /CottonOGD_api/api/v1/orthofinder/orthogroups/detail/，body { og_code }。
  * 后端返回**扁平结构**：{ found, og_code, species_count, ..., species_members }。
  */
 export async function getOrthogroupDetailV2(
@@ -1264,7 +1279,7 @@ export async function getOrthogroupDetailV2(
     if (options?.species?.length) body.species = options.species
     if (options?.includeGenes === false) body.include_genes = 0
     const res = await httpInstance.post(
-      '/CottonOGD_api/orthofinder/orthogroup_detail/',
+      '/CottonOGD_api/api/v1/orthofinder/orthogroups/detail/',
       body,
     ) as unknown as OrthologOrthogroup & { found: boolean; selected_species_count?: number | null }
     // 后端 found:true 但 orthogroup 为空对象时也视为未命中
@@ -1279,7 +1294,7 @@ export async function getOrthogroupDetailV2(
 
 /**
  * 按物种筛选 orthogroup（跨物种共有）。
- * POST /CottonOGD_api/orthofinder/orthogroups_by_species/。
+ * POST /CottonOGD_api/api/v1/orthofinder/orthogroups/search/。
  * mode: all=全部选中物种共有（默认）；any=任一物种含有。
  */
 export async function getOrthogroupsBySpecies(params: {
@@ -1318,12 +1333,26 @@ export async function getOrthogroupsBySpecies(params: {
   }
   try {
     const res = await httpInstance.post(
-      '/CottonOGD_api/orthofinder/orthogroups_by_species/',
+      '/CottonOGD_api/api/v1/orthofinder/orthogroups/search/',
       body,
-    ) as unknown as OrthogroupsBySpeciesResponse
-    return res ?? {
-      found: false, mode: params.mode ?? 'all', species: params.species ?? [],
-      total: 0, limit: params.limit ?? 50, offset: params.offset ?? 0, orthogroups: [],
+    ) as unknown as OrthogroupsBySpeciesResponse & {
+      orthogroups?: Array<OrthologOrthogroup & { n_sp?: number }>
+    }
+    // v1 把“所选物种覆盖数”命名为 n_sp，这里统一映射为 selected_species_count
+    const orthogroups = (res?.orthogroups ?? []).map((row) => ({
+      ...row,
+      selected_species_count: row.selected_species_count ?? row.n_sp ?? null,
+    }))
+    return {
+      found: res?.found ?? false,
+      mode: res?.mode ?? (params.mode ?? 'all'),
+      species: res?.species ?? (params.species ?? []),
+      total: res?.total ?? 0,
+      limit: res?.limit ?? (params.limit ?? 50),
+      offset: res?.offset ?? (params.offset ?? 0),
+      has_more: res?.has_more,
+      filters: res?.filters,
+      orthogroups,
     }
   } catch {
     return {
@@ -1335,12 +1364,12 @@ export async function getOrthogroupsBySpecies(params: {
 
 /**
  * 拉取物种元数据（供物种下拉/筛选）。
- * GET /CottonOGD_api/orthofinder/meta/，无参。
+ * GET /CottonOGD_api/api/v1/orthofinder/meta/，无参。
  */
 export async function getOrthologMeta(): Promise<OrthologSpeciesMeta[]> {
   try {
     // 后端返回 { species: [...] }（而非裸数组），两种形态都兼容
-    const res = await httpInstance.get('/CottonOGD_api/orthofinder/meta/') as unknown as
+    const res = await httpInstance.get('/CottonOGD_api/api/v1/orthofinder/meta/') as unknown as
       | OrthologSpeciesMeta[]
       | { species?: OrthologSpeciesMeta[] }
     if (Array.isArray(res)) return res
@@ -1355,13 +1384,14 @@ export async function getOrthologMeta(): Promise<OrthologSpeciesMeta[]> {
 
 /**
  * 拉取单个 orthogroup 的 FASTA 序列文本（按需，零全量加载）。
- * GET /CottonOGD_api/orthofinder/sequence/<og_code>
+ * GET /CottonOGD_api/api/v1/orthofinder/og/<og_code>/sequences/
  */
 export async function getOrthogroupSequence(ogCode: string): Promise<string> {
   try {
-    const res = await httpInstance.get(`/CottonOGD_api/orthofinder/sequence/${ogCode}`, {
-      responseType: 'text',
-    }) as unknown as string
+    const res = await httpInstance.get(
+      `/CottonOGD_api/api/v1/orthofinder/og/${encodeURIComponent(ogCode)}/sequences/`,
+      { responseType: 'text' },
+    ) as unknown as string
     return typeof res === 'string' ? res : ''
   } catch {
     return ''
@@ -1370,15 +1400,16 @@ export async function getOrthogroupSequence(ogCode: string): Promise<string> {
 
 /**
  * 拉取单个 orthogroup 的基因树（newick 纯文本）。
- * GET /CottonOGD_api/orthofinder/tree/<og_code>
+ * GET /CottonOGD_api/api/v1/orthofinder/og/<og_code>/tree/
  * 内容为标准 newick 字符串，可直接喂给 phylotree.js / D3 渲染。
  * 资源不存在时后端返回 HTTP 404，前端 catch 后静默隐藏该区块。
  */
 export async function getOrthogroupTree(ogCode: string): Promise<string> {
   try {
-    const res = await httpInstance.get(`/CottonOGD_api/orthofinder/tree/${ogCode}`, {
-      responseType: 'text',
-    }) as unknown as string
+    const res = await httpInstance.get(
+      `/CottonOGD_api/api/v1/orthofinder/og/${encodeURIComponent(ogCode)}/tree/`,
+      { responseType: 'text' },
+    ) as unknown as string
     return typeof res === 'string' ? res : ''
   } catch {
     return ''
@@ -1387,14 +1418,15 @@ export async function getOrthogroupTree(ogCode: string): Promise<string> {
 
 /**
  * 拉取单个 orthogroup 的多序列比对（MSA）纯文本 FASTA。
- * GET /CottonOGD_api/orthofinder/msa/<og_code>
+ * GET /CottonOGD_api/api/v1/orthofinder/og/<og_code>/msa/
  * 资源不存在时后端返回 HTTP 404，前端 catch 后静默隐藏该面板（约 7.1 万/8.4 万有 MSA）。
  */
 export async function getOrthogroupMsa(ogCode: string): Promise<string> {
   try {
-    const res = await httpInstance.get(`/CottonOGD_api/orthofinder/msa/${ogCode}`, {
-      responseType: 'text',
-    }) as unknown as string
+    const res = await httpInstance.get(
+      `/CottonOGD_api/api/v1/orthofinder/og/${encodeURIComponent(ogCode)}/msa/`,
+      { responseType: 'text' },
+    ) as unknown as string
     // 仅接受以 '>' 开头的 FASTA 文本；若后端未实现 msa/ 路由，
     // 请求会落到静态服务器 SPA 兜底页（text/html），不能当 MSA 渲染。
     if (typeof res !== 'string' || !res.trimStart().startsWith('>')) return ''
@@ -1407,13 +1439,14 @@ export async function getOrthogroupMsa(ogCode: string): Promise<string> {
 // ==================== 十七、比较基因组学扩展接口（v1.1 交接文档 C.9–C.15） ====================
 // 全部按 docs/COMPARATIVE_ANALYSIS_API_HANDOFF.md 实现；响应为裸 JSON。
 
-/** 从 axios 错误中提取后端 error 文案 */
+/** 从 axios 错误中提取后端文案（v1 信封字段为 message） */
 function readBackendError(err: unknown): string {
   const e = err as {
-    response?: { data?: { error?: string; note?: string } }
+    response?: { data?: { message?: string; error?: string; note?: string } }
     message?: string
   }
-  return e?.response?.data?.error || e?.message || DEFAULT_ERROR_MESSAGE
+  const data = e?.response?.data
+  return data?.message || data?.error || e?.message || DEFAULT_ERROR_MESSAGE
 }
 
 /** OG 成员平铺行（C.9） */
@@ -1450,7 +1483,7 @@ export async function getOgMembers(params: {
   if (params.species?.length) body.species = params.species
   try {
     const res = await httpInstance.post(
-      '/CottonOGD_api/orthofinder/og_members/',
+      '/CottonOGD_api/api/v1/orthofinder/orthogroups/members/',
       body,
     ) as unknown as OgMembersResponse
     return res ?? {
@@ -1508,7 +1541,7 @@ export async function getGeneOrthologs(params: {
 }): Promise<GeneOrthologsResponse> {
   try {
     const res = await httpInstance.post(
-      '/CottonOGD_api/orthofinder/gene_orthologs/',
+      '/CottonOGD_api/api/v1/orthofinder/genes/orthologs/',
       params,
     ) as unknown as GeneOrthologsResponse
     return res ?? {
@@ -1559,7 +1592,7 @@ export async function getGenomePair(params: {
 }): Promise<GenomePairResponse> {
   try {
     const res = await httpInstance.post(
-      '/CottonOGD_api/orthofinder/genome_pair/',
+      '/CottonOGD_api/api/v1/orthofinder/genome-pairs/',
       { ...params, limit: params.limit ?? 50, offset: params.offset ?? 0 },
     ) as unknown as GenomePairResponse
     return res ?? {
@@ -1603,7 +1636,7 @@ export async function getGeneHog(params: {
 }): Promise<GeneHogResponse> {
   try {
     const res = await httpInstance.post(
-      '/CottonOGD_api/orthofinder/gene_hog/',
+      '/CottonOGD_api/api/v1/orthofinder/genes/hogs/',
       params,
     ) as unknown as GeneHogResponse
     return res ?? { query_gene: params.geneid, found: false, hogs: [] }
@@ -1639,7 +1672,7 @@ export interface HogDetailResponse {
 export async function getHogDetail(hogId: string): Promise<HogDetailResponse> {
   try {
     const res = await httpInstance.post(
-      '/CottonOGD_api/orthofinder/hog_detail/',
+      '/CottonOGD_api/api/v1/orthofinder/hogs/detail/',
       { hog_id: hogId },
     ) as unknown as HogDetailResponse
     return res ?? { found: false, hog_id: hogId }
@@ -1679,7 +1712,7 @@ export async function getSpeciesTree(params?: {
   if (params?.includeNodes === false) query.include_nodes = 0
   try {
     const res = await httpInstance.get(
-      '/CottonOGD_api/orthofinder/species_tree/',
+      '/CottonOGD_api/api/v1/orthofinder/species/tree/',
       { params: query },
     )
     if (typeof res === 'string') {
@@ -1723,7 +1756,7 @@ export async function getOrthofinderStatistics(params: {
   if (params.scope) query.scope = params.scope
   if (params.og_code) query.og_code = params.og_code
   try {
-    const res = await httpInstance.get('/CottonOGD_api/orthofinder/statistics/', {
+    const res = await httpInstance.get('/CottonOGD_api/api/v1/orthofinder/statistics/', {
       params: query,
     })
     return (res ?? {}) as OrthofinderStatisticsResponse
@@ -1769,7 +1802,7 @@ export async function getOrthofinderTandem(
   if (params?.includeEvents === false) query.include_events = 0
   try {
     const res = await httpInstance.get(
-      `/CottonOGD_api/orthofinder/tandem/${ogCode}`,
+      `/CottonOGD_api/api/v1/orthofinder/og/${encodeURIComponent(ogCode)}/tandem/`,
       { params: query },
     ) as unknown as OrthofinderTandemSummary | Record<string, never>
     // 无复制事件时后端返回 {}
@@ -1788,7 +1821,7 @@ export async function getStringPpiNetwork(payload: {
   gene_ids: string[]
   genome_id: string
 }): Promise<{ network: PpiNetwork; message: string }> {
-  const response: unknown = await httpInstance.post('/CottonOGD_api/ppi/string/', payload, {
+  const response: unknown = await httpInstance.post('/CottonOGD_api/api/v1/ppi/string/', payload, {
     timeout: 120_000,
   })
   const message =
@@ -1862,8 +1895,11 @@ export interface TypeStat {
 /** 获取所有 SyRI pairwise 比对批次 */
 export async function getSyriPairs(): Promise<ApiResult<SyriPair[]>> {
   try {
-    const res = await httpInstance.get('/CottonOGD_api/syri/pairs/')
-    return ok(res as unknown as SyriPair[])
+    const res = await httpInstance.get('/CottonOGD_api/api/v1/variants/syri/pairs/') as unknown as
+      | SyriPair[]
+      | { pairs?: SyriPair[] }
+    // v1 返回 { pairs: [...] }，旧调用方直接拿数组
+    return ok(Array.isArray(res) ? res : (res?.pairs ?? []))
   } catch (e) {
     return fail<SyriPair[]>(toMessage(e), [])
   }
@@ -1879,7 +1915,7 @@ export async function getSyriStructural(payload: {
   limit?: number
 }): Promise<ApiResult<{ pair_id: number; count: number; type_stat: TypeStat[]; rows: SyriStructural[] }>> {
   try {
-    const res = await httpInstance.post('/CottonOGD_api/syri/structural/', payload)
+    const res = await httpInstance.post('/CottonOGD_api/api/v1/variants/syri/structural/', payload)
     return ok(res as unknown as { pair_id: number; count: number; type_stat: TypeStat[]; rows: SyriStructural[] })
   } catch (e) {
     return fail<{ pair_id: number; count: number; type_stat: TypeStat[]; rows: SyriStructural[] }>(
@@ -1899,7 +1935,7 @@ export async function getSyriSequence(payload: {
   limit?: number
 }): Promise<ApiResult<{ pair_id: number; count: number; rows: SyriSequence[] }>> {
   try {
-    const res = await httpInstance.post('/CottonOGD_api/syri/sequence/', payload)
+    const res = await httpInstance.post('/CottonOGD_api/api/v1/variants/syri/sequence/', payload)
     return ok(res as unknown as { pair_id: number; count: number; rows: SyriSequence[] })
   } catch (e) {
     return fail<{ pair_id: number; count: number; rows: SyriSequence[] }>(toMessage(e), { pair_id: 0, count: 0, rows: [] })
@@ -1940,8 +1976,10 @@ export interface VariantDensityBin {
 /** 获取所有群体变异数据集 */
 export async function getVariantSets(): Promise<ApiResult<VariantSet[]>> {
   try {
-    const res = await httpInstance.get('/CottonOGD_api/variant/sets/')
-    return ok(res as unknown as VariantSet[])
+    const res = await httpInstance.get('/CottonOGD_api/api/v1/variants/sets/') as unknown as
+      | VariantSet[]
+      | { sets?: VariantSet[] }
+    return ok(Array.isArray(res) ? res : (res?.sets ?? []))
   } catch (e) {
     return fail<VariantSet[]>(toMessage(e), [])
   }
@@ -1957,7 +1995,7 @@ export async function getVariantRegion(payload: {
   limit?: number
 }): Promise<ApiResult<{ set_id: number; count: number; type_stat: TypeStat[]; rows: VariantRecord[] }>> {
   try {
-    const res = await httpInstance.post('/CottonOGD_api/variant/region/', payload)
+    const res = await httpInstance.post('/CottonOGD_api/api/v1/variants/region/', payload)
     return ok(res as unknown as { set_id: number; count: number; type_stat: TypeStat[]; rows: VariantRecord[] })
   } catch (e) {
     return fail<{ set_id: number; count: number; type_stat: TypeStat[]; rows: VariantRecord[] }>(
@@ -1970,7 +2008,7 @@ export async function getVariantRegion(payload: {
 /** 查询单个变异位点详情 */
 export async function getVariantById(id: number | string): Promise<ApiResult<VariantRecord>> {
   try {
-    const res = await httpInstance.get(`/CottonOGD_api/variant/id/${id}/`)
+    const res = await httpInstance.get('/CottonOGD_api/api/v1/variants/detail/', { params: { id } })
     return ok(res as unknown as VariantRecord)
   } catch (e) {
     return fail<VariantRecord>(toMessage(e), {} as VariantRecord)
@@ -1986,7 +2024,7 @@ export async function getVariantDensity(payload: {
   bins?: number
 }): Promise<ApiResult<{ set_id: number; chrom: string; start: number; end: number; bins: number; bin_size: number; total: number; histogram: VariantDensityBin[] }>> {
   try {
-    const res = await httpInstance.post('/CottonOGD_api/variant/density/', payload)
+    const res = await httpInstance.post('/CottonOGD_api/api/v1/variants/density/', payload)
     return ok(res as unknown as { set_id: number; chrom: string; start: number; end: number; bins: number; bin_size: number; total: number; histogram: VariantDensityBin[] })
   } catch (e) {
     return fail<{ set_id: number; chrom: string; start: number; end: number; bins: number; bin_size: number; total: number; histogram: VariantDensityBin[] }>(
@@ -2028,7 +2066,7 @@ export async function getVariantGenotype(payload: {
   format?: string
 }): Promise<ApiResult<VariantGenotypeResult>> {
   try {
-    const res = await httpInstance.post('/CottonOGD_api/variant/genotype/', payload)
+    const res = await httpInstance.post('/CottonOGD_api/api/v1/variants/genotype/', payload)
     return ok(res as unknown as VariantGenotypeResult)
   } catch (e) {
     return fail<VariantGenotypeResult>(toMessage(e), { set_id: 0, chrom: '', start: 0, end: 0, samples: [], records: [] })
@@ -2074,8 +2112,10 @@ export interface GwasPhenotypeRow {
 /** 获取 GWAS 全部性状 */
 export async function getGwasTraits(): Promise<ApiResult<GwasTrait[]>> {
   try {
-    const res = await httpInstance.get('/CottonOGD_api/gwas/traits/')
-    return ok(res as unknown as GwasTrait[])
+    const res = await httpInstance.get('/CottonOGD_api/api/v1/gwas/traits/') as unknown as
+      | GwasTrait[]
+      | { traits?: GwasTrait[] }
+    return ok(Array.isArray(res) ? res : (res?.traits ?? []))
   } catch (e) {
     return fail<GwasTrait[]>(toMessage(e), [])
   }
@@ -2084,8 +2124,10 @@ export async function getGwasTraits(): Promise<ApiResult<GwasTrait[]>> {
 /** 获取 GWAS 材料列表 */
 export async function getGwasAccessions(): Promise<ApiResult<GwasAccession[]>> {
   try {
-    const res = await httpInstance.get('/CottonOGD_api/gwas/accessions/')
-    return ok(res as unknown as GwasAccession[])
+    const res = await httpInstance.get('/CottonOGD_api/api/v1/gwas/accessions/') as unknown as
+      | GwasAccession[]
+      | { accessions?: GwasAccession[] }
+    return ok(Array.isArray(res) ? res : (res?.accessions ?? []))
   } catch (e) {
     return fail<GwasAccession[]>(toMessage(e), [])
   }
@@ -2096,7 +2138,7 @@ export async function getGwasPhenotype(payload: {
   code: string
 }): Promise<ApiResult<{ count: number; rows: GwasPhenotypeRow[] }>> {
   try {
-    const res = await httpInstance.post('/CottonOGD_api/gwas/phenotype/', payload)
+    const res = await httpInstance.post('/CottonOGD_api/api/v1/gwas/phenotype/', payload)
     return ok(res as unknown as { count: number; rows: GwasPhenotypeRow[] })
   } catch (e) {
     return fail<{ count: number; rows: GwasPhenotypeRow[] }>(toMessage(e), { count: 0, rows: [] })
@@ -2113,7 +2155,7 @@ export async function getGwasMarkers(payload: {
   limit?: number
 }): Promise<ApiResult<{ set_id: number; count: number; rows: GwasMarker[] }>> {
   try {
-    const res = await httpInstance.post('/CottonOGD_api/gwas/markers/', payload)
+    const res = await httpInstance.post('/CottonOGD_api/api/v1/gwas/markers/', payload)
     return ok(res as unknown as { set_id: number; count: number; rows: GwasMarker[] })
   } catch (e) {
     return fail<{ set_id: number; count: number; rows: GwasMarker[] }>(toMessage(e), {
@@ -2132,7 +2174,7 @@ export async function getGwasAssociations(payload: {
   end?: number
 }): Promise<ApiResult<{ count: number; rows: GwasMarker[] }>> {
   try {
-    const res = await httpInstance.post('/CottonOGD_api/gwas/associations/', payload)
+    const res = await httpInstance.post('/CottonOGD_api/api/v1/gwas/associations/', payload)
     return ok(res as unknown as { count: number; rows: GwasMarker[] })
   } catch (e) {
     return fail<{ count: number; rows: GwasMarker[] }>(toMessage(e), { count: 0, rows: [] })
@@ -2267,7 +2309,7 @@ const CONVERSION_TIMEOUT = 120000
 /** 获取可用的转换方向与工具 */
 export async function getConversionPairs(): Promise<ApiResult<ConversionPairsResult>> {
   try {
-    const res = await httpInstance.get('/CottonOGD_api/conversion/pairs/')
+    const res = await httpInstance.get('/CottonOGD_api/api/v1/conversion/pairs/')
     return ok(res as unknown as ConversionPairsResult)
   } catch (e) {
     return fail<ConversionPairsResult>(toMessage(e), {
@@ -2284,7 +2326,7 @@ export async function convertCoordinate(
   payload: CoordinateConversionPayload,
 ): Promise<ApiResult<CoordinateConversionResult | BatchCoordinateConversionResult>> {
   try {
-    const res = await httpInstance.post('/CottonOGD_api/conversion/coordinate/', payload, {
+    const res = await httpInstance.post('/CottonOGD_api/api/v1/conversion/coordinate/', payload, {
       timeout: CONVERSION_TIMEOUT,
     })
     return ok(res as unknown as CoordinateConversionResult | BatchCoordinateConversionResult)
@@ -2298,7 +2340,7 @@ export async function convertGeneIds(
   payload: GeneIdConversionPayload,
 ): Promise<ApiResult<GeneIdConversionResult>> {
   try {
-    const res = await httpInstance.post('/CottonOGD_api/conversion/geneid/', payload, {
+    const res = await httpInstance.post('/CottonOGD_api/api/v1/conversion/gene-ids/', payload, {
       timeout: CONVERSION_TIMEOUT,
     })
     return ok(res as unknown as GeneIdConversionResult)

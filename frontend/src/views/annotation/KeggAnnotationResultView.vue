@@ -174,7 +174,7 @@ const fetchResults = async () => {
     }
     
     // 使用配置好的axios实例调用后端API获取结果
-    const responseData = await axios.get('/CottonOGD_api/kegg_annotation/', {
+    const responseData = await axios.get('/CottonOGD_api/api/v1/annotations/kegg/annotation/', {
       params: {
         gene_id: geneId,
         genome_id: genomeId
@@ -183,7 +183,8 @@ const fetchResults = async () => {
     
     console.log('KEGG注释API响应:', responseData)
     
-    if (responseData && responseData.status === 'success') {
+    // v1：拦截器已解包，业务字段直接在 responseData 上（旧版为 {status, data}）
+    if (responseData && (responseData.status === 'success' || Array.isArray(responseData.results))) {
         results.value = responseData.data.results || []
         totalItems.value = results.value.length
         totalGenes.value = responseData.data.gene_list ? responseData.data.gene_list.length : 0

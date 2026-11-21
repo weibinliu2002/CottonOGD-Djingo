@@ -11,14 +11,22 @@ export const searchGenes = async (query, options = {}) => {
       genome_id: options.genome_id || null
     }
     
-    // http.js 的响应拦截器直接返回 response.data
-    const data = await meilisearchClient.post('/CottonOGD_api/search_genes_meilisearch/', params)
+    // v1：统一检索端点（索引名进 URL），http.js 拦截器已解包信封
+    const data = await meilisearchClient.post(
+      '/CottonOGD_api/api/v1/search/indexes/genemaster/search/',
+      {
+        q: params.q,
+        limit: params.limit,
+        offset: params.offset,
+        filter: params.genome_id ? `genome_id = "${params.genome_id}"` : undefined
+      }
+    )
     // 确保返回一致的结构
     return {
-      success: data.success || false,
-      results: data.results || [],
-      total: data.total || 0,
-      processing_time: data.processing_time || 0
+      success: true,
+      results: data.hits || [],
+      total: data.estimatedTotalHits || 0,
+      processing_time: data.processingTimeMs || 0
     }
     
   } catch (error) {

@@ -75,7 +75,7 @@ export const useFamilyStore = defineStore('family', {
         
         console.log('Family request params:', requestParams)
         
-        const data = await httpInstance.post('/CottonOGD_api/get_family_info/', requestParams) as ApiResponse
+        const data = await httpInstance.post('/CottonOGD_api/api/v1/meta/families/', requestParams) as ApiResponse
         console.log('Family data from API:', data)
         
         // 处理后端返回的家族信息

@@ -2,7 +2,7 @@
  * 基因搜索 API 封装（统一后端检索模式）
  *
  * 前端不直接访问 Meilisearch：所有检索请求经 Django 统一检索端点
- * `/CottonOGD_api/search/` 代理（Meilisearch 地址与 API key 仅存在于后端），
+ * `/CottonOGD_api/api/v1/search/indexes/<index>/search/` 代理（Meilisearch 地址与 API key 仅存在于后端），
  * 认证与全站一致（Bearer token / auth_token cookie，见 utils/http.js）。
  */
 
@@ -90,7 +90,7 @@ export interface SearchIndexInfo {
 /** 拉取当前可用的检索索引列表（经后端统一端点） */
 export async function getSearchIndexes(): Promise<SearchIndexInfo[]> {
   try {
-    const data = await httpInstance.get('/CottonOGD_api/get_search_indexes/') as Record<string, any>
+    const data = await httpInstance.get('/CottonOGD_api/api/v1/search/indexes/') as Record<string, any>
     return Array.isArray(data?.indexes) ? (data.indexes as SearchIndexInfo[]) : []
   } catch (e) {
     console.error('Failed to load search indexes:', e)
@@ -142,7 +142,6 @@ export async function searchGenes(params: GeneSearchParams): Promise<MeiliSearch
   } = params
 
   const body: Record<string, unknown> = {
-    index,
     q,
     offset,
     limit,
@@ -159,8 +158,13 @@ export async function searchGenes(params: GeneSearchParams): Promise<MeiliSearch
   if (withFacets) body.facets = facets
 
   try {
-    // http.js 的响应拦截器直接返回 response.data；401 时自动重登并重放
-    const data = await httpInstance.post('/CottonOGD_api/search/', body, { signal }) as Record<string, any>
+    // http.js 的响应拦截器已解包 v1 信封；401 时自动重登并重放
+    // v1：索引名移入 URL，body 不再携带 index
+    const data = await httpInstance.post(
+      `/CottonOGD_api/api/v1/search/indexes/${encodeURIComponent(index)}/search/`,
+      body,
+      { signal },
+    ) as Record<string, any>
     return {
       hits: data.hits ?? [],
       estimatedTotalHits: data.estimatedTotalHits ?? 0,

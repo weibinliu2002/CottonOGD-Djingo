@@ -92,7 +92,7 @@ export const useGenomeStore = defineStore('genome', {
         this.error = null
         
         try {
-          const data = await httpInstance.get('/CottonOGD_api/get_species_info/') as ApiResponse
+          const data = await httpInstance.get('/CottonOGD_api/api/v1/meta/species/') as ApiResponse
           console.log('Species data from store:', data)
           
           // 处理后端返回的species数据

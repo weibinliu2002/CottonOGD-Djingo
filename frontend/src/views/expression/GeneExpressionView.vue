@@ -127,7 +127,7 @@ const loadingGenomes = ref(false)
 const fetchGenomesWithTissue = async () => {
   try {
     loadingGenomes.value = true
-    const response = await httpInstance.get('/CottonOGD_api/extract_expression/genomes/')
+    const response = await httpInstance.get('/CottonOGD_api/api/v1/expression/genomes/')
     if (response && Array.isArray(response)) {
       genomesWithTissue.value = response
     }
@@ -165,7 +165,7 @@ const fetchTissues = async (genomeId?: string) => {
     loadingTissues.value = true
     const params = genomeId ? { genome_id: genomeId } : {}
     console.log('params:', params)
-    const response = await httpInstance.get('/CottonOGD_api/extract_expression/tissues/', { params })
+    const response = await httpInstance.get('/CottonOGD_api/api/v1/expression/tissues/', { params })
     if (response && Array.isArray(response)) {
       tissueOptions.value = response
     }
@@ -238,7 +238,7 @@ const handleSubmit = async () => {
     geneExpressionStore.setLoading(true)
     geneExpressionStore.setError(null)
 
-    const response = await httpInstance.post('/CottonOGD_api/extract_expression/', params)
+    const response = await httpInstance.post('/CottonOGD_api/api/v1/expression/heatmap/', params)
     console.log('Gene expression response:', response)
 
     if (!response) {

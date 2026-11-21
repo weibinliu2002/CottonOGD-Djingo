@@ -185,7 +185,7 @@ const loadingGenomes = ref(false)
 const fetchGenomesWithTissue = async () => {
   try {
     loadingGenomes.value = true
-    const response = await httpInstance.get('/CottonOGD_api/extract_expression/genomes/')
+    const response = await httpInstance.get('/CottonOGD_api/api/v1/expression/genomes/')
     if (response && Array.isArray(response)) {
       genomesWithTissue.value = response
     }
@@ -248,7 +248,7 @@ const generateImage = () => {
   console.log('typeof selectedGenome.value:', typeof selectedGenome.value)
   
   const csrfToken = getCookie('csrftoken')
-  fetch('/CottonOGD_api/expression_EFP_image/', {
+  fetch('/CottonOGD_api/api/v1/expression/efp/', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

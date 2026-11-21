@@ -2,10 +2,12 @@
 import axios from 'axios'
 
 // ============ 会话认证 ============
-// 后端契约：
-// - POST /CottonOGD_api/login/ 返回 { uuid, token }，同时种下 HttpOnly cookie auth_token（7天）
-// - 旧版匿名会话 token 与账号 JWT 分开保存；优先使用账号 JWT
+// 后端契约（v1）：
+// - POST /CottonOGD_api/api/v1/auth/session/ 返回信封 { code, message, data: { uuid, token } }，
+//   同时种下 HttpOnly cookie auth_token（7天）
+// - 匿名会话 token 与账号 JWT 分开保存；优先使用账号 JWT
 // - HttpOnly cookie JS 不可读（这是正常且安全的），token 只走 localStorage + Bearer header
+// - 所有 v1 JSON 接口统一返回 { code, message, data }，拦截器在此统一解包为 data
 
 const SESSION_TOKEN_STORAGE_KEY = 'ogd_session_token'
 const AUTH_ACCESS_TOKEN_KEY = 'auth_token'
@@ -114,16 +116,32 @@ function getRequestPath(url = '') {
 }
 
 function isAuthApiRequest(url = '') {
-  return getRequestPath(url).startsWith('/CottonOGD_api/api/auth/')
+  return getRequestPath(url).startsWith('/CottonOGD_api/api/v1/auth/')
 }
 
 function isPublicAuthApiRequest(url = '') {
-  return /^\/CottonOGD_api\/api\/auth\/(?:register|login|refresh|verify-email|resend-verification|forgot-password|reset-password)\/?$/
+  return /^\/CottonOGD_api\/api\/v1\/auth\/(?:register|login|refresh|token|token\/refresh|verify-email|resend-verification|forgot-password|reset-password)\/?$/
     .test(getRequestPath(url))
 }
 
 /**
- * 旧版匿名会话登录：调用 /login/ 获取会话 token 并缓存，不覆盖账号 JWT。
+ * 从 v1 信封中取出业务数据；非信封响应（文件流、纯文本）原样返回。
+ */
+function unwrapV1Payload(payload) {
+  if (
+    payload &&
+    typeof payload === 'object' &&
+    !Array.isArray(payload) &&
+    Object.prototype.hasOwnProperty.call(payload, 'code') &&
+    Object.prototype.hasOwnProperty.call(payload, 'data')
+  ) {
+    return payload.data
+  }
+  return payload
+}
+
+/**
+ * 匿名会话登录：调用 v1 auth/session 获取会话 token 并缓存，不覆盖账号 JWT。
  * 已有在途请求时直接复用（单飞），避免并发重复登录。
  */
 export function login() {
@@ -132,9 +150,10 @@ export function login() {
   if (loginPromise) return loginPromise
   // 用原始 axios 调用（不走下方拦截器，避免递归重试）
   loginPromise = axios
-    .post('/CottonOGD_api/login/', null, { withCredentials: true })
+    .post('/CottonOGD_api/api/v1/auth/session/', null, { withCredentials: true })
     .then((res) => {
-      const token = res?.data?.token || ''
+      const body = res?.data
+      const token = body?.data?.token || body?.token || ''
       storeToken(token)
       return token
     })
@@ -145,11 +164,11 @@ export function login() {
 }
 
 /**
- * 登出：调用 /logout/ 吊销 token/cookie/会话，并清除本地缓存 token
+ * 登出：调用 v1 auth/session 注销会话，并清除本地缓存 token
  */
 export async function logout() {
   try {
-    await axios.post('/CottonOGD_api/logout/', null, { withCredentials: true })
+    await axios.delete('/CottonOGD_api/api/v1/auth/session/', { withCredentials: true })
   } finally {
     storeToken('')
   }
@@ -164,7 +183,8 @@ const httpInstance = axios.create({
 // 响应拦截器
 httpInstance.interceptors.response.use(
   response => {
-    return response.data
+    // v1 统一信封解包：JSON 响应返回 data，文件流/纯文本原样返回
+    return unwrapV1Payload(response.data)
   },
   async error => {
     const config = error.config || {}
@@ -184,7 +204,7 @@ httpInstance.interceptors.response.use(
       config._authRefreshRetried = true
       try {
         const response = await axios.post(
-          '/CottonOGD_api/api/auth/refresh/',
+          '/CottonOGD_api/api/v1/auth/refresh/',
           { refresh },
           { withCredentials: true }
         )
@@ -212,6 +232,10 @@ httpInstance.interceptors.response.use(
     // 400/401（token 过期或失效）：重新登录后重放一次原请求；重放仍失败才报错
     if ((status === 400 || status === 401) && !config._retried) {
       config._retried = true
+      // v1 业务数据域全部公开，匿名会话只对 ai/chat 等「会话」级端点必要
+      if (!/^\/CottonOGD_api\/api\/v1\/ai\//.test(getRequestPath(config.url || ''))) {
+        return Promise.reject(error)
+      }
       try {
         await login()
       } catch {

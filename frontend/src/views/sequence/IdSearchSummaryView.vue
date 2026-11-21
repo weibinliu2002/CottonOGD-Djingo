@@ -545,7 +545,7 @@ export default {
 
       try {
         const res = await httpInstance.post(
-          '/CottonOGD_api/extract_seq/',
+          '/CottonOGD_api/api/v1/sequences/genes/',
           apiPayload,
           { headers: { 'X-CSRFToken': csrfToken } }
         )

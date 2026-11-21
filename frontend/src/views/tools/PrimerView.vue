@@ -551,7 +551,7 @@ const fetchSequence = async () => {
   
   try {
     // 閻╁瓨甯寸拫鍐暏 extract_seq閿涘奔绱堕柅?gene_id 閸?genome_id
-    const seqResponse = await httpInstance.post('/CottonOGD_api/extract_seq/', {
+    const seqResponse = await httpInstance.post('/CottonOGD_api/api/v1/sequences/genes/', {
       gene_id: sequenceId.value.trim(),
       genome_id: genomeAssembly.value
     })
@@ -592,7 +592,7 @@ const fetchSequenceByPosition = async () => {
   
   try {
     // Call genome position sequence fetch API - 娴ｈ法鏁ゅ鍙夋箒閻?extract_seq_gff API
-    const response = await httpInstance.post('/CottonOGD_api/extract_seq_gff/', {
+    const response = await httpInstance.post('/CottonOGD_api/api/v1/sequences/region/', {
       genome_id: genomeAssembly.value,
       seqid: genomePosition.chromosome.trim(),
       start: genomePosition.start,
@@ -677,7 +677,7 @@ const designPrimers = async () => {
     }
     
     console.log('requestData:', requestData)
-    const response = await httpInstance.post('/CottonOGD_api/primer_design/', requestData)
+    const response = await httpInstance.post('/CottonOGD_api/api/v1/primer/design/', requestData)
     console.log('response:', response)
     if (response.status === 'success') {
       // Save results to store

@@ -294,13 +294,14 @@ const fetchResults = async () => {
     
     console.log('请求参数:', { gene_id: geneId, genome_id: genomeId, p_value_threshold: pValueThreshold, q_value_threshold: qValueThreshold })
     
-    const response = await axios.post('/CottonOGD_api/go_enrichment/', formData, {
+    const response = await axios.post('/CottonOGD_api/api/v1/annotations/go/enrichment/', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     }) as any
     
     console.log('完整的后端返回数据:', JSON.stringify(response, null, 2))
     
-    if (response.status === 'success') {
+    // v1：拦截器已解包，业务字段直接在 response 上（旧版为 {status, data}）
+    if (response.status === 'success' || Array.isArray(response.results)) {
       const data = response.data
       
       // 按GO类别组织结果

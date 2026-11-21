@@ -155,11 +155,13 @@ export const useGeneSearchStore = defineStore('geneSearch', () => {
           const params = {
             gene_id: foundGeneIds,
             genome_id: genomeId.join(','),
+            // v1 统一入口：mode=summary 才返回 geneid_result / gene_info_result 等旧字段
+            mode: 'summary',
             request_id: request_id
           };
           console.log('API Request Params:', params);
 
-          const response = await httpInstance.post('/CottonOGD_api/geneid_summary/', params);
+          const response = await httpInstance.post('/CottonOGD_api/api/v1/genes/lookup/', params);
           console.log('API Response:', response);
 
           const data = response as any;
@@ -219,11 +221,13 @@ export const useGeneSearchStore = defineStore('geneSearch', () => {
     const params = {
       gene_id: geneIds,
       genome_id: genomeId.join(','),
+      // v1 统一入口：mode=summary 才返回 geneid_result / gene_info_result 等旧字段
+      mode: 'summary',
       request_id: request_id
     };
     console.log('API Request Params:', params);
 
-    const response = await httpInstance.post('/CottonOGD_api/geneid_summary/', params);
+    const response = await httpInstance.post('/CottonOGD_api/api/v1/genes/lookup/', params);
     console.log('API Response:', response);
 
     const data = response as any;
