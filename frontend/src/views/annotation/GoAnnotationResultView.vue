@@ -51,7 +51,10 @@
             <el-table-column prop="Chr" :label="t('chromosome')" width="80" sortable="custom" />
             <el-table-column prop="Start" :label="t('start_position')" width="100" sortable="custom" />
             <el-table-column prop="End" :label="t('end_position')" width="100" sortable="custom" />
-            <el-table-column prop="Gene_ID" :label="t('gene_id')" width="150" sortable="custom" />
+            <!-- v1 返回字段名为 ID；旧版为 Gene_ID，二者都兼容 -->
+            <el-table-column prop="ID" :label="t('gene_id')" width="150" sortable="custom">
+              <template #default="{ row }">{{ row.ID || row.Gene_ID || row.gene_id || '' }}</template>
+            </el-table-column>
             <el-table-column prop="GO_ID" :label="t('go_id')" width="150" sortable="custom" />
             <el-table-column prop="Description" :label="t('description')" sortable="custom" />
             <el-table-column prop="Gene_Ontology" :label="t('go_category')" width="150" sortable="custom" />
@@ -225,14 +228,19 @@ const loadResults = async () => {
     // v1：拦截器已解包，业务字段直接在 responseData 上（旧版为 {status, data}）
     if (responseData && (responseData.status === 'success' || Array.isArray(responseData.results))) {
       console.log('API响应成功')
-      const data = responseData.data
+      // 拦截器已解包：业务数据在 responseData 上；旧版才嵌在 responseData.data
+      const data = responseData.data || responseData
       console.log('数据对象:', data)
       console.log('结果数组:', data.results)
       console.log('结果数量:', data.results ? data.results.length : 0)
       console.log('是否有图表:', data.chart ? '是' : '否')
       
       // 存储全部结果数据（用于前端分页）
-      allResults.value = data.results || []
+      // v1 的基因 ID 字段名为 ID；补成 Gene_ID 供表格/检索/导出统一使用
+      allResults.value = (data.results || []).map((row: GoRow) => ({
+        ...row,
+        Gene_ID: row.Gene_ID || row.ID || row.gene_id || '',
+      }))
       total.value = allResults.value.length || 0
       chart.value = data.chart || ''
       

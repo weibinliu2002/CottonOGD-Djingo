@@ -186,9 +186,9 @@ const fetchGenomesWithTissue = async () => {
   try {
     loadingGenomes.value = true
     const response = await httpInstance.get('/CottonOGD_api/api/v1/expression/genomes/')
-    if (response && Array.isArray(response)) {
-      genomesWithTissue.value = response
-    }
+    // v1 返回 { genomes: [...] }；旧版为裸数组
+    const list = Array.isArray(response) ? response : (response?.genomes ?? [])
+    if (list.length) genomesWithTissue.value = list
   } catch (err) {
     console.error('Failed to fetch genomes with tissue:', err)
   } finally {

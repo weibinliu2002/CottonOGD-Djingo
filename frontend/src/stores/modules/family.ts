@@ -1,6 +1,7 @@
 // 引入Pinia
 import { defineStore } from 'pinia'
 import httpInstance from '@/utils/http.js'
+import { parseMaybeJson } from '@/api/index'
 
 // 定义类型
 interface FamilyInfo {
@@ -79,11 +80,12 @@ export const useFamilyStore = defineStore('family', {
         console.log('Family data from API:', data)
         
         // 处理后端返回的家族信息
-        const familyInfo = JSON.parse(data.family_info) as FamilyInfo[]
+        // v1 返回数组；旧后端是 JSON 字符串，两种都兼容
+        const familyInfo = parseMaybeJson<FamilyInfo[]>(data.family_info, [])
         this.familyInfo = familyInfo
         
         // 处理后端返回的家族列表
-        const familyList = JSON.parse(data.family_list) as FamilyItem[]
+        const familyList = parseMaybeJson<FamilyItem[]>(data.family_list, [])
         this.familyList = familyList
         
         console.log('Processed family info:', this.familyInfo)

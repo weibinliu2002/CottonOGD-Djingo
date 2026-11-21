@@ -69,7 +69,7 @@ function fail<T>(message: string, data?: T): ApiResult<T> {
  * 后端若干接口（get_species_info / get_family_info / blast_cmd）返回字符串而非对象，
  * 另外 geneid_* 系列返回的是真实对象——误解析会抛异常，故统一走这个兜底函数。
  */
-function parseMaybeJson<T>(value: unknown, fallback: T): T {
+export function parseMaybeJson<T>(value: unknown, fallback: T): T {
   if (typeof value !== 'string') return (value as unknown as T) ?? fallback
   try {
     return JSON.parse(value) as unknown as unknown as T

@@ -294,15 +294,18 @@ const fetchResults = async () => {
     
     console.log('请求参数:', { gene_id: geneId, genome_id: genomeId, p_value_threshold: pValueThreshold, q_value_threshold: qValueThreshold })
     
+    // 富集计算较慢（实测单基因约 60s+），显式放宽超时，避免 30s 默认超时导致无数据
     const response = await axios.post('/CottonOGD_api/api/v1/annotations/go/enrichment/', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 180000,
     }) as any
     
     console.log('完整的后端返回数据:', JSON.stringify(response, null, 2))
     
     // v1：拦截器已解包，业务字段直接在 response 上（旧版为 {status, data}）
     if (response.status === 'success' || Array.isArray(response.results)) {
-      const data = response.data
+      // 拦截器已解包：response 即业务数据；旧版才嵌在 response.data
+      const data = response.data || response
       
       // 按GO类别组织结果
       const categories = ['BP', 'MF', 'CC']

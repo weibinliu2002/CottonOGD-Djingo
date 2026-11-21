@@ -1,6 +1,7 @@
 // 引入Pinia
 import { defineStore } from 'pinia'
 import httpInstance from '@/utils/http.js'
+import { parseMaybeJson } from '@/api/index'
 
 // 定义类型
 export interface GenomeOption {
@@ -96,7 +97,8 @@ export const useGenomeStore = defineStore('genome', {
           console.log('Species data from store:', data)
           
           // 处理后端返回的species数据
-          const speciesData = JSON.parse(data.species_info) as Species[]
+          // v1 的 species_info 已是数组；旧后端是 JSON 字符串，两种都兼容
+          const speciesData = parseMaybeJson<Species[]>(data.species_info, [])
           this.speciesData = speciesData
           
           // 按Genome_type分组

@@ -679,7 +679,8 @@ const designPrimers = async () => {
     console.log('requestData:', requestData)
     const response = await httpInstance.post('/CottonOGD_api/api/v1/primer/design/', requestData)
     console.log('response:', response)
-    if (response.status === 'success') {
+    // v1：响应为 { results }，不再带 status:'success'
+    if (Array.isArray(response?.results) || response?.status === 'success') {
       // Save results to store
       primerDesignStore.setDesignResults(response.results)
       designResults.value = response.results

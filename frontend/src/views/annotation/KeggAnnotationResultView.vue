@@ -185,16 +185,18 @@ const fetchResults = async () => {
     
     // v1：拦截器已解包，业务字段直接在 responseData 上（旧版为 {status, data}）
     if (responseData && (responseData.status === 'success' || Array.isArray(responseData.results))) {
-        results.value = responseData.data.results || []
+        // 拦截器已解包：业务数据在 responseData 上；旧版才嵌在 responseData.data
+        const payload = responseData.data || responseData
+        results.value = payload.results || []
         totalItems.value = results.value.length
-        totalGenes.value = responseData.data.gene_list ? responseData.data.gene_list.length : 0
+        totalGenes.value = payload.gene_list ? payload.gene_list.length : 0
         annotatedGenes.value = results.value.length
         
         // 确保chart_data是正确的格式
-        if (responseData.data.chart_data) {
+        if (payload.chart_data) {
           chartData.value = {
-            labels: responseData.data.chart_data.labels || [],
-            data: responseData.data.chart_data.data || []
+            labels: payload.chart_data.labels || [],
+            data: payload.chart_data.data || []
           }
         } else {
           chartData.value = { labels: [], data: [] }

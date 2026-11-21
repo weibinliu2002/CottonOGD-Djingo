@@ -226,7 +226,8 @@ const fetchResults = async () => {
     
     // 使用配置好的axios实例调用后端API获取结果
     const data = await axios.post('/CottonOGD_api/api/v1/annotations/kegg/enrichment/', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 180000,
     }) as unknown as any
     console.log('KEGG富集API响应:', data)
     
@@ -234,7 +235,8 @@ const fetchResults = async () => {
     if (typeof data === 'object' && data !== null) {
       // v1：拦截器已解包，业务字段直接在 data 上（旧版为 {status, data}）
       if (data.status === 'success' || Array.isArray(data.results)) {
-        const resultData = data.data
+        // 拦截器已解包：业务数据就在 data 上；旧版才嵌在 data.data
+        const resultData = data.data || data
         // 解析description字段（如果是字符串）
         allResults.value = (resultData.results || []).map((item: any) => {
           if (typeof item.description === 'string') {

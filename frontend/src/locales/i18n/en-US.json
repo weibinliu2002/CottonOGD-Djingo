@@ -316,6 +316,7 @@
     "go_annotation_analysis": "GO Annotation Analysis",
     "go_annotation_result": "GO Annotation Result",
     "go_category": "GO Category",
+    "description": "Description",
     "go_enrichment": "GO Enrichment",
     "go_enrichment_analysis": "GO Enrichment Analysis",
     "go_enrichment_analysis_results": "GO Enrichment Analysis Results",

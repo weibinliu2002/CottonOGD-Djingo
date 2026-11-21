@@ -316,6 +316,7 @@
     "go_annotation_analysis": "GO注释分析",
     "go_annotation_result": "GO注释结果",
     "go_category": "GO类别",
+    "description": "描述",
     "go_enrichment": "GO富集分析",
     "go_enrichment_analysis": "GO富集分析",
     "go_enrichment_analysis_results": "GO富集分析结果",

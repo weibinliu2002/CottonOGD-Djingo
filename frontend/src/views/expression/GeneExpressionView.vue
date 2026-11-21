@@ -128,9 +128,9 @@ const fetchGenomesWithTissue = async () => {
   try {
     loadingGenomes.value = true
     const response = await httpInstance.get('/CottonOGD_api/api/v1/expression/genomes/')
-    if (response && Array.isArray(response)) {
-      genomesWithTissue.value = response
-    }
+    // v1 返回 { genomes: [...] }；旧版为裸数组，两种都兼容
+    const list = Array.isArray(response) ? response : (response?.genomes ?? [])
+    if (list.length) genomesWithTissue.value = list
   } catch (err) {
     console.error('Failed to fetch genomes with tissue:', err)
   } finally {
@@ -166,9 +166,9 @@ const fetchTissues = async (genomeId?: string) => {
     const params = genomeId ? { genome_id: genomeId } : {}
     console.log('params:', params)
     const response = await httpInstance.get('/CottonOGD_api/api/v1/expression/tissues/', { params })
-    if (response && Array.isArray(response)) {
-      tissueOptions.value = response
-    }
+    // v1 返回 { tissues: [...] }；旧版为裸数组
+    const list = Array.isArray(response) ? response : (response?.tissues ?? [])
+    if (list.length) tissueOptions.value = list
   } catch (err) {
     console.error('Failed to fetch tissues:', err)
   } finally {
