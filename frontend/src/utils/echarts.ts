@@ -4,7 +4,7 @@
  * 用法：import * as echarts from '@/utils/echarts' （API 与全量引入一致）
  */
 import * as echarts from 'echarts/core'
-import { BarChart, LineChart, PieChart, SankeyChart, ScatterChart } from 'echarts/charts'
+import { BarChart, HeatmapChart, LineChart, PieChart, SankeyChart, ScatterChart } from 'echarts/charts'
 import {
   DataZoomComponent,
   GridComponent,
@@ -22,6 +22,8 @@ echarts.use([
   PieChart,
   SankeyChart,
   ScatterChart,
+  // 统计页：Ortholog 物种两两矩阵热图
+  HeatmapChart,
   // 组件
   TitleComponent,
   TooltipComponent,

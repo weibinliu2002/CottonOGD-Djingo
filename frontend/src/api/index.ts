@@ -1192,6 +1192,8 @@ export interface OrthologOrthogroup {
   /** one_to_one | one_to_many | many_to_one | many_to_many | single | none */
   relation_type: string
   species_members: OrthologSpeciesMember[]
+  /** 所选物种中出现的物种数；未按物种筛选时为 null（交接文档 C.3/C.2） */
+  selected_species_count?: number | null
   /** 功能注释；后端当前未返回，预留字段，补齐后列表/明细自动生效 */
   annotation?: string
 }
@@ -1221,6 +1223,10 @@ export interface OrthogroupsBySpeciesResponse {
   limit: number
   offset: number
   orthogroups: OrthologOrthogroup[]
+  /** 后端回显的筛选条件（v1.1 新增） */
+  filters?: Record<string, unknown>
+  /** 是否还有下一页（v1.1 新增） */
+  has_more?: boolean
 }
 
 /**
@@ -1244,11 +1250,23 @@ export async function getOrthologByGene(geneid: string): Promise<OrthologGeneRes
  * POST /CottonOGD_api/orthofinder/orthogroup_detail/，body { og_code }。
  * 后端返回**扁平结构**：{ found, og_code, species_count, ..., species_members }。
  */
-export async function getOrthogroupDetailV2(ogCode: string): Promise<OrthologOrthogroup | null> {
+export async function getOrthogroupDetailV2(
+  ogCode: string,
+  options?: {
+    /** 只返回这些物种的成员（交接文档 C.2） */
+    species?: string[]
+    /** 传 0 时只返回物种与计数，不返回 genes（大 OG 推荐） */
+    includeGenes?: boolean
+  },
+): Promise<OrthologOrthogroup | null> {
   try {
-    const res = await httpInstance.post('/CottonOGD_api/orthofinder/orthogroup_detail/', {
-      og_code: ogCode,
-    }) as unknown as OrthologOrthogroup & { found: boolean }
+    const body: Record<string, unknown> = { og_code: ogCode }
+    if (options?.species?.length) body.species = options.species
+    if (options?.includeGenes === false) body.include_genes = 0
+    const res = await httpInstance.post(
+      '/CottonOGD_api/orthofinder/orthogroup_detail/',
+      body,
+    ) as unknown as OrthologOrthogroup & { found: boolean; selected_species_count?: number | null }
     // 后端 found:true 但 orthogroup 为空对象时也视为未命中
     if (res && res.found && (res.og_code || (res.species_members && res.species_members.length))) {
       return res
@@ -1265,25 +1283,51 @@ export async function getOrthogroupDetailV2(ogCode: string): Promise<OrthologOrt
  * mode: all=全部选中物种共有（默认）；any=任一物种含有。
  */
 export async function getOrthogroupsBySpecies(params: {
-  species: string[]
+  /** 物种名列表；为空时后端按 OG 元数据浏览（交接文档 C.3） */
+  species?: string[]
   mode?: 'all' | 'any'
+  /** OG 精确匹配 */
+  og_code?: string
+  /** OG 子串模糊匹配（不区分大小写） */
+  og_code_like?: string
+  min_genes?: number
+  max_genes?: number
+  min_species?: number
+  max_species?: number
+  min_selected_species?: number
+  max_selected_species?: number
+  sort?: 'selected_species' | 'gene_count' | 'species_count' | 'og_code'
   limit?: number
   offset?: number
 }): Promise<OrthogroupsBySpeciesResponse> {
+  const body: Record<string, unknown> = {
+    species: params.species ?? [],
+    mode: params.mode ?? 'all',
+    limit: params.limit ?? 50,
+    offset: params.offset ?? 0,
+  }
+  // 仅传递有值的可选筛选参数，保持旧调用（只传 species/mode）行为不变
+  const optionalKeys = [
+    'og_code', 'og_code_like', 'min_genes', 'max_genes',
+    'min_species', 'max_species', 'min_selected_species', 'max_selected_species',
+    'sort',
+  ] as const
+  for (const key of optionalKeys) {
+    const value = params[key]
+    if (value !== undefined && value !== null && value !== '') body[key] = value
+  }
   try {
-    const res = await httpInstance.post('/CottonOGD_api/orthofinder/orthogroups_by_species/', {
-      species: params.species,
-      mode: params.mode ?? 'all',
-      limit: params.limit ?? 50,
-      offset: params.offset ?? 0,
-    }) as unknown as OrthogroupsBySpeciesResponse
+    const res = await httpInstance.post(
+      '/CottonOGD_api/orthofinder/orthogroups_by_species/',
+      body,
+    ) as unknown as OrthogroupsBySpeciesResponse
     return res ?? {
-      found: false, mode: params.mode ?? 'all', species: params.species,
+      found: false, mode: params.mode ?? 'all', species: params.species ?? [],
       total: 0, limit: params.limit ?? 50, offset: params.offset ?? 0, orthogroups: [],
     }
   } catch {
     return {
-      found: false, mode: params.mode ?? 'all', species: params.species,
+      found: false, mode: params.mode ?? 'all', species: params.species ?? [],
       total: 0, limit: params.limit ?? 50, offset: params.offset ?? 0, orthogroups: [],
     }
   }
@@ -1357,6 +1401,382 @@ export async function getOrthogroupMsa(ogCode: string): Promise<string> {
     return res
   } catch {
     return ''
+  }
+}
+
+// ==================== 十七、比较基因组学扩展接口（v1.1 交接文档 C.9–C.15） ====================
+// 全部按 docs/COMPARATIVE_ANALYSIS_API_HANDOFF.md 实现；响应为裸 JSON。
+
+/** 从 axios 错误中提取后端 error 文案 */
+function readBackendError(err: unknown): string {
+  const e = err as {
+    response?: { data?: { error?: string; note?: string } }
+    message?: string
+  }
+  return e?.response?.data?.error || e?.message || DEFAULT_ERROR_MESSAGE
+}
+
+/** OG 成员平铺行（C.9） */
+export interface OgMemberRow {
+  species: string
+  display_name?: string
+  ortho_gene: string
+  genemaster_geneid: string | null
+}
+
+/** OG 成员分页响应（C.9） */
+export interface OgMembersResponse {
+  found: boolean
+  og_code: string
+  members: OgMemberRow[]
+  total: number
+  limit: number
+  offset: number
+  has_more: boolean
+}
+
+/** 大 OG 成员平铺分页（C.9） */
+export async function getOgMembers(params: {
+  og_code: string
+  species?: string[]
+  limit?: number
+  offset?: number
+}): Promise<OgMembersResponse> {
+  const body: Record<string, unknown> = {
+    og_code: params.og_code,
+    limit: params.limit ?? 50,
+    offset: params.offset ?? 0,
+  }
+  if (params.species?.length) body.species = params.species
+  try {
+    const res = await httpInstance.post(
+      '/CottonOGD_api/orthofinder/og_members/',
+      body,
+    ) as unknown as OgMembersResponse
+    return res ?? {
+      found: false, og_code: params.og_code, members: [], total: 0,
+      limit: params.limit ?? 50, offset: params.offset ?? 0, has_more: false,
+    }
+  } catch (err) {
+    throw new Error(readBackendError(err))
+  }
+}
+
+/** 真实直系同源关系中的配对物种（C.10） */
+export interface OrthologPartner {
+  species: string
+  genes: string[]
+  query_gene_count: number
+  partner_gene_count: number
+  /** one_to_one | one_to_many | many_to_one | many_to_many */
+  relation_type: string
+}
+
+/** 单个 OG 下的真实直系同源配对（C.10） */
+export interface GeneOrthologGroup {
+  og_code: string
+  partners: OrthologPartner[]
+}
+
+/** 按来源物种分组的直系同源结果（C.10） */
+export interface GeneOrthologSpeciesResult {
+  species: string
+  orthogroups: GeneOrthologGroup[]
+  /** 该物种索引缺失时的说明（交接文档 I.3） */
+  error?: string
+}
+
+/** 基因 → 真实直系同源响应（C.10） */
+export interface GeneOrthologsResponse {
+  query_gene: string
+  found: boolean
+  partner_species: string | null
+  results: GeneOrthologSpeciesResult[]
+  note?: string
+  error?: string
+}
+
+/**
+ * 基因 → 真实直系同源（C.10）。
+ * 这是唯一可信的 Ortholog 查询接口，数据来自 OrthoFinder Orthologues 输出。
+ */
+export async function getGeneOrthologs(params: {
+  geneid: string
+  species?: string
+  partner_species?: string
+  og_code?: string
+}): Promise<GeneOrthologsResponse> {
+  try {
+    const res = await httpInstance.post(
+      '/CottonOGD_api/orthofinder/gene_orthologs/',
+      params,
+    ) as unknown as GeneOrthologsResponse
+    return res ?? {
+      query_gene: params.geneid, found: false, partner_species: null, results: [],
+    }
+  } catch (err) {
+    return {
+      query_gene: params.geneid, found: false, partner_species: null, results: [],
+      error: readBackendError(err),
+    }
+  }
+}
+
+/** 两个 Genome 共享的 OG（C.11） */
+export interface GenomePairOg {
+  og_code: string
+  gene_count: number
+  species_count: number
+  genes_a: string[]
+  genes_b: string[]
+}
+
+/** 两个 Genome 的共享 OG 响应（C.11） */
+export interface GenomePairResponse {
+  found: boolean
+  genome_a: string
+  genome_b: string
+  relationship: string
+  note?: string
+  orthogroups: GenomePairOg[]
+  total: number
+  limit: number
+  offset: number
+  has_more: boolean
+  error?: string
+}
+
+/**
+ * 两个 Genome 的共享 OG（C.11）。
+ * 返回的是“同一 OG 的成员”，不是 Ortholog 对；UI 必须按共享 OG 文案展示。
+ */
+export async function getGenomePair(params: {
+  genome_a: string
+  genome_b: string
+  og_code?: string
+  limit?: number
+  offset?: number
+}): Promise<GenomePairResponse> {
+  try {
+    const res = await httpInstance.post(
+      '/CottonOGD_api/orthofinder/genome_pair/',
+      { ...params, limit: params.limit ?? 50, offset: params.offset ?? 0 },
+    ) as unknown as GenomePairResponse
+    return res ?? {
+      found: false, genome_a: params.genome_a, genome_b: params.genome_b,
+      relationship: 'shared_orthogroup_members', orthogroups: [],
+      total: 0, limit: params.limit ?? 50, offset: params.offset ?? 0, has_more: false,
+    }
+  } catch (err) {
+    return {
+      found: false, genome_a: params.genome_a, genome_b: params.genome_b,
+      relationship: 'shared_orthogroup_members', orthogroups: [],
+      total: 0, limit: params.limit ?? 50, offset: params.offset ?? 0, has_more: false,
+      error: readBackendError(err),
+    }
+  }
+}
+
+/** 基因 → 最具体 HOG 命中（C.12） */
+export interface GeneHogHit {
+  species: string
+  hog_id: string
+  node: string
+  og_code: string
+  parent_clade: string
+  species_count: number
+  gene_count: number
+}
+
+/** 基因 → 最具体 HOG 响应（C.12） */
+export interface GeneHogResponse {
+  query_gene: string
+  found: boolean
+  hogs: GeneHogHit[]
+  error?: string
+}
+
+/** 基因 → 最具体 HOG（C.12） */
+export async function getGeneHog(params: {
+  geneid: string
+  species?: string
+}): Promise<GeneHogResponse> {
+  try {
+    const res = await httpInstance.post(
+      '/CottonOGD_api/orthofinder/gene_hog/',
+      params,
+    ) as unknown as GeneHogResponse
+    return res ?? { query_gene: params.geneid, found: false, hogs: [] }
+  } catch (err) {
+    return {
+      query_gene: params.geneid, found: false, hogs: [],
+      error: readBackendError(err),
+    }
+  }
+}
+
+/** HOG 成员分组（C.13） */
+export interface HogMemberGroup {
+  species: string
+  genes: string[]
+  n: number
+}
+
+/** HOG 详情响应（C.13） */
+export interface HogDetailResponse {
+  found: boolean
+  hog_id: string
+  node?: string
+  og_code?: string
+  parent_clade?: string
+  species_count?: number
+  gene_count?: number
+  members?: HogMemberGroup[]
+  error?: string
+}
+
+/** HOG 详情（C.13） */
+export async function getHogDetail(hogId: string): Promise<HogDetailResponse> {
+  try {
+    const res = await httpInstance.post(
+      '/CottonOGD_api/orthofinder/hog_detail/',
+      { hog_id: hogId },
+    ) as unknown as HogDetailResponse
+    return res ?? { found: false, hog_id: hogId }
+  } catch (err) {
+    return { found: false, hog_id: hogId, error: readBackendError(err) }
+  }
+}
+
+/** 物种树内部节点（C.14） */
+export interface SpeciesTreeNodeInfo {
+  id: string
+  parent: string | null
+  is_leaf: boolean
+  branch_length: string | number
+  ancestors: string[]
+}
+
+/** 物种树响应（C.14） */
+export interface SpeciesTreeResponse {
+  newick: string
+  root: string
+  leaf_count: number
+  leaves: string[]
+  leaf_parent: Record<string, string>
+  nodes?: SpeciesTreeNodeInfo[]
+  error?: string
+}
+
+/** 物种树（C.14）；fmt=newick 时由后端直接返回 Newick 文本 */
+export async function getSpeciesTree(params?: {
+  fmt?: 'newick'
+  includeNodes?: boolean
+}): Promise<SpeciesTreeResponse> {
+  const query: Record<string, unknown> = {}
+  // 注意：DRF 保留 format 参数，交接文档要求使用 fmt
+  if (params?.fmt) query.fmt = params.fmt
+  if (params?.includeNodes === false) query.include_nodes = 0
+  try {
+    const res = await httpInstance.get(
+      '/CottonOGD_api/orthofinder/species_tree/',
+      { params: query },
+    )
+    if (typeof res === 'string') {
+      return { newick: res, root: '', leaf_count: 0, leaves: [], leaf_parent: {} }
+    }
+    return res as unknown as SpeciesTreeResponse
+  } catch (err) {
+    return {
+      newick: '', root: '', leaf_count: 0, leaves: [], leaf_parent: {},
+      error: readBackendError(err),
+    }
+  }
+}
+
+/** 统计接口 type/kind/scope 枚举（C.15） */
+export type StatisticsType =
+  | 'overall' | 'per_species' | 'orthologs' | 'duplications' | 'species_overlaps'
+export type StatisticsOrthologKind =
+  | 'one-to-one' | 'one-to-many' | 'many-to-one' | 'many-to-many' | 'totals'
+export type StatisticsDuplicationScope = 'orthogroup' | 'species_node'
+
+/** 统计响应：不同 type 返回结构不同，调用方按 type 收窄 */
+export type OrthofinderStatisticsResponse = Record<string, unknown> & {
+  error?: string
+  available?: boolean
+}
+
+/** 直接读取 Comparative_Genomics_Statistics（C.15，不在前端重算） */
+export async function getOrthofinderStatistics(params: {
+  type?: StatisticsType
+  kind?: StatisticsOrthologKind
+  species_a?: string
+  species_b?: string
+  scope?: StatisticsDuplicationScope
+  og_code?: string
+}): Promise<OrthofinderStatisticsResponse> {
+  const query: Record<string, unknown> = { type: params.type ?? 'overall' }
+  if (params.kind) query.kind = params.kind
+  if (params.species_a) query.species_a = params.species_a
+  if (params.species_b) query.species_b = params.species_b
+  if (params.scope) query.scope = params.scope
+  if (params.og_code) query.og_code = params.og_code
+  try {
+    const res = await httpInstance.get('/CottonOGD_api/orthofinder/statistics/', {
+      params: query,
+    })
+    return (res ?? {}) as OrthofinderStatisticsResponse
+  } catch (err) {
+    return { error: readBackendError(err) }
+  }
+}
+
+/** 复制事件分页响应（C.8） */
+export interface OrthofinderTandemEvent {
+  species: string
+  type: string
+  support: number | null
+  gene_tree_node: string
+  genes1: string[]
+  genes2: string[]
+}
+
+export interface OrthofinderTandemSummary {
+  og_code: string
+  by_type: Record<string, number>
+  species: Record<string, Array<{ geneid: string; n: number }>>
+  total_events: number
+  limit: number
+  offset: number
+  has_more: boolean
+  events: OrthofinderTandemEvent[]
+  error?: string
+}
+
+/**
+ * 基因复制事件（C.8）：汇总始终全量，events 明细按 limit/offset 分页。
+ * include_events=false 时只取汇总。
+ */
+export async function getOrthofinderTandem(
+  ogCode: string,
+  params?: { limit?: number; offset?: number; includeEvents?: boolean },
+): Promise<OrthofinderTandemSummary | null> {
+  const query: Record<string, unknown> = {
+    limit: params?.limit ?? 2000,
+    offset: params?.offset ?? 0,
+  }
+  if (params?.includeEvents === false) query.include_events = 0
+  try {
+    const res = await httpInstance.get(
+      `/CottonOGD_api/orthofinder/tandem/${ogCode}`,
+      { params: query },
+    ) as unknown as OrthofinderTandemSummary | Record<string, never>
+    // 无复制事件时后端返回 {}
+    if (!res || !Object.keys(res).length) return null
+    return res as OrthofinderTandemSummary
+  } catch (err) {
+    throw new Error(readBackendError(err))
   }
 }
 
